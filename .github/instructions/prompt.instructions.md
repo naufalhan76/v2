@@ -17,8 +17,9 @@ You are GitHub Copilot. Generate a production-ready Admin Panel web app for a Te
 ## 1) Data model (use existing Supabase tables)
 Use these exact table/column names (snake_case) already present:
 
-- `user_management(user_id, full_name, email, role, last_login, created_at, updated_at)`
+- `user_management(user_id, full_name, email, role, is_active, last_login, created_at, updated_at)`
   - `role` values: `SUPERADMIN`, `ADMIN`, `TECHNICIAN`, `FINANCE`
+  - `is_active` boolean: TRUE = user can login, FALSE = user blocked
 - `technicians(technician_id, technician_name, company, contact_number, email, created_at, updated_at)`
 - `customers(customer_id, customer_name, primary_contact_person, email, phone_number, billing_address, notes, created_at, updated_at)`
 - `locations(location_id, customer_id, building_name, floor, room_number, description, created_at, updated_at)`

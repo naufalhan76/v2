@@ -39,29 +39,35 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Redirect authenticated users to dashboard if accessing auth routes
-  if (isAuthRoute && session) {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
-  }
-
-  // Role-based access control for specific routes
-  if (session && req.nextUrl.pathname.startsWith('/manajemen/user')) {
-    // Fetch user role from Supabase using auth_user_id
+  // Check if user is active in user_management table
+  if (isProtectedRoute && session) {
     const { data: userData, error } = await supabase
       .from('user_management')
-      .select('role')
+      .select('is_active, role')
       .eq('auth_user_id', session.user.id)
       .single()
 
-    if (error || !userData) {
-      // If error fetching user data, redirect to login
-      return NextResponse.redirect(new URL('/login', req.url))
+    // If user is not found or not active, sign out and redirect to login
+    if (error || !userData || !userData.is_active) {
+      console.log('Middleware check failed:', { error, userData, userId: session.user.id })
+      await supabase.auth.signOut()
+      const redirectUrl = new URL('/login', req.url)
+      redirectUrl.searchParams.set('error', 'Account is inactive or not found')
+      return NextResponse.redirect(redirectUrl)
     }
 
-    // Only SUPERADMIN can access user management
-    if (userData.role !== 'SUPERADMIN') {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
+    // Role-based access control for specific routes
+    if (req.nextUrl.pathname.startsWith('/dashboard/manajemen/user')) {
+      // Only SUPERADMIN can access user management
+      if (userData.role !== 'SUPERADMIN') {
+        return NextResponse.redirect(new URL('/dashboard', req.url))
+      }
     }
+  }
+
+  // Redirect authenticated users to dashboard if accessing auth routes
+  if (isAuthRoute && session) {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
   return res

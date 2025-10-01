@@ -28,62 +28,67 @@ const sidebarItems = [
   },
   {
     title: 'Konfigurasi',
-    href: '/konfigurasi',
+    href: '/dashboard/konfigurasi',
     icon: Settings,
     children: [
       {
         title: 'Harga Service',
-        href: '/konfigurasi/harga-service',
+        href: '/dashboard/konfigurasi/harga-service',
       },
       {
         title: 'SLA Service',
-        href: '/konfigurasi/sla-service',
+        href: '/dashboard/konfigurasi/sla-service',
       },
     ],
   },
   {
     title: 'Manajemen',
-    href: '/manajemen',
+    href: '/dashboard/manajemen',
     icon: Users,
     children: [
       {
         title: 'User',
-        href: '/manajemen/user',
+        href: '/dashboard/manajemen/user',
+        requireRole: 'SUPERADMIN', // Only show for SUPERADMIN
+      },
+      {
+        title: 'Customer',
+        href: '/dashboard/manajemen/customer',
       },
       {
         title: 'AC Units',
-        href: '/manajemen/ac-units',
+        href: '/dashboard/manajemen/ac-units',
       },
       {
         title: 'Teknisi',
-        href: '/manajemen/teknisi',
+        href: '/dashboard/manajemen/teknisi',
       },
       {
         title: 'Lokasi Pelanggan',
-        href: '/manajemen/lokasi',
+        href: '/dashboard/manajemen/lokasi',
       },
     ],
   },
   {
     title: 'Operasional',
-    href: '/operasional',
+    href: '/dashboard/operasional',
     icon: ClipboardList,
     children: [
       {
         title: 'Assign Order',
-        href: '/operasional/assign-order',
+        href: '/dashboard/operasional/assign-order',
       },
       {
         title: 'Monitoring Ongoing',
-        href: '/operasional/monitoring-ongoing',
+        href: '/dashboard/operasional/monitoring-ongoing',
       },
       {
         title: 'Monitoring History',
-        href: '/operasional/monitoring-history',
+        href: '/dashboard/operasional/monitoring-history',
       },
       {
         title: 'Accept Order',
-        href: '/operasional/accept-order',
+        href: '/dashboard/operasional/accept-order',
       },
     ],
   },
@@ -92,7 +97,40 @@ const sidebarItems = [
 export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => void }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [expandedItems, setExpandedItems] = useState<string[]>([])
+  const [userRole, setUserRole] = useState<string | null>(null)
   const pathname = usePathname()
+
+  // Fetch user role
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const { createClient } = await import('@/lib/supabase-browser')
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session?.user) {
+        const { data: userData } = await supabase
+          .from('user_management')
+          .select('role')
+          .eq('auth_user_id', session.user.id)
+          .single()
+          
+        setUserRole(userData?.role || null)
+      }
+    }
+    
+    fetchUserRole()
+  }, [])
+
+  // Filter menu items based on user role
+  const filterMenuItems = (items: any[]) => {
+    return items.filter(item => {
+      // If item has requireRole, check if user has that role
+      if (item.requireRole && userRole !== item.requireRole) {
+        return false
+      }
+      return true
+    })
+  }
 
   const handleToggle = () => {
     const newState = !isCollapsed
@@ -111,36 +149,46 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
   }
 
   return (
-    <div className={`hidden border-r bg-muted/40 md:block ${isCollapsed ? 'md:w-16' : 'md:w-64'} transition-all duration-300`}>
-      <div className="flex h-full max-h-screen flex-col gap-2">
-        <div className="flex h-14 items-center justify-between border-b px-4 lg:h-[60px] lg:px-6">
-          {!isCollapsed && (
-            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              <AirVent className="h-6 w-6 text-blue-600" />
-              <span>TechService ERP</span>
-            </Link>
+    <div className={`border-r bg-muted/40 ${isCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 h-full flex flex-col`}>
+      <div className="flex h-14 items-center justify-between border-b px-4 lg:h-[60px] lg:px-6 shrink-0">
+        {!isCollapsed && (
+          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+            <AirVent className="h-6 w-6 text-blue-600" />
+            <span className="text-sm lg:text-base">TechService ERP</span>
+          </Link>
+        )}
+        <button
+          onClick={handleToggle}
+          className="p-1 rounded-md hover:bg-muted"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
           )}
-          <button
-            onClick={handleToggle}
-            className="p-1 rounded-md hover:bg-muted"
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </button>
-        </div>
-        <div className="flex-1">
-          <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+        </button>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto">
+        <nav className="grid items-start px-2 py-2 text-sm font-medium lg:px-4">
             {sidebarItems.map((item) => {
               const hasChildren = item.children && item.children.length > 0
               const isExpanded = expandedItems.includes(item.href)
-              const isActive = pathname === item.href || (hasChildren && item.children?.some(child => pathname === child.href))
+              
+              // Filter children based on role
+              const filteredChildren = hasChildren ? filterMenuItems(item.children || []) : []
+              const hasVisibleChildren = filteredChildren.length > 0
+              
+              // If parent has no visible children, hide parent too
+              if (hasChildren && !hasVisibleChildren) {
+                return null
+              }
+              
+              const isActive = pathname === item.href || (hasChildren && filteredChildren?.some(child => pathname === child.href))
               
               return (
                 <div key={item.href} className="space-y-1">
-                  {hasChildren ? (
+                  {hasVisibleChildren ? (
                     <button
                       onClick={() => toggleExpanded(item.href)}
                       className={cn(
@@ -175,14 +223,14 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
                   )}
                   
                   {/* Submenu - expandable */}
-                  {hasChildren && !isCollapsed && (
+                  {hasVisibleChildren && !isCollapsed && (
                     <div 
                       className={cn(
                         "ml-6 space-y-1 overflow-hidden transition-all duration-200",
                         isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                       )}
                     >
-                      {item.children?.map((child) => (
+                      {filteredChildren.map((child) => (
                         <Link
                           key={child.href}
                           href={child.href}
@@ -204,8 +252,20 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
         </div>
         
         {/* Profile Section - Footer */}
-        {!isCollapsed && <ProfileSection />}
-      </div>
+        <div className="shrink-0 border-t">
+          {!isCollapsed ? (
+            <ProfileSection />
+          ) : (
+            <div className="p-2">
+              <button
+                onClick={() => setIsCollapsed(false)}
+                className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-muted transition-colors"
+              >
+                <User className="h-5 w-5" />
+              </button>
+            </div>
+          )}
+        </div>
     </div>
   )
 }
@@ -251,7 +311,7 @@ function ProfileSection() {
   if (!user) return null
 
   return (
-    <div className="border-t bg-muted/40 p-4">
+    <div className="bg-muted/40 p-4">
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}

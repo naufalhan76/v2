@@ -159,7 +159,7 @@ export default function DashboardPage() {
       description: 'Registered customers',
       icon: Users,
       color: 'text-purple-600',
-      href: '/customers',
+      href: '/dashboard/manajemen/user',
     },
     {
       title: 'Total Technicians',
@@ -167,7 +167,7 @@ export default function DashboardPage() {
       description: 'Available technicians',
       icon: Users,
       color: 'text-indigo-600',
-      href: '/technicians',
+      href: '/dashboard/manajemen/teknisi',
     },
     {
       title: 'Total Revenue',

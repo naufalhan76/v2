@@ -19,11 +19,11 @@ export async function getTechnicians(filters?: {
     let query = supabase
       .from('technicians')
       .select('*', { count: 'exact' })
-      .order('name', { ascending: true })
+      .order('technician_name', { ascending: true })
       .range(from, to)
     
     if (filters?.search) {
-      query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%`)
+      query = query.or(`technician_name.ilike.%${filters.search}%,contact_number.ilike.%${filters.search}%,email.ilike.%${filters.search}%,company.ilike.%${filters.search}%`)
     }
     
     if (filters?.specialization) {
@@ -99,12 +99,10 @@ export async function getTechnicianById(technicianId: string) {
 }
 
 export async function createTechnician(technicianData: {
-  name: string
-  phone: string
+  technician_name: string
+  contact_number: string
   email?: string
-  specialization?: string
-  certification?: string
-  experience_years?: number
+  company?: string
 }) {
   try {
     const supabase = await createClient()
@@ -137,12 +135,10 @@ export async function createTechnician(technicianData: {
 }
 
 export async function updateTechnician(technicianId: string, technicianData: Partial<{
-  name: string
-  phone: string
+  technician_name: string
+  contact_number: string
   email: string
-  specialization: string
-  certification: string
-  experience_years: number
+  company: string
 }>) {
   try {
     const supabase = await createClient()

@@ -23,12 +23,15 @@ export async function getAcUnits(filters?: {
         *,
         locations (
           location_id,
-          address,
-          city,
+          building_name,
+          floor,
+          room_number,
+          description,
           customers (
             customer_id,
-            name,
-            phone
+            customer_name,
+            primary_contact_person,
+            phone_number
           )
         )
       `, { count: 'exact' })
@@ -36,7 +39,7 @@ export async function getAcUnits(filters?: {
       .range(from, to)
     
     if (filters?.search) {
-      query = query.or(`brand.ilike.%${filters.search}%,model.ilike.%${filters.search}%,serial_number.ilike.%${filters.search}%`)
+      query = query.or(`brand.ilike.%${filters.search}%,model_number.ilike.%${filters.search}%,serial_number.ilike.%${filters.search}%`)
     }
     
     if (filters?.locationId) {
@@ -82,14 +85,15 @@ export async function getAcUnitById(acUnitId: string) {
         *,
         locations (
           location_id,
-          address,
-          city,
-          province,
-          postal_code,
+          building_name,
+          floor,
+          room_number,
+          description,
           customers (
             customer_id,
-            name,
-            phone,
+            customer_name,
+            primary_contact_person,
+            phone_number,
             email
           )
         ),
@@ -104,8 +108,8 @@ export async function getAcUnitById(acUnitId: string) {
           status,
           technicians (
             technician_id,
-            name,
-            phone
+            technician_name,
+            contact_number
           )
         )
       `)
@@ -130,11 +134,11 @@ export async function getAcUnitById(acUnitId: string) {
 export async function createAcUnit(acUnitData: {
   location_id: string
   brand: string
-  model: string
+  model_number: string
   serial_number: string
-  capacity?: string
+  ac_type?: string
+  capacity_btu?: number
   installation_date?: string
-  warranty_expiry?: string
   status?: string
 }) {
   try {
@@ -169,11 +173,11 @@ export async function createAcUnit(acUnitData: {
 
 export async function updateAcUnit(acUnitId: string, acUnitData: Partial<{
   brand: string
-  model: string
+  model_number: string
   serial_number: string
-  capacity: string
+  ac_type: string
+  capacity_btu: number
   installation_date: string
-  warranty_expiry: string
   status: string
 }>) {
   try {

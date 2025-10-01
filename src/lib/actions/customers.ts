@@ -18,11 +18,11 @@ export async function getCustomers(filters?: {
     let query = supabase
       .from('customers')
       .select('*', { count: 'exact' })
-      .order('name', { ascending: true })
+      .order('customer_name', { ascending: true })
       .range(from, to)
     
     if (filters?.search) {
-      query = query.or(`name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%`)
+      query = query.or(`customer_name.ilike.%${filters.search}%,primary_contact_person.ilike.%${filters.search}%,phone_number.ilike.%${filters.search}%,email.ilike.%${filters.search}%`)
     }
     
     const { data, error, count } = await query
@@ -92,13 +92,12 @@ export async function getCustomerById(customerId: string) {
 }
 
 export async function createCustomer(customerData: {
-  name: string
-  phone: string
+  customer_name: string
+  primary_contact_person: string
+  phone_number: string
   email?: string
-  address?: string
-  city?: string
-  province?: string
-  postal_code?: string
+  billing_address?: string
+  notes?: string
 }) {
   try {
     const supabase = await createClient()
@@ -114,7 +113,7 @@ export async function createCustomer(customerData: {
     
     if (error) throw error
     
-    revalidatePath('/customers')
+    revalidatePath('/dashboard/manajemen/customer')
     revalidatePath('/dashboard')
     
     return {
@@ -131,13 +130,12 @@ export async function createCustomer(customerData: {
 }
 
 export async function updateCustomer(customerId: string, customerData: Partial<{
-  name: string
-  phone: string
+  customer_name: string
+  primary_contact_person: string
+  phone_number: string
   email: string
-  address: string
-  city: string
-  province: string
-  postal_code: string
+  billing_address: string
+  notes: string
 }>) {
   try {
     const supabase = await createClient()
@@ -154,7 +152,7 @@ export async function updateCustomer(customerId: string, customerData: Partial<{
     
     if (error) throw error
     
-    revalidatePath('/customers')
+    revalidatePath('/dashboard/manajemen/customer')
     
     return {
       success: true,
@@ -194,7 +192,7 @@ export async function deleteCustomer(customerId: string) {
     
     if (error) throw error
     
-    revalidatePath('/customers')
+    revalidatePath('/dashboard/manajemen/customer')
     revalidatePath('/dashboard')
     
     return {

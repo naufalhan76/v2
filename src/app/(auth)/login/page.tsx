@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [fullName, setFullName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -98,43 +99,38 @@ export default function LoginPage() {
       })
       return
     }
+
+    if (!fullName.trim()) {
+      toast({
+        title: "Registration failed",
+        description: "Nama lengkap harus diisi",
+      })
+      return
+    }
     
     setIsLoading(true)
 
     try {
       const supabase = createClient()
       
-      // Sign up the user with Supabase Auth
+      // Sign up the user with Supabase Auth with display name
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: fullName,
+            display_name: fullName,
+          }
+        }
       })
 
       if (error) {
         throw error
       }
 
-      // Create a record in the user_management table with a default role
-      if (data.user && data.user.email) {
-        const { error: userManagementError } = await supabase
-          .from('user_management')
-          .insert([
-            {
-              email: data.user.email,
-              role: 'ADMIN', // Default role for new signups
-              name: data.user.email?.split('@')[0] || 'User', // Default name from email
-              created_at: new Date().toISOString(),
-            }
-          ])
-
-        if (userManagementError) {
-          console.error('Error creating user management record:', userManagementError)
-          // We don't throw here because the auth was successful
-          // But we should notify the admin about this issue
-        }
-      } else {
-        console.error('User or user email is missing after registration')
-      }
+      // Note: user_management record will be auto-created by trigger
+      // The trigger will use the full_name from user metadata
 
       toast({
         title: "Registration successful",
@@ -145,6 +141,7 @@ export default function LoginPage() {
       setEmail('')
       setPassword('')
       setConfirmPassword('')
+      setFullName('')
     } catch (error: any) {
       toast({
         title: "Registration failed",
@@ -205,6 +202,17 @@ export default function LoginPage() {
             <TabsContent value="register">
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="reg-fullname">Nama Lengkap</Label>
+                  <Input
+                    id="reg-fullname"
+                    type="text"
+                    placeholder="John Doe"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="reg-email">Email</Label>
                   <Input
                     id="reg-email"
@@ -223,6 +231,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    minLength={6}
                   />
                 </div>
                 <div className="space-y-2">

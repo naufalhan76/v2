@@ -24,14 +24,17 @@ export async function getOrders(filters?: {
         *,
         customers (
           customer_id,
-          name,
-          phone,
+          customer_name,
+          primary_contact_person,
+          phone_number,
           email
         ),
         locations (
           location_id,
-          address,
-          city
+          building_name,
+          floor,
+          room_number,
+          description
         )
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -88,17 +91,18 @@ export async function getOrderById(orderId: string) {
         *,
         customers (
           customer_id,
-          name,
-          phone,
+          customer_name,
+          primary_contact_person,
+          phone_number,
           email,
-          address
+          billing_address
         ),
         locations (
           location_id,
-          address,
-          city,
-          province,
-          postal_code
+          building_name,
+          floor,
+          room_number,
+          description
         ),
         service_records (
           service_id,
@@ -113,13 +117,13 @@ export async function getOrderById(orderId: string) {
           status,
           technicians (
             technician_id,
-            name,
-            phone
+            technician_name,
+            contact_number
           ),
           ac_units (
             ac_unit_id,
             brand,
-            model,
+            model_number,
             serial_number
           )
         ),
