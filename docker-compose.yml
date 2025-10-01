@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: technician-service-erp
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+    env_file:
+      - .env
+    networks:
+      - app-network
+
+  # Optional: Add nginx proxy if needed
+  # nginx:
+  #   image: jwilder/nginx-proxy
+  #   container_name: nginx-proxy
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - /var/run/docker.sock:/tmp/docker.sock:ro
+  #     - ./nginx/certs:/etc/nginx/certs:ro
+  #     - ./nginx/vhost.d:/etc/nginx/vhost.d:ro
+  #     - ./nginx/html:/usr/share/nginx/html:ro
+  #   networks:
+  #     - app-network
+  #   depends_on:
+  #     - app
+
+networks:
+  app-network:
+    driver: bridge
