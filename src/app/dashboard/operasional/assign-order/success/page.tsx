@@ -73,17 +73,11 @@ export default function AssignmentSuccessPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {technicianLoading ? (
-            <div className='text-sm text-muted-foreground py-4'>Loading technician info...</div>
-          ) : technicianError ? (
-            <div className='text-sm text-red-600 py-4'>
-              Error loading technician: {technicianError instanceof Error ? technicianError.message : 'Unknown error'}
-            </div>
-          ) : technicianData?.data ? (
+          {technicianData?.data ? (
             <div className='space-y-3'>
               <div>
                 <span className='text-sm font-semibold text-muted-foreground'>Name: </span>
-                <span className='text-lg font-bold'>{techniciansData.data.technician_name}</span>
+                <span className='text-lg font-bold'>{technicianData.data.technician_name}</span>
               </div>
               {technicianData.data.company && (
                 <div>
@@ -112,9 +106,7 @@ export default function AssignmentSuccessPage() {
               </div>
             </div>
           ) : (
-            <div className='text-sm text-muted-foreground py-4'>
-              No technician data available. ID: {technicianId || 'missing'}
-            </div>
+            <p className='text-sm text-muted-foreground'>Loading technician info...</p>
           )}
         </CardContent>
       </Card>

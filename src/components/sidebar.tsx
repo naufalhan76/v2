@@ -285,7 +285,7 @@ function ProfileSection() {
         // Get user details from user_management table
         const { data: userData } = await supabase
           .from('user_management')
-          .select('full_name, email, role')
+          .select('full_name, email, role, photo_url')
           .eq('auth_user_id', session.user.id)
           .single()
           
@@ -293,7 +293,7 @@ function ProfileSection() {
           email: session.user.email,
           full_name: userData?.full_name || session.user.email,
           role: userData?.role || 'USER',
-          avatar_url: session.user.user_metadata?.avatar_url
+          avatar_url: userData?.photo_url || session.user.user_metadata?.avatar_url
         })
       }
     }
@@ -342,7 +342,7 @@ function ProfileSection() {
         {isOpen && (
           <div className="absolute bottom-full left-0 right-0 mb-2 bg-background border rounded-lg shadow-lg py-2">
             <Link
-              href="/profile"
+              href="/dashboard/profile"
               className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
               onClick={() => setIsOpen(false)}
             >
