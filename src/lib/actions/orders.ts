@@ -103,36 +103,6 @@ export async function getOrderById(orderId: string) {
           floor,
           room_number,
           description
-        ),
-        service_records (
-          service_id,
-          technician_id,
-          ac_unit_id,
-          service_date,
-          service_type,
-          findings,
-          actions_taken,
-          parts_used,
-          cost,
-          status,
-          technicians (
-            technician_id,
-            technician_name,
-            contact_number
-          ),
-          ac_units (
-            ac_unit_id,
-            brand,
-            model_number,
-            serial_number
-          )
-        ),
-        payments (
-          payment_id,
-          amount,
-          method,
-          status,
-          payment_date
         )
       `)
       .eq('order_id', orderId)
@@ -235,6 +205,49 @@ export async function updateOrderStatus(orderId: string, newStatus: string, note
     return {
       success: false,
       error: error.message || 'Failed to update order status',
+    }
+  }
+}
+
+export async function assignOrdersToTechnician(data: {
+  orderIds: string[]
+  technicianId: string
+  scheduledDate: string
+}) {
+  try {
+    console.log('Assigning orders:', data)
+    const supabase = await createClient()
+    
+    // Update all selected orders
+    const { error: orderError } = await supabase
+      .from('orders')
+      .update({
+        status: 'ASSIGNED',
+        assigned_technician_id: data.technicianId,
+        scheduled_visit_date: data.scheduledDate,
+        updated_at: new Date().toISOString()
+      })
+      .in('order_id', data.orderIds)
+    
+    if (orderError) {
+      console.error('Order update error:', orderError)
+      throw orderError
+    }
+    
+    console.log('Orders assigned successfully')
+    revalidatePath('/dashboard/operasional/assign-order')
+    revalidatePath('/dashboard/operasional/monitoring-ongoing')
+    revalidatePath('/dashboard')
+    
+    return {
+      success: true,
+      message: `Successfully assigned ${data.orderIds.length} order(s) to technician`
+    }
+  } catch (error: any) {
+    console.error('Error assigning orders:', error)
+    return {
+      success: false,
+      error: error.message || 'Failed to assign orders',
     }
   }
 }

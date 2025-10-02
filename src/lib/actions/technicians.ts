@@ -59,27 +59,10 @@ export async function getTechnicianById(technicianId: string) {
   try {
     const supabase = await createClient()
     
+    // First, get basic technician info
     const { data, error } = await supabase
       .from('technicians')
-      .select(`
-        *,
-        service_records (
-          service_id,
-          order_id,
-          service_date,
-          service_type,
-          status,
-          orders (
-            order_id,
-            order_type,
-            status,
-            customers (
-              name,
-              phone
-            )
-          )
-        )
-      `)
+      .select('*')
       .eq('technician_id', technicianId)
       .single()
     
@@ -94,6 +77,7 @@ export async function getTechnicianById(technicianId: string) {
     return {
       success: false,
       error: error.message || 'Failed to fetch technician',
+      data: null
     }
   }
 }

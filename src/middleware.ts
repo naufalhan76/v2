@@ -2,8 +2,48 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+// Simple in-memory cache to reduce database queries (expires after 30 seconds)
+const userCache = new Map<string, { data: any; expiry: number }>()
+const CACHE_DURATION = 30000 // 30 seconds
+
+function getCachedUser(userId: string) {
+  const cached = userCache.get(userId)
+  if (cached && cached.expiry > Date.now()) {
+    return cached.data
+  }
+  return null
+}
+
+function setCachedUser(userId: string, data: any) {
+  userCache.set(userId, {
+    data,
+    expiry: Date.now() + CACHE_DURATION
+  })
+  
+  // Clean up old entries
+  if (userCache.size > 100) {
+    const now = Date.now()
+    userCache.forEach((value, key) => {
+      if (value.expiry < now) {
+        userCache.delete(key)
+      }
+    })
+  }
+}
+
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
+  
+  // Skip middleware for static files and API routes to reduce rate limit usage
+  const pathname = req.nextUrl.pathname
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.includes('.') // Skip files with extensions
+  ) {
+    return res
+  }
+  
   const supabase = createMiddlewareClient({ req, res })
   
   // Refresh session if expired - required for Server Components
@@ -14,17 +54,17 @@ export async function middleware(req: NextRequest) {
   // Define protected routes
   const protectedRoutes = ['/dashboard', '/konfigurasi', '/manajemen', '/operasional', '/profile']
   const isProtectedRoute = protectedRoutes.some(route => 
-    req.nextUrl.pathname.startsWith(route)
+    pathname.startsWith(route)
   )
 
   // Define auth routes
   const authRoutes = ['/login']
   const isAuthRoute = authRoutes.some(route => 
-    req.nextUrl.pathname === route
+    pathname === route
   )
 
   // Redirect root path based on auth status
-  if (req.nextUrl.pathname === '/') {
+  if (pathname === '/') {
     if (session) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     } else {
@@ -35,29 +75,39 @@ export async function middleware(req: NextRequest) {
   // Redirect unauthenticated users to login if accessing protected routes
   if (isProtectedRoute && !session) {
     const redirectUrl = new URL('/login', req.url)
-    redirectUrl.searchParams.set('redirectTo', req.nextUrl.pathname)
+    redirectUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
   // Check if user is active in user_management table
   if (isProtectedRoute && session) {
-    const { data: userData, error } = await supabase
-      .from('user_management')
-      .select('is_active, role')
-      .eq('auth_user_id', session.user.id)
-      .single()
+    // Check cache first
+    let userData = getCachedUser(session.user.id)
+    
+    if (!userData) {
+      // If not in cache, fetch from database
+      const { data, error } = await supabase
+        .from('user_management')
+        .select('is_active, role')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle() // Use maybeSingle() instead of single() to avoid throwing error
 
-    // If user is not found or not active, sign out and redirect to login
-    if (error || !userData || !userData.is_active) {
-      console.log('Middleware check failed:', { error, userData, userId: session.user.id })
-      await supabase.auth.signOut()
-      const redirectUrl = new URL('/login', req.url)
-      redirectUrl.searchParams.set('error', 'Account is inactive or not found')
-      return NextResponse.redirect(redirectUrl)
+      // If user is not found or not active, sign out and redirect to login
+      if (error || !data || !data.is_active) {
+        console.log('Middleware check failed:', { error, data, userId: session.user.id })
+        await supabase.auth.signOut()
+        const redirectUrl = new URL('/login', req.url)
+        redirectUrl.searchParams.set('error', 'Account is inactive or not found')
+        return NextResponse.redirect(redirectUrl)
+      }
+      
+      userData = data
+      // Cache the result
+      setCachedUser(session.user.id, userData)
     }
 
     // Role-based access control for specific routes
-    if (req.nextUrl.pathname.startsWith('/dashboard/manajemen/user')) {
+    if (pathname.startsWith('/dashboard/manajemen/user')) {
       // Only SUPERADMIN can access user management
       if (userData.role !== 'SUPERADMIN') {
         return NextResponse.redirect(new URL('/dashboard', req.url))

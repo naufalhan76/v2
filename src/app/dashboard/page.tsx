@@ -159,7 +159,7 @@ export default function DashboardPage() {
       description: 'Registered customers',
       icon: Users,
       color: 'text-purple-600',
-      href: '/dashboard/manajemen/user',
+      href: '/dashboard/manajemen/customer',
     },
     {
       title: 'Total Technicians',
