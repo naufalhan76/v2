@@ -50,7 +50,7 @@ export default function DashboardPage() {
   const { toast } = useToast()
   
   // Date range state (default: 30 days ago to today)
-  const [dateRange, setDateRange] = useState<{from: Date | undefined, to: Date | undefined}>(() => {
+  const [dateRange, setDateRange] = useState<{from: Date | undefined, to?: Date | undefined}>(() => {
     const endDate = new Date()
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - 30)
@@ -63,7 +63,7 @@ export default function DashboardPage() {
   const [tempDateRange, setTempDateRange] = useState(dateRange)
 
   // Handle date range selection
-  const handleDateRangeSelect = (range: {from: Date | undefined, to: Date | undefined} | undefined) => {
+  const handleDateRangeSelect = (range: {from: Date | undefined, to?: Date | undefined} | undefined) => {
     if (range) {
       setTempDateRange(range)
       // Auto-update when both dates are selected
@@ -127,7 +127,7 @@ export default function DashboardPage() {
       description: 'All service orders',
       icon: ClipboardList,
       color: 'text-blue-600',
-      href: '/orders',
+      href: '/dashboard/operasional/monitoring-ongoing',
     },
     {
       title: 'Pending Orders',
@@ -135,7 +135,7 @@ export default function DashboardPage() {
       description: 'Orders being processed',
       icon: AlertCircle,
       color: 'text-yellow-600',
-      href: '/orders?status=pending',
+      href: '/dashboard/operasional/accept-order',
     },
     {
       title: 'Completed Orders',
@@ -143,7 +143,7 @@ export default function DashboardPage() {
       description: 'Successfully completed',
       icon: CheckCircle,
       color: 'text-green-600',
-      href: '/orders?status=completed',
+      href: '/dashboard/operasional/monitoring-history',
     },
     {
       title: 'Cancelled Orders',
@@ -151,7 +151,7 @@ export default function DashboardPage() {
       description: 'Cancelled by customer',
       icon: XCircle,
       color: 'text-red-600',
-      href: '/orders?status=cancelled',
+      href: '/dashboard/operasional/monitoring-ongoing',
     },
     {
       title: 'Total Customers',
@@ -178,7 +178,7 @@ export default function DashboardPage() {
       description: 'Total earnings',
       icon: Banknote,
       color: 'text-emerald-600',
-      href: '/payments',
+      href: '/dashboard/operasional/monitoring-ongoing',
     },
     {
       title: 'Unpaid Transactions',
@@ -186,7 +186,7 @@ export default function DashboardPage() {
       description: 'Pending payments',
       icon: CreditCard,
       color: 'text-orange-600',
-      href: '/payments?status=unpaid',
+      href: '/dashboard/operasional/monitoring-ongoing',
     },
   ]
 
