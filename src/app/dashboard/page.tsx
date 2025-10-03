@@ -205,7 +205,7 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading dashboard...</p>
@@ -215,27 +215,27 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-            <p className="text-slate-600">AC Service Management Overview</p>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">AC Service Management Overview</p>
           </div>
           
           {/* Date Range Picker - Right Side */}
           <div className="flex flex-col items-end gap-3">
-            <div className="text-sm font-medium text-slate-700 mb-1">Filter Tanggal Transaksi:</div>
+            <div className="text-sm font-medium mb-1">Filter Tanggal Transaksi:</div>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-[240px] justify-start text-left font-normal bg-white text-sm px-3 py-2.5 h-auto border-slate-300 hover:border-slate-400 shadow-sm",
+                    "w-[240px] justify-start text-left font-normal text-sm px-3 py-2.5 h-auto shadow-sm",
                     (!dateRange.from || !dateRange.to) && "text-muted-foreground"
                   )}
                 >
-                  <Calendar className="mr-3 h-4 w-4 text-slate-500" />
+                  <Calendar className="mr-3 h-4 w-4" />
                   <span className="flex-1">{formatDateRange()}</span>
                 </Button>
               </PopoverTrigger>

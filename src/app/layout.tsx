@@ -5,6 +5,7 @@ import { QueryProvider } from '@/components/query-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { Sidebar } from '@/components/sidebar'
 import { Navbar } from '@/components/navbar'
+import { ThemeProvider } from '@/components/theme-provider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -19,12 +20,19 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <QueryProvider>
-          {children}
-        </QueryProvider>
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <QueryProvider>
+            {children}
+          </QueryProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   )

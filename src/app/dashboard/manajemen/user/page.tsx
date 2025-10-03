@@ -413,21 +413,27 @@ export default function ManajemenUserPage() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right w-[180px]">
                         <div className="flex justify-end gap-2">
                           <Button
                             variant="outline"
-                            size="icon"
+                            className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
                             onClick={() => handleEdit(user)}
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="h-4 w-4 flex-shrink-0" />
+                            <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              Ubah
+                            </span>
                           </Button>
                           <Button
-                            variant="outline"
-                            size="icon"
+                            variant="destructive"
+                            className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
                             onClick={() => handleDelete(user.user_id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 flex-shrink-0" />
+                            <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              Hapus
+                            </span>
                           </Button>
                         </div>
                       </TableCell>

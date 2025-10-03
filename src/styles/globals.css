@@ -70,18 +70,31 @@
 
 @layer components {
   .kpi-card {
-    @apply bg-white rounded-2xl border border-slate-200 shadow-sm p-6 transition-all hover:shadow-md;
+    @apply bg-card rounded-2xl border border-border shadow-sm p-6 transition-all hover:shadow-md;
   }
   
   .data-table-container {
-    @apply bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden;
+    @apply bg-card rounded-2xl border border-border shadow-sm overflow-hidden;
   }
   
   .sidebar-item {
-    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-slate-700 transition-all hover:bg-slate-100 hover:text-slate-900;
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground;
   }
-  
+
   .sidebar-item-active {
-    @apply bg-blue-50 text-blue-700 hover:bg-blue-100;
+    @apply bg-accent text-accent-foreground font-medium;
+  }
+
+  /* CRUD Button Hover Effects */
+  .crud-button {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .crud-button:hover {
+    @apply scale-105 shadow-md;
+  }
+
+  .crud-button:active {
+    @apply scale-95;
   }
 }

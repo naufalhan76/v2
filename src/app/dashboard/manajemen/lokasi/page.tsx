@@ -256,21 +256,27 @@ export default function LocationsPage() {
                             <div className="text-muted-foreground text-sm">-</div>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right w-[180px]">
                           <div className="flex gap-2 justify-end">
                             <Button
                               variant="outline"
-                              size="sm"
+                              className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
                               onClick={() => handleEdit(location)}
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-4 w-4 flex-shrink-0" />
+                              <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                Ubah
+                              </span>
                             </Button>
                             <Button
-                              variant="outline"
-                              size="sm"
+                              variant="destructive"
+                              className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
                               onClick={() => handleDelete(location.location_id)}
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Trash2 className="h-4 w-4 flex-shrink-0" />
+                              <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                Hapus
+                              </span>
                             </Button>
                           </div>
                         </TableCell>

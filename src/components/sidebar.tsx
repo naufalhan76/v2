@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useTheme } from 'next-themes'
+import { Switch } from '@/components/ui/switch'
 import {
   LayoutDashboard,
   Settings,
@@ -17,7 +19,9 @@ import {
   CheckCircle,
   User,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Moon,
+  Sun
 } from 'lucide-react'
 
 const sidebarItems = [
@@ -79,16 +83,16 @@ const sidebarItems = [
         href: '/dashboard/operasional/assign-order',
       },
       {
+        title: 'Accept Order',
+        href: '/dashboard/operasional/accept-order',
+      },
+      {
         title: 'Monitoring Ongoing',
         href: '/dashboard/operasional/monitoring-ongoing',
       },
       {
         title: 'Monitoring History',
         href: '/dashboard/operasional/monitoring-history',
-      },
-      {
-        title: 'Accept Order',
-        href: '/dashboard/operasional/accept-order',
       },
     ],
   },
@@ -262,14 +266,34 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
                 className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-muted transition-colors"
               >
                 <User className="h-5 w-5" />
-              </button>
-            </div>
-          )}
-        </div>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
+// Dark Mode Toggle Component
+function DarkModeToggle() {
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return <Switch disabled />
+  }
+
+  return (
+    <Switch
+      checked={theme === 'dark'}
+      onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+    />
+  )
+}
 function ProfileSection() {
   const [user, setUser] = useState<any>(null)
   const [isOpen, setIsOpen] = useState(false)
@@ -311,7 +335,18 @@ function ProfileSection() {
   if (!user) return null
 
   return (
-    <div className="bg-muted/40 p-4">
+    <div className="bg-muted/40 p-4 space-y-3">
+      {/* Dark Mode Toggle */}
+      <div className="flex items-center justify-between px-2 py-1">
+        <div className="flex items-center gap-2">
+          <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="text-sm font-medium">Dark Mode</span>
+        </div>
+        <DarkModeToggle />
+      </div>
+
+      {/* User Profile */}
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}

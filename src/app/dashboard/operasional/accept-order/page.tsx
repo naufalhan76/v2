@@ -208,7 +208,7 @@ export default function AcceptOrderPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className='text-right'>
-                        <div className='flex justify-end gap-2'>
+                        <div className='flex justify-end gap-2 w-[200px] ml-auto'>
                           <Button
                             variant='ghost'
                             size='sm'
@@ -218,26 +218,29 @@ export default function AcceptOrderPage() {
                           </Button>
                           <Button
                             variant='default'
-                            size='sm'
-                            className='bg-green-600 hover:bg-green-700'
+                            className='group relative overflow-hidden transition-all duration-300 ease-in-out bg-blue-600 hover:bg-blue-700 text-white w-10 hover:w-28 flex items-center justify-start px-2'
                             onClick={() => {
                               setActionOrderId(order.order_id)
                               setActionType('accept')
                             }}
                           >
-                            <Check className='w-4 h-4 mr-1' />
-                            Accept
+                            <Check className='w-4 h-4 flex-shrink-0' />
+                            <span className='ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300'>
+                              Accept
+                            </span>
                           </Button>
                           <Button
                             variant='destructive'
-                            size='sm'
+                            className='group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2'
                             onClick={() => {
                               setActionOrderId(order.order_id)
                               setActionType('cancel')
                             }}
                           >
-                            <X className='w-4 h-4 mr-1' />
-                            Cancel
+                            <X className='w-4 h-4 flex-shrink-0' />
+                            <span className='ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300'>
+                              Cancel
+                            </span>
                           </Button>
                         </div>
                       </TableCell>
@@ -415,7 +418,7 @@ export default function AcceptOrderPage() {
             <AlertDialogAction
               onClick={() => actionOrderId && handleOrderAction(actionOrderId, 'ACCEPTED')}
               disabled={isProcessing}
-              className='bg-green-600 hover:bg-green-700'
+              className='bg-blue-600 hover:bg-blue-700'
             >
               {isProcessing ? 'Processing...' : 'Accept Order'}
             </AlertDialogAction>
@@ -437,7 +440,7 @@ export default function AcceptOrderPage() {
             <AlertDialogAction
               onClick={() => actionOrderId && handleOrderAction(actionOrderId, 'CANCELLED')}
               disabled={isProcessing}
-              className='bg-red-600 hover:bg-red-700'
+              className='bg-slate-600 hover:bg-slate-700'
             >
               {isProcessing ? 'Processing...' : 'Cancel Order'}
             </AlertDialogAction>

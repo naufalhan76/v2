@@ -20,11 +20,45 @@ import { Calendar } from '@/components/ui/calendar'
 import { History, Search, CalendarIcon, MessageCircle, AlertCircle, CheckCircle } from 'lucide-react'
 import { format, subDays, differenceInDays, isPast, isFuture } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { id } from 'date-fns/locale'
 
 export default function MonitoringHistoryPage() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [dateFrom, setDateFrom] = useState<Date>(subDays(new Date(), 90))
-  const [dateTo, setDateTo] = useState<Date>(new Date())
+  
+  // Date range state (default: 90 days ago to today)
+  const [dateRange, setDateRange] = useState<{from: Date | undefined, to?: Date | undefined}>(() => {
+    const endDate = new Date()
+    const startDate = subDays(endDate, 90)
+    return {
+      from: startDate,
+      to: endDate
+    }
+  })
+  
+  const [tempDateRange, setTempDateRange] = useState(dateRange)
+  
+  const dateFrom = dateRange.from || subDays(new Date(), 90)
+  const dateTo = dateRange.to || new Date()
+
+  // Handle date range selection
+  const handleDateRangeSelect = (range: {from: Date | undefined, to?: Date | undefined} | undefined) => {
+    if (range) {
+      setTempDateRange(range)
+      // Auto-update when both dates are selected
+      if (range.from && range.to) {
+        setDateRange(range)
+      }
+    }
+  }
+
+  const formatDateRange = () => {
+    if (!dateRange.from || !dateRange.to) return "Pilih Tanggal"
+    
+    const fromFormatted = format(dateRange.from, 'dd/MM/yyyy', { locale: id })
+    const toFormatted = format(dateRange.to, 'dd/MM/yyyy', { locale: id })
+    
+    return `${fromFormatted} - ${toFormatted}`
+  }
 
   const { data: serviceRecordsData, isLoading } = useQuery({
     queryKey: ['service-records', format(dateFrom, 'yyyy-MM-dd'), format(dateTo, 'yyyy-MM-dd')],
@@ -141,29 +175,32 @@ Terima kasih.`
           <p className='text-muted-foreground'>Monitor service history and upcoming service schedules</p>
         </div>
         
-        {/* Date Range Filters */}
-        <div className='flex gap-2'>
+        {/* Date Range Picker */}
+        <div className="flex flex-col items-end gap-3">
+          <div className="text-sm font-medium">Filter Tanggal Service:</div>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant='outline' className={cn('justify-start text-left font-normal w-[160px]', !dateFrom && 'text-muted-foreground')}>
-                <CalendarIcon className='mr-2 h-4 w-4' />
-                {dateFrom ? format(dateFrom, 'dd MMM yyyy') : 'From date'}
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[240px] justify-start text-left font-normal text-sm px-3 py-2.5 h-auto shadow-sm",
+                  (!dateRange.from || !dateRange.to) && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-3 h-4 w-4" />
+                <span className="flex-1">{formatDateRange()}</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className='w-auto p-0'>
-              <Calendar mode='single' selected={dateFrom} onSelect={(date) => date && setDateFrom(date)} initialFocus />
-            </PopoverContent>
-          </Popover>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant='outline' className={cn('justify-start text-left font-normal w-[160px]', !dateTo && 'text-muted-foreground')}>
-                <CalendarIcon className='mr-2 h-4 w-4' />
-                {dateTo ? format(dateTo, 'dd MMM yyyy') : 'To date'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className='w-auto p-0'>
-              <Calendar mode='single' selected={dateTo} onSelect={(date) => date && setDateTo(date)} initialFocus />
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange.from}
+                selected={tempDateRange}
+                onSelect={handleDateRangeSelect}
+                numberOfMonths={2}
+                locale={id}
+              />
             </PopoverContent>
           </Popover>
         </div>
@@ -288,16 +325,20 @@ Terima kasih.`
                           </Badge>
                         </TableCell>
                         <TableCell className='text-right'>
-                          <Button
-                            variant='outline'
-                            size='sm'
-                            onClick={() => sendWhatsAppReminder(record)}
-                            disabled={!customer?.phone_number}
-                            title={!customer?.phone_number ? 'No phone number' : 'Send WhatsApp reminder'}
-                          >
-                            <MessageCircle className='w-4 h-4 mr-1' />
-                            Remind
-                          </Button>
+                          <div className='flex justify-end w-[120px] ml-auto'>
+                            <Button
+                              variant='outline'
+                              className='group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2'
+                              onClick={() => sendWhatsAppReminder(record)}
+                              disabled={!customer?.phone_number}
+                              title={!customer?.phone_number ? 'No phone number' : 'Send WhatsApp reminder'}
+                            >
+                              <MessageCircle className='w-4 h-4 flex-shrink-0' />
+                              <span className='ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300'>
+                                Remind
+                              </span>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
