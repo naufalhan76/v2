@@ -147,18 +147,20 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
   }
 }
 
-export async function getRecentOrders(limit = 10) {
+export async function getRecentOrders(limit: number = 5) {
   try {
     const supabase = await createClient()
     
     const { data, error } = await supabase
       .from('orders')
       .select(`
-        *,
+        order_id,
+        order_type,
+        status,
+        created_at,
         customers (
-          customer_id,
-          customer_name,
-          phone_number
+          name,
+          phone
         )
       `)
       .order('created_at', { ascending: false })
@@ -168,14 +170,105 @@ export async function getRecentOrders(limit = 10) {
     
     return {
       success: true,
-      data: data || [],
+      data: data || []
     }
   } catch (error: any) {
     console.error('Error fetching recent orders:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch recent orders',
-      data: [],
+      error: error.message
+    }
+  }
+}
+
+export async function getChartData(startDate?: string, endDate?: string) {
+  try {
+    console.log('📈 getChartData: Starting...', { startDate, endDate })
+    const supabase = await createClient()
+    
+    // Set default date range if not provided (30 days ago to today)
+    const defaultEndDate = new Date().toISOString().split('T')[0]
+    const defaultStartDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    
+    const dateStart = startDate || defaultStartDate
+    const dateEnd = endDate || defaultEndDate
+    
+    console.log('📅 Chart date range:', { dateStart, dateEnd })
+    
+    // Get daily orders count
+    const { data: ordersData, error: ordersError } = await supabase
+      .from('orders')
+      .select('order_date, order_id')
+      .gte('order_date', dateStart)
+      .lte('order_date', dateEnd)
+      .order('order_date')
+    
+    if (ordersError) throw ordersError
+    
+    // Get daily revenue data
+    const { data: paymentsData, error: paymentsError } = await supabase
+      .from('payments')
+      .select('payment_date, amount_paid')
+      .gte('payment_date', dateStart)
+      .lte('payment_date', dateEnd)
+      .order('payment_date')
+    
+    if (paymentsError) throw paymentsError
+    
+    // Process data to create daily aggregates
+    const dailyData = new Map()
+    
+    // Initialize all dates in range
+    const currentDate = new Date(dateStart)
+    const endDateObj = new Date(dateEnd)
+    
+    while (currentDate <= endDateObj) {
+      const dateStr = currentDate.toISOString().split('T')[0]
+      dailyData.set(dateStr, {
+        date: dateStr,
+        orders: 0,
+        revenue: 0,
+        formattedDate: new Date(dateStr).toLocaleDateString('id-ID', { 
+          day: '2-digit', 
+          month: 'short' 
+        })
+      })
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    
+    // Aggregate orders by date
+    ordersData?.forEach(order => {
+      const date = order.order_date
+      if (dailyData.has(date)) {
+        dailyData.get(date).orders += 1
+      }
+    })
+    
+    // Aggregate revenue by date
+    paymentsData?.forEach(payment => {
+      const date = payment.payment_date
+      if (dailyData.has(date)) {
+        dailyData.get(date).revenue += parseFloat(payment.amount_paid || 0)
+      }
+    })
+    
+    // Convert to array and sort by date
+    const chartData = Array.from(dailyData.values()).sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    )
+    
+    console.log('📈 Chart data processed:', { totalPoints: chartData.length })
+    
+    return {
+      success: true,
+      data: chartData
+    }
+  } catch (error: any) {
+    console.error('❌ Error fetching chart data:', error)
+    return {
+      success: false,
+      error: error.message,
+      data: []
     }
   }
 }

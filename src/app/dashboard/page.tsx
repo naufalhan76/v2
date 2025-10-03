@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getDashboardKpis, getRecentOrders } from '@/lib/actions/dashboard'
+import { getDashboardKpis, getChartData } from '@/lib/actions/dashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { 
   LayoutDashboard, 
   Users, 
@@ -34,6 +36,13 @@ interface KpiData {
   unpaidTransactions: number
 }
 
+interface ChartDataPoint {
+  date: string
+  orders: number
+  revenue: number
+  formattedDate: string
+}
+
 export default function DashboardPage() {
   const [kpiData, setKpiData] = useState<KpiData>({
     totalOrders: 0,
@@ -45,7 +54,7 @@ export default function DashboardPage() {
     totalRevenue: 0,
     unpaidTransactions: 0,
   })
-  const [recentOrders, setRecentOrders] = useState<any[]>([])
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
   
@@ -88,6 +97,8 @@ export default function DashboardPage() {
       const endDateStr = dateRange.to?.toISOString().split('T')[0]
       
       console.log('🚀 Dashboard: Starting data fetch with date range:', { startDateStr, endDateStr })
+      
+      // Fetch KPI data
       const kpiResult = await getDashboardKpis(startDateStr, endDateStr)
       console.log('📊 Dashboard: KPI result received:', kpiResult)
       
@@ -99,10 +110,12 @@ export default function DashboardPage() {
       console.log('✅ Dashboard: Setting KPI data:', kpiResult.data)
       setKpiData(kpiResult.data!)
       
-      const ordersResult = await getRecentOrders(5)
+      // Fetch chart data
+      const chartResult = await getChartData(startDateStr, endDateStr)
+      console.log('📈 Dashboard: Chart result received:', chartResult)
       
-      if (ordersResult.success) {
-        setRecentOrders(ordersResult.data)
+      if (chartResult.success) {
+        setChartData(chartResult.data)
       }
     } catch (error: any) {
       toast({
@@ -211,19 +224,19 @@ export default function DashboardPage() {
           </div>
           
           {/* Date Range Picker - Right Side */}
-          <div className="flex flex-col items-end gap-2">
-            <div className="text-sm font-medium text-slate-700">Filter Tanggal Transaksi:</div>
+          <div className="flex flex-col items-end gap-3">
+            <div className="text-sm font-medium text-slate-700 mb-1">Filter Tanggal Transaksi:</div>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-[220px] justify-start text-left font-normal bg-white text-sm",
+                    "w-[240px] justify-start text-left font-normal bg-white text-sm px-3 py-2.5 h-auto border-slate-300 hover:border-slate-400 shadow-sm",
                     (!dateRange.from || !dateRange.to) && "text-muted-foreground"
                   )}
                 >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {formatDateRange()}
+                  <Calendar className="mr-3 h-4 w-4 text-slate-500" />
+                  <span className="flex-1">{formatDateRange()}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
@@ -267,32 +280,112 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Recent Orders</CardTitle>
-            <CardDescription>Latest service orders</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              Revenue & Orders Overview
+              <span className="ml-auto text-sm font-normal text-muted-foreground">
+                Last {Math.ceil((new Date(dateRange.to || new Date()).getTime() - new Date(dateRange.from || new Date()).getTime()) / (1000 * 60 * 60 * 24))} days
+              </span>
+            </CardTitle>
+            <CardDescription>Showing total orders and revenue for the selected period</CardDescription>
           </CardHeader>
           <CardContent>
-            {recentOrders.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No orders found</p>
-            ) : (
-              <div className="space-y-4">
-                {recentOrders.map((order: any) => (
-                  <div key={order.order_id} className="flex items-center justify-between border-b pb-3">
-                    <div>
-                      <p className="font-medium">{order.customers?.name || 'Unknown'}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {order.order_type} - {order.status}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{order.customers?.phone || '-'}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(order.created_at).toLocaleDateString('id-ID')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            <ChartContainer
+              config={{
+                orders: {
+                  label: "Orders",
+                  color: "hsl(217, 91%, 45%)", // Dark Blue - untuk emphasis
+                },
+                revenue: {
+                  label: "Revenue", 
+                  color: "hsl(217, 91%, 75%)", // Light Blue - same family, lighter shade
+                },
+              }}
+              className="h-[400px] w-full"
+            >
+              <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <defs>
+                  {/* Orders - Dark Blue with strong opacity */}
+                  <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(217, 91%, 45%)" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="hsl(217, 91%, 45%)" stopOpacity={0.1}/>
+                  </linearGradient>
+                  {/* Revenue - Light Blue with softer opacity */}
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(217, 91%, 75%)" stopOpacity={0.6}/>
+                    <stop offset="95%" stopColor="hsl(217, 91%, 75%)" stopOpacity={0.05}/>
+                  </linearGradient>
+                </defs>
+                <XAxis 
+                  dataKey="formattedDate" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: 'hsl(215, 16%, 47%)' }}
+                  className="text-xs"
+                />
+                <YAxis 
+                  yAxisId="orders"
+                  orientation="left"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: 'hsl(215, 16%, 47%)' }}
+                  className="text-xs"
+                />
+                <YAxis 
+                  yAxisId="revenue"
+                  orientation="right"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: 'hsl(215, 16%, 47%)' }}
+                  tickFormatter={(value) => `Rp${(value / 1000000).toFixed(1)}M`}
+                  className="text-xs"
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent 
+                      formatter={(value, name) => [
+                        name === 'revenue' 
+                          ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(value as number)
+                          : value,
+                        name === 'orders' ? 'Orders' : 'Revenue'
+                      ]}
+                      labelFormatter={(label) => label}
+                    />
+                  }
+                />
+                {/* Orders Area - Dark Blue for prominence */}
+                <Area
+                  yAxisId="orders"
+                  type="monotone"
+                  dataKey="orders"
+                  stroke="hsl(217, 91%, 45%)"
+                  fill="url(#colorOrders)"
+                  strokeWidth={2.5}
+                  name="orders"
+                />
+                {/* Revenue Area - Light Blue for background context */}
+                <Area
+                  yAxisId="revenue"
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="hsl(217, 91%, 75%)"
+                  fill="url(#colorRevenue)"
+                  strokeWidth={1.5}
+                  name="revenue"
+                />
+              </AreaChart>
+            </ChartContainer>
+            
+            {/* Legend */}
+            <div className="flex items-center justify-center gap-6 mt-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'hsl(217, 91%, 45%)' }}></div>
+                <span className="text-muted-foreground font-medium">Orders</span>
               </div>
-            )}
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'hsl(217, 91%, 75%)' }}></div>
+                <span className="text-muted-foreground">Revenue</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
