@@ -37,25 +37,25 @@ import { cn } from '@/lib/utils'
 
 const STATUS_GROUPS = {
   NON_ASSIGNED: ['NEW', 'ACCEPTED'],
-  ASSIGNED: ['ASSIGNED', 'OTW', 'ARRIVED', 'IN_PROGRESS', 'TO_WORKSHOP', 'IN_WORKSHOP', 'READY_TO_RETURN'],
-  INVOICED: ['DONE', 'DELIVERED', 'INVOICED']
+  ASSIGNED: ['ASSIGNED', 'EN ROUTE', 'ARRIVED', 'IN_PROGRESS', 'RESCHEDULE'],
+  INVOICED: ['DONE', 'INVOICED']
 }
 
 const ALL_ONGOING_STATUSES = [...STATUS_GROUPS.NON_ASSIGNED, ...STATUS_GROUPS.ASSIGNED, ...STATUS_GROUPS.INVOICED]
 
 const STATUS_COLORS: Record<string, string> = {
-  NEW: 'bg-slate-500',
+  NEW: 'bg-gray-500',
   ACCEPTED: 'bg-blue-500',
   ASSIGNED: 'bg-cyan-500',
-  OTW: 'bg-indigo-500',
+  'EN ROUTE': 'bg-indigo-500',
   ARRIVED: 'bg-purple-500',
   IN_PROGRESS: 'bg-yellow-500',
   DONE: 'bg-green-500',
-  TO_WORKSHOP: 'bg-orange-500',
-  IN_WORKSHOP: 'bg-red-500',
-  READY_TO_RETURN: 'bg-pink-500',
-  DELIVERED: 'bg-teal-500',
-  INVOICED: 'bg-emerald-600',
+  RESCHEDULE: 'bg-orange-500',
+  INVOICED: 'bg-emerald-500',
+  PAID: 'bg-lime-500',
+  CLOSED: 'bg-slate-500',
+  CANCELLED: 'bg-red-600',
 }
 
 const SERVICE_TYPES = [
@@ -358,7 +358,12 @@ export default function MonitoringOngoingPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredOrders.map((order: any) => (
-                    <TableRow key={order.order_id}>
+                    <TableRow 
+                      key={order.order_id}
+                      className={cn(
+                        order.status === 'RESCHEDULE' && 'bg-amber-50 border-l-4 border-l-amber-500 hover:bg-amber-100'
+                      )}
+                    >
                       <TableCell className='font-mono text-sm'>{order.order_id}</TableCell>
                       <TableCell className='font-medium'>{order.customers?.customer_name || '-'}</TableCell>
                       <TableCell>

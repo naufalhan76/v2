@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 
 export async function getOrders(filters?: {
   status?: string
+  statusIn?: string
   customerId?: string
   dateFrom?: string
   dateTo?: string
@@ -42,6 +43,11 @@ export async function getOrders(filters?: {
     
     if (filters?.status) {
       query = query.eq('status', filters.status)
+    }
+    
+    if (filters?.statusIn) {
+      const statuses = filters.statusIn.split(',')
+      query = query.in('status', statuses)
     }
     
     if (filters?.customerId) {

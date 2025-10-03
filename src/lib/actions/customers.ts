@@ -95,32 +95,54 @@ export async function createCustomer(customerData: {
   customer_name: string
   primary_contact_person: string
   phone_number: string
-  email?: string
-  billing_address?: string
+  email: string
+  billing_address: string
   notes?: string
 }) {
+  console.log('=== SERVER ACTION CALLED ===')
+  console.log('Creating customer with data:', customerData)
+  
   try {
+    console.log('Getting Supabase client...')
     const supabase = await createClient()
+    console.log('Supabase client obtained')
+    
+    // Clean the data - remove empty strings for optional fields
+    const cleanData = {
+      ...customerData,
+      notes: customerData.notes || null
+    }
+    
+    console.log('Clean data for insert:', cleanData)
+    console.log('About to insert into customers table...')
     
     const { data, error } = await supabase
       .from('customers')
-      .insert({
-        ...customerData,
-        created_at: new Date().toISOString(),
-      })
+      .insert(cleanData)
       .select()
       .single()
     
-    if (error) throw error
+    console.log('Supabase insert result:', { data, error })
     
+    if (error) {
+      console.error('Supabase insert error:', error)
+      return {
+        success: false,
+        error: error.message || 'Database insert failed',
+      }
+    }
+    
+    console.log('Insert successful, revalidating paths...')
     revalidatePath('/dashboard/manajemen/customer')
     revalidatePath('/dashboard')
     
+    console.log('=== SERVER ACTION SUCCESS ===')
     return {
       success: true,
       data,
     }
   } catch (error: any) {
+    console.error('=== SERVER ACTION ERROR ===')
     console.error('Error creating customer:', error)
     return {
       success: false,

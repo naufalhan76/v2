@@ -42,7 +42,7 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
     const { count: pendingOrders, error: pendingError } = await supabase
       .from('orders')
       .select('*', { count: 'exact', head: true })
-      .in('status', ['NEW', 'ACCEPTED', 'ASSIGNED', 'OTW', 'ARRIVED', 'IN_PROGRESS', 'TO_WORKSHOP', 'IN_WORKSHOP', 'READY_TO_RETURN'])
+      .in('status', ['NEW', 'ACCEPTED', 'ASSIGNED', 'EN ROUTE', 'ARRIVED', 'IN_PROGRESS'])
       .gte('order_date', dateStart)
       .lte('order_date', dateEnd)
     

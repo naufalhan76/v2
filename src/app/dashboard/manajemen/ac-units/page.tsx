@@ -40,7 +40,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Edit, Trash2, Search } from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 
 interface AcUnit {
   ac_unit_id: string
@@ -60,8 +60,9 @@ interface AcUnit {
     room_number: string
     customers?: {
       customer_id: string
-      name: string
-      phone: string
+      customer_name: string
+      phone_number: string
+      primary_contact_person?: string
     }
   }
 }
@@ -281,11 +282,14 @@ export default function AcUnitsPage() {
                         <TableCell>
                           {acUnit.locations?.customers ? (
                             <div className="text-sm">
-                              <div>{acUnit.locations.customers.name}</div>
-                              <div className="text-muted-foreground">{acUnit.locations.customers.phone}</div>
+                              <div className="font-medium">{acUnit.locations.customers.customer_name}</div>
+                              <div className="text-muted-foreground">{acUnit.locations.customers.phone_number}</div>
+                              {acUnit.locations.customers.primary_contact_person && (
+                                <div className="text-xs text-muted-foreground">PIC: {acUnit.locations.customers.primary_contact_person}</div>
+                              )}
                             </div>
                           ) : (
-                            '-'
+                            <div className="text-muted-foreground text-sm">No customer assigned</div>
                           )}
                         </TableCell>
                         <TableCell>{getStatusBadge(acUnit.status)}</TableCell>

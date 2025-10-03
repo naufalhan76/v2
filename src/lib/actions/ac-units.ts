@@ -54,6 +54,16 @@ export async function getAcUnits(filters?: {
     
     if (error) throw error
     
+    // Debug logging
+    console.log('🔧 AC Units data sample:', data?.[0] ? {
+      ac_unit_id: data[0].ac_unit_id,
+      brand: data[0].brand,
+      location: data[0].locations ? {
+        building_name: data[0].locations.building_name,
+        customer: data[0].locations.customers
+      } : null
+    } : 'No data')
+    
     return {
       success: true,
       data: data || [],

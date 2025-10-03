@@ -1,13 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  getCustomers, 
-  createCustomer, 
-  updateCustomer, 
-  deleteCustomer 
-} from '@/lib/actions/customers'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { getCustomers } from '@/lib/actions/customers'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -39,6 +34,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/hooks/use-toast'
 
 interface CustomerFormData {
   customer_name: string
@@ -60,6 +56,7 @@ const emptyForm: CustomerFormData = {
 
 export default function CustomerManagementPage() {
   const queryClient = useQueryClient()
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -76,38 +73,99 @@ export default function CustomerManagementPage() {
     queryFn: () => getCustomers({ page, limit: itemsPerPage, search: searchTerm })
   })
 
-  const createMutation = useMutation({
-    mutationFn: createCustomer,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
-      setIsCreateOpen(false)
-      setFormData(emptyForm)
-    }
-  })
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: CustomerFormData }) => 
-      updateCustomer(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
-      setIsEditOpen(false)
-      setFormData(emptyForm)
-      setEditingId(null)
-    }
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteCustomer,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] })
-      setIsDeleteOpen(false)
-      setDeletingId(null)
-    }
-  })
+  // Loading states for operations
+  const [isCreating, setIsCreating] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
-    createMutation.mutate(formData)
+    
+    // Basic validation
+    if (!formData.customer_name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Nama customer wajib diisi",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (!formData.primary_contact_person.trim()) {
+      toast({
+        title: "Validation Error", 
+        description: "Kontak person wajib diisi",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (!formData.phone_number.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Nomor telepon wajib diisi", 
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (!formData.email.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Email wajib diisi",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (!formData.billing_address.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Alamat billing wajib diisi",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    console.log('Submitting customer data:', formData)
+    
+    // Use API route for create
+    console.log('Creating customer via API...')
+    setIsCreating(true)
+    fetch('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    }).then(res => res.json()).then(result => {
+      console.log('Create API result:', result)
+      if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['customers'] })
+        queryClient.refetchQueries({ queryKey: ['customers', page, searchTerm] })
+        setIsCreateOpen(false)
+        setFormData(emptyForm)
+        toast({
+          title: "Berhasil",
+          description: "Customer berhasil ditambahkan",
+        })
+      } else {
+        toast({
+          title: "Gagal",
+          description: result.error || "Gagal menambahkan customer",
+          variant: "destructive",
+        })
+      }
+    }).catch(error => {
+      console.error('Create API error:', error)
+      toast({
+        title: "Error",
+        description: "Terjadi kesalahan saat menambahkan customer",
+        variant: "destructive",
+      })
+    }).finally(() => {
+      setIsCreating(false)
+    })
+    
+    // createMutation.mutate(formData)
   }
 
   const handleEdit = (customer: any) => {
@@ -126,7 +184,41 @@ export default function CustomerManagementPage() {
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault()
     if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData })
+      console.log('Updating customer via API...')
+      setIsUpdating(true)
+      fetch(`/api/customers/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      }).then(res => res.json()).then(result => {
+        console.log('Update API result:', result)
+        if (result.success) {
+          queryClient.invalidateQueries({ queryKey: ['customers'] })
+          queryClient.refetchQueries({ queryKey: ['customers', page, searchTerm] })
+          setIsEditOpen(false)
+          setFormData(emptyForm)
+          setEditingId(null)
+          toast({
+            title: "Berhasil",
+            description: "Customer berhasil diupdate",
+          })
+        } else {
+          toast({
+            title: "Gagal",
+            description: result.error || "Gagal mengupdate customer",
+            variant: "destructive",
+          })
+        }
+      }).catch(error => {
+        console.error('Update API error:', error)
+        toast({
+          title: "Error",
+          description: "Terjadi kesalahan saat mengupdate customer",
+          variant: "destructive",
+        })
+      }).finally(() => {
+        setIsUpdating(false)
+      })
     }
   }
 
@@ -137,7 +229,38 @@ export default function CustomerManagementPage() {
 
   const confirmDelete = () => {
     if (deletingId) {
-      deleteMutation.mutate(deletingId)
+      console.log('Deleting customer via API...')
+      setIsDeleting(true)
+      fetch(`/api/customers/${deletingId}`, {
+        method: 'DELETE',
+      }).then(res => res.json()).then(result => {
+        console.log('Delete API result:', result)
+        if (result.success) {
+          queryClient.invalidateQueries({ queryKey: ['customers'] })
+          queryClient.refetchQueries({ queryKey: ['customers', page, searchTerm] })
+          setIsDeleteOpen(false)
+          setDeletingId(null)
+          toast({
+            title: "Berhasil",
+            description: "Customer berhasil dihapus",
+          })
+        } else {
+          toast({
+            title: "Gagal",
+            description: result.error || "Gagal menghapus customer",
+            variant: "destructive",
+          })
+        }
+      }).catch(error => {
+        console.error('Delete API error:', error)
+        toast({
+          title: "Error",
+          description: "Terjadi kesalahan saat menghapus customer",
+          variant: "destructive",
+        })
+      }).finally(() => {
+        setIsDeleting(false)
+      })
     }
   }
 
@@ -337,8 +460,8 @@ export default function CustomerManagementPage() {
               >
                 Batal
               </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'Menyimpan...' : 'Simpan'}
+              <Button type="submit" disabled={isCreating}>
+                {isCreating ? 'Menyimpan...' : 'Simpan'}
               </Button>
             </div>
           </form>
@@ -424,8 +547,8 @@ export default function CustomerManagementPage() {
               >
                 Batal
               </Button>
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? 'Menyimpan...' : 'Simpan'}
+              <Button type="submit" disabled={isUpdating}>
+                {isUpdating ? 'Menyimpan...' : 'Simpan'}
               </Button>
             </div>
           </form>
@@ -450,7 +573,7 @@ export default function CustomerManagementPage() {
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? 'Menghapus...' : 'Hapus'}
+              {isDeleting ? 'Menghapus...' : 'Hapus'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

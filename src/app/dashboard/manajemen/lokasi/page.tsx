@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Edit, Trash2, Search } from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 
 interface Location {
   location_id: string
@@ -43,8 +43,9 @@ interface Location {
   description: string
   customers?: {
     customer_id: string
-    name: string
-    phone: string
+    customer_name: string
+    phone_number: string
+    primary_contact_person?: string
     email?: string
   }
 }
@@ -232,20 +233,29 @@ export default function LocationsPage() {
                         <TableCell className="font-medium">
                           {location.customers ? (
                             <div className="text-sm">
-                              <div>{location.customers.name}</div>
+                              <div className="font-medium">{location.customers.customer_name}</div>
+                              {location.customers.primary_contact_person && (
+                                <div className="text-muted-foreground">PIC: {location.customers.primary_contact_person}</div>
+                              )}
                               {location.customers.email && (
-                                <div className="text-muted-foreground">{location.customers.email}</div>
+                                <div className="text-muted-foreground text-xs">{location.customers.email}</div>
                               )}
                             </div>
                           ) : (
-                            '-'
+                            <div className="text-muted-foreground text-sm">No customer assigned</div>
                           )}
                         </TableCell>
                         <TableCell>{location.building_name}</TableCell>
                         <TableCell>{location.floor}</TableCell>
                         <TableCell>{location.room_number}</TableCell>
                         <TableCell>{location.description || '-'}</TableCell>
-                        <TableCell>{location.customers?.phone || '-'}</TableCell>
+                        <TableCell>
+                          {location.customers?.phone_number ? (
+                            <div className="text-sm font-mono">{location.customers.phone_number}</div>
+                          ) : (
+                            <div className="text-muted-foreground text-sm">-</div>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
                             <Button

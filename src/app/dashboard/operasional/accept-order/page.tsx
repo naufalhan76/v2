@@ -35,7 +35,7 @@ import {
 import { CheckCircle, Search, Eye, Check, X, User, MapPin, Phone, Mail, Building } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase-browser'
 
 const SERVICE_TYPES = [

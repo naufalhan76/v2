@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 
 const SERVICE_TYPES = [
   { value: 'REFILL_FREON', label: 'Refill Freon', color: 'bg-blue-500' },
@@ -46,14 +46,15 @@ export default function AssignOrderPage() {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
   const [selectedTechnician, setSelectedTechnician] = useState<string>('')
   const [filterServiceType, setFilterServiceType] = useState<string>('ALL')
+  const [filterStatus, setFilterStatus] = useState<string>('ALL')
   const [technicianSearch, setTechnicianSearch] = useState<string>('')
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [isAssigning, setIsAssigning] = useState(false)
 
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
-    queryKey: ['orders', 'ACCEPTED'],
-    queryFn: () => getOrders({ status: 'ACCEPTED', limit: 100 })
+    queryKey: ['orders', 'assignable'],
+    queryFn: () => getOrders({ statusIn: 'ACCEPTED,RESCHEDULE', limit: 100 })
   })
 
   const { data: orderDetail } = useQuery({
@@ -68,11 +69,19 @@ export default function AssignOrderPage() {
   })
 
   const orders = ordersData?.data || []
-  const filteredOrders = filterServiceType === 'ALL' ? orders : orders.filter((o: any) => o.order_type === filterServiceType)
+  const filteredOrders = orders.filter((o: any) => {
+    const matchesServiceType = filterServiceType === 'ALL' || o.order_type === filterServiceType
+    const matchesStatus = filterStatus === 'ALL' || o.status === filterStatus
+    return matchesServiceType && matchesStatus
+  })
   const orderCounts = SERVICE_TYPES.reduce((acc, type) => {
     acc[type.value] = orders.filter((o: any) => o.order_type === type.value).length
     return acc
   }, {} as Record<string, number>)
+  
+  // Count orders by status
+  const acceptedCount = orders.filter((o: any) => o.status === 'ACCEPTED').length
+  const rescheduleCount = orders.filter((o: any) => o.status === 'RESCHEDULE').length
 
   // Filter technicians by search
   const technicians = techniciansData?.data || []
@@ -173,7 +182,31 @@ export default function AssignOrderPage() {
           <div className='flex justify-end'><Button onClick={handleNextStep} disabled={!selectedDate}>Next <ChevronRight className='ml-2 h-4 w-4' /></Button></div></div></Card>
         )}
         {currentStep === 2 && (
-          <div className='space-y-6'><Card><CardHeader><CardTitle>Step 2: Select Orders</CardTitle><CardDescription>Choose orders to assign</CardDescription></CardHeader></Card>
+          <div className='space-y-6'><Card><CardHeader><CardTitle>Step 2: Select Orders</CardTitle><CardDescription>Choose orders to assign from ACCEPTED and RESCHEDULE status</CardDescription></CardHeader></Card>
+          
+          {/* Status Filter Cards */}
+          <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+            <Card className={cn('cursor-pointer transition-all hover:shadow-md', filterStatus === 'ALL' && 'ring-2 ring-primary')} onClick={() => setFilterStatus('ALL')}>
+              <CardContent className='p-4 text-center'>
+                <div className='text-2xl font-bold'>{orders.length}</div>
+                <div className='text-xs text-muted-foreground mt-1'>All Status</div>
+              </CardContent>
+            </Card>
+            <Card className={cn('cursor-pointer transition-all hover:shadow-md', filterStatus === 'ACCEPTED' && 'ring-2 ring-primary')} onClick={() => setFilterStatus('ACCEPTED')}>
+              <CardContent className='p-4 text-center'>
+                <div className='w-3 h-3 rounded-full mx-auto mb-2 bg-blue-500' />
+                <div className='text-2xl font-bold'>{acceptedCount}</div>
+                <div className='text-xs text-muted-foreground mt-1'>Accepted</div>
+              </CardContent>
+            </Card>
+            <Card className={cn('cursor-pointer transition-all hover:shadow-md', filterStatus === 'RESCHEDULE' && 'ring-2 ring-primary')} onClick={() => setFilterStatus('RESCHEDULE')}>
+              <CardContent className='p-4 text-center'>
+                <div className='w-3 h-3 rounded-full mx-auto mb-2 bg-amber-500' />
+                <div className='text-2xl font-bold'>{rescheduleCount}</div>
+                <div className='text-xs text-muted-foreground mt-1'>Reschedule</div>
+              </CardContent>
+            </Card>
+          </div>
           <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4'>
             <Card className={cn('cursor-pointer transition-all hover:shadow-md', filterServiceType === 'ALL' && 'ring-2 ring-primary')} onClick={() => setFilterServiceType('ALL')}>
               <CardContent className='p-4 text-center'><div className='text-2xl font-bold'>{orders.length}</div><div className='text-xs text-muted-foreground mt-1'>All Orders</div></CardContent></Card>
@@ -181,12 +214,13 @@ export default function AssignOrderPage() {
               <CardContent className='p-4 text-center'><div className={cn('w-3 h-3 rounded-full mx-auto mb-2', type.color)} /><div className='text-2xl font-bold'>{orderCounts[type.value] || 0}</div>
               <div className='text-xs text-muted-foreground mt-1'>{type.label}</div></CardContent></Card>))}
           </div>
-          <div className='grid gap-4'>{ordersLoading ? <p>Loading orders...</p> : filteredOrders.length === 0 ? (<Card><CardContent className='p-8 text-center text-muted-foreground'>No accepted orders found</CardContent></Card>) : (
+          <div className='grid gap-4'>{ordersLoading ? <p>Loading orders...</p> : filteredOrders.length === 0 ? (<Card><CardContent className='p-8 text-center text-muted-foreground'>No orders found for assignment</CardContent></Card>) : (
             filteredOrders.map((order: any) => {const serviceType = SERVICE_TYPES.find(t => t.value === order.order_type); const isSelected = selectedOrders.includes(order.order_id)
-            return (<Card key={order.order_id} className={cn('transition-all', isSelected && 'ring-2 ring-primary')}><CardContent className='p-4'><div className='flex items-start gap-4'>
+            return (<Card key={order.order_id} className={cn('transition-all', isSelected && 'ring-2 ring-primary', order.status === 'RESCHEDULE' && 'bg-amber-50 border-l-4 border-l-amber-500')}><CardContent className='p-4'><div className='flex items-start gap-4'>
               <Checkbox checked={isSelected} onCheckedChange={(checked) => {if (checked) {setSelectedOrders([...selectedOrders, order.order_id])} else {setSelectedOrders(selectedOrders.filter(id => id !== order.order_id))}}} className='mt-1' />
-              <div className='flex-1 grid grid-cols-2 md:grid-cols-5 gap-4'><div><div className='text-xs text-muted-foreground'>Order ID</div><div className='font-semibold'>{order.order_id}</div></div>
+              <div className='flex-1 grid grid-cols-2 md:grid-cols-6 gap-4'><div><div className='text-xs text-muted-foreground'>Order ID</div><div className='font-semibold'>{order.order_id}</div></div>
               <div><div className='text-xs text-muted-foreground'>Customer</div><div className='font-medium'>{order.customers?.customer_name}</div></div>
+              <div><div className='text-xs text-muted-foreground'>Status</div><Badge className={cn('text-white', order.status === 'RESCHEDULE' ? 'bg-amber-500' : 'bg-blue-500')}>{order.status}</Badge></div>
               <div><div className='text-xs text-muted-foreground'>Order Date</div><div>{order.order_date ? format(new Date(order.order_date), 'dd MMM yyyy') : '-'}</div></div>
               <div><div className='text-xs text-muted-foreground'>Req. Visit Date</div><div>{order.req_visit_date ? format(new Date(order.req_visit_date), 'dd MMM yyyy') : '-'}</div></div>
               <div><div className='text-xs text-muted-foreground'>Service Type</div><Badge className={serviceType?.color}>{serviceType?.label || order.order_type}</Badge></div></div>
