@@ -1,65 +1,82 @@
-# Technician Service ERP Admin Panel
+# AC Service Management Dashboard
 
-A production-ready admin panel for Technician Service ERP built with Next.js 14, TypeScript, Tailwind CSS, and Supabase.
+A comprehensive dashboard for managing AC (Air Conditioning) service operations built with Next.js 14, TypeScript, and Supabase.
 
-## Features
+## ✨ Features
 
-- **Authentication & Authorization**: Role-based access control with Supabase Auth
-- **Dashboard**: KPI cards and charts for order monitoring
-- **Configuration Management**: Service pricing and SLA configuration
-- **User Management**: Role-based user administration
-- **Order Management**: Assign, monitor, and track service orders
-- **Real-time Updates**: Live updates for orders, payments, and service records
-- **Responsive Design**: Mobile-friendly interface with Tailwind CSS
+- **🏠 Dashboard**: Interactive KPI cards with sophisticated date range picker and real-time Jakarta time
+- **👥 Customer Management**: Complete customer profiles and service history
+- **🔧 Technician Management**: Manage technician profiles, skills, and assignments  
+- **📋 Order Management**: Service order tracking with multiple status levels
+- **❄️ AC Unit Management**: Comprehensive AC unit catalog and specifications
+- **💰 Payment Tracking**: Revenue analytics with Indonesian Rupiah formatting
+- **🔒 Authentication**: Secure login with role-based access control
+- **📱 Responsive Design**: Modern UI with shadcn/ui components and collapsible sidebar
+- **⏰ Real-time Updates**: Live data updates and Jakarta timezone clock
+- **📅 Advanced Date Filtering**: Calendar component with Indonesian localization (dd/MM/yyyy)
 
-## Tech Stack
+## 🛠 Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
+- **Framework**: Next.js 14.2.33 (App Router)
+- **Language**: TypeScript 5+
 - **Styling**: Tailwind CSS + shadcn/ui components
-- **State Management**: TanStack Query
+- **UI Components**: Radix UI primitives with custom styling
+- **State Management**: React Query (TanStack Query)
 - **Forms**: React Hook Form + Zod validation
-- **Charts**: Recharts
-- **Database**: Supabase
-- **Authentication**: Supabase Auth
-- **Realtime**: Supabase Realtime
-- **Deployment**: Docker
+- **Date/Time**: date-fns with Indonesian locale
+- **Icons**: Lucide React
+- **Database**: Supabase PostgreSQL
+- **Authentication**: Supabase Auth with middleware
+- **Realtime**: Supabase Realtime subscriptions
+- **Deployment**: Docker with multi-stage builds
 
-## Prerequisites
+## 📋 Prerequisites
 
-- Node.js 18 or higher
-- npm or yarn
-- Supabase project
+- **Node.js**: 18 or higher
+- **Package Manager**: npm or yarn
+- **Database**: Supabase project (free tier works)
+- **Git**: For version control
 
-## Getting Started
+## 🚀 Getting Started
 
-### 1. Clone the repository
+### 1. Clone Repository
 
 ```bash
-git clone <repository-url>
-cd technician-service-erp
+git clone https://github.com/naufalhan76/webpanel.git
+cd webpanel
 ```
 
-### 2. Install dependencies
+### 2. Install All Dependencies
 
 ```bash
+# Clean install (recommended for new setup)
+npm ci
+
+# Or regular install
 npm install
+
+# Install shadcn/ui components (if needed)
+npx shadcn@latest add alert-dialog avatar badge button calendar card checkbox dialog dropdown-menu input label popover radio-group select separator sheet switch table tabs textarea toast
 ```
 
-### 3. Set up environment variables
+### 3. Environment Configuration
 
-Create a `.env.local` file in the root of your project:
+```bash
+cp .env.example .env.local
+```
 
+**Configure your `.env.local`**:
 ```env
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# App Configuration
-NEXTAUTH_SECRET=your_nextauth_secret_here
-NEXTAUTH_URL=http://localhost:3000
+# Optional: Development Settings
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
+
+**⚠️ Important**: Never commit `.env.local` to git - it contains sensitive credentials!
 
 ### 4. Initialize shadcn/ui
 
@@ -193,14 +210,86 @@ The application uses Supabase Realtime for live updates on:
 - Service pricing
 - Service SLA
 
-## Contributing
+## 🚨 Troubleshooting
+
+### Common Issues When Setting Up on New Device
+
+**1. Missing shadcn/ui components after clone:**
+```bash
+# Install all required UI components
+npx shadcn@latest add alert-dialog avatar badge button calendar card checkbox dialog dropdown-menu input label popover radio-group select separator sheet switch table tabs textarea toast
+```
+
+**2. TypeScript errors:**
+```bash
+# Clean reinstall all dependencies
+npm run reinstall
+npm run type-check
+```
+
+**3. Environment variables not working:**
+- Ensure `.env.local` exists (copy from `.env.example`)
+- Restart dev server after env changes: `npm run dev`
+- Verify Supabase credentials are correct
+
+**4. Database connection issues:**
+- Check Supabase project status
+- Verify RLS policies are applied
+- Ensure service role key permissions
+
+**5. Calendar component errors:**
+```bash
+npm install date-fns react-day-picker
+npx shadcn@latest add calendar popover
+```
+
+### Quick Setup for New Device
+
+```bash
+# 1. Clone and install
+git clone https://github.com/naufalhan76/webpanel.git
+cd webpanel
+npm ci
+
+# 2. Setup environment
+cp .env.example .env.local
+# Edit .env.local with your Supabase credentials
+
+# 3. Install UI components (if needed)
+npm run setup
+
+# 4. Start development
+npm run dev
+```
+
+## 📦 Complete Dependencies
+
+### Required for New Setup
+- **Next.js**: `14.2.33` (React framework)
+- **TypeScript**: `5+` (Type safety)
+- **Supabase**: Database and auth
+- **shadcn/ui**: UI component library
+- **TanStack Query**: State management
+- **date-fns**: Indonesian date formatting
+- **Lucide React**: Icon library
+
+### UI Components Installed
+All shadcn/ui components are pre-configured:
+`alert-dialog`, `avatar`, `badge`, `button`, `calendar`, `card`, `checkbox`, `dialog`, `dropdown-menu`, `input`, `label`, `popover`, `radio-group`, `select`, `separator`, `sheet`, `switch`, `table`, `tabs`, `textarea`, `toast`
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push branch: `git push origin feature/amazing-feature`
+5. Open Pull Request
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+**Built with ❤️ for efficient AC service management**
+**Last Updated**: October 2025

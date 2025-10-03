@@ -1,13 +1,31 @@
 {
-  "name": "technician-service-erp",
-  "version": "0.1.0",
+  "name": "ac-service-dashboard",
+  "version": "1.0.0",
+  "description": "AC Service Management Dashboard with Next.js 14, TypeScript, and Supabase",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf .next node_modules/.cache",
+    "reinstall": "rm -rf node_modules package-lock.json && npm install",
+    "setup": "npm ci && npx shadcn@latest add button calendar card input label popover"
+  },
+  "keywords": [
+    "nextjs",
+    "typescript",
+    "supabase",
+    "dashboard",
+    "ac-service",
+    "shadcn-ui"
+  ],
+  "author": "Naufal",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naufalhan76/webpanel.git"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
@@ -16,7 +34,7 @@
     "@radix-ui/react-checkbox": "^1.3.3",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
-    "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-radio-group": "^1.3.8",
     "@radix-ui/react-select": "^2.2.6",
@@ -24,7 +42,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
-    "@radix-ui/react-toast": "^1.1.5",
+    "@radix-ui/react-toast": "^1.2.15",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@supabase/auth-helpers-nextjs": "^0.8.7",
     "@supabase/supabase-js": "^2.39.0",
