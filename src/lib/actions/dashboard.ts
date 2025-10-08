@@ -18,118 +18,110 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
     const dateEnd = endDate || defaultEndDate
     
     console.log('📅 Date range:', { dateStart, dateEnd })
+    console.log('🚀 Fetching all data in parallel...')
     
-    // Test basic connection first
-    const { data: testData, error: testError } = await supabase
-      .from('orders')
-      .select('order_id')
-      .limit(1)
+    // 🚀 OPTIMIZATION: Run ALL queries in parallel with Promise.all
+    const [
+      totalOrdersResult,
+      pendingOrdersResult,
+      completedOrdersResult,
+      cancelledOrdersResult,
+      customersResult,
+      techniciansResult,
+      paymentsResult,
+      unpaidResult
+    ] = await Promise.all([
+      // Total orders count (with date range)
+      supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .gte('order_date', dateStart)
+        .lte('order_date', dateEnd),
+      
+      // Pending orders count
+      supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['NEW', 'ACCEPTED', 'ASSIGNED', 'EN ROUTE', 'ARRIVED', 'IN_PROGRESS'])
+        .gte('order_date', dateStart)
+        .lte('order_date', dateEnd),
+      
+      // Completed orders count
+      supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['PAID', 'CLOSED'])
+        .gte('order_date', dateStart)
+        .lte('order_date', dateEnd),
+      
+      // Cancelled orders count
+      supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'CANCELLED')
+        .gte('order_date', dateStart)
+        .lte('order_date', dateEnd),
+      
+      // Total customers
+      supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true }),
+      
+      // Total technicians
+      supabase
+        .from('technicians')
+        .select('*', { count: 'exact', head: true }),
+      
+      // Payments data (for revenue calculation)
+      supabase
+        .from('payments')
+        .select('amount_paid')
+        .eq('status', 'PAID')
+        .gte('payment_date', dateStart)
+        .lte('payment_date', dateEnd),
+      
+      // Unpaid transactions count
+      supabase
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'UNPAID')
+        .gte('payment_date', dateStart)
+        .lte('payment_date', dateEnd)
+    ])
     
-    console.log('🧪 Test connection:', { testData, testError })
+    console.log('✅ All parallel queries completed')
     
-    // Get total orders count (with date range)
-    console.log('📊 Fetching total orders...')
-    const { count: totalOrders, error: ordersError } = await supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .gte('order_date', dateStart)
-      .lte('order_date', dateEnd)
+    // Check for errors in any query
+    if (totalOrdersResult.error) throw totalOrdersResult.error
+    if (pendingOrdersResult.error) throw pendingOrdersResult.error
+    if (completedOrdersResult.error) throw completedOrdersResult.error
+    if (cancelledOrdersResult.error) throw cancelledOrdersResult.error
+    if (customersResult.error) throw customersResult.error
+    if (techniciansResult.error) throw techniciansResult.error
     
-    console.log('📊 Total orders result:', { totalOrders, ordersError })
-    if (ordersError) throw ordersError
-    
-    // Get pending orders count
-    const { count: pendingOrders, error: pendingError } = await supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .in('status', ['NEW', 'ACCEPTED', 'ASSIGNED', 'EN ROUTE', 'ARRIVED', 'IN_PROGRESS'])
-      .gte('order_date', dateStart)
-      .lte('order_date', dateEnd)
-    
-    if (pendingError) throw pendingError
-    
-    // Get completed orders count
-    const { count: completedOrders, error: completedError } = await supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .in('status', ['PAID', 'CLOSED'])
-      .gte('order_date', dateStart)
-      .lte('order_date', dateEnd)
-    
-    if (completedError) throw completedError
-    
-    // Get cancelled orders count
-    const { count: cancelledOrders, error: cancelledError } = await supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'CANCELLED')
-      .gte('order_date', dateStart)
-      .lte('order_date', dateEnd)
-    
-    if (cancelledError) throw cancelledError
-    
-    // Get total customers
-    console.log('👥 Fetching customers...')
-    const { count: totalCustomers, error: customersError } = await supabase
-      .from('customers')
-      .select('*', { count: 'exact', head: true })
-    
-    console.log('👥 Customers result:', { totalCustomers, customersError })
-    if (customersError) throw customersError
-    
-    // Get total technicians
-    console.log('🔧 Fetching technicians...')
-    const { count: totalTechnicians, error: techniciansError } = await supabase
-      .from('technicians')
-      .select('*', { count: 'exact', head: true })
-    
-    console.log('🔧 Technicians result:', { totalTechnicians, techniciansError })
-    if (techniciansError) throw techniciansError
-    
-    // Get total revenue from payments table (amount_paid column) - PAID status with date range
-    console.log('💰 Fetching payments revenue...')
-    const { data: paymentsData, error: paymentsError } = await supabase
-      .from('payments')
-      .select('amount_paid')
-      .eq('status', 'PAID')
-      .gte('payment_date', dateStart)
-      .lte('payment_date', dateEnd)
-    
-    console.log('💰 Payments result:', { paymentsData, paymentsError })
-    
-    if (paymentsError) {
-      console.error('Payments query error:', paymentsError)
-      // Don't throw error, just set revenue to 0
+    // Payments and unpaid are non-critical, log errors but don't throw
+    if (paymentsResult.error) {
+      console.error('Payments query error:', paymentsResult.error)
+    }
+    if (unpaidResult.error) {
+      console.error('Unpaid query error:', unpaidResult.error)
     }
     
-    const totalRevenue = paymentsData?.reduce((sum: number, payment: any) => {
+    // Calculate total revenue
+    const totalRevenue = paymentsResult.data?.reduce((sum: number, payment: any) => {
       const paymentAmount = payment.amount_paid || 0
       return sum + paymentAmount
     }, 0) || 0
     
-    // Get UNPAID transactions count with date range
-    console.log('❌ Fetching unpaid transactions...')
-    const { count: unpaidTransactions, error: unpaidError } = await supabase
-      .from('payments')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'UNPAID')
-      .gte('payment_date', dateStart)
-      .lte('payment_date', dateEnd)
-    
-    console.log('❌ Unpaid result:', { unpaidTransactions, unpaidError })
-    if (unpaidError) {
-      console.error('Unpaid query error:', unpaidError)
-    }
-    
     const result = {
-      totalOrders: totalOrders || 0,
-      pendingOrders: pendingOrders || 0,
-      completedOrders: completedOrders || 0,
-      cancelledOrders: cancelledOrders || 0,
-      totalCustomers: totalCustomers || 0,
-      totalTechnicians: totalTechnicians || 0,
+      totalOrders: totalOrdersResult.count || 0,
+      pendingOrders: pendingOrdersResult.count || 0,
+      completedOrders: completedOrdersResult.count || 0,
+      cancelledOrders: cancelledOrdersResult.count || 0,
+      totalCustomers: customersResult.count || 0,
+      totalTechnicians: techniciansResult.count || 0,
       totalRevenue,
-      unpaidTransactions: unpaidTransactions || 0,
+      unpaidTransactions: unpaidResult.count || 0,
     }
     
     console.log('🎯 Final KPI result:', result)

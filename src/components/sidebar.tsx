@@ -21,7 +21,10 @@ import {
   ChevronRight,
   ChevronLeft,
   Moon,
-  Sun
+  Sun,
+  DollarSign,
+  FileText,
+  Package
 } from 'lucide-react'
 
 const sidebarItems = [
@@ -36,8 +39,16 @@ const sidebarItems = [
     icon: Settings,
     children: [
       {
-        title: 'Harga Service',
-        href: '/dashboard/konfigurasi/harga-service',
+        title: 'Invoice Config',
+        href: '/dashboard/konfigurasi/invoice-config',
+      },
+      {
+        title: 'Service Pricing',
+        href: '/dashboard/konfigurasi/service-pricing',
+      },
+      {
+        title: 'Addons Catalog',
+        href: '/dashboard/konfigurasi/addons-catalog',
       },
       {
         title: 'SLA Service',
@@ -93,6 +104,17 @@ const sidebarItems = [
       {
         title: 'Monitoring History',
         href: '/dashboard/operasional/monitoring-history',
+      },
+    ],
+  },
+  {
+    title: 'Keuangan',
+    href: '/dashboard/keuangan',
+    icon: DollarSign,
+    children: [
+      {
+        title: 'Invoices',
+        href: '/dashboard/keuangan/invoices',
       },
     ],
   },

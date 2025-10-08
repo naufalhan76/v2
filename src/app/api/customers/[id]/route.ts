@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     console.log('=== DELETE API ROUTE CALLED ===')
-    const { id } = params
+    const { id } = await params
     console.log('Deleting customer ID:', id)
     
     const supabase = await createClient()
@@ -34,10 +34,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     console.log('=== UPDATE API ROUTE CALLED ===')
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     console.log('Updating customer ID:', id, 'with data:', body)
     

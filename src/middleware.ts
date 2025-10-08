@@ -1,4 +1,4 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -32,7 +32,9 @@ function setCachedUser(userId: string, data: any) {
 }
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
+  let res = NextResponse.next({
+    request: req,
+  })
   
   // Skip middleware for static files and API routes to reduce rate limit usage
   const pathname = req.nextUrl.pathname
@@ -44,12 +46,31 @@ export async function middleware(req: NextRequest) {
     return res
   }
   
-  const supabase = createMiddlewareClient({ req, res })
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => req.cookies.set(name, value))
+          res = NextResponse.next({
+            request: req,
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            res.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
   
-  // Refresh session if expired - required for Server Components
+  // Get authenticated user - more secure than getSession()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // Define protected routes
   const protectedRoutes = ['/dashboard', '/konfigurasi', '/manajemen', '/operasional', '/profile']
@@ -65,7 +86,7 @@ export async function middleware(req: NextRequest) {
 
   // Redirect root path based on auth status
   if (pathname === '/') {
-    if (session) {
+    if (user) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     } else {
       return NextResponse.redirect(new URL('/login', req.url))
@@ -73,28 +94,28 @@ export async function middleware(req: NextRequest) {
   }
 
   // Redirect unauthenticated users to login if accessing protected routes
-  if (isProtectedRoute && !session) {
+  if (isProtectedRoute && !user) {
     const redirectUrl = new URL('/login', req.url)
     redirectUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(redirectUrl)
   }
 
   // Check if user is active in user_management table
-  if (isProtectedRoute && session) {
+  if (isProtectedRoute && user) {
     // Check cache first
-    let userData = getCachedUser(session.user.id)
+    let userData = getCachedUser(user.id)
     
     if (!userData) {
       // If not in cache, fetch from database
       const { data, error } = await supabase
         .from('user_management')
         .select('is_active, role')
-        .eq('auth_user_id', session.user.id)
+        .eq('auth_user_id', user.id)
         .maybeSingle() // Use maybeSingle() instead of single() to avoid throwing error
 
       // If user is not found or not active, sign out and redirect to login
       if (error || !data || !data.is_active) {
-        console.log('Middleware check failed:', { error, data, userId: session.user.id })
+        console.log('Middleware check failed:', { error, data, userId: user.id })
         await supabase.auth.signOut()
         const redirectUrl = new URL('/login', req.url)
         redirectUrl.searchParams.set('error', 'Account is inactive or not found')
@@ -103,7 +124,7 @@ export async function middleware(req: NextRequest) {
       
       userData = data
       // Cache the result
-      setCachedUser(session.user.id, userData)
+      setCachedUser(user.id, userData)
     }
 
     // Role-based access control for specific routes
@@ -116,7 +137,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Redirect authenticated users to dashboard if accessing auth routes
-  if (isAuthRoute && session) {
+  if (isAuthRoute && user) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 

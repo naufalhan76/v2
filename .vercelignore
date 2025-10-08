@@ -1,0 +1,16 @@
+# Development files
+*.md
+!README.md
+
+# SQL files (migrations are in src if needed)
+*.sql
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+
+# Local env files
+.env*.local
+
+# Docker files
+Dockerfile
+docker-compose.yml

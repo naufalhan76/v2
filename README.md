@@ -202,8 +202,12 @@ webpanel/
 │   │   │   ├── page.tsx            # Dashboard home dengan KPIs
 │   │   │   ├── layout.tsx          # Dashboard layout (Sidebar + Navbar)
 │   │   │   ├── konfigurasi/        # Configuration module
-│   │   │   │   ├── harga-service/  # Service pricing management
+│   │   │   │   ├── invoice-config/ # Invoice configuration
+│   │   │   │   ├── service-pricing/ # Service pricing management
+│   │   │   │   ├── addons-catalog/ # Add-ons inventory
 │   │   │   │   └── sla-service/    # SLA configuration
+│   │   │   ├── keuangan/           # Finance module
+│   │   │   │   └── invoices/       # Invoice management
 │   │   │   ├── manajemen/          # Master data management
 │   │   │   │   ├── user/           # User management (RBAC)
 │   │   │   │   ├── customer/       # Customer CRUD

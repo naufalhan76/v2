@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { getOrderById } from '@/lib/actions/orders'
@@ -11,7 +12,7 @@ import { CheckCircle2, ArrowLeft, Calendar, User, MapPin, Phone, Mail, Building 
 import { format } from 'date-fns'
 import { Separator } from '@/components/ui/separator'
 
-export default function AssignmentSuccessPage() {
+function AssignmentSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -227,5 +228,26 @@ export default function AssignmentSuccessPage() {
         </Button>
       </div>
     </div>
+  )
+}
+
+export default function AssignmentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className='max-w-4xl mx-auto py-8 px-4'>
+        <Card>
+          <CardHeader className='text-center'>
+            <div className='flex justify-center mb-4'>
+              <div className='w-16 h-16 rounded-full bg-green-100 flex items-center justify-center animate-pulse'>
+                <CheckCircle2 className='w-8 h-8 text-green-600' />
+              </div>
+            </div>
+            <CardTitle className='text-2xl font-bold'>Loading...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <AssignmentSuccessContent />
+    </Suspense>
   )
 }
