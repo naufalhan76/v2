@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getCustomers } from '@/lib/actions/customers'
 import { Button } from '@/components/ui/button'
@@ -20,7 +20,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from '@/components/ui/sheet'
 import {
   AlertDialog,
@@ -35,6 +34,10 @@ import {
 import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { TableSkeleton } from '@/components/ui/skeleton'
+import { LoadingState, LoadingOverlay } from '@/components/ui/loading-state'
+import { useOptimisticArray } from '@/hooks/use-optimistic'
+import { ResourceHints } from '@/components/ui/priority-components'
 
 interface CustomerFormData {
   customer_name: string
@@ -77,6 +80,19 @@ export default function CustomerManagementPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Optimistic UI untuk delete operation
+  const { optimisticArray: optimisticCustomers, handleArrayAction } = useOptimisticArray(
+    data?.data || [],
+    async ({ type, id }) => {
+      if (type === 'remove') {
+        const response = await fetch(`/api/customers/${id}`, { method: 'DELETE' })
+        const result = await response.json()
+        return { success: result.success, data: result.data }
+      }
+      return { success: true, data: [] }
+    }
+  )
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
@@ -231,6 +247,10 @@ export default function CustomerManagementPage() {
     if (deletingId) {
       console.log('Deleting customer via API...')
       setIsDeleting(true)
+      
+      // Optimistic UI - hapus item dari array sebelum API call
+      handleArrayAction({ type: 'remove', item: {}, id: deletingId })
+      
       fetch(`/api/customers/${deletingId}`, {
         method: 'DELETE',
       }).then(res => res.json()).then(result => {
@@ -245,6 +265,8 @@ export default function CustomerManagementPage() {
             description: "Customer berhasil dihapus",
           })
         } else {
+          // Jika gagal, refresh data untuk mengembalikan item yang terhapus
+          queryClient.refetchQueries({ queryKey: ['customers', page, searchTerm] })
           toast({
             title: "Gagal",
             description: result.error || "Gagal menghapus customer",
@@ -253,6 +275,8 @@ export default function CustomerManagementPage() {
         }
       }).catch(error => {
         console.error('Delete API error:', error)
+        // Jika error, refresh data untuk mengembalikan item yang terhapus
+        queryClient.refetchQueries({ queryKey: ['customers', page, searchTerm] })
         toast({
           title: "Error",
           description: "Terjadi kesalahan saat menghapus customer",
@@ -267,104 +291,135 @@ export default function CustomerManagementPage() {
   const totalPages = data ? Math.ceil(data.pagination.total / itemsPerPage) : 0
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Manajemen Customer</h1>
-          <p className="text-muted-foreground mt-1">
-            Kelola data customer dan informasi kontak
-          </p>
+    <>
+      <ResourceHints
+        domains={['api.supabase.co', 'fonts.googleapis.com', 'fonts.gstatic.com']}
+      />
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Manajemen Customer</h1>
+            <p className="text-muted-foreground mt-1">
+              Kelola data customer dan informasi kontak
+            </p>
+          </div>
+          <LoadingOverlay isLoading={isCreating || isUpdating || isDeleting}>
+            <Button onClick={() => setIsCreateOpen(true)} disabled={isCreating || isUpdating || isDeleting}>
+              <Plus className="mr-2 h-4 w-4" />
+              Tambah Customer
+            </Button>
+          </LoadingOverlay>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Tambah Customer
-        </Button>
-      </div>
 
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Cari customer..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value)
-              setPage(1)
-            }}
-            className="pl-10"
-          />
+        <div className="flex gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cari customer..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value)
+                setPage(1)
+              }}
+              className="pl-10"
+            />
+          </div>
         </div>
-      </div>
 
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nama Customer</TableHead>
-              <TableHead>Kontak Person</TableHead>
-              <TableHead>Nomor Telepon</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Alamat Billing</TableHead>
-              <TableHead>Catatan</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center">
-                  Loading...
-                </TableCell>
-              </TableRow>
-            ) : data?.data.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center">
-                  Tidak ada data customer
-                </TableCell>
-              </TableRow>
-            ) : (
-              data?.data.map((customer) => (
-                <TableRow key={customer.customer_id}>
-                  <TableCell className="font-medium">
-                    {customer.customer_name}
-                  </TableCell>
-                  <TableCell>{customer.primary_contact_person}</TableCell>
-                  <TableCell>{customer.phone_number}</TableCell>
-                  <TableCell>{customer.email}</TableCell>
-                  <TableCell>{customer.billing_address}</TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {customer.notes || '-'}
-                  </TableCell>
-                  <TableCell className="text-right w-[180px]">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
-                        onClick={() => handleEdit(customer)}
-                      >
-                        <Pencil className="h-4 w-4 flex-shrink-0" />
-                        <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          Ubah
-                        </span>
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
-                        onClick={() => handleDelete(customer.customer_id)}
-                      >
-                        <Trash2 className="h-4 w-4 flex-shrink-0" />
-                        <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          Hapus
-                        </span>
-                      </Button>
-                    </div>
-                  </TableCell>
+        <div className="border rounded-lg">
+          <LoadingState
+            isLoading={isLoading}
+            timeout={8000}
+            message="Loading customer data..."
+            showRetry={true}
+            onRetry={() => queryClient.refetchQueries({ queryKey: ['customers', page, searchTerm] })}
+            fallback={
+              <div className="p-8 text-center">
+                <p className="text-muted-foreground">Taking longer than expected to load customer data.</p>
+                <Button
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() => queryClient.refetchQueries({ queryKey: ['customers', page, searchTerm] })}
+                >
+                  Retry
+                </Button>
+              </div>
+            }
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nama Customer</TableHead>
+                  <TableHead>Kontak Person</TableHead>
+                  <TableHead>Nomor Telepon</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Alamat Billing</TableHead>
+                  <TableHead>Catatan</TableHead>
+                  <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableSkeleton rows={5} columns={7} />
+                ) : optimisticCustomers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center">
+                      Tidak ada data customer
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  optimisticCustomers.map((customer) => (
+                    <TableRow
+                      key={customer.customer_id}
+                      className={deletingId === customer.customer_id ? "opacity-50" : ""}
+                    >
+                      <TableCell className="font-medium">
+                        {customer.customer_name}
+                      </TableCell>
+                      <TableCell>{customer.primary_contact_person}</TableCell>
+                      <TableCell>{customer.phone_number}</TableCell>
+                      <TableCell>{customer.email}</TableCell>
+                      <TableCell>{customer.billing_address}</TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {customer.notes || '-'}
+                      </TableCell>
+                      <TableCell className="text-right w-[180px]">
+                        <div className="flex justify-end gap-2">
+                          <LoadingOverlay isLoading={isUpdating && editingId === customer.customer_id}>
+                            <Button
+                              variant="outline"
+                              className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
+                              onClick={() => handleEdit(customer)}
+                              disabled={isDeleting}
+                            >
+                              <Pencil className="h-4 w-4 flex-shrink-0" />
+                              <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                Ubah
+                              </span>
+                            </Button>
+                          </LoadingOverlay>
+                          <LoadingOverlay isLoading={isDeleting && deletingId === customer.customer_id}>
+                            <Button
+                              variant="destructive"
+                              className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
+                              onClick={() => handleDelete(customer.customer_id)}
+                              disabled={isUpdating}
+                            >
+                              <Trash2 className="h-4 w-4 flex-shrink-0" />
+                              <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                Hapus
+                              </span>
+                            </Button>
+                          </LoadingOverlay>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </LoadingState>
+        </div>
 
       {totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-4">
@@ -584,6 +639,7 @@ export default function CustomerManagementPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </>
   )
 }

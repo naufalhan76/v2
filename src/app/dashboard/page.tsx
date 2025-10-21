@@ -24,6 +24,9 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import Link from 'next/link'
+import { KpiCardSkeleton, ChartSkeleton } from '@/components/ui/skeleton'
+import { LoadingState } from '@/components/ui/loading-state'
+import { ResourceHints } from '@/components/ui/priority-components'
 
 interface KpiData {
   totalOrders: number
@@ -133,7 +136,7 @@ export default function DashboardPage() {
     }
   }, [dateRange.from, dateRange.to, toast])
 
-    const kpiCards = [
+  const kpiCards = [
     {
       title: 'Total Orders',
       value: kpiData.totalOrders.toString(),
@@ -205,190 +208,216 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading dashboard...</p>
+      <>
+        <ResourceHints
+          domains={['api.supabase.co', 'fonts.googleapis.com', 'fonts.gstatic.com']}
+        />
+        <div className="min-h-screen bg-background p-6">
+          <div className="mx-auto max-w-7xl space-y-6">
+            {/* Skeleton untuk header */}
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <div className="h-8 w-48 bg-muted rounded animate-pulse"></div>
+                <div className="h-4 w-64 bg-muted rounded animate-pulse"></div>
+              </div>
+              <div className="h-10 w-48 bg-muted rounded animate-pulse"></div>
+            </div>
+
+            {/* Skeleton untuk KPI Cards */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <KpiCardSkeleton key={i} />
+              ))}
+            </div>
+
+            {/* Skeleton untuk Chart */}
+            <ChartSkeleton height={400} />
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">AC Service Management Overview</p>
-          </div>
-          
-          {/* Date Range Picker - Right Side */}
-          <div className="flex flex-col items-end gap-3">
-            <div className="text-sm font-medium mb-1">Filter Tanggal Transaksi:</div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-[240px] justify-start text-left font-normal text-sm px-3 py-2.5 h-auto shadow-sm",
-                    (!dateRange.from || !dateRange.to) && "text-muted-foreground"
-                  )}
-                >
-                  <Calendar className="mr-3 h-4 w-4" />
-                  <span className="flex-1">{formatDateRange()}</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <CalendarComponent
-                  initialFocus
-                  mode="range"
-                  defaultMonth={dateRange.from}
-                  selected={tempDateRange}
-                  onSelect={handleDateRangeSelect}
-                  numberOfMonths={2}
-                  locale={id}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {kpiCards.map((kpi, index) => {
-            const Icon = kpi.icon
-            return (
-              <Link key={index} href={kpi.href} className="block">
-                <Card className="hover:shadow-lg transition-all hover:scale-105 cursor-pointer">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      {kpi.title}
-                    </CardTitle>
-                    <Icon className={`h-4 w-4 ${kpi.color}`} />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{kpi.value}</div>
-                    <p className="text-xs text-muted-foreground">
-                      {kpi.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            )
-          })}
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Revenue & Orders Overview
-              <span className="ml-auto text-sm font-normal text-muted-foreground">
-                Last {Math.ceil((new Date(dateRange.to || new Date()).getTime() - new Date(dateRange.from || new Date()).getTime()) / (1000 * 60 * 60 * 24))} days
-              </span>
-            </CardTitle>
-            <CardDescription>Showing total orders and revenue for the selected period</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={{
-                orders: {
-                  label: "Orders",
-                  color: "hsl(217, 91%, 45%)", // Dark Blue - untuk emphasis
-                },
-                revenue: {
-                  label: "Revenue", 
-                  color: "hsl(217, 91%, 75%)", // Light Blue - same family, lighter shade
-                },
-              }}
-              className="h-[400px] w-full"
-            >
-              <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <defs>
-                  {/* Orders - Dark Blue with strong opacity */}
-                  <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(217, 91%, 45%)" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="hsl(217, 91%, 45%)" stopOpacity={0.1}/>
-                  </linearGradient>
-                  {/* Revenue - Light Blue with softer opacity */}
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(217, 91%, 75%)" stopOpacity={0.6}/>
-                    <stop offset="95%" stopColor="hsl(217, 91%, 75%)" stopOpacity={0.05}/>
-                  </linearGradient>
-                </defs>
-                <XAxis 
-                  dataKey="formattedDate" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: 'hsl(215, 16%, 47%)' }}
-                  className="text-xs"
-                />
-                <YAxis 
-                  yAxisId="orders"
-                  orientation="left"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: 'hsl(215, 16%, 47%)' }}
-                  className="text-xs"
-                />
-                <YAxis 
-                  yAxisId="revenue"
-                  orientation="right"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 12, fill: 'hsl(215, 16%, 47%)' }}
-                  tickFormatter={(value) => `Rp${(value / 1000000).toFixed(1)}M`}
-                  className="text-xs"
-                />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent 
-                      formatter={(value, name) => [
-                        name === 'revenue' 
-                          ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(value as number)
-                          : value,
-                        name === 'orders' ? 'Orders' : 'Revenue'
-                      ]}
-                      labelFormatter={(label) => label}
-                    />
-                  }
-                />
-                {/* Orders Area - Dark Blue for prominence */}
-                <Area
-                  yAxisId="orders"
-                  type="monotone"
-                  dataKey="orders"
-                  stroke="hsl(217, 91%, 45%)"
-                  fill="url(#colorOrders)"
-                  strokeWidth={2.5}
-                  name="orders"
-                />
-                {/* Revenue Area - Light Blue for background context */}
-                <Area
-                  yAxisId="revenue"
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="hsl(217, 91%, 75%)"
-                  fill="url(#colorRevenue)"
-                  strokeWidth={1.5}
-                  name="revenue"
-                />
-              </AreaChart>
-            </ChartContainer>
-            
-            {/* Legend */}
-            <div className="flex items-center justify-center gap-6 mt-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'hsl(217, 91%, 45%)' }}></div>
-                <span className="text-muted-foreground font-medium">Orders</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'hsl(217, 91%, 75%)' }}></div>
-                <span className="text-muted-foreground">Revenue</span>
-              </div>
+    <>
+      <ResourceHints 
+        domains={['api.supabase.co', 'fonts.googleapis.com', 'fonts.gstatic.com']} 
+      />
+      <div className="min-h-screen bg-background p-6">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Dashboard</h1>
+              <p className="text-muted-foreground">AC Service Management Overview</p>
             </div>
-          </CardContent>
-        </Card>
+            
+            {/* Date Range Picker - Right Side */}
+            <div className="flex flex-col items-end gap-3">
+              <div className="text-sm font-medium mb-1">Filter Tanggal Transaksi:</div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[240px] justify-start text-left font-normal text-sm px-3 py-2.5 h-auto shadow-sm",
+                      (!dateRange.from || !dateRange.to) && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-3 h-4 w-4" />
+                    <span className="flex-1">{formatDateRange()}</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <CalendarComponent
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange.from}
+                    selected={tempDateRange}
+                    onSelect={handleDateRangeSelect}
+                    numberOfMonths={2}
+                    locale={id}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {kpiCards.map((kpi, index) => {
+              const Icon = kpi.icon
+              return (
+                <Link key={index} href={kpi.href} className="block">
+                  <Card className="hover:shadow-lg transition-all hover:scale-105 cursor-pointer">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        {kpi.title}
+                      </CardTitle>
+                      <Icon className={`h-4 w-4 ${kpi.color}`} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{kpi.value}</div>
+                      <p className="text-xs text-muted-foreground">
+                        {kpi.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )
+            })}
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Revenue & Orders Overview
+                <span className="ml-auto text-sm font-normal text-muted-foreground">
+                  Last {Math.ceil((new Date(dateRange.to || new Date()).getTime() - new Date(dateRange.from || new Date()).getTime()) / (1000 * 60 * 60 * 24))} days
+                </span>
+              </CardTitle>
+              <CardDescription>Showing total orders and revenue for the selected period</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={{
+                  orders: {
+                    label: "Orders",
+                    color: "hsl(217, 91%, 45%)", // Dark Blue - untuk emphasis
+                  },
+                  revenue: {
+                    label: "Revenue", 
+                    color: "hsl(217, 91%, 75%)", // Light Blue - same family, lighter shade
+                  },
+                }}
+                className="h-[400px] w-full"
+              >
+                <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <defs>
+                    {/* Orders - Dark Blue with strong opacity */}
+                    <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(217, 91%, 45%)" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(217, 91%, 45%)" stopOpacity={0.1}/>
+                    </linearGradient>
+                    {/* Revenue - Light Blue with softer opacity */}
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(217, 91%, 75%)" stopOpacity={0.6}/>
+                      <stop offset="95%" stopColor="hsl(217, 91%, 75%)" stopOpacity={0.05}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="formattedDate" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'hsl(215, 16%, 47%)' }}
+                    className="text-xs"
+                  />
+                  <YAxis 
+                    yAxisId="orders"
+                    orientation="left"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'hsl(215, 16%, 47%)' }}
+                    className="text-xs"
+                  />
+                  <YAxis 
+                    yAxisId="revenue"
+                    orientation="right"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'hsl(215, 16%, 47%)' }}
+                    tickFormatter={(value) => `Rp${(value / 1000000).toFixed(1)}M`}
+                    className="text-xs"
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent 
+                        formatter={(value, name) => [
+                          name === 'revenue' 
+                            ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(value as number)
+                            : value,
+                          name === 'orders' ? 'Orders' : 'Revenue'
+                        ]}
+                        labelFormatter={(label) => label}
+                      />
+                    }
+                  />
+                  {/* Orders Area - Dark Blue for prominence */}
+                  <Area
+                    yAxisId="orders"
+                    type="monotone"
+                    dataKey="orders"
+                    stroke="hsl(217, 91%, 45%)"
+                    fill="url(#colorOrders)"
+                    strokeWidth={2.5}
+                    name="orders"
+                  />
+                  {/* Revenue Area - Light Blue for background context */}
+                  <Area
+                    yAxisId="revenue"
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="hsl(217, 91%, 75%)"
+                    fill="url(#colorRevenue)"
+                    strokeWidth={1.5}
+                    name="revenue"
+                  />
+                </AreaChart>
+              </ChartContainer>
+              
+              {/* Legend */}
+              <div className="flex items-center justify-center gap-6 mt-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'hsl(217, 91%, 45%)' }}></div>
+                  <span className="text-muted-foreground font-medium">Orders</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'hsl(217, 91%, 75%)' }}></div>
+                  <span className="text-muted-foreground">Revenue</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
