@@ -176,16 +176,19 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
 
   return (
     <div className={`border-r bg-muted/40 ${isCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 h-full flex flex-col`}>
-      <div className="flex h-14 items-center justify-between border-b px-4 lg:h-[60px] lg:px-6 shrink-0">
+      <div className="flex h-14 items-center justify-between border-b px-4 lg:h-[60px] lg:px-6 shrink-0 relative">
         {!isCollapsed && (
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-            <AirVent className="h-6 w-6 text-blue-600" />
-            <span className="text-sm lg:text-base">TechService ERP</span>
+          <Link href="/dashboard" className="flex items-center justify-center flex-1">
+            <img 
+              src="/logo.png" 
+              alt="MSN ERP" 
+              className="h-10 w-auto"
+            />
           </Link>
         )}
         <button
           onClick={handleToggle}
-          className="p-1 rounded-md hover:bg-muted"
+          className={`p-1 rounded-md hover:bg-muted ${isCollapsed ? 'mx-auto' : ''}`}
         >
           {isCollapsed ? (
             <ChevronRight className="h-4 w-4" />

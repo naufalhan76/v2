@@ -8,8 +8,11 @@ import { ThemeProvider } from '@/components/theme-provider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Technician Service ERP',
-  description: 'Admin Panel for Technician Service Management',
+  title: 'MSN ERP',
+  description: 'Admin Panel for MSN ERP Management System',
+  icons: {
+    icon: '/logo.png',
+  },
 }
 
 export default function RootLayout({

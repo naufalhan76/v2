@@ -252,8 +252,14 @@ function LoginForm() {
         className="w-full max-w-md"
       >
         <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Technician Service ERP</CardTitle>
+          <CardHeader className="space-y-4">
+            <div className="flex justify-center py-4">
+              <img 
+                src="/logo.png" 
+                alt="MSN ERP" 
+                className="h-24 w-auto"
+              />
+            </div>
             <CardDescription className="text-center">
               Login or register to access the admin panel
             </CardDescription>
