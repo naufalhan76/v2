@@ -31,10 +31,41 @@ import {
 } from '@/components/ui/dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { Activity, Package, FileText, Search, Eye, User, MapPin, Phone, Mail, Building, CalendarIcon } from 'lucide-react'
+import { Activity, Package, FileText, Search, Eye, User, MapPin, Phone, Mail, Building, CalendarIcon, ChevronDown } from 'lucide-react'
 import { format, subDays } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { id } from 'date-fns/locale'
+
+// Helper functions for multi-location orders
+function getLocationsSummary(orderItems: any[]) {
+  if (!orderItems || orderItems.length === 0) return { text: 'No locations', count: 0, locations: [] }
+  
+  const uniqueLocations = new Map()
+  orderItems.forEach(item => {
+    if (item.locations) {
+      uniqueLocations.set(item.location_id, item.locations.building_name)
+    }
+  })
+  
+  const locationNames = Array.from(uniqueLocations.values()).filter(Boolean)
+  
+  if (locationNames.length === 0) return { text: 'No locations', count: 0, locations: [] }
+  if (locationNames.length === 1) return { text: locationNames[0], count: 1, locations: locationNames }
+  return { text: `${locationNames[0]} +${locationNames.length - 1}`, count: locationNames.length, locations: locationNames }
+}
+
+function getServicesGrouped(orderItems: any[]) {
+  if (!orderItems || orderItems.length === 0) return { count: 0, types: {} }
+  
+  const serviceTypes: Record<string, number> = {}
+  orderItems.forEach(item => {
+    if (item.service_type) {
+      serviceTypes[item.service_type] = (serviceTypes[item.service_type] || 0) + 1
+    }
+  })
+  
+  return { count: orderItems.length, types: serviceTypes }
+}
 
 const STATUS_GROUPS = {
   NON_ASSIGNED: ['NEW', 'ACCEPTED'],
@@ -80,6 +111,7 @@ export default function MonitoringOngoingPage() {
   const [statusGroupFilter, setStatusGroupFilter] = useState<string>('ALL') // NEW, ACCEPTED, ASSIGNED, etc. or 'ALL'
   const [orderTypeFilter, setOrderTypeFilter] = useState<string>('ALL')
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('ALL')
+  const [multiLocationFilter, setMultiLocationFilter] = useState<string>('ALL') // 'ALL', 'SINGLE', 'MULTI'
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null)
   
   // Date range state (default: 30 days ago to today)
@@ -160,6 +192,13 @@ export default function MonitoringOngoingPage() {
 
     // Payment status filter (assuming orders have payment_status field)
     if (paymentStatusFilter !== 'ALL' && order.payment_status !== paymentStatusFilter) return false
+
+    // Multi-location filter
+    if (multiLocationFilter !== 'ALL') {
+      const locationsSummary = getLocationsSummary(order.order_items || [])
+      if (multiLocationFilter === 'SINGLE' && locationsSummary.count !== 1) return false
+      if (multiLocationFilter === 'MULTI' && locationsSummary.count <= 1) return false
+    }
 
     return true
   })
@@ -291,7 +330,7 @@ export default function MonitoringOngoingPage() {
           <CardDescription>Search and filter orders</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4'>
             {/* Search */}
             <div className='relative'>
               <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
@@ -329,6 +368,18 @@ export default function MonitoringOngoingPage() {
               </SelectContent>
             </Select>
 
+            {/* Multi-Location Filter */}
+            <Select value={multiLocationFilter} onValueChange={setMultiLocationFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder='All Locations' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='ALL'>All Locations</SelectItem>
+                <SelectItem value='SINGLE'>Single Location</SelectItem>
+                <SelectItem value='MULTI'>Multi-Location</SelectItem>
+              </SelectContent>
+            </Select>
+
             {/* Payment Status Filter */}
             <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
               <SelectTrigger>
@@ -344,7 +395,7 @@ export default function MonitoringOngoingPage() {
           </div>
 
           {/* Active Filters Summary */}
-          {(searchQuery || statusFilter !== 'ALL' || statusGroupFilter !== 'ALL' || orderTypeFilter !== 'ALL' || paymentStatusFilter !== 'ALL') && (
+          {(searchQuery || statusFilter !== 'ALL' || statusGroupFilter !== 'ALL' || orderTypeFilter !== 'ALL' || paymentStatusFilter !== 'ALL' || multiLocationFilter !== 'ALL') && (
             <div className='mt-4 flex items-center gap-2 text-sm text-muted-foreground'>
               <span>Showing {filteredOrders.length} of {ongoingOrders.length} orders (from {format(dateFrom, 'dd MMM yyyy')} to {format(dateTo, 'dd MMM yyyy')})</span>
               <Button
@@ -356,6 +407,7 @@ export default function MonitoringOngoingPage() {
                   setStatusGroupFilter('ALL')
                   setOrderTypeFilter('ALL')
                   setPaymentStatusFilter('ALL')
+                  setMultiLocationFilter('ALL')
                 }}
               >
                 Clear all filters
@@ -384,55 +436,110 @@ export default function MonitoringOngoingPage() {
                     <TableHead>Order ID</TableHead>
                     <TableHead>Customer Name</TableHead>
                     <TableHead>Req Visit Date</TableHead>
+                    <TableHead>Locations</TableHead>
+                    <TableHead>Services</TableHead>
                     <TableHead>Order Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Assigned Technician</TableHead>
-                    <TableHead>Payment Status</TableHead>
                     <TableHead className='text-right'>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredOrders.map((order: any) => (
-                    <TableRow 
-                      key={order.order_id}
-                      className={cn(
-                        order.status === 'RESCHEDULE' && 'bg-amber-50 border-l-4 border-l-amber-500 hover:bg-amber-100'
-                      )}
-                    >
-                      <TableCell className='font-mono text-sm'>{order.order_id}</TableCell>
-                      <TableCell className='font-medium'>{order.customers?.customer_name || '-'}</TableCell>
-                      <TableCell>
-                        {order.req_visit_date ? format(new Date(order.req_visit_date), 'dd MMM yyyy') : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant='outline'>
-                          {SERVICE_TYPES.find(t => t.value === order.order_type)?.label || order.order_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={cn('text-white', STATUS_COLORS[order.status] || 'bg-gray-500')}>
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className='text-sm'>
-                        {order.assigned_technician_id || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={order.payment_status === 'PAID' ? 'default' : 'secondary'}>
-                          {order.payment_status || 'PENDING'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className='text-right'>
-                        <Button
-                          variant='ghost'
-                          size='sm'
-                          onClick={() => setDetailOrderId(order.order_id)}
-                        >
-                          <Eye className='w-4 h-4' />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredOrders.map((order: any) => {
+                    const locationsSummary = getLocationsSummary(order.order_items || [])
+                    const servicesInfo = getServicesGrouped(order.order_items || [])
+                    
+                    return (
+                      <TableRow 
+                        key={order.order_id}
+                        className={cn(
+                          order.status === 'RESCHEDULE' && 'bg-amber-50 border-l-4 border-l-amber-500 hover:bg-amber-100'
+                        )}
+                      >
+                        <TableCell className='font-mono text-sm'>{order.order_id}</TableCell>
+                        <TableCell className='font-medium'>{order.customers?.customer_name || '-'}</TableCell>
+                        <TableCell>
+                          {order.req_visit_date ? format(new Date(order.req_visit_date), 'dd MMM yyyy') : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-auto py-1 px-2 font-normal">
+                                <span className="flex items-center gap-1">
+                                  {locationsSummary.text}
+                                  {locationsSummary.count > 1 && <ChevronDown className="w-3 h-3 ml-1" />}
+                                </span>
+                              </Button>
+                            </PopoverTrigger>
+                            {locationsSummary.count > 1 && (
+                              <PopoverContent className="w-80" align="start">
+                                <div className="space-y-2">
+                                  <h4 className="font-semibold text-sm">All Locations ({locationsSummary.count})</h4>
+                                  <div className="space-y-1">
+                                    {locationsSummary.locations.map((loc: string, idx: number) => (
+                                      <div key={idx} className="text-sm p-2 bg-muted/50 rounded flex items-center gap-2">
+                                        <MapPin className="w-3 h-3 text-muted-foreground" />
+                                        {loc}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            )}
+                          </Popover>
+                        </TableCell>
+                        <TableCell>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-auto py-1 px-2 font-normal">
+                                <Badge variant="outline" className="cursor-pointer">
+                                  {servicesInfo.count} service{servicesInfo.count > 1 ? 's' : ''}
+                                  {Object.keys(servicesInfo.types).length > 0 && <ChevronDown className="w-3 h-3 ml-1" />}
+                                </Badge>
+                              </Button>
+                            </PopoverTrigger>
+                            {Object.keys(servicesInfo.types).length > 0 && (
+                              <PopoverContent className="w-64" align="start">
+                                <div className="space-y-2">
+                                  <h4 className="font-semibold text-sm">Service Breakdown</h4>
+                                  <div className="space-y-1">
+                                    {Object.entries(servicesInfo.types).map(([type, count]) => (
+                                      <div key={type} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
+                                        <span className="font-medium">{SERVICE_TYPES.find(t => t.value === type)?.label || type}</span>
+                                        <Badge variant="secondary">{count}x</Badge>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            )}
+                          </Popover>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant='outline'>
+                            {SERVICE_TYPES.find(t => t.value === order.order_type)?.label || order.order_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={cn('text-white', STATUS_COLORS[order.status] || 'bg-gray-500')}>
+                            {order.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className='text-sm'>
+                          {order.assigned_technician_id || '-'}
+                        </TableCell>
+                        <TableCell className='text-right'>
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            onClick={() => setDetailOrderId(order.order_id)}
+                          >
+                            <Eye className='w-4 h-4' />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -442,131 +549,188 @@ export default function MonitoringOngoingPage() {
 
       {/* Order Detail Modal */}
       <Dialog open={!!detailOrderId} onOpenChange={(open) => !open && setDetailOrderId(null)}>
-        <DialogContent className='max-w-2xl max-h-[80vh] overflow-y-auto'>
+        <DialogContent className='max-w-3xl max-h-[85vh] overflow-y-auto'>
           <DialogHeader>
             <DialogTitle>Order Detail</DialogTitle>
             <DialogDescription>Complete information about this order</DialogDescription>
           </DialogHeader>
-          {orderDetail?.data && (
-            <div className='space-y-4'>
-              {/* Order Info */}
-              <div className='space-y-2'>
-                <h3 className='font-semibold text-lg'>Order Information</h3>
-                <div className='grid grid-cols-2 gap-3 text-sm'>
-                  <div>
-                    <span className='text-muted-foreground'>Order ID:</span>
-                    <p className='font-mono font-semibold'>{orderDetail.data.order_id}</p>
-                  </div>
-                  <div>
-                    <span className='text-muted-foreground'>Status:</span>
-                    <div className='mt-1'>
-                      <Badge className={cn('text-white', STATUS_COLORS[orderDetail.data.status])}>
-                        {orderDetail.data.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div>
-                    <span className='text-muted-foreground'>Order Date:</span>
-                    <p className='font-semibold'>
-                      {orderDetail.data.order_date ? format(new Date(orderDetail.data.order_date), 'dd MMM yyyy') : '-'}
-                    </p>
-                  </div>
-                  <div>
-                    <span className='text-muted-foreground'>Order Type:</span>
-                    <div className='mt-1'>
-                      <Badge variant='outline'>
-                        {SERVICE_TYPES.find(t => t.value === orderDetail.data.order_type)?.label || orderDetail.data.order_type}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div>
-                    <span className='text-muted-foreground'>Requested Visit:</span>
-                    <p className='font-semibold'>
-                      {orderDetail.data.req_visit_date ? format(new Date(orderDetail.data.req_visit_date), 'dd MMM yyyy') : '-'}
-                    </p>
-                  </div>
-                  <div>
-                    <span className='text-muted-foreground'>Scheduled Visit:</span>
-                    <p className='font-semibold'>
-                      {orderDetail.data.scheduled_visit_date ? format(new Date(orderDetail.data.scheduled_visit_date), 'dd MMM yyyy') : '-'}
-                    </p>
-                  </div>
-                </div>
-                {orderDetail.data.description && (
-                  <div className='pt-2'>
-                    <span className='text-muted-foreground text-sm'>Description:</span>
-                    <p className='text-sm mt-1 p-3 bg-muted rounded-md'>{orderDetail.data.description}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Customer Info */}
-              <div className='space-y-2'>
-                <div className='flex items-center gap-2'>
-                  <User className='w-5 h-5 text-muted-foreground' />
-                  <h3 className='font-semibold text-lg'>Customer Information</h3>
-                </div>
-                <div className='bg-muted/50 rounded-lg p-4 space-y-2'>
-                  <div>
-                    <span className='text-sm font-semibold text-muted-foreground'>Name: </span>
-                    <span className='font-medium'>{orderDetail.data.customers?.customer_name}</span>
-                  </div>
-                  {orderDetail.data.customers?.primary_contact_person && (
+          {orderDetail?.data && (() => {
+            // Group order_items by location
+            const groupedByLocation = (orderDetail.data.order_items || []).reduce((acc: any, item: any) => {
+              const locId = item.location_id || 'unknown'
+              if (!acc[locId]) {
+                acc[locId] = {
+                  location: item.locations,
+                  items: []
+                }
+              }
+              acc[locId].items.push(item)
+              return acc
+            }, {})
+            
+            const locationGroups = Object.values(groupedByLocation)
+            const totalEstimated = (orderDetail.data.order_items || []).reduce((sum: number, item: any) => 
+              sum + (item.estimated_price || 0) * (item.quantity || 1), 0
+            )
+            
+            return (
+              <div className='space-y-4'>
+                {/* Order Info */}
+                <div className='space-y-2'>
+                  <h3 className='font-semibold text-lg'>Order Information</h3>
+                  <div className='grid grid-cols-2 gap-3 text-sm'>
                     <div>
-                      <span className='text-sm font-semibold text-muted-foreground'>Contact Person: </span>
-                      <span>{orderDetail.data.customers.primary_contact_person}</span>
+                      <span className='text-muted-foreground'>Order ID:</span>
+                      <p className='font-mono font-semibold'>{orderDetail.data.order_id}</p>
+                    </div>
+                    <div>
+                      <span className='text-muted-foreground'>Status:</span>
+                      <div className='mt-1'>
+                        <Badge className={cn('text-white', STATUS_COLORS[orderDetail.data.status])}>
+                          {orderDetail.data.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <span className='text-muted-foreground'>Order Date:</span>
+                      <p className='font-semibold'>
+                        {orderDetail.data.order_date ? format(new Date(orderDetail.data.order_date), 'dd MMM yyyy') : '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className='text-muted-foreground'>Order Type (Dominant):</span>
+                      <div className='mt-1'>
+                        <Badge variant='outline'>
+                          {SERVICE_TYPES.find(t => t.value === orderDetail.data.order_type)?.label || orderDetail.data.order_type}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <span className='text-muted-foreground'>Requested Visit:</span>
+                      <p className='font-semibold'>
+                        {orderDetail.data.req_visit_date ? format(new Date(orderDetail.data.req_visit_date), 'dd MMM yyyy') : '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className='text-muted-foreground'>Scheduled Visit:</span>
+                      <p className='font-semibold'>
+                        {orderDetail.data.scheduled_visit_date ? format(new Date(orderDetail.data.scheduled_visit_date), 'dd MMM yyyy') : '-'}
+                      </p>
+                    </div>
+                  </div>
+                  {orderDetail.data.notes && (
+                    <div className='pt-2'>
+                      <span className='text-muted-foreground text-sm'>Notes:</span>
+                      <p className='text-sm mt-1 p-3 bg-muted rounded-md'>{orderDetail.data.notes}</p>
                     </div>
                   )}
-                  <div className='flex gap-4 text-sm'>
-                    {orderDetail.data.customers?.phone_number && (
-                      <div className='flex items-center gap-1'>
-                        <Phone className='w-3 h-3 text-muted-foreground' />
-                        {orderDetail.data.customers.phone_number}
-                      </div>
-                    )}
-                    {orderDetail.data.customers?.email && (
-                      <div className='flex items-center gap-1'>
-                        <Mail className='w-3 h-3 text-muted-foreground' />
-                        {orderDetail.data.customers.email}
-                      </div>
-                    )}
-                  </div>
                 </div>
-              </div>
 
-              {/* Location Info */}
-              <div className='space-y-2'>
-                <div className='flex items-center gap-2'>
-                  <MapPin className='w-5 h-5 text-muted-foreground' />
-                  <h3 className='font-semibold text-lg'>Location Information</h3>
-                </div>
-                <div className='bg-muted/50 rounded-lg p-4 space-y-2'>
+                {/* Customer Info */}
+                <div className='space-y-2'>
                   <div className='flex items-center gap-2'>
-                    <Building className='w-4 h-4 text-muted-foreground' />
-                    <span className='font-semibold'>{orderDetail.data.locations?.building_name}</span>
+                    <User className='w-5 h-5 text-muted-foreground' />
+                    <h3 className='font-semibold text-lg'>Customer Information</h3>
                   </div>
-                  <div>
-                    <span className='text-sm font-semibold text-muted-foreground'>Floor: </span>
-                    {orderDetail.data.locations?.floor}
-                  </div>
-                  <div>
-                    <span className='text-sm font-semibold text-muted-foreground'>Room: </span>
-                    {orderDetail.data.locations?.room_number}
-                  </div>
-                  {orderDetail.data.locations?.description && (
+                  <div className='bg-muted/50 rounded-lg p-4 space-y-2'>
                     <div>
-                      <span className='text-sm font-semibold text-muted-foreground'>Description: </span>
-                      {orderDetail.data.locations.description}
+                      <span className='text-sm font-semibold text-muted-foreground'>Name: </span>
+                      <span className='font-medium'>{orderDetail.data.customers?.customer_name}</span>
                     </div>
-                  )}
-                  <div className='mt-2'>
-                    <span className='text-sm font-semibold text-muted-foreground'>Address: </span>
-                    <p className='text-sm'>{orderDetail.data.customers?.billing_address}</p>
+                    {orderDetail.data.customers?.primary_contact_person && (
+                      <div>
+                        <span className='text-sm font-semibold text-muted-foreground'>Contact Person: </span>
+                        <span>{orderDetail.data.customers.primary_contact_person}</span>
+                      </div>
+                    )}
+                    <div className='flex gap-4 text-sm'>
+                      {orderDetail.data.customers?.phone_number && (
+                        <div className='flex items-center gap-1'>
+                          <Phone className='w-3 h-3 text-muted-foreground' />
+                          {orderDetail.data.customers.phone_number}
+                        </div>
+                      )}
+                      {orderDetail.data.customers?.email && (
+                        <div className='flex items-center gap-1'>
+                          <Mail className='w-3 h-3 text-muted-foreground' />
+                          {orderDetail.data.customers.email}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
+
+                {/* Locations & Services */}
+                <div className='space-y-2'>
+                  <div className='flex items-center gap-2'>
+                    <MapPin className='w-5 h-5 text-muted-foreground' />
+                    <h3 className='font-semibold text-lg'>Locations & Services ({locationGroups.length} location{locationGroups.length > 1 ? 's' : ''})</h3>
+                  </div>
+                  
+                  {locationGroups.length === 0 ? (
+                    <div className='bg-muted/50 rounded-lg p-4 text-center text-muted-foreground'>
+                      No location data available
+                    </div>
+                  ) : (
+                    <div className='space-y-3'>
+                      {locationGroups.map((group: any, idx: number) => (
+                        <div key={idx} className='border rounded-lg p-4 space-y-3 bg-card'>
+                          {/* Location Header */}
+                          <div className='space-y-1'>
+                            <div className='flex items-center gap-2 font-semibold text-base'>
+                              <Building className='w-4 h-4 text-primary' />
+                              {group.location?.building_name || 'Unknown Location'}
+                            </div>
+                            {group.location && (
+                              <div className='text-sm text-muted-foreground pl-6'>
+                                Floor {group.location.floor}, Room {group.location.room_number}
+                                {group.location.description && ` • ${group.location.description}`}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Services for this location */}
+                          <div className='pl-6 space-y-2'>
+                            <div className='text-sm font-semibold text-muted-foreground'>
+                              Services ({group.items.length}):
+                            </div>
+                            <div className='space-y-2'>
+                              {group.items.map((item: any) => (
+                                <div key={item.order_item_id} className='flex items-center justify-between p-3 bg-muted/30 rounded-lg'>
+                                  <div className='flex items-center gap-3'>
+                                    <Badge variant='outline' className='font-semibold'>
+                                      {SERVICE_TYPES.find(t => t.value === item.service_type)?.label || item.service_type}
+                                    </Badge>
+                                    <span className='text-sm'>
+                                      {item.ac_units ? 
+                                        `${item.ac_units.brand} ${item.ac_units.model_number}` : 
+                                        `New AC Unit ${item.quantity > 1 ? `(${item.quantity}x)` : ''}`
+                                      }
+                                    </span>
+                                  </div>
+                                  <span className='font-semibold text-sm'>
+                                    Rp {((item.estimated_price || 0) * (item.quantity || 1)).toLocaleString('id-ID')}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Total */}
+                      <div className='flex justify-between items-center p-4 bg-primary/10 rounded-lg font-semibold border-2 border-primary/20'>
+                        <span className='text-base'>Total Estimated:</span>
+                        <span className='text-lg text-primary'>
+                          Rp {totalEstimated.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
         </DialogContent>
       </Dialog>
     </div>

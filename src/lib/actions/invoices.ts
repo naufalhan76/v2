@@ -91,6 +91,65 @@ export interface CreateInvoiceInput {
   notes?: string
 }
 
+export interface OrderItemForInvoice {
+  serviceType: string
+  serviceName: string
+  quantity: number
+  estimatedPrice: number
+}
+
+/**
+ * Get order items with service details for invoice creation
+ * Returns empty array for old orders without order_items (backward compatible)
+ */
+export async function getOrderItemsForInvoice(orderId: string): Promise<OrderItemForInvoice[]> {
+  const supabase = await createClient()
+  
+  const { data, error } = await supabase
+    .from('order_items')
+    .select('service_type, quantity, estimated_price')
+    .eq('order_id', orderId)
+  
+  if (error || !data || data.length === 0) {
+    // Empty array means no order_items (old order) or error
+    return []
+  }
+  
+  // Group by service_type and sum quantities
+  const grouped = data.reduce((acc, item) => {
+    if (!acc[item.service_type]) {
+      acc[item.service_type] = {
+        quantity: 0,
+        totalPrice: 0
+      }
+    }
+    acc[item.service_type].quantity += item.quantity || 1
+    acc[item.service_type].totalPrice += (item.estimated_price || 0) * (item.quantity || 1)
+    return acc
+  }, {} as Record<string, {quantity: number, totalPrice: number}>)
+  
+  // Convert to array and fetch service names from service_pricing
+  const result: OrderItemForInvoice[] = []
+  
+  for (const [serviceType, data] of Object.entries(grouped)) {
+    const { data: pricing } = await supabase
+      .from('service_pricing')
+      .select('service_name, base_price')
+      .eq('service_type', serviceType)
+      .eq('is_active', true)
+      .single()
+    
+    result.push({
+      serviceType,
+      serviceName: pricing?.service_name || serviceType,
+      quantity: data.quantity,
+      estimatedPrice: data.totalPrice / data.quantity // average price per unit
+    })
+  }
+  
+  return result
+}
+
 /**
  * Generate unique invoice number
  */

@@ -32,7 +32,7 @@ import { Loader2, Plus, Trash2, ArrowLeft, ArrowRight, Check } from 'lucide-reac
 import { getOrders } from '@/lib/actions/orders'
 import { getServicePricingByType } from '@/lib/actions/service-pricing'
 import { getActiveAddons, type Addon } from '@/lib/actions/addons'
-import { createInvoice } from '@/lib/actions/invoices'
+import { createInvoice, getOrderItemsForInvoice } from '@/lib/actions/invoices'
 
 const invoiceSchema = z.object({
   orderId: z.string().min(1, 'Order wajib dipilih'),
@@ -115,18 +115,39 @@ export default function CreateInvoicePage() {
 
   const loadServicePricing = async () => {
     try {
-      const pricing = await getServicePricingByType(selectedOrder.order_type)
-      if (pricing) {
-        setBaseService(pricing)
-        setLineItems([
-          {
-            type: 'BASE_SERVICE',
-            description: `${pricing.service_type} Service - ${pricing.description || ''}`,
-            quantity: 1,
-            unitPrice: pricing.base_price,
-            total: pricing.base_price,
-          },
-        ])
+      // Try to fetch order_items first (for new multi-service orders)
+      const orderItems = await getOrderItemsForInvoice(selectedOrder.order_id)
+      
+      if (orderItems.length > 0) {
+        // NEW ORDERS: Create line items from order_items
+        const newLineItems = orderItems.map(item => ({
+          type: 'BASE_SERVICE' as const,
+          description: `${item.serviceName} (${item.quantity} unit${item.quantity > 1 ? 's' : ''})`,
+          quantity: item.quantity,
+          unitPrice: item.estimatedPrice,
+          total: item.quantity * item.estimatedPrice
+        }))
+        setLineItems(newLineItems)
+        
+        // Set baseService to first service (for reference)
+        const firstPricing = await getServicePricingByType(orderItems[0].serviceType)
+        if (firstPricing) setBaseService(firstPricing)
+        
+      } else {
+        // OLD ORDERS: Fallback to order_type (backward compatibility)
+        const pricing = await getServicePricingByType(selectedOrder.order_type)
+        if (pricing) {
+          setBaseService(pricing)
+          setLineItems([
+            {
+              type: 'BASE_SERVICE',
+              description: `${pricing.service_type} Service - ${pricing.description || ''}`,
+              quantity: 1,
+              unitPrice: pricing.base_price,
+              total: pricing.base_price,
+            },
+          ])
+        }
       }
     } catch (error) {
       console.error('Error loading service pricing:', error)
@@ -193,11 +214,11 @@ export default function CreateInvoicePage() {
   }
 
   const onSubmit = async (data: InvoiceFormData) => {
-    if (!selectedOrder || !baseService) {
+    if (!selectedOrder) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Order atau service pricing tidak valid',
+        description: 'Order tidak valid',
       })
       return
     }
@@ -210,17 +231,31 @@ export default function CreateInvoicePage() {
         description: item.description,
         quantity: item.quantity,
         unit_price: item.unitPrice,
-        service_type: item.type === 'BASE_SERVICE' ? selectedOrder.order_type : undefined,
+        service_type: item.type === 'BASE_SERVICE' ? undefined : undefined,
         addon_id: item.addonId,
       }))
+      
+      // Calculate total from all BASE_SERVICE items
+      const baseServiceTotal = lineItems
+        .filter(item => item.type === 'BASE_SERVICE')
+        .reduce((sum, item) => sum + item.total, 0)
+      
+      // Get all unique service names from BASE_SERVICE items
+      const baseServiceNames = lineItems
+        .filter(item => item.type === 'BASE_SERVICE')
+        .map(item => item.description.split(' (')[0]) // Extract service name before quantity
+      
+      const serviceName = baseServiceNames.length > 1 
+        ? 'Multiple Services' 
+        : (baseService?.service_name || baseServiceNames[0] || 'Service')
 
       await createInvoice({
         order_id: data.orderId,
         customer_id: selectedOrder.customer_id,
         due_date: data.dueDate,
-        service_type: selectedOrder.order_type,
-        service_name: baseService.service_type,
-        base_service_price: baseService.base_price,
+        service_type: selectedOrder.order_type, // Keep for DB constraint
+        service_name: serviceName,
+        base_service_price: baseServiceTotal,
         items: invoiceItems,
         discount_amount: parseFloat(data.discountAmount || '0'),
         discount_percentage: parseFloat(data.discountPercentage || '0'),

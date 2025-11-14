@@ -30,12 +30,18 @@ export async function getOrders(filters?: {
           phone_number,
           email
         ),
-        locations (
+        order_items (
+          order_item_id,
           location_id,
-          building_name,
-          floor,
-          room_number,
-          description
+          service_type,
+          quantity,
+          estimated_price,
+          locations (
+            location_id,
+            building_name,
+            floor,
+            room_number
+          )
         )
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -103,12 +109,29 @@ export async function getOrderById(orderId: string) {
           email,
           billing_address
         ),
-        locations (
+        order_items (
+          order_item_id,
           location_id,
-          building_name,
-          floor,
-          room_number,
-          description
+          ac_unit_id,
+          service_type,
+          quantity,
+          description,
+          estimated_price,
+          actual_price,
+          status,
+          locations (
+            location_id,
+            building_name,
+            floor,
+            room_number,
+            description
+          ),
+          ac_units (
+            ac_unit_id,
+            brand,
+            model_number,
+            serial_number
+          )
         )
       `)
       .eq('order_id', orderId)

@@ -296,22 +296,165 @@ export default function AssignOrderPage() {
           </Card>
         )}
       </div>
-      <Dialog open={!!detailOrderId} onOpenChange={(open) => !open && setDetailOrderId(null)}><DialogContent className='max-w-2xl max-h-[80vh] overflow-y-auto'>
-      <DialogHeader><DialogTitle>Order Details</DialogTitle><DialogDescription>Complete information about this order</DialogDescription></DialogHeader>
-      {orderDetail?.data && (<div className='space-y-4'><div className='grid grid-cols-2 gap-4'><div><div className='text-sm font-semibold text-muted-foreground'>Order ID</div><div>{orderDetail.data.order_id}</div></div>
-      <div><div className='text-sm font-semibold text-muted-foreground'>Status</div><Badge>{orderDetail.data.status}</Badge></div><div><div className='text-sm font-semibold text-muted-foreground'>Order Date</div>
-      <div>{orderDetail.data.order_date ? format(new Date(orderDetail.data.order_date), 'PPP') : '-'}</div></div><div><div className='text-sm font-semibold text-muted-foreground'>Requested Visit</div>
-      <div>{orderDetail.data.req_visit_date ? format(new Date(orderDetail.data.req_visit_date), 'PPP') : '-'}</div></div></div><div className='border-t pt-4'><h3 className='font-semibold mb-2 flex items-center gap-2'>
-      <User className='h-4 w-4' /> Customer Information</h3><div className='grid gap-2'><div><span className='text-sm font-semibold text-muted-foreground'>Name: </span>{orderDetail.data.customers?.customer_name}</div>
-      <div><span className='text-sm font-semibold text-muted-foreground'>Contact: </span>{orderDetail.data.customers?.primary_contact_person}</div>
-      <div><span className='text-sm font-semibold text-muted-foreground'>Phone: </span>{orderDetail.data.customers?.phone_number}</div>
-      <div><span className='text-sm font-semibold text-muted-foreground'>Email: </span>{orderDetail.data.customers?.email}</div></div></div>
-      <div className='border-t pt-4'><h3 className='font-semibold mb-2 flex items-center gap-2'><MapPin className='h-4 w-4' /> Location</h3><div className='grid gap-2'>
-      <div><span className='text-sm font-semibold text-muted-foreground'>Building: </span>{orderDetail.data.locations?.building_name}</div>
-      <div><span className='text-sm font-semibold text-muted-foreground'>Floor: </span>{orderDetail.data.locations?.floor}</div>
-      <div><span className='text-sm font-semibold text-muted-foreground'>Room: </span>{orderDetail.data.locations?.room_number}</div>
-      {orderDetail.data.locations?.description && <div><span className='text-sm font-semibold text-muted-foreground'>Description: </span>{orderDetail.data.locations.description}</div>}
-      <div className='mt-2'><span className='text-sm font-semibold text-muted-foreground'>Address: </span><p className='text-sm'>{orderDetail.data.customers?.billing_address}</p></div></div></div></div>)}</DialogContent></Dialog>
+      <Dialog open={!!detailOrderId} onOpenChange={(open) => !open && setDetailOrderId(null)}>
+        <DialogContent className='max-w-2xl max-h-[80vh] overflow-y-auto'>
+          <DialogHeader>
+            <DialogTitle>Order Details</DialogTitle>
+            <DialogDescription>Complete information about this order</DialogDescription>
+          </DialogHeader>
+          {orderDetail?.data && (() => {
+            // Group order_items by location
+            const groupedByLocation = (orderDetail.data.order_items || []).reduce((acc: any, item: any) => {
+              const locationId = item.location_id || 'unknown'
+              if (!acc[locationId]) {
+                acc[locationId] = {
+                  location: item.locations,
+                  items: []
+                }
+              }
+              acc[locationId].items.push(item)
+              return acc
+            }, {})
+
+            const totalEstimated = (orderDetail.data.order_items || []).reduce((sum: number, item: any) => 
+              sum + (item.estimated_price || 0), 0
+            )
+
+            const SERVICE_TYPES = [
+              { value: 'REFILL_FREON', label: 'Refill Freon' },
+              { value: 'CLEANING', label: 'Cleaning' },
+              { value: 'REPAIR', label: 'Repair' },
+              { value: 'INSTALLATION', label: 'Installation' },
+              { value: 'INSPECTION', label: 'Inspection' },
+            ]
+
+            return (
+              <div className='space-y-4'>
+                {/* Order Info */}
+                <div className='space-y-2'>
+                  <h3 className='font-semibold text-lg'>Order Information</h3>
+                  <div className='grid grid-cols-2 gap-3 text-sm'>
+                    <div>
+                      <span className='text-muted-foreground'>Order ID:</span>
+                      <p className='font-mono font-semibold'>{orderDetail.data.order_id}</p>
+                    </div>
+                    <div>
+                      <span className='text-muted-foreground'>Status:</span>
+                      <div className='mt-1'>
+                        <Badge>{orderDetail.data.status}</Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <span className='text-muted-foreground'>Order Date:</span>
+                      <p className='font-semibold'>
+                        {orderDetail.data.order_date ? format(new Date(orderDetail.data.order_date), 'dd MMM yyyy') : '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className='text-muted-foreground'>Requested Visit:</span>
+                      <p className='font-semibold'>
+                        {orderDetail.data.req_visit_date ? format(new Date(orderDetail.data.req_visit_date), 'dd MMM yyyy') : '-'}
+                      </p>
+                    </div>
+                  </div>
+                  {orderDetail.data.notes && (
+                    <div className='pt-2'>
+                      <span className='text-muted-foreground text-sm'>Notes:</span>
+                      <p className='text-sm mt-1 p-3 bg-muted rounded-md'>{orderDetail.data.notes}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Customer Info */}
+                <div className='space-y-2'>
+                  <div className='flex items-center gap-2'>
+                    <User className='w-5 h-5 text-muted-foreground' />
+                    <h3 className='font-semibold text-lg'>Customer Information</h3>
+                  </div>
+                  <div className='bg-muted/50 rounded-lg p-4 space-y-2'>
+                    <div>
+                      <span className='text-sm font-semibold text-muted-foreground'>Name: </span>
+                      <span className='font-medium'>{orderDetail.data.customers?.customer_name}</span>
+                    </div>
+                    {orderDetail.data.customers?.primary_contact_person && (
+                      <div>
+                        <span className='text-sm font-semibold text-muted-foreground'>Contact Person: </span>
+                        <span>{orderDetail.data.customers.primary_contact_person}</span>
+                      </div>
+                    )}
+                    <div className='flex gap-4 text-sm'>
+                      {orderDetail.data.customers?.phone_number && (
+                        <div className='flex items-center gap-1'>
+                          <span className='text-muted-foreground'>Phone:</span>
+                          {orderDetail.data.customers.phone_number}
+                        </div>
+                      )}
+                      {orderDetail.data.customers?.email && (
+                        <div className='flex items-center gap-1'>
+                          <span className='text-muted-foreground'>Email:</span>
+                          {orderDetail.data.customers.email}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Locations & Services */}
+                <div className='space-y-2'>
+                  <div className='flex items-center gap-2'>
+                    <MapPin className='w-5 h-5 text-muted-foreground' />
+                    <h3 className='font-semibold text-lg'>Locations & Services ({Object.keys(groupedByLocation).length} locations)</h3>
+                  </div>
+                  <div className='space-y-3'>
+                    {Object.entries(groupedByLocation).map(([locationId, data]: [string, any]) => (
+                      <div key={locationId} className='border rounded-lg p-4 space-y-3'>
+                        <div className='flex items-start gap-2'>
+                          <div className='flex-1'>
+                            <p className='font-semibold'>{data.location?.building_name || 'Unknown Location'}</p>
+                            <p className='text-sm text-muted-foreground'>
+                              Floor {data.location?.floor} - Room {data.location?.room_number}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className='space-y-2 pl-0'>
+                          <p className='text-sm font-semibold text-muted-foreground'>Services:</p>
+                          {data.items.map((item: any, idx: number) => (
+                            <div key={idx} className='flex justify-between items-start text-sm p-2 bg-muted/50 rounded'>
+                              <div className='space-y-1'>
+                                <div className='flex items-center gap-2'>
+                                  <Badge variant='outline' className='text-xs'>
+                                    {SERVICE_TYPES.find(t => t.value === item.service_type)?.label || item.service_type}
+                                  </Badge>
+                                  <span className='text-muted-foreground'>×{item.quantity}</span>
+                                </div>
+                                {item.ac_units && (
+                                  <p className='text-xs text-muted-foreground'>
+                                    AC: {item.ac_units.brand} {item.ac_units.model_number}
+                                    {item.ac_units.serial_number && ` (SN: ${item.ac_units.serial_number})`}
+                                  </p>
+                                )}
+                              </div>
+                              <div className='font-semibold'>
+                                Rp {item.estimated_price?.toLocaleString('id-ID') || '0'}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className='flex justify-between items-center pt-3 border-t font-semibold'>
+                    <span>Total Estimated Price:</span>
+                    <span className='text-lg'>Rp {totalEstimated.toLocaleString('id-ID')}</span>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+        </DialogContent>
+      </Dialog>
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Confirm Assignment</AlertDialogTitle>
       <AlertDialogDescription>Are you sure you want to assign <strong>{selectedOrders.length}</strong> order(s) to <strong>{selectedTechnicianData?.technician_name}</strong>?<br /><br />
       Visit Date: <strong>{selectedDate && format(selectedDate, 'PPP')}</strong></AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={isAssigning}>Cancel</AlertDialogCancel>

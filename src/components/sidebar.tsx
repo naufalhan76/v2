@@ -90,6 +90,10 @@ const sidebarItems = [
     icon: ClipboardList,
     children: [
       {
+        title: 'Create Order',
+        href: '/dashboard/operasional/create-order',
+      },
+      {
         title: 'Assign Order',
         href: '/dashboard/operasional/assign-order',
       },

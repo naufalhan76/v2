@@ -175,38 +175,80 @@ function AssignmentSuccessContent() {
                       </div>
                     </div>
 
-                    {/* Location Info */}
-                    <div className='bg-muted/50 rounded-lg p-3'>
-                      <div className='flex items-center gap-2 mb-2'>
-                        <MapPin className='w-4 h-4 text-muted-foreground' />
-                        <span className='text-sm font-semibold'>Location</span>
-                      </div>
-                      <div className='ml-6 space-y-1'>
-                        <div className='flex items-center gap-2'>
-                          <Building className='w-3 h-3 text-muted-foreground' />
-                          <span className='font-medium'>{order.locations?.building_name}</span>
-                        </div>
-                        <p className='text-sm text-muted-foreground'>
-                          Floor {order.locations?.floor}, Room {order.locations?.room_number}
-                        </p>
-                        {order.locations?.description && (
-                          <p className='text-sm text-muted-foreground italic'>
-                            {order.locations.description}
-                          </p>
-                        )}
-                        {order.customers?.billing_address && (
-                          <p className='text-sm pt-1 border-t mt-2'>
-                            {order.customers.billing_address}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                    {/* Locations & Services */}
+                    {(() => {
+                      // Group order_items by location
+                      const groupedByLocation = (order.order_items || []).reduce((acc: any, item: any) => {
+                        const locationId = item.location_id || 'unknown'
+                        if (!acc[locationId]) {
+                          acc[locationId] = {
+                            location: item.locations,
+                            items: []
+                          }
+                        }
+                        acc[locationId].items.push(item)
+                        return acc
+                      }, {})
 
-                    {/* Description */}
-                    {order.description && (
+                      const locationCount = Object.keys(groupedByLocation).length
+
+                      return (
+                        <div className='space-y-2'>
+                          <div className='flex items-center gap-2'>
+                            <MapPin className='w-4 h-4 text-muted-foreground' />
+                            <span className='text-sm font-semibold'>
+                              Locations & Services ({locationCount} location{locationCount > 1 ? 's' : ''})
+                            </span>
+                          </div>
+                          <div className='space-y-3'>
+                            {Object.entries(groupedByLocation).map(([locationId, data]: [string, any]) => (
+                              <div key={locationId} className='bg-muted/50 rounded-lg p-3 space-y-2'>
+                                <div className='flex items-start gap-2'>
+                                  <Building className='w-4 h-4 text-muted-foreground mt-0.5' />
+                                  <div className='flex-1'>
+                                    <p className='font-medium'>{data.location?.building_name || 'Unknown Location'}</p>
+                                    <p className='text-sm text-muted-foreground'>
+                                      Floor {data.location?.floor}, Room {data.location?.room_number}
+                                    </p>
+                                  </div>
+                                </div>
+                                
+                                <div className='space-y-1.5 pl-6'>
+                                  <p className='text-xs font-semibold text-muted-foreground'>Services:</p>
+                                  {data.items.map((item: any, idx: number) => (
+                                    <div key={idx} className='flex justify-between items-start text-sm p-2 bg-background rounded'>
+                                      <div className='space-y-0.5'>
+                                        <div className='flex items-center gap-2'>
+                                          <Badge variant='outline' className='text-xs'>
+                                            {SERVICE_TYPE_MAP[item.service_type]?.label || item.service_type}
+                                          </Badge>
+                                          <span className='text-xs text-muted-foreground'>×{item.quantity}</span>
+                                        </div>
+                                        {item.ac_units && (
+                                          <p className='text-xs text-muted-foreground'>
+                                            AC: {item.ac_units.brand} {item.ac_units.model_number}
+                                            {item.ac_units.serial_number && ` (SN: ${item.ac_units.serial_number})`}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div className='text-xs font-semibold'>
+                                        Rp {item.estimated_price?.toLocaleString('id-ID') || '0'}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* Notes */}
+                    {order.notes && (
                       <div className='bg-blue-50 border border-blue-200 rounded-lg p-3'>
-                        <span className='text-sm font-semibold text-blue-900'>Order Description:</span>
-                        <p className='text-sm text-blue-800 mt-1'>{order.description}</p>
+                        <span className='text-sm font-semibold text-blue-900'>Order Notes:</span>
+                        <p className='text-sm text-blue-800 mt-1'>{order.notes}</p>
                       </div>
                     )}
                   </div>
