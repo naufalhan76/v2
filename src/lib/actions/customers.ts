@@ -22,7 +22,7 @@ export async function getCustomers(filters?: {
       .range(from, to)
     
     if (filters?.search) {
-      query = query.or(`customer_name.ilike.%${filters.search}%,primary_contact_person.ilike.%${filters.search}%,phone_number.ilike.%${filters.search}%,email.ilike.%${filters.search}%`)
+      query = query.or(`customer_name.ilike.%${filters.search}%,primary_contact_person.ilike.%${filters.search}%,phone_number.ilike.%${filters.search}%,email.ilike.%${filters.search}%,billing_address.ilike.%${filters.search}%`)
     }
     
     const { data, error, count } = await query

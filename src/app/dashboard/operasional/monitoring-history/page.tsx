@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/table'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import { History, Search, CalendarIcon, MessageCircle, AlertCircle, CheckCircle } from 'lucide-react'
 import { format, subDays, differenceInDays, isPast, isFuture } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -73,7 +75,7 @@ export default function MonitoringHistoryPage() {
   const serviceRecords = serviceRecordsData?.data || []
 
   // Client-side search filter
-  const filteredRecords = serviceRecords.filter((record: any) => {
+  const filteredRecordsBase = serviceRecords.filter((record: any) => {
     if (!searchQuery) return true
     const searchLower = searchQuery.toLowerCase()
     const customerName = record.ac_units?.locations?.customers?.customer_name?.toLowerCase() || ''
@@ -85,6 +87,12 @@ export default function MonitoringHistoryPage() {
            brand.includes(searchLower) || 
            model.includes(searchLower) ||
            orderId.includes(searchLower)
+  })
+
+  // Apply sorting
+  const { sortedData: filteredRecords, sortConfig, requestSort } = useSortableTable(filteredRecordsBase, {
+    key: 'service_date',
+    direction: 'desc'
   })
 
   // Calculate stats
@@ -277,11 +285,21 @@ Terima kasih.`
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>AC Unit</TableHead>
-                    <TableHead>Last Service</TableHead>
-                    <TableHead>Next Service Due</TableHead>
-                    <TableHead>Service Type</TableHead>
+                    <SortableTableHead sortKey="ac_units.locations.customers.customer_name" currentSort={sortConfig} onSort={requestSort}>
+                      Customer
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="ac_units.brand" currentSort={sortConfig} onSort={requestSort}>
+                      AC Unit
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="service_date" currentSort={sortConfig} onSort={requestSort}>
+                      Last Service
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="next_service_due" currentSort={sortConfig} onSort={requestSort}>
+                      Next Service Due
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="service_type" currentSort={sortConfig} onSort={requestSort}>
+                      Service Type
+                    </SortableTableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className='text-right'>Actions</TableHead>
                   </TableRow>

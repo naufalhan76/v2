@@ -21,6 +21,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import { ChevronLeft, ChevronRight, Eye, MapPin, User } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -69,11 +71,18 @@ export default function AssignOrderPage() {
   })
 
   const orders = ordersData?.data || []
-  const filteredOrders = orders.filter((o: any) => {
+  const filteredOrdersBase = orders.filter((o: any) => {
     const matchesServiceType = filterServiceType === 'ALL' || o.order_type === filterServiceType
     const matchesStatus = filterStatus === 'ALL' || o.status === filterStatus
     return matchesServiceType && matchesStatus
   })
+
+  // Apply sorting
+  const { sortedData: filteredOrders, sortConfig, requestSort } = useSortableTable(filteredOrdersBase, {
+    key: 'order_id',
+    direction: 'desc'
+  })
+
   const orderCounts = SERVICE_TYPES.reduce((acc, type) => {
     acc[type.value] = orders.filter((o: any) => o.order_type === type.value).length
     return acc

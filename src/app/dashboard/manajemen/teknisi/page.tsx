@@ -31,6 +31,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import { Edit, Trash2, Search, Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -44,11 +46,17 @@ interface Technician {
 
 export default function TechniciansPage() {
   const { toast } = useToast()
-  const [technicians, setTechnicians] = useState<Technician[]>([])
+  const [techniciansBase, setTechnicians] = useState<Technician[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
+
+  // Apply sorting
+  const { sortedData: technicians, sortConfig, requestSort } = useSortableTable(techniciansBase, {
+    key: 'technician_name',
+    direction: 'asc'
+  })
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -252,10 +260,18 @@ export default function TechniciansPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Contact Number</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Company</TableHead>
+                    <SortableTableHead sortKey="technician_name" currentSort={sortConfig} onSort={requestSort}>
+                      Name
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="contact_number" currentSort={sortConfig} onSort={requestSort}>
+                      Contact Number
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="email" currentSort={sortConfig} onSort={requestSort}>
+                      Email
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="company" currentSort={sortConfig} onSort={requestSort}>
+                      Company
+                    </SortableTableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>

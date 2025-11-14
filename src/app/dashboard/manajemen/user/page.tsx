@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import {
   Dialog,
   DialogContent,
@@ -53,7 +55,7 @@ import {
 } from '@/lib/actions/users'
 
 export default function ManajemenUserPage() {
-  const [users, setUsers] = useState<UserType[]>([])
+  const [usersBase, setUsers] = useState<UserType[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -62,6 +64,12 @@ export default function ManajemenUserPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  // Apply sorting
+  const { sortedData: users, sortConfig, requestSort } = useSortableTable(usersBase, {
+    key: 'full_name',
+    direction: 'asc'
+  })
   
   // Form state
   const [formData, setFormData] = useState({
@@ -364,11 +372,21 @@ export default function ManajemenUserPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[100px]">User ID</TableHead>
-                  <TableHead className="min-w-[150px]">Nama Lengkap</TableHead>
-                  <TableHead className="min-w-[200px]">Email</TableHead>
-                  <TableHead className="min-w-[100px]">Role</TableHead>
-                  <TableHead className="min-w-[120px]">Status</TableHead>
+                  <SortableTableHead sortKey="user_id" currentSort={sortConfig} onSort={requestSort} className="min-w-[100px]">
+                    User ID
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="full_name" currentSort={sortConfig} onSort={requestSort} className="min-w-[150px]">
+                    Nama Lengkap
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="email" currentSort={sortConfig} onSort={requestSort} className="min-w-[200px]">
+                    Email
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="role" currentSort={sortConfig} onSort={requestSort} className="min-w-[100px]">
+                    Role
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="is_active" currentSort={sortConfig} onSort={requestSort} className="min-w-[120px]">
+                    Status
+                  </SortableTableHead>
                   <TableHead className="text-right min-w-[120px]">Aksi</TableHead>
                 </TableRow>
               </TableHeader>

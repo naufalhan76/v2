@@ -31,6 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
@@ -82,7 +84,7 @@ export default function CustomerManagementPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Optimistic UI untuk delete operation
-  const { optimisticArray: optimisticCustomers, handleArrayAction } = useOptimisticArray(
+  const { optimisticArray: optimisticCustomersBase, handleArrayAction } = useOptimisticArray(
     data?.data || [],
     async ({ type, id }) => {
       if (type === 'remove') {
@@ -93,6 +95,12 @@ export default function CustomerManagementPage() {
       return { success: true, data: [] }
     }
   )
+
+  // Apply sorting
+  const { sortedData: optimisticCustomers, sortConfig, requestSort } = useSortableTable(optimisticCustomersBase, {
+    key: 'customer_name',
+    direction: 'asc'
+  })
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
@@ -349,11 +357,21 @@ export default function CustomerManagementPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nama Customer</TableHead>
-                  <TableHead>Kontak Person</TableHead>
-                  <TableHead>Nomor Telepon</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Alamat Billing</TableHead>
+                  <SortableTableHead sortKey="customer_name" currentSort={sortConfig} onSort={requestSort}>
+                    Nama Customer
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="primary_contact_person" currentSort={sortConfig} onSort={requestSort}>
+                    Kontak Person
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="phone_number" currentSort={sortConfig} onSort={requestSort}>
+                    Nomor Telepon
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="email" currentSort={sortConfig} onSort={requestSort}>
+                    Email
+                  </SortableTableHead>
+                  <SortableTableHead sortKey="billing_address" currentSort={sortConfig} onSort={requestSort}>
+                    Alamat Billing
+                  </SortableTableHead>
                   <TableHead>Catatan</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>

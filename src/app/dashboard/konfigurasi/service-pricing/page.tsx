@@ -44,6 +44,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import {
   getServicePricing,
@@ -73,7 +75,7 @@ const SERVICE_TYPES = [
 ]
 
 export default function ServicePricingPage() {
-  const [services, setServices] = useState<ServicePricing[]>([])
+  const [servicesBase, setServices] = useState<ServicePricing[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -81,6 +83,12 @@ export default function ServicePricingPage() {
   const [editingService, setEditingService] = useState<ServicePricing | null>(null)
   const [deletingService, setDeletingService] = useState<ServicePricing | null>(null)
   const { toast } = useToast()
+
+  // Apply sorting
+  const { sortedData: services, sortConfig, requestSort } = useSortableTable(servicesBase, {
+    key: 'service_type',
+    direction: 'asc'
+  })
 
   const {
     register,
@@ -448,12 +456,22 @@ export default function ServicePricingPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Jenis Service</TableHead>
-                    <TableHead>Nama Service</TableHead>
-                    <TableHead>Harga Dasar</TableHead>
+                    <SortableTableHead sortKey="service_type" currentSort={sortConfig} onSort={requestSort}>
+                      Jenis Service
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="service_name" currentSort={sortConfig} onSort={requestSort}>
+                      Nama Service
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="base_price" currentSort={sortConfig} onSort={requestSort}>
+                      Harga Dasar
+                    </SortableTableHead>
                     <TableHead>Termasuk</TableHead>
-                    <TableHead>Durasi</TableHead>
-                    <TableHead>Status</TableHead>
+                    <SortableTableHead sortKey="duration_minutes" currentSort={sortConfig} onSort={requestSort}>
+                      Durasi
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="status" currentSort={sortConfig} onSort={requestSort}>
+                      Status
+                    </SortableTableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>

@@ -39,6 +39,8 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import { Edit, Trash2, Search } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -69,7 +71,7 @@ interface AcUnit {
 
 export default function AcUnitsPage() {
   const { toast } = useToast()
-  const [acUnits, setAcUnits] = useState<AcUnit[]>([])
+  const [acUnitsBase, setAcUnits] = useState<AcUnit[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -77,6 +79,12 @@ export default function AcUnitsPage() {
   const [selectedAcUnit, setSelectedAcUnit] = useState<AcUnit | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Apply sorting
+  const { sortedData: acUnits, sortConfig, requestSort } = useSortableTable(acUnitsBase, {
+    key: 'brand',
+    direction: 'asc'
+  })
 
   const [formData, setFormData] = useState({
     brand: '',
@@ -243,14 +251,26 @@ export default function AcUnitsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Brand</TableHead>
-                    <TableHead>Model Number</TableHead>
-                    <TableHead>Serial Number</TableHead>
-                    <TableHead>AC Type</TableHead>
-                    <TableHead>Capacity (BTU)</TableHead>
+                    <SortableTableHead sortKey="brand" currentSort={sortConfig} onSort={requestSort}>
+                      Brand
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="model_number" currentSort={sortConfig} onSort={requestSort}>
+                      Model Number
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="serial_number" currentSort={sortConfig} onSort={requestSort}>
+                      Serial Number
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="ac_type" currentSort={sortConfig} onSort={requestSort}>
+                      AC Type
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="capacity_btu" currentSort={sortConfig} onSort={requestSort}>
+                      Capacity (BTU)
+                    </SortableTableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Customer</TableHead>
-                    <TableHead>Status</TableHead>
+                    <SortableTableHead sortKey="status" currentSort={sortConfig} onSort={requestSort}>
+                      Status
+                    </SortableTableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>

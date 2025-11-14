@@ -31,6 +31,8 @@ import {
 } from '@/components/ui/dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import { Activity, Package, FileText, Search, Eye, User, MapPin, Phone, Mail, Building, CalendarIcon, ChevronDown } from 'lucide-react'
 import { format, subDays } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -170,7 +172,7 @@ export default function MonitoringOngoingPage() {
   )
 
   // Apply filters
-  const filteredOrders = ongoingOrders.filter((order: any) => {
+  const filteredOrdersBase = ongoingOrders.filter((order: any) => {
     // Search filter
     if (searchQuery) {
       const searchLower = searchQuery.toLowerCase()
@@ -201,6 +203,12 @@ export default function MonitoringOngoingPage() {
     }
 
     return true
+  })
+
+  // Apply sorting
+  const { sortedData: filteredOrders, sortConfig, requestSort } = useSortableTable(filteredOrdersBase, {
+    key: 'order_id',
+    direction: 'desc'
   })
 
   // Calculate stats
@@ -433,14 +441,26 @@ export default function MonitoringOngoingPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Customer Name</TableHead>
-                    <TableHead>Req Visit Date</TableHead>
+                    <SortableTableHead sortKey="order_id" currentSort={sortConfig} onSort={requestSort}>
+                      Order ID
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="customers.customer_name" currentSort={sortConfig} onSort={requestSort}>
+                      Customer Name
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="req_visit_date" currentSort={sortConfig} onSort={requestSort}>
+                      Req Visit Date
+                    </SortableTableHead>
                     <TableHead>Locations</TableHead>
                     <TableHead>Services</TableHead>
-                    <TableHead>Order Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Assigned Technician</TableHead>
+                    <SortableTableHead sortKey="order_type" currentSort={sortConfig} onSort={requestSort}>
+                      Order Type
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="status" currentSort={sortConfig} onSort={requestSort}>
+                      Status
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="assigned_technician_id" currentSort={sortConfig} onSort={requestSort}>
+                      Assigned Technician
+                    </SortableTableHead>
                     <TableHead className='text-right'>Actions</TableHead>
                   </TableRow>
                 </TableHeader>

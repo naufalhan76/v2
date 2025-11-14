@@ -32,6 +32,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import { CheckCircle, Search, Eye, Check, X, User, MapPin, Phone, Mail, Building } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -75,13 +77,19 @@ export default function AcceptOrderPage() {
   const orders = ordersData?.data || []
 
   // Client-side search filter
-  const filteredOrders = orders.filter((order: any) => {
+  const filteredOrdersBase = orders.filter((order: any) => {
     if (!searchQuery) return true
     const searchLower = searchQuery.toLowerCase()
     const orderId = order.order_id?.toLowerCase() || ''
     const customerName = order.customers?.customer_name?.toLowerCase() || ''
     
     return orderId.includes(searchLower) || customerName.includes(searchLower)
+  })
+
+  // Apply sorting
+  const { sortedData: filteredOrders, sortConfig, requestSort } = useSortableTable(filteredOrdersBase, {
+    key: 'order_id',
+    direction: 'desc'
   })
 
   const handleOrderAction = async (orderId: string, newStatus: 'ACCEPTED' | 'CANCELLED') => {
@@ -177,12 +185,24 @@ export default function AcceptOrderPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Customer Name</TableHead>
-                    <TableHead>Order Date</TableHead>
-                    <TableHead>Req Visit Date</TableHead>
-                    <TableHead>Order Type</TableHead>
-                    <TableHead>Status</TableHead>
+                    <SortableTableHead sortKey="order_id" currentSort={sortConfig} onSort={requestSort}>
+                      Order ID
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="customers.customer_name" currentSort={sortConfig} onSort={requestSort}>
+                      Customer Name
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="order_date" currentSort={sortConfig} onSort={requestSort}>
+                      Order Date
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="req_visit_date" currentSort={sortConfig} onSort={requestSort}>
+                      Req Visit Date
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="order_type" currentSort={sortConfig} onSort={requestSort}>
+                      Order Type
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="status" currentSort={sortConfig} onSort={requestSort}>
+                      Status
+                    </SortableTableHead>
                     <TableHead className='text-right'>Actions</TableHead>
                   </TableRow>
                 </TableHeader>

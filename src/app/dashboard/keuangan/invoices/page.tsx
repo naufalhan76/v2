@@ -32,6 +32,8 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import { useToast } from '@/hooks/use-toast'
 import { getInvoices, getInvoiceStats, type Invoice } from '@/lib/actions/invoices'
 import { format } from 'date-fns'
@@ -54,7 +56,7 @@ const PAYMENT_STATUS_COLORS: Record<string, string> = {
 export default function InvoicesPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [invoicesBase, setInvoices] = useState<Invoice[]>([])
   const [stats, setStats] = useState({
     total: 0,
     draft: 0,
@@ -68,6 +70,12 @@ export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [paymentFilter, setPaymentFilter] = useState('ALL')
+
+  // Apply sorting
+  const { sortedData: invoices, sortConfig, requestSort } = useSortableTable(invoicesBase, {
+    key: 'invoice_number',
+    direction: 'desc'
+  })
 
   useEffect(() => {
     loadInvoices()
@@ -254,13 +262,27 @@ export default function InvoicesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Invoice Number</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Jatuh Tempo</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Pembayaran</TableHead>
+                    <SortableTableHead sortKey="invoice_number" currentSort={sortConfig} onSort={requestSort}>
+                      Invoice Number
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="customers.customer_name" currentSort={sortConfig} onSort={requestSort}>
+                      Customer
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="invoice_date" currentSort={sortConfig} onSort={requestSort}>
+                      Tanggal
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="due_date" currentSort={sortConfig} onSort={requestSort}>
+                      Jatuh Tempo
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="total_amount" currentSort={sortConfig} onSort={requestSort}>
+                      Total
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="status" currentSort={sortConfig} onSort={requestSort}>
+                      Status
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="payment_status" currentSort={sortConfig} onSort={requestSort}>
+                      Pembayaran
+                    </SortableTableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>

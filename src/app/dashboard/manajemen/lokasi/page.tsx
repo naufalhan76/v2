@@ -31,6 +31,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import { Edit, Trash2, Search } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -52,7 +54,7 @@ interface Location {
 
 export default function LocationsPage() {
   const { toast } = useToast()
-  const [locations, setLocations] = useState<Location[]>([])
+  const [locationsBase, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -60,6 +62,12 @@ export default function LocationsPage() {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Apply sorting
+  const { sortedData: locations, sortConfig, requestSort } = useSortableTable(locationsBase, {
+    key: 'customers.customer_name',
+    direction: 'asc'
+  })
 
   const [formData, setFormData] = useState({
     building_name: '',
@@ -211,10 +219,18 @@ export default function LocationsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Building Name</TableHead>
-                    <TableHead>Floor</TableHead>
-                    <TableHead>Room Number</TableHead>
+                    <SortableTableHead sortKey="customers.customer_name" currentSort={sortConfig} onSort={requestSort}>
+                      Customer
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="building_name" currentSort={sortConfig} onSort={requestSort}>
+                      Building Name
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="floor" currentSort={sortConfig} onSort={requestSort}>
+                      Floor
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="room_number" currentSort={sortConfig} onSort={requestSort}>
+                      Room Number
+                    </SortableTableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
