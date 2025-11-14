@@ -15,13 +15,29 @@ export async function getCustomers(filters?: {
     const from = (page - 1) * limit
     const to = from + limit - 1
     
+    // Fetch customers with locations count and details
     let query = supabase
       .from('customers')
-      .select('*', { count: 'exact' })
+      .select(`
+        *,
+        locations (
+          location_id,
+          building_name,
+          floor,
+          room_number,
+          description,
+          ac_units (
+            ac_unit_id
+          )
+        )
+      `, { count: 'exact' })
       .order('customer_name', { ascending: true })
       .range(from, to)
     
     if (filters?.search) {
+      // Search in customer fields AND locations
+      // Note: Supabase doesn't support OR across joined tables directly,
+      // so we'll do client-side filtering for location addresses after fetch
       query = query.or(`customer_name.ilike.%${filters.search}%,primary_contact_person.ilike.%${filters.search}%,phone_number.ilike.%${filters.search}%,email.ilike.%${filters.search}%,billing_address.ilike.%${filters.search}%`)
     }
     
@@ -29,9 +45,35 @@ export async function getCustomers(filters?: {
     
     if (error) throw error
     
+    let customers = data || []
+    
+    // Client-side filter for location addresses if search provided
+    if (filters?.search && customers.length > 0) {
+      const searchLower = filters.search.toLowerCase()
+      customers = customers.filter(customer => {
+        // Already matched by customer fields, or check locations
+        const customerMatch = 
+          customer.customer_name?.toLowerCase().includes(searchLower) ||
+          customer.phone_number?.toLowerCase().includes(searchLower) ||
+          customer.email?.toLowerCase().includes(searchLower) ||
+          customer.billing_address?.toLowerCase().includes(searchLower)
+        
+        if (customerMatch) return true
+        
+        // Check if any location matches
+        const locationMatch = customer.locations?.some((loc: any) => 
+          loc.building_name?.toLowerCase().includes(searchLower) ||
+          loc.room_number?.toLowerCase().includes(searchLower) ||
+          loc.description?.toLowerCase().includes(searchLower)
+        )
+        
+        return locationMatch
+      })
+    }
+    
     return {
       success: true,
-      data: data || [],
+      data: customers,
       pagination: {
         total: count || 0,
         page,

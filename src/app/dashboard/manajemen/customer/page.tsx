@@ -31,9 +31,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Badge } from '@/components/ui/badge'
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
-import { Plus, Pencil, Trash2, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, MapPin, Building2 } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { TableSkeleton } from '@/components/ui/skeleton'
@@ -323,7 +329,7 @@ export default function CustomerManagementPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Cari customer..."
+              placeholder="Cari nama, telepon, email, alamat billing, atau lokasi service..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value)
@@ -372,35 +378,108 @@ export default function CustomerManagementPage() {
                   <SortableTableHead sortKey="billing_address" currentSort={sortConfig} onSort={requestSort}>
                     Alamat Billing
                   </SortableTableHead>
+                  <TableHead>Lokasi Service</TableHead>
                   <TableHead>Catatan</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableSkeleton rows={5} columns={7} />
+                  <TableSkeleton rows={5} columns={8} />
                 ) : optimisticCustomers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center">
+                    <TableCell colSpan={8} className="text-center">
                       Tidak ada data customer
                     </TableCell>
                   </TableRow>
                 ) : (
-                  optimisticCustomers.map((customer) => (
-                    <TableRow
-                      key={customer.customer_id}
-                      className={deletingId === customer.customer_id ? "opacity-50" : ""}
-                    >
-                      <TableCell className="font-medium">
-                        {customer.customer_name}
-                      </TableCell>
-                      <TableCell>{customer.primary_contact_person}</TableCell>
-                      <TableCell>{customer.phone_number}</TableCell>
-                      <TableCell>{customer.email}</TableCell>
-                      <TableCell>{customer.billing_address}</TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {customer.notes || '-'}
-                      </TableCell>
+                  optimisticCustomers.map((customer) => {
+                    const locations = customer.locations || []
+                    const locationsCount = locations.length
+                    const totalAcUnits = locations.reduce((sum: number, loc: any) => 
+                      sum + (loc.ac_units?.length || 0), 0
+                    )
+                    
+                    return (
+                      <TableRow
+                        key={customer.customer_id}
+                        className={deletingId === customer.customer_id ? "opacity-50" : ""}
+                      >
+                        <TableCell className="font-medium">
+                          {customer.customer_name}
+                        </TableCell>
+                        <TableCell>{customer.primary_contact_person}</TableCell>
+                        <TableCell>{customer.phone_number}</TableCell>
+                        <TableCell>{customer.email}</TableCell>
+                        <TableCell>{customer.billing_address}</TableCell>
+                        <TableCell>
+                          {locationsCount === 0 ? (
+                            <Badge variant="secondary" className="gap-1">
+                              <MapPin className="w-3 h-3" />
+                              0 lokasi
+                            </Badge>
+                          ) : (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 gap-1">
+                                  <MapPin className="w-4 h-4" />
+                                  {locationsCount} lokasi
+                                  {totalAcUnits > 0 && (
+                                    <Badge variant="secondary" className="ml-1">
+                                      {totalAcUnits} AC
+                                    </Badge>
+                                  )}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80" align="start">
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-2 pb-2 border-b">
+                                    <Building2 className="w-4 h-4 text-muted-foreground" />
+                                    <h4 className="font-semibold text-sm">
+                                      Lokasi Service ({locationsCount})
+                                    </h4>
+                                  </div>
+                                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                    {locations.map((loc: any, idx: number) => (
+                                      <div 
+                                        key={loc.location_id} 
+                                        className="p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors"
+                                      >
+                                        <div className="flex items-start gap-2">
+                                          <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold flex-shrink-0 mt-0.5">
+                                            {idx + 1}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="font-medium text-sm">
+                                              {loc.building_name}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                              Floor {loc.floor}
+                                              {loc.room_number && ` • Room ${loc.room_number}`}
+                                            </div>
+                                            {loc.description && (
+                                              <div className="text-xs text-muted-foreground mt-1">
+                                                {loc.description}
+                                              </div>
+                                            )}
+                                            {loc.ac_units && loc.ac_units.length > 0 && (
+                                              <Badge variant="outline" className="mt-1 text-xs">
+                                                {loc.ac_units.length} AC unit{loc.ac_units.length > 1 ? 's' : ''}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {customer.notes || '-'}
+                        </TableCell>
                       <TableCell className="text-right w-[180px]">
                         <div className="flex justify-end gap-2">
                           <LoadingOverlay isLoading={isUpdating && editingId === customer.customer_id}>
@@ -432,7 +511,8 @@ export default function CustomerManagementPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                    )
+                  })
                 )}
               </TableBody>
             </Table>
