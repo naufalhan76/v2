@@ -265,7 +265,7 @@ export default function MonitoringOngoingPage() {
     try {
       setIsProcessing(true)
       let successCount = 0
-      let errorMessages: string[] = []
+      const errorMessages: string[] = []
       
       for (const helperId of selectedHelpers) {
         const result = await addHelperTechnician(detailOrderId, helperId)
