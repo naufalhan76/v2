@@ -715,49 +715,28 @@ export default function CreateOrderPage() {
                   
                   {technicianId && (
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Helper Technicians (Optional)</Label>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            // Show a simple select dialog
-                            const availableTechs = technicians.filter(t => 
-                              t.technician_id !== technicianId && 
-                              !helperTechnicianIds.includes(t.technician_id)
-                            )
-                            if (availableTechs.length === 0) {
-                              toast({
-                                title: 'No Available Helpers',
-                                description: 'All technicians are already assigned',
-                                variant: 'default'
-                              })
-                            }
-                          }}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add Helper
-                        </Button>
-                      </div>
-                      
-                      {/* Available Helpers to Select */}
-                      <div className="space-y-2">
-                        {technicians
-                          .filter(t => t.technician_id !== technicianId && !helperTechnicianIds.includes(t.technician_id))
-                          .map(tech => (
-                            <div
-                              key={tech.technician_id}
-                              className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted cursor-pointer"
-                              onClick={() => setHelperTechnicianIds([...helperTechnicianIds, tech.technician_id])}
-                            >
-                              <span className="text-sm">{tech.full_name} ({tech.employee_id})</span>
-                              <Button type="button" variant="ghost" size="sm">
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                      </div>
+                      <Label>Helper Technicians (Optional)</Label>
+                      <Select
+                        value=""
+                        onValueChange={(value) => {
+                          if (value && !helperTechnicianIds.includes(value)) {
+                            setHelperTechnicianIds([...helperTechnicianIds, value])
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select helper technicians..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {technicians
+                            .filter(t => t.technician_id !== technicianId && !helperTechnicianIds.includes(t.technician_id))
+                            .map(tech => (
+                              <SelectItem key={tech.technician_id} value={tech.technician_id}>
+                                {tech.full_name} ({tech.employee_id})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
                       
                       {/* Selected Helpers */}
                       {helperTechnicianIds.length > 0 && (
