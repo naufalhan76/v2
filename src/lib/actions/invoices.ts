@@ -267,6 +267,7 @@ export async function getInvoiceById(invoiceId: string): Promise<{
   invoice: Invoice
   items: InvoiceItem[]
   payments: PaymentRecord[]
+  orderItemsDetailed?: any[]
 } | null> {
   const supabase = await createClient()
 
@@ -314,10 +315,41 @@ export async function getInvoiceById(invoiceId: string): Promise<{
     console.error('Error fetching invoice details:', itemsError || paymentsError)
   }
 
+  // Fetch detailed order items with AC unit information
+  let orderItemsDetailed = []
+  if (invoice.order_id) {
+    const { data: orderItems, error: orderItemsError } = await supabase
+      .from('order_items')
+      .select(`
+        *,
+        locations (
+          location_id,
+          building_name,
+          floor,
+          room_number,
+          description
+        ),
+        ac_units (
+          ac_unit_id,
+          brand,
+          model_number,
+          serial_number,
+          installation_date
+        )
+      `)
+      .eq('order_id', invoice.order_id)
+      .order('location_id')
+
+    if (!orderItemsError && orderItems) {
+      orderItemsDetailed = orderItems
+    }
+  }
+
   return {
     invoice,
     items: items || [],
     payments: payments || [],
+    orderItemsDetailed: orderItemsDetailed || [],
   }
 }
 

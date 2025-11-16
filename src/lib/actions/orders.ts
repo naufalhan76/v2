@@ -42,6 +42,17 @@ export async function getOrders(filters?: {
             floor,
             room_number
           )
+        ),
+        order_technicians (
+          id,
+          technician_id,
+          role,
+          assigned_at,
+          technicians (
+            technician_id,
+            technician_name,
+            contact_number
+          )
         )
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
@@ -130,7 +141,19 @@ export async function getOrderById(orderId: string) {
             ac_unit_id,
             brand,
             model_number,
-            serial_number
+            serial_number,
+            installation_date
+          )
+        ),
+        order_technicians (
+          id,
+          technician_id,
+          role,
+          assigned_at,
+          technicians (
+            technician_id,
+            technician_name,
+            contact_number
           )
         )
       `)
@@ -241,6 +264,7 @@ export async function updateOrderStatus(orderId: string, newStatus: string, note
 export async function assignOrdersToTechnician(data: {
   orderIds: string[]
   technicianId: string
+  helperTechnicianIds?: string[]
   scheduledDate: string
 }) {
   try {
@@ -263,6 +287,43 @@ export async function assignOrdersToTechnician(data: {
       throw orderError
     }
     
+    // Insert technician assignments to order_technicians table
+    const technicianAssignments = []
+    
+    for (const orderId of data.orderIds) {
+      // Add lead technician
+      technicianAssignments.push({
+        order_id: orderId,
+        technician_id: data.technicianId,
+        role: 'lead',
+        assigned_at: new Date().toISOString()
+      })
+      
+      // Add helper technicians if any
+      if (data.helperTechnicianIds && data.helperTechnicianIds.length > 0) {
+        for (const helperId of data.helperTechnicianIds) {
+          technicianAssignments.push({
+            order_id: orderId,
+            technician_id: helperId,
+            role: 'helper',
+            assigned_at: new Date().toISOString()
+          })
+        }
+      }
+    }
+    
+    // Insert all technician assignments
+    if (technicianAssignments.length > 0) {
+      const { error: assignError } = await supabase
+        .from('order_technicians')
+        .insert(technicianAssignments)
+      
+      if (assignError) {
+        console.error('Technician assignment error:', assignError)
+        throw assignError
+      }
+    }
+    
     console.log('Orders assigned successfully')
     revalidatePath('/dashboard/operasional/assign-order')
     revalidatePath('/dashboard/operasional/monitoring-ongoing')
@@ -277,6 +338,68 @@ export async function assignOrdersToTechnician(data: {
     return {
       success: false,
       error: error.message || 'Failed to assign orders',
+    }
+  }
+}
+
+export async function addHelperTechnician(orderId: string, helperTechnicianId: string) {
+  try {
+    const supabase = await createClient()
+    
+    // Insert helper technician
+    const { error } = await supabase
+      .from('order_technicians')
+      .insert({
+        order_id: orderId,
+        technician_id: helperTechnicianId,
+        role: 'helper',
+        assigned_at: new Date().toISOString()
+      })
+    
+    if (error) throw error
+    
+    revalidatePath('/dashboard/operasional/monitoring-ongoing')
+    revalidatePath('/dashboard')
+    
+    return {
+      success: true,
+      message: 'Helper technician added successfully'
+    }
+  } catch (error: any) {
+    console.error('Error adding helper technician:', error)
+    return {
+      success: false,
+      error: error.message || 'Failed to add helper technician',
+    }
+  }
+}
+
+export async function removeHelperTechnician(orderId: string, helperTechnicianId: string) {
+  try {
+    const supabase = await createClient()
+    
+    // Delete helper technician
+    const { error } = await supabase
+      .from('order_technicians')
+      .delete()
+      .eq('order_id', orderId)
+      .eq('technician_id', helperTechnicianId)
+      .eq('role', 'helper')
+    
+    if (error) throw error
+    
+    revalidatePath('/dashboard/operasional/monitoring-ongoing')
+    revalidatePath('/dashboard')
+    
+    return {
+      success: true,
+      message: 'Helper technician removed successfully'
+    }
+  } catch (error: any) {
+    console.error('Error removing helper technician:', error)
+    return {
+      success: false,
+      error: error.message || 'Failed to remove helper technician',
     }
   }
 }

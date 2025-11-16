@@ -31,7 +31,8 @@ export async function searchCustomerByPhone(phone: string): Promise<{
         customer_name,
         phone_number,
         primary_contact_person,
-        email
+        email,
+        billing_address
       `)
       .eq('phone_number', normalizedPhone)
       .single()
@@ -224,6 +225,39 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
         .eq('order_id', order.order_id)
       
       throw itemsError
+    }
+    
+    // 3. Create technician assignments if technician is assigned
+    if (input.assigned_technician_id) {
+      const technicianAssignments = [
+        {
+          order_id: order.order_id,
+          technician_id: input.assigned_technician_id,
+          role: 'lead',
+          assigned_at: new Date().toISOString()
+        }
+      ]
+      
+      // Add helper technicians if provided
+      if (input.helper_technician_ids && input.helper_technician_ids.length > 0) {
+        for (const helperId of input.helper_technician_ids) {
+          technicianAssignments.push({
+            order_id: order.order_id,
+            technician_id: helperId,
+            role: 'helper',
+            assigned_at: new Date().toISOString()
+          })
+        }
+      }
+      
+      const { error: techError } = await supabase
+        .from('order_technicians')
+        .insert(technicianAssignments)
+      
+      if (techError) {
+        console.error('[createOrderWithItems] Failed to assign technicians:', techError)
+        // Don't rollback entire order, just log the error
+      }
     }
     
     revalidatePath('/dashboard/operasional/orders')

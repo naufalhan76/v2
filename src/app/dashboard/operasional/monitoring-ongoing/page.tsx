@@ -1,12 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { getOrders, getOrderById } from '@/lib/actions/orders'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { getOrders, getOrderById, addHelperTechnician, removeHelperTechnician } from '@/lib/actions/orders'
+import { getTechnicians } from '@/lib/actions/technicians'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -29,11 +32,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
-import { Activity, Package, FileText, Search, Eye, User, MapPin, Phone, Mail, Building, CalendarIcon, ChevronDown } from 'lucide-react'
+import { Activity, Package, FileText, Search, Eye, User, MapPin, Phone, Mail, Building, CalendarIcon, ChevronDown, Plus, X, Loader2 } from 'lucide-react'
 import { format, subDays } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { id } from 'date-fns/locale'
@@ -108,6 +121,8 @@ const PAYMENT_STATUSES = [
 ]
 
 export default function MonitoringOngoingPage() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [statusGroupFilter, setStatusGroupFilter] = useState<string>('ALL') // NEW, ACCEPTED, ASSIGNED, etc. or 'ALL'
@@ -115,6 +130,12 @@ export default function MonitoringOngoingPage() {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('ALL')
   const [multiLocationFilter, setMultiLocationFilter] = useState<string>('ALL') // 'ALL', 'SINGLE', 'MULTI'
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null)
+  const [showAddHelperDialog, setShowAddHelperDialog] = useState(false)
+  const [showAddHelperConfirm, setShowAddHelperConfirm] = useState(false)
+  const [selectedHelpers, setSelectedHelpers] = useState<string[]>([])
+  const [showRemoveHelperDialog, setShowRemoveHelperDialog] = useState(false)
+  const [helperToRemove, setHelperToRemove] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
   
   // Date range state (default: 30 days ago to today)
   const [dateRange, setDateRange] = useState<{from: Date | undefined, to?: Date | undefined}>(() => {
@@ -166,6 +187,13 @@ export default function MonitoringOngoingPage() {
     enabled: !!detailOrderId
   })
 
+  const { data: techniciansData } = useQuery({
+    queryKey: ['technicians'],
+    queryFn: () => getTechnicians({ limit: 100 })
+  })
+  
+  const technicians = techniciansData?.data || []
+
   // Filter orders to only show ongoing (exclude PAID and CLOSED)
   const ongoingOrders = (ordersData?.data || []).filter((order: any) => 
     ALL_ONGOING_STATUSES.includes(order.status)
@@ -215,6 +243,108 @@ export default function MonitoringOngoingPage() {
   const nonAssignedCount = ongoingOrders.filter((o: any) => STATUS_GROUPS.NON_ASSIGNED.includes(o.status)).length
   const assignedCount = ongoingOrders.filter((o: any) => STATUS_GROUPS.ASSIGNED.includes(o.status)).length
   const invoicedCount = ongoingOrders.filter((o: any) => STATUS_GROUPS.INVOICED.includes(o.status)).length
+
+  // Helper management functions
+  const handleOpenAddHelper = () => {
+    setSelectedHelpers([])
+    setShowAddHelperDialog(true)
+  }
+
+  const handleConfirmAddHelpers = () => {
+    if (selectedHelpers.length === 0) {
+      toast({ title: 'No Selection', description: 'Please select at least one helper', variant: 'destructive' })
+      return
+    }
+    setShowAddHelperDialog(false)
+    setShowAddHelperConfirm(true)
+  }
+
+  const handleAddHelpers = async () => {
+    if (!detailOrderId || selectedHelpers.length === 0) return
+    
+    try {
+      setIsProcessing(true)
+      let successCount = 0
+      let errorMessages: string[] = []
+      
+      for (const helperId of selectedHelpers) {
+        const result = await addHelperTechnician(detailOrderId, helperId)
+        if (result.success) {
+          successCount++
+        } else {
+          errorMessages.push(result.error || 'Failed to add helper')
+        }
+      }
+      
+      if (successCount > 0) {
+        toast({ 
+          title: 'Success', 
+          description: `${successCount} helper technician${successCount > 1 ? 's' : ''} added` 
+        })
+        queryClient.invalidateQueries({ queryKey: ['order', detailOrderId] })
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+      }
+      
+      if (errorMessages.length > 0) {
+        toast({ 
+          title: 'Some helpers failed to add', 
+          description: errorMessages[0], 
+          variant: 'destructive' 
+        })
+      }
+      
+      setShowAddHelperConfirm(false)
+      setSelectedHelpers([])
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const toggleHelperSelection = (helperId: string) => {
+    setSelectedHelpers(prev => 
+      prev.includes(helperId) 
+        ? prev.filter(id => id !== helperId)
+        : [...prev, helperId]
+    )
+  }
+  
+  const handleRemoveHelper = async () => {
+    if (!detailOrderId || !helperToRemove) return
+    
+    try {
+      setIsProcessing(true)
+      const result = await removeHelperTechnician(detailOrderId, helperToRemove)
+      
+      if (result.success) {
+        toast({ title: 'Success', description: 'Helper technician removed' })
+        queryClient.invalidateQueries({ queryKey: ['order', detailOrderId] })
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+        setShowRemoveHelperDialog(false)
+        setHelperToRemove(null)
+      } else {
+        toast({ title: 'Error', description: result.error, variant: 'destructive' })
+      }
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+  
+  // Get available technicians (exclude lead and already assigned helpers)
+  const getAvailableTechnicians = () => {
+    if (!orderDetail?.data) return []
+    
+    const leadTechId = orderDetail.data.order_technicians?.find((t: any) => t.role === 'lead')?.technician_id
+    const helperIds = orderDetail.data.order_technicians?.filter((t: any) => t.role === 'helper').map((t: any) => t.technician_id) || []
+    
+    return technicians.filter((tech: any) => 
+      tech.technician_id !== leadTechId && 
+      !helperIds.includes(tech.technician_id)
+    )
+  }
 
   return (
     <div className='p-6 space-y-6'>
@@ -546,7 +676,20 @@ export default function MonitoringOngoingPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className='text-sm'>
-                          {order.assigned_technician_id || '-'}
+                          {order.order_technicians && order.order_technicians.length > 0 ? (
+                            <div className='space-y-1'>
+                              <div className='font-medium'>
+                                {order.order_technicians.find((t: any) => t.role === 'lead')?.technicians?.technician_name || order.assigned_technician_id || '-'}
+                              </div>
+                              {order.order_technicians.filter((t: any) => t.role === 'helper').length > 0 && (
+                                <div className='text-xs text-muted-foreground'>
+                                  + {order.order_technicians.filter((t: any) => t.role === 'helper').map((t: any) => t.technicians?.technician_name).join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            order.assigned_technician_id || '-'
+                          )}
                         </TableCell>
                         <TableCell className='text-right'>
                           <Button
@@ -680,6 +823,73 @@ export default function MonitoringOngoingPage() {
                   </div>
                 </div>
 
+                {/* Technician Info */}
+                {orderDetail.data.order_technicians && orderDetail.data.order_technicians.length > 0 && (
+                  <div className='space-y-2'>
+                    <div className='flex items-center justify-between'>
+                      <div className='flex items-center gap-2'>
+                        <User className='w-5 h-5 text-muted-foreground' />
+                        <h3 className='font-semibold text-lg'>Assigned Technicians</h3>
+                      </div>
+                      <Button 
+                        size='sm' 
+                        variant='outline' 
+                        onClick={handleOpenAddHelper}
+                        disabled={isProcessing}
+                      >
+                        <Plus className='w-4 h-4 mr-1' />
+                        Add Helper
+                      </Button>
+                    </div>
+                    <div className='bg-muted/50 rounded-lg p-4 space-y-3'>
+                      {/* Lead Technician */}
+                      {orderDetail.data.order_technicians.filter((t: any) => t.role === 'lead').map((tech: any) => (
+                        <div key={tech.id} className='flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20'>
+                          <div>
+                            <div className='font-semibold'>{tech.technicians?.technician_name || 'Unknown'}</div>
+                            <div className='text-xs text-muted-foreground'>Lead Technician</div>
+                          </div>
+                          <Badge className='bg-primary'>LEAD</Badge>
+                        </div>
+                      ))}
+                      
+                      {/* Helper Technicians */}
+                      {orderDetail.data.order_technicians.filter((t: any) => t.role === 'helper').length > 0 && (
+                        <div className='space-y-2'>
+                          <div className='text-sm font-medium text-muted-foreground'>Helpers:</div>
+                          {orderDetail.data.order_technicians.filter((t: any) => t.role === 'helper').map((tech: any) => (
+                            <div key={tech.id} className='flex items-center justify-between p-2 bg-white rounded border'>
+                              <div className='flex-1'>
+                                <div className='font-medium text-sm'>{tech.technicians?.technician_name || 'Unknown'}</div>
+                                {tech.technicians?.contact_number && (
+                                  <div className='text-xs text-muted-foreground flex items-center gap-1'>
+                                    <Phone className='w-3 h-3' />
+                                    {tech.technicians.contact_number}
+                                  </div>
+                                )}
+                              </div>
+                              <div className='flex items-center gap-2'>
+                                <Badge variant='outline' className='text-xs'>HELPER</Badge>
+                              <Button
+                                size='sm'
+                                variant='ghost'
+                                onClick={() => {
+                                  setHelperToRemove(tech.technician_id)
+                                  setShowRemoveHelperDialog(true)
+                                }}
+                                disabled={isProcessing}
+                              >
+                                <X className='w-4 h-4 text-red-500' />
+                              </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Locations & Services */}
                 <div className='space-y-2'>
                   <div className='flex items-center gap-2'>
@@ -753,6 +963,134 @@ export default function MonitoringOngoingPage() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Add Helper Dialog - Multi Select */}
+      <Dialog open={showAddHelperDialog} onOpenChange={(open) => {
+        setShowAddHelperDialog(open)
+        if (!open) setSelectedHelpers([])
+      }}>
+        <DialogContent className='max-w-md'>
+          <DialogHeader>
+            <DialogTitle>Select Helper Technicians</DialogTitle>
+            <DialogDescription>
+              Choose one or more technicians to add as helpers
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4'>
+            {getAvailableTechnicians().length === 0 ? (
+              <div className='text-center py-8 text-muted-foreground'>
+                No available technicians to add
+              </div>
+            ) : (
+              <>
+                <div className='space-y-2 max-h-[400px] overflow-y-auto'>
+                  {getAvailableTechnicians().map((tech) => (
+                    <div
+                      key={tech.technician_id}
+                      className={cn(
+                        'flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors',
+                        selectedHelpers.includes(tech.technician_id) 
+                          ? 'bg-primary/5 border-primary' 
+                          : 'hover:bg-accent'
+                      )}
+                      onClick={() => toggleHelperSelection(tech.technician_id)}
+                    >
+                      <Checkbox
+                        checked={selectedHelpers.includes(tech.technician_id)}
+                        onCheckedChange={() => toggleHelperSelection(tech.technician_id)}
+                        className='mt-1'
+                      />
+                      <div className='flex-1'>
+                        <div className='font-medium'>{tech.technician_name}</div>
+                        <div className='text-sm text-muted-foreground'>{tech.contact_number}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className='flex items-center justify-between pt-3 border-t'>
+                  <span className='text-sm text-muted-foreground'>
+                    {selectedHelpers.length} selected
+                  </span>
+                  <div className='flex gap-2'>
+                    <Button 
+                      variant='outline' 
+                      onClick={() => {
+                        setShowAddHelperDialog(false)
+                        setSelectedHelpers([])
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleConfirmAddHelpers}
+                      disabled={selectedHelpers.length === 0}
+                    >
+                      Continue
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Helper Confirmation Dialog */}
+      <AlertDialog open={showAddHelperConfirm} onOpenChange={setShowAddHelperConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add Helper Technicians</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className='space-y-3'>
+                <p>
+                  Are you sure you want to add <strong>{selectedHelpers.length}</strong> helper{selectedHelpers.length > 1 ? 's' : ''} to this order?
+                </p>
+                <div className='bg-muted rounded-lg p-3 max-h-[200px] overflow-y-auto'>
+                  <div className='space-y-2'>
+                    {selectedHelpers.map((helperId) => {
+                      const helper = technicians.find((t: any) => t.technician_id === helperId)
+                      return (
+                        <div key={helperId} className='flex items-center justify-between text-sm'>
+                          <span className='font-medium'>{helper?.technician_name}</span>
+                          <span className='text-muted-foreground text-xs'>{helper?.contact_number}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedHelpers([])} disabled={isProcessing}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleAddHelpers} disabled={isProcessing}>
+              {isProcessing ? 'Adding...' : 'Add Helpers'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Helper Confirmation Dialog */}
+      <AlertDialog open={showRemoveHelperDialog} onOpenChange={setShowRemoveHelperDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Helper Technician</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this helper technician from this order? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setHelperToRemove(null)} disabled={isProcessing}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleRemoveHelper} disabled={isProcessing} className='bg-red-600 hover:bg-red-700'>
+              {isProcessing ? 'Removing...' : 'Remove'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

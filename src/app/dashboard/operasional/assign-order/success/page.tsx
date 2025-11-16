@@ -18,15 +18,28 @@ function AssignmentSuccessContent() {
   
   const orderIds = searchParams.get('ids')?.split(',') || []
   const technicianId = searchParams.get('tech') || ''
+  const helperIds = searchParams.get('helpers')?.split(',').filter(Boolean) || []
   const scheduledDate = searchParams.get('date') || ''
 
   console.log('Technician ID:', technicianId) // Debug
+  console.log('Helper IDs:', helperIds) // Debug
 
   const { data: technicianData, isLoading: technicianLoading, error: technicianError } = useQuery({
     queryKey: ['technician', technicianId],
     queryFn: () => getTechnicianById(technicianId),
     enabled: !!technicianId
   })
+
+  // Fetch helper technicians
+  const helperQueries = helperIds.map(helperId => 
+    useQuery({
+      queryKey: ['technician', helperId],
+      queryFn: () => getTechnicianById(helperId),
+      enabled: !!helperId
+    })
+  )
+
+  const helpers = helperQueries.map(q => q.data?.data).filter(Boolean)
 
   console.log('Technician Data:', technicianData) // Debug
   console.log('Technician Loading:', technicianLoading) // Debug
@@ -105,6 +118,27 @@ function AssignmentSuccessContent() {
                 <span className='text-sm font-semibold text-muted-foreground'>Scheduled Visit Date: </span>
                 <span className='text-sm font-bold'>{scheduledDate ? format(new Date(scheduledDate), 'EEEE, dd MMMM yyyy') : '-'}</span>
               </div>
+              {helpers.length > 0 && (
+                <div className='pt-3 border-t'>
+                  <div className='text-sm font-semibold text-muted-foreground mb-2'>Helper Technicians ({helpers.length}):</div>
+                  <div className='space-y-2'>
+                    {helpers.map((helper: any) => (
+                      <div key={helper.technician_id} className='flex items-center justify-between p-2 bg-muted/50 rounded-lg'>
+                        <div>
+                          <div className='font-medium'>{helper.technician_name}</div>
+                          {helper.contact_number && (
+                            <div className='flex items-center gap-2 text-xs text-muted-foreground mt-0.5'>
+                              <Phone className='w-3 h-3' />
+                              {helper.contact_number}
+                            </div>
+                          )}
+                        </div>
+                        <Badge variant='outline' className='bg-blue-50 text-blue-700 border-blue-200'>Helper</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <p className='text-sm text-muted-foreground'>Loading technician info...</p>

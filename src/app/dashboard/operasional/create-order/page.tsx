@@ -33,6 +33,7 @@ import {
   getServicePricing,
   getTechnicians
 } from '@/lib/actions/create-order'
+import { updateCustomer } from '@/lib/actions/customers'
 import type { 
   OrderFormState, 
   LocationFormData, 
@@ -51,7 +52,9 @@ import {
   User,
   CheckCircle2,
   Loader2,
-  X
+  X,
+  Edit2,
+  Building2
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -91,10 +94,13 @@ export default function CreateOrderPage() {
   const [isNewCustomer, setIsNewCustomer] = useState(false)
   const [newCustomerName, setNewCustomerName] = useState('')
   const [newCustomerEmail, setNewCustomerEmail] = useState('')
+  const [newCustomerBillingAddress, setNewCustomerBillingAddress] = useState('')
+  const [useSameAsFirstLocation, setUseSameAsFirstLocation] = useState(true)
   
   const [locations, setLocations] = useState<LocationFormData[]>([])
   const [scheduledDate, setScheduledDate] = useState<Date>()
   const [technicianId, setTechnicianId] = useState<string>('')
+  const [helperTechnicianIds, setHelperTechnicianIds] = useState<string[]>([])
   const [notes, setNotes] = useState('')
   
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -103,6 +109,7 @@ export default function CreateOrderPage() {
   // Modal states
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [showEditBillingModal, setShowEditBillingModal] = useState(false)
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null)
 
   // Fetch service pricing
@@ -142,7 +149,8 @@ export default function CreateOrderPage() {
           customer_id: result.data.customer_id,
           customer_name: result.data.customer_name,
           phone_number: result.data.phone_number,
-          email: result.data.email
+          email: result.data.email,
+          billing_address: result.data.billing_address
         })
         setIsNewCustomer(false)
         setIsPhoneVerified(true)
@@ -304,18 +312,24 @@ export default function CreateOrderPage() {
 
       // Step 1: Create customer if new
       if (isNewCustomer) {
-        // Auto-generate billing_address from first location
-        const firstLocation = locations[0]
+        // Determine billing address based on checkbox
         let billingAddress = 'TBD'
         
-        if (firstLocation) {
-          const parts = []
-          if (firstLocation.building_name) parts.push(firstLocation.building_name)
-          if (firstLocation.floor) parts.push(`Floor ${firstLocation.floor}`)
-          if (firstLocation.room_number) parts.push(`Room ${firstLocation.room_number}`)
-          if (firstLocation.description) parts.push(firstLocation.description)
-          
-          billingAddress = parts.length > 0 ? parts.join(', ') : 'TBD'
+        if (useSameAsFirstLocation) {
+          // Auto-generate from first location
+          const firstLocation = locations[0]
+          if (firstLocation) {
+            const parts = []
+            if (firstLocation.building_name) parts.push(firstLocation.building_name)
+            if (firstLocation.floor) parts.push(`Floor ${firstLocation.floor}`)
+            if (firstLocation.room_number) parts.push(`Room ${firstLocation.room_number}`)
+            if (firstLocation.description) parts.push(firstLocation.description)
+            
+            billingAddress = parts.length > 0 ? parts.join(', ') : 'TBD'
+          }
+        } else {
+          // Use custom billing address
+          billingAddress = newCustomerBillingAddress.trim() || 'TBD'
         }
         
         const customerResult = await createCustomer({
@@ -399,6 +413,7 @@ export default function CreateOrderPage() {
         customer_id: customerId,
         scheduled_visit_date: format(scheduledDate!, 'yyyy-MM-dd'),
         assigned_technician_id: technicianId || null,
+        helper_technician_ids: helperTechnicianIds.length > 0 ? helperTechnicianIds : undefined,
         notes: notes || undefined,
         items: orderItems
       })
@@ -474,6 +489,8 @@ export default function CreateOrderPage() {
                     setIsNewCustomer(false)
                     setNewCustomerName('')
                     setNewCustomerEmail('')
+                    setNewCustomerBillingAddress('')
+                    setUseSameAsFirstLocation(true)
                     setLocations([])
                     setScheduledDate(undefined)
                     setTechnicianId('')
@@ -488,13 +505,40 @@ export default function CreateOrderPage() {
             </div>
 
             {isPhoneVerified && customer && (
-              <Alert className="bg-green-50 border-green-200">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <AlertDescription>
-                  <strong>{customer.customer_name}</strong>
-                  {customer.email && ` • ${customer.email}`}
-                </AlertDescription>
-              </Alert>
+              <div className="space-y-3">
+                <Alert className="bg-green-50 border-green-200">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertDescription>
+                    <strong>{customer.customer_name}</strong>
+                    {customer.email && ` • ${customer.email}`}
+                  </AlertDescription>
+                </Alert>
+                
+                {/* Billing Address Display with Edit Button */}
+                <div className="border rounded-lg p-3 bg-muted/30">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <Label className="text-sm font-medium">Billing Address</Label>
+                      </div>
+                      <p className="text-sm text-muted-foreground pl-6">
+                        {customer.billing_address || 'TBD - Not set yet'}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowEditBillingModal(true)}
+                      className="shrink-0"
+                    >
+                      <Edit2 className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
+                </div>
+              </div>
             )}
 
             {isPhoneVerified && isNewCustomer && (
@@ -516,6 +560,38 @@ export default function CreateOrderPage() {
                     value={newCustomerEmail}
                     onChange={(e) => setNewCustomerEmail(e.target.value)}
                   />
+                </div>
+                
+                {/* Billing Address */}
+                <div className="space-y-2">
+                  <Label>Billing Address</Label>
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="use-same-location"
+                      checked={useSameAsFirstLocation}
+                      onCheckedChange={(checked) => setUseSameAsFirstLocation(checked as boolean)}
+                    />
+                    <div className="flex-1">
+                      <label htmlFor="use-same-location" className="text-sm cursor-pointer">
+                        Use first service location as billing address
+                      </label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {useSameAsFirstLocation 
+                          ? 'Billing address will be auto-generated from the first location you add below'
+                          : 'Enter a custom billing address manually'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {!useSameAsFirstLocation && (
+                    <Textarea
+                      placeholder="Enter complete billing address..."
+                      value={newCustomerBillingAddress}
+                      onChange={(e) => setNewCustomerBillingAddress(e.target.value)}
+                      rows={3}
+                      className="mt-2"
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -607,33 +683,110 @@ export default function CreateOrderPage() {
                     )}
                   </div>
                 </div>
-                <div>
-                  <Label>Assign Technician (Optional)</Label>
-                  <div className="flex gap-2">
-                    <Select value={technicianId} onValueChange={setTechnicianId}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select technician" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {technicians.map(tech => (
-                          <SelectItem key={tech.technician_id} value={tech.technician_id}>
-                            {tech.full_name} ({tech.employee_id})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {technicianId && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setTechnicianId('')}
-                        title="Reset technician"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
+                <div className="space-y-4">
+                  <div>
+                    <Label>Assign Lead Technician (Optional)</Label>
+                    <div className="flex gap-2">
+                      <Select value={technicianId} onValueChange={setTechnicianId}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select lead technician" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {technicians.map(tech => (
+                            <SelectItem key={tech.technician_id} value={tech.technician_id}>
+                              {tech.full_name} ({tech.employee_id})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {technicianId && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setTechnicianId('')}
+                          title="Reset technician"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
+                  
+                  {technicianId && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <Label>Helper Technicians (Optional)</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Show a simple select dialog
+                            const availableTechs = technicians.filter(t => 
+                              t.technician_id !== technicianId && 
+                              !helperTechnicianIds.includes(t.technician_id)
+                            )
+                            if (availableTechs.length === 0) {
+                              toast({
+                                title: 'No Available Helpers',
+                                description: 'All technicians are already assigned',
+                                variant: 'default'
+                              })
+                            }
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add Helper
+                        </Button>
+                      </div>
+                      
+                      {/* Available Helpers to Select */}
+                      <div className="space-y-2">
+                        {technicians
+                          .filter(t => t.technician_id !== technicianId && !helperTechnicianIds.includes(t.technician_id))
+                          .map(tech => (
+                            <div
+                              key={tech.technician_id}
+                              className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted cursor-pointer"
+                              onClick={() => setHelperTechnicianIds([...helperTechnicianIds, tech.technician_id])}
+                            >
+                              <span className="text-sm">{tech.full_name} ({tech.employee_id})</span>
+                              <Button type="button" variant="ghost" size="sm">
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                      </div>
+                      
+                      {/* Selected Helpers */}
+                      {helperTechnicianIds.length > 0 && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="text-sm font-medium mb-2 text-blue-900">
+                            Selected Helpers ({helperTechnicianIds.length})
+                          </div>
+                          <div className="space-y-1">
+                            {helperTechnicianIds.map(helperId => {
+                              const helper = technicians.find(t => t.technician_id === helperId)
+                              return (
+                                <div key={helperId} className="flex items-center justify-between p-2 bg-white rounded">
+                                  <span className="text-sm">{helper?.full_name} ({helper?.employee_id})</span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setHelperTechnicianIds(helperTechnicianIds.filter(id => id !== helperId))}
+                                  >
+                                    <X className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               <div>
@@ -714,6 +867,8 @@ export default function CreateOrderPage() {
           setIsNewCustomer(false)
           setNewCustomerName('')
           setNewCustomerEmail('')
+          setNewCustomerBillingAddress('')
+          setUseSameAsFirstLocation(true)
           setLocations([])
           setScheduledDate(undefined)
           setTechnicianId('')
@@ -734,6 +889,25 @@ export default function CreateOrderPage() {
           const newServices = loc.new_ac_units.reduce((sum, unit) => sum + unit.selected_services.length, 0)
           return acc + existingServices + newServices
         }, 0)}
+      />
+      
+      <EditBillingAddressModal
+        open={showEditBillingModal}
+        onClose={() => setShowEditBillingModal(false)}
+        customer={customer}
+        locations={locations}
+        onUpdate={(newAddress) => {
+          if (customer) {
+            setCustomer({
+              ...customer,
+              billing_address: newAddress
+            })
+            toast({
+              title: 'Success',
+              description: 'Billing address updated successfully'
+            })
+          }
+        }}
       />
     </div>
   )
@@ -1223,6 +1397,227 @@ function SuccessModal({
             window.location.href = '/dashboard/operasional/monitoring-ongoing'
           }} className="bg-blue-600 hover:bg-blue-700">
             View Orders
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// Edit Billing Address Modal Component
+function EditBillingAddressModal({
+  open,
+  onClose,
+  customer,
+  locations,
+  onUpdate
+}: {
+  open: boolean
+  onClose: () => void
+  customer: any
+  locations: LocationFormData[]
+  onUpdate: (newAddress: string) => void
+}) {
+  const [mode, setMode] = useState<'manual' | 'select'>('manual')
+  const [manualAddress, setManualAddress] = useState('')
+  const [selectedLocationIndex, setSelectedLocationIndex] = useState<number | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const { toast } = useToast()
+
+  // Reset state when modal opens
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen) {
+      setManualAddress(customer?.billing_address || '')
+      setMode('manual')
+      setSelectedLocationIndex(null)
+    } else {
+      onClose()
+    }
+  }
+
+  const handleSave = async () => {
+    if (!customer?.customer_id) return
+
+    let newAddress = ''
+    
+    if (mode === 'manual') {
+      newAddress = manualAddress.trim()
+    } else if (mode === 'select' && selectedLocationIndex !== null) {
+      const loc = locations[selectedLocationIndex]
+      if (loc) {
+        const parts = []
+        if (loc.building_name) parts.push(loc.building_name)
+        if (loc.floor) parts.push(`Floor ${loc.floor}`)
+        if (loc.room_number) parts.push(`Room ${loc.room_number}`)
+        if (loc.description) parts.push(loc.description)
+        newAddress = parts.join(', ')
+      }
+    }
+
+    if (!newAddress) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a billing address',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const result = await updateCustomer(customer.customer_id, {
+        billing_address: newAddress
+      })
+
+      if (result.success) {
+        onUpdate(newAddress)
+        onClose()
+      } else {
+        throw new Error(result.error || 'Failed to update')
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update billing address',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit2 className="w-5 h-5" />
+            Edit Billing Address
+          </DialogTitle>
+          <DialogDescription>
+            Update the billing address for {customer?.customer_name}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Mode Selection */}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={mode === 'manual' ? 'default' : 'outline'}
+              onClick={() => setMode('manual')}
+              className="flex-1"
+            >
+              <Edit2 className="w-4 h-4 mr-2" />
+              Enter Manually
+            </Button>
+            <Button
+              type="button"
+              variant={mode === 'select' ? 'default' : 'outline'}
+              onClick={() => setMode('select')}
+              className="flex-1"
+              disabled={locations.length === 0}
+            >
+              <MapPin className="w-4 h-4 mr-2" />
+              Select from Locations
+            </Button>
+          </div>
+
+          {/* Manual Input Mode */}
+          {mode === 'manual' && (
+            <div className="space-y-2">
+              <Label>Billing Address</Label>
+              <Textarea
+                placeholder="Enter complete billing address..."
+                value={manualAddress}
+                onChange={(e) => setManualAddress(e.target.value)}
+                rows={4}
+              />
+            </div>
+          )}
+
+          {/* Select from Locations Mode */}
+          {mode === 'select' && (
+            <div className="space-y-2">
+              <Label>Select Location</Label>
+              {locations.length === 0 ? (
+                <Alert>
+                  <AlertDescription>No locations available. Add a location first or switch to manual entry.</AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-2">
+                  {locations.map((loc, idx) => {
+                    const addressPreview = [
+                      loc.building_name,
+                      loc.floor && `Floor ${loc.floor}`,
+                      loc.room_number && `Room ${loc.room_number}`,
+                      loc.description
+                    ].filter(Boolean).join(', ')
+
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedLocationIndex(idx)}
+                        className={cn(
+                          'w-full text-left p-3 border rounded-lg transition-colors',
+                          selectedLocationIndex === idx
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'hover:bg-muted'
+                        )}
+                      >
+                        <div className="flex items-start gap-2">
+                          <Building2 className="w-4 h-4 mt-0.5 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium">Location {idx + 1}</p>
+                            <p className="text-sm opacity-90 truncate">{addressPreview || 'Incomplete location'}</p>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Preview */}
+          {((mode === 'manual' && manualAddress) || (mode === 'select' && selectedLocationIndex !== null)) && (
+            <div className="border rounded-lg p-3 bg-muted/30">
+              <Label className="text-xs text-muted-foreground">Preview:</Label>
+              <p className="text-sm mt-1">
+                {mode === 'manual' 
+                  ? manualAddress
+                  : selectedLocationIndex !== null && locations[selectedLocationIndex]
+                    ? [
+                        locations[selectedLocationIndex].building_name,
+                        locations[selectedLocationIndex].floor && `Floor ${locations[selectedLocationIndex].floor}`,
+                        locations[selectedLocationIndex].room_number && `Room ${locations[selectedLocationIndex].room_number}`,
+                        locations[selectedLocationIndex].description
+                      ].filter(Boolean).join(', ')
+                    : ''
+                }
+              </p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                Save Changes
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -43,6 +43,7 @@ import {
   XCircle,
   Send,
   Mail,
+  MapPin,
 } from 'lucide-react'
 import {
   getInvoiceById,
@@ -78,6 +79,7 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [items, setItems] = useState<InvoiceItem[]>([])
   const [payments, setPayments] = useState<PaymentRecord[]>([])
+  const [orderItemsDetailed, setOrderItemsDetailed] = useState<any[]>([])
   const [invoiceConfig, setInvoiceConfig] = useState<InvoiceConfig | null>(null)
   const [communicationStats, setCommunicationStats] = useState({
     totalSent: 0,
@@ -117,6 +119,7 @@ export default function InvoiceDetailPage() {
         setInvoice(data.invoice)
         setItems(data.items)
         setPayments(data.payments)
+        setOrderItemsDetailed(data.orderItemsDetailed || [])
       }
       setInvoiceConfig(config)
       setCommunicationStats(stats)
@@ -221,6 +224,7 @@ export default function InvoiceDetailPage() {
         items,
         payments,
         invoiceConfig,
+        orderItemsDetailed,
       })
 
       toast({
@@ -664,43 +668,135 @@ export default function InvoiceDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Invoice Items */}
+          {/* Invoice Items - Detailed Per AC */}
           <Card>
             <CardHeader>
-              <CardTitle>Line Items</CardTitle>
+              <CardTitle>Service Details (Per AC Unit)</CardTitle>
+              <CardDescription>Breakdown by AC unit and location</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead className="text-right">Unit Price</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.item_id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{item.description}</p>
-                          <Badge variant="outline" className="text-xs">
-                            {item.item_type}
-                          </Badge>
+            <CardContent className="space-y-4">
+              {orderItemsDetailed.length > 0 ? (
+                // Group by location
+                (() => {
+                  const groupedByLocation = orderItemsDetailed.reduce((acc: any, item: any) => {
+                    const locId = item.location_id || 'unknown'
+                    if (!acc[locId]) {
+                      acc[locId] = {
+                        location: item.locations,
+                        items: []
+                      }
+                    }
+                    acc[locId].items.push(item)
+                    return acc
+                  }, {})
+                  
+                  return Object.values(groupedByLocation).map((group: any, locIdx: number) => (
+                    <div key={locIdx} className="border rounded-lg p-4 space-y-3">
+                      {/* Location Header */}
+                      <div className="font-semibold text-base border-b pb-2">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-primary" />
+                          {group.location?.building_name || 'Unknown Location'}
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(item.unit_price)}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(item.total_price)}
-                      </TableCell>
+                        <div className="text-sm text-muted-foreground font-normal mt-1 pl-6">
+                          Floor {group.location?.floor}, Room {group.location?.room_number}
+                        </div>
+                      </div>
+                      
+                      {/* AC Units for this location */}
+                      <div className="space-y-2">
+                        {group.items.map((item: any, itemIdx: number) => {
+                          const subtotal = (item.estimated_price || item.actual_price || 0) * (item.quantity || 1)
+                          return (
+                            <div key={itemIdx} className="bg-muted/30 rounded-lg p-3 space-y-2">
+                              {/* AC Unit Info */}
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <div className="font-medium text-sm">
+                                    {item.ac_units ? (
+                                      <>
+                                        {item.ac_units.brand} {item.ac_units.model_number}
+                                      </>
+                                    ) : (
+                                      `New AC Unit ${item.quantity > 1 ? `(${item.quantity}x)` : ''}`
+                                    )}
+                                  </div>
+                                  {item.ac_units?.serial_number && (
+                                    <div className="text-xs text-muted-foreground">
+                                      S/N: {item.ac_units.serial_number}
+                                    </div>
+                                  )}
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {item.service_type}
+                                </Badge>
+                              </div>
+                              
+                              {/* Service Details */}
+                              <div className="flex justify-between items-center text-sm">
+                                <div className="text-muted-foreground">
+                                  {item.description || 'Service'}
+                                </div>
+                                <div className="font-semibold">
+                                  {formatCurrency(subtotal)}
+                                </div>
+                              </div>
+                              
+                              {/* Price breakdown if multiple quantity */}
+                              {item.quantity > 1 && (
+                                <div className="text-xs text-muted-foreground">
+                                  {formatCurrency(item.estimated_price || item.actual_price || 0)} × {item.quantity}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                      
+                      {/* Location Subtotal */}
+                      <div className="flex justify-between items-center pt-2 border-t font-semibold">
+                        <span className="text-sm">Location Subtotal:</span>
+                        <span>{formatCurrency(group.items.reduce((sum: number, item: any) => 
+                          sum + ((item.estimated_price || item.actual_price || 0) * (item.quantity || 1)), 0
+                        ))}</span>
+                      </div>
+                    </div>
+                  ))
+                })()
+              ) : (
+                // Fallback to simple items table if no order items
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Unit Price</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((item) => (
+                      <TableRow key={item.item_id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{item.description}</p>
+                            <Badge variant="outline" className="text-xs">
+                              {item.item_type}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">{item.quantity}</TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(item.unit_price)}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {formatCurrency(item.total_price)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
 
               <Separator className="my-4" />
 

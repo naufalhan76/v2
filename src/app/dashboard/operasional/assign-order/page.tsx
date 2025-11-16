@@ -47,6 +47,7 @@ export default function AssignOrderPage() {
   const [selectedDate, setSelectedDate] = useState<Date>()
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
   const [selectedTechnician, setSelectedTechnician] = useState<string>('')
+  const [selectedHelpers, setSelectedHelpers] = useState<string[]>([])
   const [filterServiceType, setFilterServiceType] = useState<string>('ALL')
   const [filterStatus, setFilterStatus] = useState<string>('ALL')
   const [technicianSearch, setTechnicianSearch] = useState<string>('')
@@ -135,6 +136,7 @@ export default function AssignOrderPage() {
         const result = await assignOrdersToTechnician({
           orderIds: selectedOrders,
           technicianId: selectedTechnician,
+          helperTechnicianIds: selectedHelpers.length > 0 ? selectedHelpers : undefined,
           scheduledDate: formattedDate
         })
         
@@ -148,6 +150,7 @@ export default function AssignOrderPage() {
           const params = new URLSearchParams({
             ids: selectedOrders.join(','),
             tech: selectedTechnician,
+            helpers: selectedHelpers.join(','),
             date: formattedDate
           })
           router.push(`/dashboard/operasional/assign-order/success?${params.toString()}`)
@@ -164,6 +167,14 @@ export default function AssignOrderPage() {
       } finally {
         setIsAssigning(false)
       }
+    }
+  }
+  
+  const toggleHelperSelection = (helperId: string) => {
+    if (selectedHelpers.includes(helperId)) {
+      setSelectedHelpers(selectedHelpers.filter(id => id !== helperId))
+    } else {
+      setSelectedHelpers([...selectedHelpers, helperId])
     }
   }
 
@@ -243,7 +254,7 @@ export default function AssignOrderPage() {
           <Card>
             <CardHeader>
               <CardTitle>Step 3: Select Technician</CardTitle>
-              <CardDescription>Choose a technician to assign {selectedOrders.length} order(s)</CardDescription>
+              <CardDescription>Choose a lead technician and optional helpers to assign {selectedOrders.length} order(s)</CardDescription>
             </CardHeader>
             <CardContent>
               {/* Search Bar */}
@@ -262,36 +273,88 @@ export default function AssignOrderPage() {
                   {technicianSearch ? 'No technicians found matching your search' : 'No technicians available'}
                 </div>
               ) : (
-                <RadioGroup value={selectedTechnician} onValueChange={setSelectedTechnician}>
-                  <div className='grid gap-4 max-h-[400px] overflow-y-auto pr-2'>
-                    {filteredTechnicians.map((technician: any) => (
-                      <div
-                        key={technician.technician_id}
-                        className={cn(
-                          'flex items-center space-x-4 rounded-lg border p-4 cursor-pointer transition-all hover:bg-muted/50',
-                          selectedTechnician === technician.technician_id && 'ring-2 ring-primary bg-muted'
-                        )}
-                        onClick={() => setSelectedTechnician(technician.technician_id)}
-                      >
-                        <RadioGroupItem value={technician.technician_id} id={technician.technician_id} />
-                        <Label htmlFor={technician.technician_id} className='flex-1 cursor-pointer'>
-                          <div className='flex items-center justify-between'>
-                            <div>
-                              <div className='font-semibold'>{technician.technician_name}</div>
-                              {technician.company && (
-                                <div className='text-sm text-muted-foreground'>{technician.company}</div>
-                              )}
-                              {technician.contact_number && (
-                                <div className='text-sm text-muted-foreground'>{technician.contact_number}</div>
-                              )}
-                            </div>
-                            <User className='h-8 w-8 text-muted-foreground' />
+                <div className='space-y-6'>
+                  {/* Lead Technician Selection */}
+                  <div>
+                    <h3 className='font-semibold mb-3'>Lead Technician <span className='text-red-500'>*</span></h3>
+                    <RadioGroup value={selectedTechnician} onValueChange={setSelectedTechnician}>
+                      <div className='grid gap-4 max-h-[300px] overflow-y-auto pr-2'>
+                        {filteredTechnicians.map((technician: any) => (
+                          <div
+                            key={technician.technician_id}
+                            className={cn(
+                              'flex items-center space-x-4 rounded-lg p-4 cursor-pointer transition-all',
+                              selectedTechnician === technician.technician_id 
+                                ? 'border-2 border-primary bg-muted' 
+                                : 'border border-border hover:bg-muted/50'
+                            )}
+                            onClick={() => setSelectedTechnician(technician.technician_id)}
+                          >
+                            <RadioGroupItem value={technician.technician_id} id={technician.technician_id} />
+                            <Label htmlFor={technician.technician_id} className='flex-1 cursor-pointer'>
+                              <div className='flex items-center justify-between'>
+                                <div>
+                                  <div className='font-semibold'>{technician.technician_name}</div>
+                                  {technician.company && (
+                                    <div className='text-sm text-muted-foreground'>{technician.company}</div>
+                                  )}
+                                  {technician.contact_number && (
+                                    <div className='text-sm text-muted-foreground'>{technician.contact_number}</div>
+                                  )}
+                                </div>
+                                <User className='h-8 w-8 text-muted-foreground' />
+                              </div>
+                            </Label>
                           </div>
-                        </Label>
+                        ))}
                       </div>
-                    ))}
+                    </RadioGroup>
                   </div>
-                </RadioGroup>
+
+                  {/* Helper Technicians Selection */}
+                  {selectedTechnician && (
+                    <div>
+                      <h3 className='font-semibold mb-3'>
+                        Helper Technicians <span className='text-muted-foreground text-sm font-normal'>(Optional)</span>
+                      </h3>
+                      <div className='grid gap-3 max-h-[250px] overflow-y-auto pr-2'>
+                        {filteredTechnicians
+                          .filter((tech: any) => tech.technician_id !== selectedTechnician)
+                          .map((technician: any) => {
+                            const isSelected = selectedHelpers.includes(technician.technician_id)
+                            return (
+                              <div
+                                key={technician.technician_id}
+                                className={cn(
+                                  'flex items-center space-x-4 rounded-lg p-3 cursor-pointer transition-all',
+                                  isSelected 
+                                    ? 'border-2 border-blue-500 bg-blue-50' 
+                                    : 'border border-border hover:bg-muted/50'
+                                )}
+                                onClick={() => toggleHelperSelection(technician.technician_id)}
+                              >
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={() => toggleHelperSelection(technician.technician_id)}
+                                />
+                                <div className='flex-1'>
+                                  <div className='font-medium text-sm'>{technician.technician_name}</div>
+                                  {technician.company && (
+                                    <div className='text-xs text-muted-foreground'>{technician.company}</div>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+                      </div>
+                      {selectedHelpers.length > 0 && (
+                        <div className='mt-2 text-sm text-muted-foreground'>
+                          {selectedHelpers.length} helper(s) selected
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </CardContent>
             <div className='p-6 pt-0 flex justify-between'>
@@ -464,10 +527,51 @@ export default function AssignOrderPage() {
           })()}
         </DialogContent>
       </Dialog>
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Confirm Assignment</AlertDialogTitle>
-      <AlertDialogDescription>Are you sure you want to assign <strong>{selectedOrders.length}</strong> order(s) to <strong>{selectedTechnicianData?.technician_name}</strong>?<br /><br />
-      Visit Date: <strong>{selectedDate && format(selectedDate, 'PPP')}</strong></AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={isAssigning}>Cancel</AlertDialogCancel>
-      <AlertDialogAction onClick={handleConfirmAssign} disabled={isAssigning}>{isAssigning ? 'Assigning...' : 'Confirm'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Assignment</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className='space-y-3'>
+                <p>
+                  Are you sure you want to assign <strong>{selectedOrders.length}</strong> order(s) to:
+                </p>
+                <div className='bg-muted rounded-lg p-3 space-y-2'>
+                  <div>
+                    <span className='text-sm text-muted-foreground'>Lead Technician: </span>
+                    <strong>{selectedTechnicianData?.technician_name}</strong>
+                  </div>
+                  {selectedHelpers.length > 0 && (
+                    <div>
+                      <span className='text-sm text-muted-foreground'>Helper Technicians: </span>
+                      <div className='mt-1'>
+                        {selectedHelpers.map((helperId, index) => {
+                          const helper = technicians.find((t: any) => t.technician_id === helperId)
+                          return (
+                            <Badge key={helperId} variant='outline' className='mr-1 mb-1'>
+                              {helper?.technician_name}
+                            </Badge>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  <div className='pt-2 border-t'>
+                    <span className='text-sm text-muted-foreground'>Visit Date: </span>
+                    <strong>{selectedDate && format(selectedDate, 'PPP')}</strong>
+                  </div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isAssigning}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAssign} disabled={isAssigning}>
+              {isAssigning ? 'Assigning...' : 'Confirm'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -51,6 +51,7 @@ export type CreateOrderInput = {
   scheduled_visit_date: string;
   req_visit_date?: string; // Legacy field - same as scheduled_visit_date
   assigned_technician_id?: string | null;
+  helper_technician_ids?: string[]; // Optional helper technicians
   notes?: string;
   items: CreateOrderItemInput[];
 };
@@ -89,6 +90,7 @@ export type OrderFormState = {
     customer_name: string;
     phone_number: string;
     email: string | null;
+    billing_address?: string | null;
   } | null;
   isNewCustomer: boolean;
   newCustomerName: string;
@@ -114,6 +116,7 @@ export type CustomerSearchResult = {
   phone_number: string;
   primary_contact_person: string;
   email: string | null;
+  billing_address?: string | null;
   locations?: Array<{
     location_id: string;
     building_name: string;

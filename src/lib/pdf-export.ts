@@ -9,6 +9,7 @@ export interface PDFExportOptions {
   items: InvoiceItem[]
   payments: PaymentRecord[]
   invoiceConfig: InvoiceConfig | null
+  orderItemsDetailed?: any[]
 }
 
 export function exportInvoiceToPDF({
@@ -16,6 +17,7 @@ export function exportInvoiceToPDF({
   items,
   payments,
   invoiceConfig,
+  orderItemsDetailed = [],
 }: PDFExportOptions) {
   const pdf = new jsPDF('p', 'mm', 'a4')
   const pageWidth = pdf.internal.pageSize.getWidth()
@@ -225,36 +227,111 @@ export function exportInvoiceToPDF({
   pdf.text('Harga Satuan', pageWidth - 60, yPos, { align: 'right' })
   pdf.text('Total', pageWidth - margin - 3, yPos, { align: 'right' })
 
-  // Table Items
+  // Table Items - Per AC Breakdown if available
   yPos += 6
   pdf.setFont('helvetica', 'normal')
   pdf.setTextColor(15, 23, 42)
   pdf.setFontSize(8)
 
-  items.forEach((item, index) => {
-    if (yPos > pageHeight - 70) {
-      pdf.addPage()
-      yPos = margin + 20
-    }
+  if (orderItemsDetailed && orderItemsDetailed.length > 0) {
+    // Group by location
+    const groupedByLocation = orderItemsDetailed.reduce((acc: any, item: any) => {
+      const locId = item.location_id || 'unknown'
+      if (!acc[locId]) {
+        acc[locId] = {
+          location: item.locations,
+          items: []
+        }
+      }
+      acc[locId].items.push(item)
+      return acc
+    }, {})
+    
+    let itemIndex = 0
+    Object.values(groupedByLocation).forEach((group: any) => {
+      if (yPos > pageHeight - 70) {
+        pdf.addPage()
+        yPos = margin + 20
+      }
+      
+      // Location Header
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(9)
+      pdf.setTextColor(30, 58, 138) // blue-900
+      const locationText = group.location ? 
+        `${group.location.building_name} - Floor ${group.location.floor}, Room ${group.location.room_number}` :
+        'Unknown Location'
+      pdf.text(locationText, margin + 3, yPos)
+      yPos += 6
+      
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(8)
+      pdf.setTextColor(15, 23, 42)
+      
+      // Items for this location
+      group.items.forEach((item: any) => {
+        if (yPos > pageHeight - 70) {
+          pdf.addPage()
+          yPos = margin + 20
+        }
+        
+        // Zebra striping
+        if (itemIndex % 2 === 0) {
+          pdf.setFillColor(248, 250, 252)
+          pdf.rect(margin, yPos - 3, pageWidth - (margin * 2), 9, 'F')
+        }
+        
+        // AC Unit description
+        const acDesc = item.ac_units ? 
+          `${item.ac_units.brand} ${item.ac_units.model_number} - ${item.service_type}` :
+          `New AC Unit (${item.quantity}x) - ${item.service_type}`
+        
+        const descLines = pdf.splitTextToSize(acDesc, 85)
+        pdf.text(descLines, margin + 5, yPos)
+        
+        const qty = item.quantity || 1
+        const price = item.estimated_price || item.actual_price || 0
+        const total = qty * price
+        
+        pdf.text(qty.toString(), pageWidth - 90, yPos, { align: 'center' })
+        pdf.text(formatCurrency(price), pageWidth - 60, yPos, { align: 'right' })
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(formatCurrency(total), pageWidth - margin - 3, yPos, { align: 'right' })
+        pdf.setFont('helvetica', 'normal')
+        
+        yPos += Math.max((descLines.length * 4.5), 9)
+        itemIndex++
+      })
+      
+      yPos += 3 // Space between locations
+    })
+  } else {
+    // Fallback to simple items
+    items.forEach((item, index) => {
+      if (yPos > pageHeight - 70) {
+        pdf.addPage()
+        yPos = margin + 20
+      }
 
-    // Zebra striping
-    if (index % 2 === 0) {
-      pdf.setFillColor(248, 250, 252)
-      pdf.rect(margin, yPos - 3, pageWidth - (margin * 2), 9, 'F')
-    }
+      // Zebra striping
+      if (index % 2 === 0) {
+        pdf.setFillColor(248, 250, 252)
+        pdf.rect(margin, yPos - 3, pageWidth - (margin * 2), 9, 'F')
+      }
 
-    // Wrap long descriptions
-    const descLines = pdf.splitTextToSize(item.description, 85)
-    pdf.text(descLines, margin + 3, yPos)
+      // Wrap long descriptions
+      const descLines = pdf.splitTextToSize(item.description, 85)
+      pdf.text(descLines, margin + 3, yPos)
 
-    pdf.text(item.quantity.toString(), pageWidth - 90, yPos, { align: 'center' })
-    pdf.text(formatCurrency(item.unit_price), pageWidth - 60, yPos, { align: 'right' })
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(formatCurrency(item.quantity * item.unit_price), pageWidth - margin - 3, yPos, { align: 'right' })
-    pdf.setFont('helvetica', 'normal')
+      pdf.text(item.quantity.toString(), pageWidth - 90, yPos, { align: 'center' })
+      pdf.text(formatCurrency(item.unit_price), pageWidth - 60, yPos, { align: 'right' })
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(formatCurrency(item.quantity * item.unit_price), pageWidth - margin - 3, yPos, { align: 'right' })
+      pdf.setFont('helvetica', 'normal')
 
-    yPos += Math.max((descLines.length * 4.5), 9)
-  })
+      yPos += Math.max((descLines.length * 4.5), 9)
+    })
+  }
 
   // ========================================
   // SUMMARY SECTION
