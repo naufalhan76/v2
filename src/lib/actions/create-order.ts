@@ -124,8 +124,7 @@ export async function createCustomer(data: {
         phone_number: data.phone_number,
         email: data.email || null,
         primary_contact_person: data.primary_contact_person || data.customer_name,
-        billing_address: data.billing_address || 'TBD', // Fallback if no address provided
-        status: 'active'
+        billing_address: data.billing_address || 'TBD' // Fallback if no address provided
       })
       .select('customer_id')
       .single()
@@ -201,11 +200,63 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
     
     if (orderError) throw orderError
     
-    // 2. Create order items (same status as parent order)
-    const orderItems = input.items.map(item => ({
+    // 2. Create AC units for new units (where ac_unit_id is null)
+    const newAcUnits: Array<{
+      location_id: string;
+      brand: string;
+      model_number: string;
+      capacity_btu: number | null;
+      status: string;
+    }> = []
+    
+    const itemIndexMapping: number[] = [] // Track which item index each AC belongs to
+
+    input.items.forEach((item, index) => {
+      if (!item.ac_unit_id && item.new_ac_data) {
+        // This is a new AC unit, prepare for insertion
+        newAcUnits.push({
+          location_id: item.location_id,
+          brand: item.new_ac_data.brand,
+          model_number: item.new_ac_data.model_number,
+          capacity_btu: item.new_ac_data.capacity_btu || null,
+          status: 'PENDING' // Waiting for technician to verify
+        })
+        itemIndexMapping.push(index)
+      }
+    })
+
+    // Insert new AC units if any
+    const createdAcUnitIds: Map<number, string> = new Map()
+    
+    if (newAcUnits.length > 0) {
+      const { data: insertedAcUnits, error: acUnitsError } = await supabase
+        .from('ac_units')
+        .insert(newAcUnits)
+        .select('ac_unit_id')
+      
+      if (acUnitsError) {
+        // Rollback: delete order if AC units failed
+        await supabase
+          .from('orders')
+          .delete()
+          .eq('order_id', order.order_id)
+        
+        throw acUnitsError
+      }
+      
+      // Map created AC unit IDs to their original item indices
+      itemIndexMapping.forEach((itemIndex, idx) => {
+        if (insertedAcUnits && insertedAcUnits[idx]) {
+          createdAcUnitIds.set(itemIndex, insertedAcUnits[idx].ac_unit_id)
+        }
+      })
+    }
+
+    // 3. Create order items (same status as parent order)
+    const orderItems = input.items.map((item, index) => ({
       order_id: order.order_id,
       location_id: item.location_id,
-      ac_unit_id: item.ac_unit_id || null,
+      ac_unit_id: item.ac_unit_id || createdAcUnitIds.get(index) || null,
       service_type: item.service_type,
       quantity: item.quantity || 1,
       description: item.description,
@@ -218,7 +269,14 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
       .insert(orderItems)
     
     if (itemsError) {
-      // Rollback: delete order if items failed
+      // Rollback: delete AC units and order if items failed
+      if (createdAcUnitIds.size > 0) {
+        await supabase
+          .from('ac_units')
+          .delete()
+          .in('ac_unit_id', Array.from(createdAcUnitIds.values()))
+      }
+      
       await supabase
         .from('orders')
         .delete()
@@ -227,7 +285,7 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
       throw itemsError
     }
     
-    // 3. Create technician assignments if technician is assigned
+    // 4. Create technician assignments if technician is assigned
     if (input.assigned_technician_id) {
       const technicianAssignments = [
         {

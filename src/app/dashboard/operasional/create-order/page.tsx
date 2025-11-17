@@ -75,12 +75,13 @@ const normalizePhone = (phone: string): string => {
   return normalized
 }
 
-const SERVICE_TYPES: { value: ServiceType; label: string; color: string }[] = [
-  { value: 'INSTALLATION', label: 'Installation', color: 'bg-blue-500' },
-  { value: 'MAINTENANCE', label: 'Maintenance', color: 'bg-green-500' },
-  { value: 'REPAIR', label: 'Repair', color: 'bg-orange-500' },
-  { value: 'CLEANING', label: 'Cleaning', color: 'bg-purple-500' },
-]
+// Service type colors mapping
+const SERVICE_TYPE_COLORS: Record<string, string> = {
+  'INSTALLATION': 'bg-blue-500',
+  'MAINTENANCE': 'bg-green-500',
+  'REPAIR': 'bg-orange-500',
+  'CLEANING': 'bg-purple-500',
+}
 
 export default function CreateOrderPage() {
   const router = useRouter()
@@ -394,11 +395,16 @@ export default function CreateOrderPage() {
             const pricing = servicePricing.find(p => p.service_type === serviceType)
             orderItems.push({
               location_id: locationId,
-              ac_unit_id: null,
+              ac_unit_id: null, // Will be created as placeholder
               service_type: serviceType,
               quantity: 1, // Each new AC unit = 1 quantity
-              description: unit.notes || undefined,
-              estimated_price: pricing?.base_price || 0
+              description: unit.notes || 'New AC unit - details to be filled by technician',
+              estimated_price: pricing?.base_price || 0,
+              new_ac_data: {
+                brand: 'TBD', // To be determined by technician
+                model_number: 'TBD',
+                capacity_btu: undefined
+              }
             })
           }
         }
@@ -950,8 +956,8 @@ function LocationCard({
                   <Input
                     type="number"
                     placeholder="e.g., 1, 2, 3"
-                    value={location.floor || 1}
-                    onChange={(e) => onChange({ ...location, floor: parseInt(e.target.value) || 1 })}
+                    value={location.floor || ''}
+                    onChange={(e) => onChange({ ...location, floor: e.target.value ? parseInt(e.target.value) : undefined })}
                   />
                 </div>
                 <div>
@@ -994,26 +1000,26 @@ function LocationCard({
                   <div className="space-y-1">
                     <Label className="text-xs">Select Services:</Label>
                     <div className="grid grid-cols-2 gap-2">
-                      {SERVICE_TYPES.map(svc => (
-                        <div key={svc.value} className="flex items-center space-x-2">
+                      {servicePricing.map(svc => (
+                        <div key={svc.service_type} className="flex items-center space-x-2">
                           <Checkbox
-                            id={`ac-${index}-${acIndex}-${svc.value}`}
-                            checked={ac.selected_services.includes(svc.value)}
+                            id={`ac-${index}-${acIndex}-${svc.service_type}`}
+                            checked={ac.selected_services.includes(svc.service_type)}
                             onCheckedChange={(checked) => {
                               const updated = { ...location }
                               if (checked) {
-                                updated.existing_acs[acIndex].selected_services.push(svc.value)
+                                updated.existing_acs[acIndex].selected_services.push(svc.service_type)
                               } else {
                                 updated.existing_acs[acIndex].selected_services = 
-                                  updated.existing_acs[acIndex].selected_services.filter(s => s !== svc.value)
+                                  updated.existing_acs[acIndex].selected_services.filter(s => s !== svc.service_type)
                               }
                               onChange(updated)
                             }}
                           />
-                          <label htmlFor={`ac-${index}-${acIndex}-${svc.value}`} className="text-sm cursor-pointer">
-                            {svc.label}
+                          <label htmlFor={`ac-${index}-${acIndex}-${svc.service_type}`} className="text-sm cursor-pointer">
+                            {svc.service_name}
                             <span className="text-xs text-muted-foreground ml-1">
-                              (Rp {servicePricing.find(p => p.service_type === svc.value)?.base_price.toLocaleString('id-ID') || 0})
+                              (Rp {svc.base_price.toLocaleString('id-ID')})
                             </span>
                           </label>
                         </div>
@@ -1053,7 +1059,7 @@ function LocationCard({
                 {location.new_ac_units.map((unit, unitIndex) => (
                   <div key={unit.temp_id} className="border rounded p-3 space-y-2 bg-muted/30">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">New AC #{unitIndex + 1}</span>
+                      <span className="font-medium text-sm">New AC #{unitIndex + 1} (Details will be filled by technician)</span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -1071,26 +1077,26 @@ function LocationCard({
                     <div className="space-y-1">
                       <Label className="text-xs">Select Services:</Label>
                       <div className="grid grid-cols-2 gap-2">
-                        {SERVICE_TYPES.map(svc => (
-                          <div key={svc.value} className="flex items-center space-x-2">
+                        {servicePricing.map(svc => (
+                          <div key={svc.service_type} className="flex items-center space-x-2">
                             <Checkbox
-                              id={`new-ac-${index}-${unitIndex}-${svc.value}`}
-                              checked={unit.selected_services.includes(svc.value)}
+                              id={`new-ac-${index}-${unitIndex}-${svc.service_type}`}
+                              checked={unit.selected_services.includes(svc.service_type)}
                               onCheckedChange={(checked) => {
                                 const updated = { ...location }
                                 if (checked) {
-                                  updated.new_ac_units[unitIndex].selected_services.push(svc.value)
+                                  updated.new_ac_units[unitIndex].selected_services.push(svc.service_type)
                                 } else {
                                   updated.new_ac_units[unitIndex].selected_services = 
-                                    updated.new_ac_units[unitIndex].selected_services.filter(s => s !== svc.value)
+                                    updated.new_ac_units[unitIndex].selected_services.filter(s => s !== svc.service_type)
                                 }
                                 onChange(updated)
                               }}
                             />
-                            <label htmlFor={`new-ac-${index}-${unitIndex}-${svc.value}`} className="text-sm cursor-pointer">
-                              {svc.label}
+                            <label htmlFor={`new-ac-${index}-${unitIndex}-${svc.service_type}`} className="text-sm cursor-pointer">
+                              {svc.service_name}
                               <span className="text-xs text-muted-foreground ml-1">
-                                (Rp {servicePricing.find(p => p.service_type === svc.value)?.base_price.toLocaleString('id-ID') || 0})
+                                (Rp {svc.base_price.toLocaleString('id-ID')})
                               </span>
                             </label>
                           </div>
@@ -1099,9 +1105,9 @@ function LocationCard({
                     </div>
                     
                     <div>
-                      <Label className="text-xs">Notes</Label>
+                      <Label className="text-xs">Notes for Technician</Label>
                       <Input
-                        placeholder="Specifications or special instructions..."
+                        placeholder="e.g., Estimate 1.5 PK, customer prefers Daikin..."
                         value={unit.notes}
                         onChange={(e) => {
                           const updated = { ...location }

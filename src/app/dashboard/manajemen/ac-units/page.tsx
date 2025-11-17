@@ -125,13 +125,13 @@ export default function AcUnitsPage() {
   const handleEdit = (acUnit: AcUnit) => {
     setSelectedAcUnit(acUnit)
     setFormData({
-      brand: acUnit.brand,
-      model_number: acUnit.model_number,
-      serial_number: acUnit.serial_number,
+      brand: acUnit.brand || '',
+      model_number: acUnit.model_number || '',
+      serial_number: acUnit.serial_number || '',
       ac_type: acUnit.ac_type || '',
       capacity_btu: acUnit.capacity_btu || 0,
       installation_date: acUnit.installation_date || '',
-      status: acUnit.status,
+      status: acUnit.status || 'ACTIVE',
     })
     setIsEditOpen(true)
   }

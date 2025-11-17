@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getOrders, getOrderById } from '@/lib/actions/orders'
+import { getOrders, getOrderById, cancelOrder } from '@/lib/actions/orders'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -95,17 +95,27 @@ export default function AcceptOrderPage() {
   const handleOrderAction = async (orderId: string, newStatus: 'ACCEPTED' | 'CANCELLED') => {
     setIsProcessing(true)
     try {
-      const supabase = createClient()
-      
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('order_id', orderId)
-      
-      if (error) throw error
+      if (newStatus === 'CANCELLED') {
+        // Use cancelOrder action which handles AC units
+        const result = await cancelOrder(orderId, 'Order cancelled by admin')
+        
+        if (!result.success) {
+          throw new Error(result.error)
+        }
+      } else {
+        // ACCEPTED: direct update
+        const supabase = createClient()
+        
+        const { error } = await supabase
+          .from('orders')
+          .update({
+            status: newStatus,
+            updated_at: new Date().toISOString()
+          })
+          .eq('order_id', orderId)
+        
+        if (error) throw error
+      }
       
       toast({
         title: 'Success',

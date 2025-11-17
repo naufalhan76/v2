@@ -43,6 +43,11 @@ export type CreateOrderItemInput = {
   quantity: number;
   description?: string;
   estimated_price?: number;
+  new_ac_data?: {
+    brand: string;
+    model_number: string;
+    capacity_btu?: number;
+  };
 };
 
 export type CreateOrderInput = {

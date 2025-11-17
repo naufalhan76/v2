@@ -404,6 +404,90 @@ export async function removeHelperTechnician(orderId: string, helperTechnicianId
   }
 }
 
+export async function cancelOrder(orderId: string, reason?: string) {
+  try {
+    const supabase = await createClient()
+    
+    // Get current order status
+    const { data: currentOrder, error: fetchError } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('order_id', orderId)
+      .single()
+    
+    if (fetchError) throw fetchError
+    
+    // Get all AC units created from this order's items
+    const { data: orderItems, error: itemsError } = await supabase
+      .from('order_items')
+      .select('ac_unit_id')
+      .eq('order_id', orderId)
+      .not('ac_unit_id', 'is', null)
+    
+    if (itemsError) throw itemsError
+    
+    const acUnitIds = orderItems
+      ?.map(item => item.ac_unit_id)
+      .filter((id): id is string => id !== null) || []
+    
+    // Update AC units that are still pending to inactive
+    if (acUnitIds.length > 0) {
+      const { error: acUpdateError } = await supabase
+        .from('ac_units')
+        .update({ 
+          status: 'INACTIVE',
+          updated_at: new Date().toISOString()
+        })
+        .in('ac_unit_id', acUnitIds)
+        .eq('status', 'PENDING') // Only update pending units
+      
+      if (acUpdateError) {
+        console.error('Error updating AC units status:', acUpdateError)
+        // Don't throw, continue with order cancellation
+      }
+    }
+    
+    // Update order status to CANCELLED
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ 
+        status: 'CANCELLED',
+        updated_at: new Date().toISOString()
+      })
+      .eq('order_id', orderId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    
+    // Record status transition
+    await supabase.from('order_status_transitions').insert({
+      order_id: orderId,
+      from_status: currentOrder.status,
+      to_status: 'CANCELLED',
+      notes: reason || 'Order cancelled',
+      transition_date: new Date().toISOString(),
+    })
+    
+    revalidatePath('/orders')
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/operasional/accept-order')
+    revalidatePath('/dashboard/operasional/monitoring-ongoing')
+    
+    return {
+      success: true,
+      data,
+      message: 'Order cancelled successfully'
+    }
+  } catch (error: any) {
+    console.error('Error cancelling order:', error)
+    return {
+      success: false,
+      error: error.message || 'Failed to cancel order',
+    }
+  }
+}
+
 export async function deleteOrder(orderId: string) {
   try {
     const supabase = await createClient()
