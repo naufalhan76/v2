@@ -1240,6 +1240,7 @@ export default function MonitoringOngoingPage() {
                     onSelect={setRescheduleDate}
                     disabled={(date) => date < new Date()}
                     initialFocus
+                    required
                   />
                 </PopoverContent>
               </Popover>
