@@ -99,23 +99,17 @@ export default function DashboardPage() {
       const startDateStr = dateRange.from?.toISOString().split('T')[0]
       const endDateStr = dateRange.to?.toISOString().split('T')[0]
       
-      console.log('🚀 Dashboard: Starting data fetch with date range:', { startDateStr, endDateStr })
-      
       // Fetch KPI data
       const kpiResult = await getDashboardKpis(startDateStr, endDateStr)
-      console.log('📊 Dashboard: KPI result received:', kpiResult)
       
       if (!kpiResult.success) {
-        console.error('❌ Dashboard: KPI fetch failed:', kpiResult.error)
         throw new Error(kpiResult.error)
       }
       
-      console.log('✅ Dashboard: Setting KPI data:', kpiResult.data)
       setKpiData(kpiResult.data!)
       
       // Fetch chart data
       const chartResult = await getChartData(startDateStr, endDateStr)
-      console.log('📈 Dashboard: Chart result received:', chartResult)
       
       if (chartResult.success) {
         setChartData(chartResult.data)

@@ -77,6 +77,7 @@ export type LocationFormData = {
     serial_number: string;
     selected_services: ServiceType[];
     notes: string;
+    is_selected?: boolean; // Track if AC is checked in dropdown (independent of services)
   }>;
   
   // New AC units (individual units with their own services)

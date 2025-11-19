@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import { 
   Dialog,
   DialogContent,
@@ -170,7 +171,8 @@ export default function CreateOrderPage() {
               model_number: ac.model_number,
               serial_number: ac.serial_number || '',
               selected_services: [],
-              notes: ''
+              notes: '',
+              is_selected: false
             })) || [],
             new_ac_units: []
           })))
@@ -988,48 +990,106 @@ function LocationCard({
             </Alert>
           )}
 
-          {/* Existing AC Units */}
-          {location.existing_acs.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-base">Existing AC Units</Label>
-              {location.existing_acs.map((ac, acIndex) => (
-                <div key={acIndex} className="border rounded p-3 space-y-2 bg-card">
-                  <div className="font-medium text-sm">
-                    {ac.brand} {ac.model_number} {ac.serial_number && `(${ac.serial_number})`}
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Select Services:</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {servicePricing.map(svc => (
-                        <div key={svc.service_type} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`ac-${index}-${acIndex}-${svc.service_type}`}
-                            checked={ac.selected_services.includes(svc.service_type)}
-                            onCheckedChange={(checked) => {
-                              const updated = { ...location }
-                              if (checked) {
-                                updated.existing_acs[acIndex].selected_services.push(svc.service_type)
-                              } else {
-                                updated.existing_acs[acIndex].selected_services = 
-                                  updated.existing_acs[acIndex].selected_services.filter(s => s !== svc.service_type)
-                              }
-                              onChange(updated)
-                            }}
-                          />
-                          <label htmlFor={`ac-${index}-${acIndex}-${svc.service_type}`} className="text-sm cursor-pointer">
-                            {svc.service_name}
-                            <span className="text-xs text-muted-foreground ml-1">
-                              (Rp {svc.base_price.toLocaleString('id-ID')})
-                            </span>
-                          </label>
+          {/* Existing AC Units - Multi-Select Dropdown */}
+          <div className="space-y-3">
+            <Label className="text-base">Select Existing AC Units</Label>
+            {location.existing_acs.length > 0 ? (
+              <div className="space-y-3">
+                <MultiSelectDropdown
+                  options={location.existing_acs.map(ac => ({
+                    id: ac.ac_unit_id,
+                    label: `${ac.brand} ${ac.model_number}`,
+                    secondaryLabel: ac.serial_number || 'No SN',
+                  }))}
+                  selected={location.existing_acs
+                    .filter(ac => ac.is_selected)
+                    .map(ac => ac.ac_unit_id)}
+                  onSelectionChange={(selectedIds) => {
+                    const updated = { ...location }
+                    updated.existing_acs = updated.existing_acs.map(ac => {
+                      const isNowSelected = selectedIds.includes(ac.ac_unit_id)
+                      
+                      if (isNowSelected && !ac.is_selected) {
+                        // Just selected
+                        return {
+                          ...ac,
+                          is_selected: true
+                        }
+                      } else if (!isNowSelected && ac.is_selected) {
+                        // Just deselected - clear services too
+                        return {
+                          ...ac,
+                          is_selected: false,
+                          selected_services: []
+                        }
+                      }
+                      // No change needed
+                      return ac
+                    })
+                    onChange(updated)
+                  }}
+                  placeholder="Select AC units..."
+                  searchPlaceholder="Search by brand, model, or serial..."
+                />
+
+                {/* Selected AC Details - Service Selection */}
+                {location.existing_acs
+                  .filter(ac => ac.is_selected)
+                  .length > 0 && (
+                  <div className="space-y-3 mt-4 border-t pt-4">
+                    <Label className="text-sm font-medium">Configure Services for Selected AC Units:</Label>
+                    {location.existing_acs.map((ac, acIndex) => {
+                      // Show if AC is selected
+                      if (!ac.is_selected) return null
+
+                      return (
+                        <div key={acIndex} className="border rounded p-3 space-y-2 bg-card">
+                          <div className="font-medium text-sm">
+                            {ac.brand} {ac.model_number} {ac.serial_number && `(${ac.serial_number})`}
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Select Services:</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                              {servicePricing.map(svc => (
+                                <div key={svc.service_type} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`ac-${index}-${acIndex}-${svc.service_type}`}
+                                    checked={ac.selected_services.includes(svc.service_type)}
+                                    onCheckedChange={(checked) => {
+                                      const updated = { ...location }
+                                      if (checked) {
+                                        updated.existing_acs[acIndex].selected_services.push(svc.service_type)
+                                      } else {
+                                        updated.existing_acs[acIndex].selected_services = 
+                                          updated.existing_acs[acIndex].selected_services.filter(s => s !== svc.service_type)
+                                      }
+                                      onChange(updated)
+                                    }}
+                                  />
+                                  <label htmlFor={`ac-${index}-${acIndex}-${svc.service_type}`} className="text-sm cursor-pointer">
+                                    {svc.service_name}
+                                    <span className="text-xs text-muted-foreground ml-1">
+                                      (Rp {svc.base_price.toLocaleString('id-ID')})
+                                    </span>
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      )
+                    })}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                )}
+              </div>
+            ) : (
+              <Alert>
+                <AlertDescription>
+                  No existing AC units for this location. Add new AC units below.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
 
           {/* New AC Units */}
           <div className="space-y-3 border-t pt-3">

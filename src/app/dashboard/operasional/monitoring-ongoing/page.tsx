@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getOrders, getOrderById, addHelperTechnician, removeHelperTechnician } from '@/lib/actions/orders'
 import { getTechnicians } from '@/lib/actions/technicians'
+import { updateOrderStatus } from '@/lib/actions/orders'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -136,6 +137,9 @@ export default function MonitoringOngoingPage() {
   const [showRemoveHelperDialog, setShowRemoveHelperDialog] = useState(false)
   const [helperToRemove, setHelperToRemove] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [cancelModalOpen, setCancelModalOpen] = useState(false)
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false)
+  const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null)
   
   // Date range state (default: 30 days ago to today)
   const [dateRange, setDateRange] = useState<{from: Date | undefined, to?: Date | undefined}>(() => {
@@ -344,6 +348,79 @@ export default function MonitoringOngoingPage() {
       tech.technician_id !== leadTechId && 
       !helperIds.includes(tech.technician_id)
     )
+  }
+
+  const handleCancelOrder = async () => {
+    if (!detailOrderId) return
+    
+    setIsProcessing(true)
+    try {
+      const result = await updateOrderStatus(detailOrderId, 'CANCELLED', 'Cancelled from monitoring ongoing')
+      
+      if (result.success) {
+        toast({
+          title: 'Success',
+          description: 'Order cancelled successfully'
+        })
+        setCancelModalOpen(false)
+        setDetailOrderId(null)
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+      } else {
+        toast({
+          title: 'Error',
+          description: result.error || 'Failed to cancel order',
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'An error occurred',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleRescheduleOrder = async () => {
+    if (!detailOrderId || !rescheduleDate) return
+    
+    setIsProcessing(true)
+    try {
+      const supabase = await import('@/lib/supabase-browser').then(m => m.createClient())
+      const formattedDate = format(rescheduleDate, 'yyyy-MM-dd')
+      
+      // Update order with new dates and status
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          scheduled_visit_date: formattedDate,
+          req_visit_date: formattedDate,
+          status: 'RESCHEDULE',
+          updated_at: new Date().toISOString()
+        })
+        .eq('order_id', detailOrderId)
+      
+      if (error) throw error
+      
+      toast({
+        title: 'Success',
+        description: `Order rescheduled to ${format(rescheduleDate, 'dd MMM yyyy')}`
+      })
+      setRescheduleModalOpen(false)
+      setDetailOrderId(null)
+      setRescheduleDate(null)
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'An error occurred',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   return (
@@ -961,6 +1038,28 @@ export default function MonitoringOngoingPage() {
               </div>
             )
           })()}
+
+          {/* Action Buttons - Outside IIFE */}
+          {orderDetail?.data && orderDetail.data.status !== 'DONE' && orderDetail.data.status !== 'INVOICED' && orderDetail.data.status !== 'PAID' && (
+            <div className='flex gap-3 pt-4 border-t'>
+              <Button
+                variant='destructive'
+                onClick={() => setCancelModalOpen(true)}
+                disabled={isProcessing}
+                className='flex-1'
+              >
+                Cancel Order
+              </Button>
+              <Button
+                variant='outline'
+                onClick={() => setRescheduleModalOpen(true)}
+                disabled={isProcessing}
+                className='flex-1'
+              >
+                Reschedule
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -1091,6 +1190,81 @@ export default function MonitoringOngoingPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Cancel Order Confirmation Dialog */}
+      <AlertDialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this order? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isProcessing}>
+              Keep Order
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelOrder} disabled={isProcessing} className='bg-red-600 hover:bg-red-700'>
+              {isProcessing ? 'Cancelling...' : 'Cancel Order'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reschedule Order Dialog */}
+      <Dialog open={rescheduleModalOpen} onOpenChange={setRescheduleModalOpen}>
+        <DialogContent className='max-w-md'>
+          <DialogHeader>
+            <DialogTitle>Reschedule Order</DialogTitle>
+            <DialogDescription>
+              Select a new date for this order
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4'>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>Select New Date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant='outline'
+                    className='w-full justify-start text-left font-normal'
+                  >
+                    <CalendarIcon className='mr-2 h-4 w-4' />
+                    {rescheduleDate ? format(rescheduleDate, 'dd MMM yyyy') : 'Pick a date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className='w-auto p-0' align='start'>
+                  <Calendar
+                    mode='single'
+                    selected={rescheduleDate || undefined}
+                    onSelect={setRescheduleDate}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <div className='flex gap-2 pt-4 border-t'>
+            <Button
+              variant='outline'
+              onClick={() => {
+                setRescheduleModalOpen(false)
+                setRescheduleDate(null)
+              }}
+              disabled={isProcessing}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRescheduleOrder}
+              disabled={!rescheduleDate || isProcessing}
+            >
+              {isProcessing ? 'Rescheduling...' : 'Reschedule'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

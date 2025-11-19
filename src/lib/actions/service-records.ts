@@ -179,3 +179,99 @@ export async function getServiceRecordById(serviceId: string) {
     }
   }
 }
+
+export async function updateServiceRecord(
+  serviceId: string,
+  updates: {
+    next_service_due?: string | null
+    service_type?: string
+    notes?: string
+  }
+) {
+  try {
+    const supabase = await createClient()
+    
+    const { data, error } = await supabase
+      .from('service_records')
+      .update(updates)
+      .eq('service_id', serviceId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    
+    return {
+      success: true,
+      data,
+      message: 'Service record updated successfully',
+    }
+  } catch (error: any) {
+    console.error('Error updating service record:', error)
+    return {
+      success: false,
+      error: error.message,
+      data: null,
+    }
+  }
+}
+
+export async function trackReminder(serviceId: string, orderId: string, phoneNumber: string) {
+  try {
+    const supabase = await createClient()
+    
+    const { error } = await supabase
+      .from('service_reminders')
+      .insert({
+        service_id: serviceId,
+        order_id: orderId,
+        reminder_type: 'WHATSAPP',
+        recipient_phone: phoneNumber,
+        status: 'sent'
+      })
+    
+    if (error) throw error
+    
+    return {
+      success: true,
+      message: 'Reminder logged successfully'
+    }
+  } catch (error: any) {
+    console.error('Error tracking reminder:', error)
+    return {
+      success: false,
+      error: error.message,
+    }
+  }
+}
+
+export async function getReminderStats(serviceId: string) {
+  try {
+    const supabase = await createClient()
+    
+    const { data, error } = await supabase
+      .from('service_reminders')
+      .select('reminder_id, sent_at')
+      .eq('service_id', serviceId)
+      .eq('reminder_type', 'WHATSAPP')
+      .order('sent_at', { ascending: false })
+    
+    if (error) throw error
+    
+    const count = data?.length || 0
+    const lastSentAt = data?.[0]?.sent_at || null
+    
+    return {
+      success: true,
+      count,
+      lastSentAt
+    }
+  } catch (error: any) {
+    console.error('Error fetching reminder stats:', error)
+    return {
+      success: false,
+      count: 0,
+      lastSentAt: null,
+      error: error.message
+    }
+  }
+}

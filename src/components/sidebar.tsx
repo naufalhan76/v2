@@ -33,6 +33,29 @@ const sidebarItems = [
     href: '/dashboard',
     icon: LayoutDashboard,
   },
+    {
+    title: 'Operasional',
+    href: '/dashboard/operasional',
+    icon: ClipboardList,
+    children: [
+      {
+        title: 'Create Order',
+        href: '/dashboard/operasional/create-order',
+      },
+      {
+        title: 'Assign Order',
+        href: '/dashboard/operasional/assign-order',
+      },
+      {
+        title: 'Monitoring Ongoing',
+        href: '/dashboard/operasional/monitoring-ongoing',
+      },
+      {
+        title: 'Monitoring History',
+        href: '/dashboard/operasional/monitoring-history',
+      },
+    ],
+  },
   {
     title: 'Konfigurasi',
     href: '/dashboard/konfigurasi',
@@ -81,33 +104,6 @@ const sidebarItems = [
       {
         title: 'Lokasi Pelanggan',
         href: '/dashboard/manajemen/lokasi',
-      },
-    ],
-  },
-  {
-    title: 'Operasional',
-    href: '/dashboard/operasional',
-    icon: ClipboardList,
-    children: [
-      {
-        title: 'Create Order',
-        href: '/dashboard/operasional/create-order',
-      },
-      {
-        title: 'Assign Order',
-        href: '/dashboard/operasional/assign-order',
-      },
-      {
-        title: 'Accept Order',
-        href: '/dashboard/operasional/accept-order',
-      },
-      {
-        title: 'Monitoring Ongoing',
-        href: '/dashboard/operasional/monitoring-ongoing',
-      },
-      {
-        title: 'Monitoring History',
-        href: '/dashboard/operasional/monitoring-history',
       },
     ],
   },
