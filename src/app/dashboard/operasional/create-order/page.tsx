@@ -1289,7 +1289,7 @@ function ConfirmationModal({
             {locations.map((loc, idx) => (
               <div key={idx} className="text-sm space-y-1 pl-4 border-l-2">
                 <p className="font-medium">
-                  {loc.location_id ? `${loc.building_name}, Floor ${loc.floor}, Room ${loc.room_number}` : `New Location: ${loc.building_name || 'Unnamed'}`}
+                  {loc.location_id ? `${loc.full_address}, ${loc.city}` : `New Location: ${loc.full_address || 'Unnamed'}`}
                 </p>
                 <div className="text-muted-foreground text-xs">
                   {loc.existing_acs.length > 0 && <span>{loc.existing_acs.length} existing AC(s)</span>}
@@ -1480,10 +1480,10 @@ function EditBillingAddressModal({
       const loc = locations[selectedLocationIndex]
       if (loc) {
         const parts = []
-        if (loc.building_name) parts.push(loc.building_name)
-        if (loc.floor) parts.push(`Floor ${loc.floor}`)
-        if (loc.room_number) parts.push(`Room ${loc.room_number}`)
-        if (loc.description) parts.push(loc.description)
+        if (loc.full_address) parts.push(loc.full_address)
+        if (loc.house_number) parts.push(`House ${loc.house_number}`)
+        if (loc.city) parts.push(loc.city)
+        if (loc.landmarks) parts.push(loc.landmarks)
         newAddress = parts.join(', ')
       }
     }
@@ -1582,10 +1582,10 @@ function EditBillingAddressModal({
                 <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-2">
                   {locations.map((loc, idx) => {
                     const addressPreview = [
-                      loc.building_name,
-                      loc.floor && `Floor ${loc.floor}`,
-                      loc.room_number && `Room ${loc.room_number}`,
-                      loc.description
+                      loc.full_address,
+                      loc.house_number && `House ${loc.house_number}`,
+                      loc.city && `City: ${loc.city}`,
+                      loc.landmarks
                     ].filter(Boolean).join(', ')
 
                     return (
