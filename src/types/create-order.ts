@@ -128,7 +128,7 @@ export type CustomerSearchResult = {
     full_address: string;
     house_number: number;
     city: string;
-    description: string | null;
+    landmarks: string | null;
     ac_units?: Array<{
       ac_unit_id: string;
       brand: string;
