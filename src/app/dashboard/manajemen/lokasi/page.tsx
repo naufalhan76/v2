@@ -39,10 +39,10 @@ import { useToast } from '@/hooks/use-toast'
 interface Location {
   location_id: string
   customer_id: string
-  building_name: string
-  floor: number
-  room_number: string
-  description: string
+  full_address: string
+  house_number: number
+  city: string
+  landmarks?: string
   customers?: {
     customer_id: string
     customer_name: string
@@ -70,10 +70,10 @@ export default function LocationsPage() {
   })
 
   const [formData, setFormData] = useState({
-    building_name: '',
-    floor: 1,
-    room_number: '',
-    description: '',
+    full_address: '',
+    house_number: 1,
+    city: '',
+    landmarks: '',
   })
 
   useEffect(() => {
@@ -105,10 +105,10 @@ export default function LocationsPage() {
   const handleEdit = (location: Location) => {
     setSelectedLocation(location)
     setFormData({
-      building_name: location.building_name,
-      floor: location.floor,
-      room_number: location.room_number,
-      description: location.description,
+      full_address: location.full_address,
+      house_number: location.house_number,
+      city: location.city,
+      landmarks: location.landmarks || '',
     })
     setIsEditOpen(true)
   }
@@ -222,16 +222,16 @@ export default function LocationsPage() {
                     <SortableTableHead sortKey="customers.customer_name" currentSort={sortConfig} onSort={requestSort}>
                       Customer
                     </SortableTableHead>
-                    <SortableTableHead sortKey="building_name" currentSort={sortConfig} onSort={requestSort}>
-                      Building Name
+                    <SortableTableHead sortKey="full_address" currentSort={sortConfig} onSort={requestSort}>
+                      Full Address
                     </SortableTableHead>
-                    <SortableTableHead sortKey="floor" currentSort={sortConfig} onSort={requestSort}>
-                      Floor
+                    <SortableTableHead sortKey="house_number" currentSort={sortConfig} onSort={requestSort}>
+                      House Number
                     </SortableTableHead>
-                    <SortableTableHead sortKey="room_number" currentSort={sortConfig} onSort={requestSort}>
-                      Room Number
+                    <SortableTableHead sortKey="city" currentSort={sortConfig} onSort={requestSort}>
+                      City
                     </SortableTableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead>Landmarks</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -261,10 +261,10 @@ export default function LocationsPage() {
                             <div className="text-muted-foreground text-sm">No customer assigned</div>
                           )}
                         </TableCell>
-                        <TableCell>{location.building_name}</TableCell>
-                        <TableCell>{location.floor}</TableCell>
-                        <TableCell>{location.room_number}</TableCell>
-                        <TableCell>{location.description || '-'}</TableCell>
+                        <TableCell>{location.full_address}</TableCell>
+                        <TableCell>{location.house_number}</TableCell>
+                        <TableCell>{location.city}</TableCell>
+                        <TableCell className="text-sm">{location.landmarks || '-'}</TableCell>
                         <TableCell>
                           {location.customers?.phone_number ? (
                             <div className="text-sm font-mono">{location.customers.phone_number}</div>
@@ -317,39 +317,40 @@ export default function LocationsPage() {
           </SheetHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="building_name">Building Name *</Label>
+              <Label htmlFor="full_address">Full Address *</Label>
               <Input
-                id="building_name"
-                value={formData.building_name}
-                onChange={(e) => setFormData({ ...formData, building_name: e.target.value })}
+                id="full_address"
+                value={formData.full_address}
+                onChange={(e) => setFormData({ ...formData, full_address: e.target.value })}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="floor">Floor *</Label>
+              <Label htmlFor="house_number">House Number *</Label>
               <Input
-                id="floor"
+                id="house_number"
                 type="number"
-                value={formData.floor}
-                onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) || 1 })}
+                value={formData.house_number}
+                onChange={(e) => setFormData({ ...formData, house_number: parseInt(e.target.value) || 1 })}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="room_number">Room Number *</Label>
+              <Label htmlFor="city">City *</Label>
               <Input
-                id="room_number"
-                value={formData.room_number}
-                onChange={(e) => setFormData({ ...formData, room_number: e.target.value })}
+                id="city"
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="landmarks">Landmarks / Notes</Label>
               <Input
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                id="landmarks"
+                value={formData.landmarks || ''}
+                onChange={(e) => setFormData({ ...formData, landmarks: e.target.value })}
+                placeholder="e.g., Near the mall, opposite the park"
               />
             </div>
             <div className="flex gap-2 pt-4">

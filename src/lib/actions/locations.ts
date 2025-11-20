@@ -32,7 +32,7 @@ export async function getLocations(filters?: {
       .range(from, to)
     
     if (filters?.search) {
-      query = query.or(`building_name.ilike.%${filters.search}%,room_number.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+      query = query.or(`full_address.ilike.%${filters.search}%,city.ilike.%${filters.search}%`)
     }
     
     if (filters?.customerId) {
@@ -106,10 +106,10 @@ export async function getLocationById(locationId: string) {
 }
 
 export async function updateLocation(locationId: string, locationData: Partial<{
-  building_name: string
-  floor: number
-  room_number: string
-  description: string
+  full_address: string
+  house_number: number
+  city: string
+  landmarks: string
 }>) {
   try {
     const supabase = await createClient()

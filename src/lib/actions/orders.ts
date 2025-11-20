@@ -38,9 +38,9 @@ export async function getOrders(filters?: {
           estimated_price,
           locations (
             location_id,
-            building_name,
-            floor,
-            room_number
+            full_address,
+            house_number,
+            city
           )
         ),
         order_technicians (
@@ -132,10 +132,9 @@ export async function getOrderById(orderId: string) {
           status,
           locations (
             location_id,
-            building_name,
-            floor,
-            room_number,
-            description
+            full_address,
+            house_number,
+            city
           ),
           ac_units (
             ac_unit_id,

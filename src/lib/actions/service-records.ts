@@ -33,10 +33,9 @@ export async function getServiceRecords(filters?: {
           locations (
             location_id,
             customer_id,
-            building_name,
-            floor,
-            room_number,
-            description,
+            full_address,
+            house_number,
+            city,
             customers (
               customer_id,
               customer_name,
@@ -138,10 +137,9 @@ export async function getServiceRecordById(serviceId: string) {
           locations (
             location_id,
             customer_id,
-            building_name,
-            floor,
-            room_number,
-            description,
+            full_address,
+            house_number,
+            city,
             customers (
               customer_id,
               customer_name,

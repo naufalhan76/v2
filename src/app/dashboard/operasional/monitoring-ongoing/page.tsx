@@ -59,7 +59,7 @@ function getLocationsSummary(orderItems: any[]) {
   const uniqueLocations = new Map()
   orderItems.forEach(item => {
     if (item.locations) {
-      uniqueLocations.set(item.location_id, item.locations.building_name)
+      uniqueLocations.set(item.location_id, item.locations.full_address)
     }
   })
   
@@ -986,12 +986,11 @@ export default function MonitoringOngoingPage() {
                           <div className='space-y-1'>
                             <div className='flex items-center gap-2 font-semibold text-base'>
                               <Building className='w-4 h-4 text-primary' />
-                              {group.location?.building_name || 'Unknown Location'}
+                              {group.location?.full_address || 'Unknown Location'}
                             </div>
                             {group.location && (
                               <div className='text-sm text-muted-foreground pl-6'>
-                                Floor {group.location.floor}, Room {group.location.room_number}
-                                {group.location.description && ` • ${group.location.description}`}
+                                House {group.location.house_number}, {group.location.city}
                               </div>
                             )}
                           </div>

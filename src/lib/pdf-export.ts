@@ -259,7 +259,7 @@ export function exportInvoiceToPDF({
       pdf.setFontSize(9)
       pdf.setTextColor(30, 58, 138) // blue-900
       const locationText = group.location ? 
-        `${group.location.building_name} - Floor ${group.location.floor}, Room ${group.location.room_number}` :
+        `${group.location.full_address} - House ${group.location.house_number}, ${group.location.city}` :
         'Unknown Location'
       pdf.text(locationText, margin + 3, yPos)
       yPos += 6

@@ -50,10 +50,10 @@ export async function searchCustomerByPhone(phone: string): Promise<{
       .from('locations')
       .select(`
         location_id,
-        building_name,
-        floor,
-        room_number,
-        description,
+        full_address,
+        house_number,
+        city,
+        landmarks,
         ac_units (
           ac_unit_id,
           brand,
@@ -372,9 +372,9 @@ export async function getServicePricing(): Promise<{
  */
 export async function createLocation(data: {
   customer_id: string;
-  building_name: string;
-  floor?: number;
-  room_number?: string;
+  full_address: string;
+  house_number?: number;
+  city?: string;
   description?: string;
 }): Promise<{
   success: boolean;
@@ -388,9 +388,9 @@ export async function createLocation(data: {
       .from('locations')
       .insert({
         customer_id: data.customer_id,
-        building_name: data.building_name,
-        floor: data.floor || 1,
-        room_number: data.room_number || '',
+        full_address: data.full_address,
+        house_number: data.house_number || 1,
+        city: data.city || '',
         description: data.description
       })
       .select('location_id')

@@ -324,9 +324,9 @@ export async function getInvoiceById(invoiceId: string): Promise<{
         *,
         locations (
           location_id,
-          building_name,
-          floor,
-          room_number,
+          full_address,
+          house_number,
+          city,
           description
         ),
         ac_units (

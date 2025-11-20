@@ -64,10 +64,10 @@ export type CreateOrderInput = {
 // Form state for Create Order page
 export type LocationFormData = {
   location_id?: string; // undefined = new location
-  building_name?: string;
-  floor?: number;
-  room_number?: string;
-  description?: string;
+  full_address?: string;
+  house_number?: number;
+  city?: string;
+  landmarks?: string;
   
   // Existing AC units
   existing_acs: Array<{
@@ -125,9 +125,9 @@ export type CustomerSearchResult = {
   billing_address?: string | null;
   locations?: Array<{
     location_id: string;
-    building_name: string;
-    floor: number;
-    room_number: string;
+    full_address: string;
+    house_number: number;
+    city: string;
     description: string | null;
     ac_units?: Array<{
       ac_unit_id: string;

@@ -22,7 +22,7 @@ Use these exact table/column names (snake_case) already present:
   - `is_active` boolean: TRUE = user can login, FALSE = user blocked
 - `technicians(technician_id, technician_name, company, contact_number, email, created_at, updated_at)`
 - `customers(customer_id, customer_name, primary_contact_person, email, phone_number, billing_address, notes, created_at, updated_at)`
-- `locations(location_id, customer_id, building_name, floor, room_number, description, created_at, updated_at)`
+- `locations(location_id, customer_id, full_address, house_number, city, landmarks, created_at, updated_at)`
 - `ac_units(ac_unit_id, brand, model_number, serial_number, ac_type, capacity_btu, installation_date, location_id, status, last_service_date, created_at, updated_at)`
 - `orders(order_id, customer_id, location_id, order_date, order_type, description, status, created_at, updated_at)`
   - `status` enum flow (transition matrix below)

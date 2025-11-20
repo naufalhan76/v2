@@ -23,9 +23,9 @@ export async function getAcUnits(filters?: {
         *,
         locations (
           location_id,
-          building_name,
-          floor,
-          room_number,
+          full_address,
+          house_number,
+          city,
           description,
           customers (
             customer_id,
@@ -59,7 +59,7 @@ export async function getAcUnits(filters?: {
       ac_unit_id: data[0].ac_unit_id,
       brand: data[0].brand,
       location: data[0].locations ? {
-        building_name: data[0].locations.building_name,
+        full_address: data[0].locations.full_address,
         customer: data[0].locations.customers
       } : null
     } : 'No data')
@@ -95,9 +95,9 @@ export async function getAcUnitById(acUnitId: string) {
         *,
         locations (
           location_id,
-          building_name,
-          floor,
-          room_number,
+          full_address,
+          house_number,
+          city,
           description,
           customers (
             customer_id,

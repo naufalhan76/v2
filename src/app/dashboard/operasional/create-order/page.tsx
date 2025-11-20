@@ -161,10 +161,10 @@ export default function CreateOrderPage() {
         if (result.data.locations && result.data.locations.length > 0) {
           setLocations(result.data.locations.map(loc => ({
             location_id: loc.location_id,
-            building_name: loc.building_name,
-            floor: loc.floor,
-            room_number: loc.room_number,
-            description: loc.description || undefined,
+            full_address: loc.full_address,
+            house_number: loc.house_number,
+            city: loc.city,
+            landmarks: loc.landmarks || undefined,
             existing_acs: loc.ac_units?.map(ac => ({
               ac_unit_id: ac.ac_unit_id,
               brand: ac.brand,
@@ -323,10 +323,9 @@ export default function CreateOrderPage() {
           const firstLocation = locations[0]
           if (firstLocation) {
             const parts = []
-            if (firstLocation.building_name) parts.push(firstLocation.building_name)
-            if (firstLocation.floor) parts.push(`Floor ${firstLocation.floor}`)
-            if (firstLocation.room_number) parts.push(`Room ${firstLocation.room_number}`)
-            if (firstLocation.description) parts.push(firstLocation.description)
+            if (firstLocation.full_address) parts.push(firstLocation.full_address)
+            if (firstLocation.house_number) parts.push(`House ${firstLocation.house_number}`)
+            if (firstLocation.city) parts.push(firstLocation.city)
             
             billingAddress = parts.length > 0 ? parts.join(', ') : 'TBD'
           }
@@ -358,13 +357,13 @@ export default function CreateOrderPage() {
         let locationId = loc.location_id
 
         // Create new location if needed
-        if (!locationId && loc.building_name) {
+        if (!locationId && loc.full_address) {
           const locResult = await createLocation({
             customer_id: customerId,
-            building_name: loc.building_name,
-            floor: loc.floor,
-            room_number: loc.room_number,
-            description: loc.description
+            full_address: loc.full_address,
+            house_number: loc.house_number,
+            city: loc.city,
+            landmarks: loc.landmarks
           })
           
           if (!locResult.success || !locResult.data) {
@@ -931,7 +930,7 @@ function LocationCard({
           {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           <Package className="h-4 w-4" />
           <span className="font-semibold">
-            Location {index + 1} {location.building_name && `- ${location.building_name}`}
+            Location {index + 1} {location.full_address && `- ${location.full_address}`}
           </span>
         </Button>
         <Button variant="ghost" size="sm" onClick={onRemove}>
@@ -945,47 +944,37 @@ function LocationCard({
           {isNewLocation ? (
             <div className="space-y-3 bg-muted/50 p-3 rounded-lg">
               <div>
-                <Label>Building Name *</Label>
+                <Label>Full Address *</Label>
                 <Input
                   placeholder="e.g., Head Office, Branch A"
-                  value={location.building_name || ''}
-                  onChange={(e) => onChange({ ...location, building_name: e.target.value })}
+                  value={location.full_address || ''}
+                  onChange={(e) => onChange({ ...location, full_address: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Floor</Label>
+                  <Label>House Number</Label>
                   <Input
                     type="number"
                     placeholder="e.g., 1, 2, 3"
-                    value={location.floor || ''}
-                    onChange={(e) => onChange({ ...location, floor: e.target.value ? parseInt(e.target.value) : undefined })}
+                    value={location.house_number || ''}
+                    onChange={(e) => onChange({ ...location, house_number: e.target.value ? parseInt(e.target.value) : undefined })}
                   />
                 </div>
                 <div>
-                  <Label>Room Number</Label>
+                  <Label>City</Label>
                   <Input
-                    placeholder="e.g., 101, A-12"
-                    value={location.room_number || ''}
-                    onChange={(e) => onChange({ ...location, room_number: e.target.value })}
+                    placeholder="e.g., Jakarta, Bandung"
+                    value={location.city || ''}
+                    onChange={(e) => onChange({ ...location, city: e.target.value })}
                   />
                 </div>
-              </div>
-              <div>
-                <Label>Description</Label>
-                <Textarea
-                  placeholder="Additional notes about this location..."
-                  value={location.description || ''}
-                  onChange={(e) => onChange({ ...location, description: e.target.value })}
-                  rows={2}
-                />
               </div>
             </div>
           ) : (
             <Alert>
               <AlertDescription>
-                <strong>{location.building_name}</strong> - Floor {location.floor}, Room {location.room_number}<br />
-                {location.description && <span className="text-sm text-muted-foreground">{location.description}</span>}
+                <strong>{location.full_address}</strong> - House {location.house_number}, {location.city}
               </AlertDescription>
             </Alert>
           )}
@@ -1635,10 +1624,10 @@ function EditBillingAddressModal({
                   ? manualAddress
                   : selectedLocationIndex !== null && locations[selectedLocationIndex]
                     ? [
-                        locations[selectedLocationIndex].building_name,
-                        locations[selectedLocationIndex].floor && `Floor ${locations[selectedLocationIndex].floor}`,
-                        locations[selectedLocationIndex].room_number && `Room ${locations[selectedLocationIndex].room_number}`,
-                        locations[selectedLocationIndex].description
+                        locations[selectedLocationIndex].full_address,
+                        locations[selectedLocationIndex].house_number && `${locations[selectedLocationIndex].house_number}`,
+                        locations[selectedLocationIndex].city && `${locations[selectedLocationIndex].city}`,
+                        locations[selectedLocationIndex].landmarks && `Landmark: ${locations[selectedLocationIndex].landmarks}`
                       ].filter(Boolean).join(', ')
                     : ''
                 }
