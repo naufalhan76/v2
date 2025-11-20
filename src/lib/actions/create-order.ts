@@ -375,7 +375,7 @@ export async function createLocation(data: {
   full_address: string;
   house_number?: number;
   city?: string;
-  description?: string;
+  landmarks?: string;
 }): Promise<{
   success: boolean;
   data?: { location_id: string };
@@ -391,7 +391,7 @@ export async function createLocation(data: {
         full_address: data.full_address,
         house_number: data.house_number || 1,
         city: data.city || '',
-        description: data.description
+        landmarks: data.landmarks
       })
       .select('location_id')
       .single()
