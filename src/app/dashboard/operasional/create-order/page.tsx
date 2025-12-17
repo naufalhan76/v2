@@ -55,7 +55,8 @@ import {
   Loader2,
   X,
   Edit2,
-  Building2
+  Building2,
+  AlertCircle
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -113,6 +114,10 @@ export default function CreateOrderPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showEditBillingModal, setShowEditBillingModal] = useState(false)
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null)
+  
+  // Validation Alert Modal state
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [showValidationModal, setShowValidationModal] = useState(false)
 
   // Fetch service pricing
   const { data: pricingData } = useQuery({
@@ -268,25 +273,30 @@ export default function CreateOrderPage() {
 
   // Validate and show confirm modal
   const handleSubmitClick = () => {
-    // Validation
+    // Collect all validation errors
+    const errors: string[] = []
+    
     if (!isPhoneVerified) {
-      toast({ title: 'Error', description: 'Please verify phone number first', variant: 'destructive' })
-      return
+      errors.push('Phone number must be verified')
     }
 
     if (isNewCustomer && !newCustomerName.trim()) {
-      toast({ title: 'Error', description: 'Customer name is required', variant: 'destructive' })
-      return
+      errors.push('Customer name is required')
     }
 
     if (locations.length === 0) {
-      toast({ title: 'Error', description: 'Please add at least one location', variant: 'destructive' })
-      return
+      errors.push('Please add at least one location')
     }
 
+    // Check that each location has a full address
+    locations.forEach((loc, index) => {
+      if (!loc.full_address || !loc.full_address.trim()) {
+        errors.push(`Location ${index + 1}: Full address is required`)
+      }
+    })
+
     if (!scheduledDate) {
-      toast({ title: 'Error', description: 'Please select scheduled visit date', variant: 'destructive' })
-      return
+      errors.push('Scheduled visit date is required')
     }
     
     // Count total services
@@ -297,7 +307,13 @@ export default function CreateOrderPage() {
     }, 0)
     
     if (totalServices === 0) {
-      toast({ title: 'Error', description: 'Please select at least one service', variant: 'destructive' })
+      errors.push('Please select at least one service')
+    }
+
+    // If there are errors, show modal instead of toast
+    if (errors.length > 0) {
+      setValidationErrors(errors)
+      setShowValidationModal(true)
       return
     }
 
@@ -394,12 +410,20 @@ export default function CreateOrderPage() {
         for (const unit of loc.new_ac_units) {
           for (const serviceType of unit.selected_services) {
             const pricing = servicePricing.find(p => p.service_type === serviceType)
+            
+            // Combine 3 notes fields into one
+            const notesArray = []
+            if (unit.notes_room) notesArray.push(`Ruangan: ${unit.notes_room}`)
+            if (unit.notes_pk) notesArray.push(`PK: ${unit.notes_pk}`)
+            if (unit.notes_brand) notesArray.push(`Merk: ${unit.notes_brand}`)
+            const combinedNotes = notesArray.length > 0 ? notesArray.join(' | ') : 'New AC unit - details to be filled by technician'
+            
             orderItems.push({
               location_id: locationId,
               ac_unit_id: null, // Will be created as placeholder
               service_type: serviceType,
               quantity: 1, // Each new AC unit = 1 quantity
-              description: unit.notes || 'New AC unit - details to be filled by technician',
+              description: combinedNotes,
               estimated_price: pricing?.base_price || 0,
               new_ac_data: {
                 brand: 'TBD', // To be determined by technician
@@ -824,6 +848,12 @@ export default function CreateOrderPage() {
       </LoadingOverlay>
       
       {/* Modals */}
+      <ValidationAlertModal
+        open={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        errors={validationErrors}
+      />
+      
       <ConfirmationModal
         open={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
@@ -1153,17 +1183,50 @@ function LocationCard({
                       </div>
                     </div>
                     
-                    <div>
-                      <Label className="text-xs">Notes for Technician</Label>
-                      <Input
-                        placeholder="e.g., Estimate 1.5 PK, customer prefers Daikin..."
-                        value={unit.notes}
-                        onChange={(e) => {
-                          const updated = { ...location }
-                          updated.new_ac_units[unitIndex].notes = e.target.value
-                          onChange(updated)
-                        }}
-                      />
+                    <div className="space-y-3">
+                      <Label className="text-xs font-semibold">Notes for Technician</Label>
+                      
+                      {/* Ruangan */}
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Ruangan</Label>
+                        <Input
+                          placeholder="e.g., Ruang Meeting, Ruang Server..."
+                          value={unit.notes_room || ''}
+                          onChange={(e) => {
+                            const updated = { ...location }
+                            updated.new_ac_units[unitIndex].notes_room = e.target.value
+                            onChange(updated)
+                          }}
+                        />
+                      </div>
+                      
+                      {/* PK */}
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Estimasi PK</Label>
+                        <Input
+                          placeholder="e.g., 1.5 PK, 2.5 PK..."
+                          value={unit.notes_pk || ''}
+                          onChange={(e) => {
+                            const updated = { ...location }
+                            updated.new_ac_units[unitIndex].notes_pk = e.target.value
+                            onChange(updated)
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Merk Unit */}
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Merk/Tipe Unit</Label>
+                        <Input
+                          placeholder="e.g., Daikin, LG, Panasonic..."
+                          value={unit.notes_brand || ''}
+                          onChange={(e) => {
+                            const updated = { ...location }
+                            updated.new_ac_units[unitIndex].notes_brand = e.target.value
+                            onChange(updated)
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1176,18 +1239,81 @@ function LocationCard({
   )
 }
 
+// Validation Alert Modal Component
+function ValidationAlertModal({
+  open,
+  onClose,
+  errors
+}: {
+  open: boolean
+  onClose: () => void
+  errors: string[]
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md border-0 shadow-2xl">
+        {/* Header dengan background gradient */}
+        <div className="bg-gradient-to-r from-red-50 to-red-100 -m-6 mb-0 p-6 rounded-t-lg border-b border-red-200">
+          <DialogHeader>
+            <div className="flex items-start gap-3">
+              <div className="bg-red-100 p-2 rounded-full">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div className="flex-1">
+                <DialogTitle className="text-xl font-bold text-red-900">
+                  Validation Error
+                </DialogTitle>
+                <DialogDescription className="text-red-700 mt-1">
+                  Please fix the following issues to continue
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
+
+        {/* Error List */}
+        <div className="space-y-2 py-4">
+          {errors.map((error, idx) => (
+            <div 
+              key={idx} 
+              className="flex gap-3 p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-red-200 hover:border-red-300 hover:shadow-sm transition-all"
+            >
+              <span className="text-red-500 flex-shrink-0 mt-0.5">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </span>
+              <span className="text-sm font-medium text-red-800 flex-1">{error}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Action Footer */}
+        <DialogFooter className="mt-6 pt-4 border-t border-red-100">
+          <Button 
+            onClick={onClose} 
+            className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+          >
+            Got it, Let me fix this
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // Confirmation Modal Component
-function ConfirmationModal({ 
-  open, 
-  onClose, 
-  onConfirm, 
-  customer, 
+function ConfirmationModal({
+  open,
+  onClose,
+  onConfirm,
+  customer,
   isNewCustomer,
   newCustomerName,
   newCustomerEmail,
   phoneInput,
-  locations, 
-  scheduledDate, 
+  locations,
+  scheduledDate,
   technicianId,
   technicians,
   servicePricing,

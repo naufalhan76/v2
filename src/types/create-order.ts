@@ -85,6 +85,9 @@ export type LocationFormData = {
     temp_id: string; // temporary ID for form tracking
     selected_services: ServiceType[];
     notes: string;
+    notes_room?: string; // Room/Location name
+    notes_pk?: string; // Power (PK)
+    notes_brand?: string; // Brand/Model
   }>;
 };
 
