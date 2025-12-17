@@ -25,7 +25,6 @@ export async function getCustomers(filters?: {
           full_address,
           house_number,
           city,
-          description,
           ac_units (
             ac_unit_id
           )
@@ -63,8 +62,7 @@ export async function getCustomers(filters?: {
         // Check if any location matches
         const locationMatch = customer.locations?.some((loc: any) => 
           loc.full_address?.toLowerCase().includes(searchLower) ||
-          loc.city?.toLowerCase().includes(searchLower) ||
-          loc.description?.toLowerCase().includes(searchLower)
+          loc.city?.toLowerCase().includes(searchLower)
         )
         
         return locationMatch

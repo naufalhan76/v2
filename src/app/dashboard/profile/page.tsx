@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import { Camera, Loader2, Mail, User, Lock, Eye, EyeOff } from 'lucide-react'
 import { getUserProfile, updateUserProfile, updateUserPassword, updateProfilePhoto } from '@/lib/actions/profile'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ApiKeysManagement } from '@/components/api-keys-management'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -497,6 +498,12 @@ export default function ProfilePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* API Keys Management Section */}
+      <div className="max-w-2xl mx-auto mt-8">
+        <Separator className="my-8" />
+        <ApiKeysManagement />
+      </div>
     </div>
   )
 }

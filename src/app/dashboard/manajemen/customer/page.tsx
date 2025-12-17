@@ -81,7 +81,16 @@ export default function CustomerManagementPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['customers', page, searchTerm],
-    queryFn: () => getCustomers({ page, limit: itemsPerPage, search: searchTerm })
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(itemsPerPage),
+        ...(searchTerm && { search: searchTerm })
+      })
+      const response = await fetch(`/api/customers?${params.toString()}`)
+      if (!response.ok) throw new Error('Failed to fetch customers')
+      return await response.json()
+    }
   })
 
   // Loading states for operations

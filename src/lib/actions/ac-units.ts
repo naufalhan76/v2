@@ -26,7 +26,6 @@ export async function getAcUnits(filters?: {
           full_address,
           house_number,
           city,
-          description,
           customers (
             customer_id,
             customer_name,
@@ -98,7 +97,6 @@ export async function getAcUnitById(acUnitId: string) {
           full_address,
           house_number,
           city,
-          description,
           customers (
             customer_id,
             customer_name,

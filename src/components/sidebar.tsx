@@ -24,7 +24,8 @@ import {
   Sun,
   DollarSign,
   FileText,
-  Package
+  Package,
+  Code
 } from 'lucide-react'
 
 const sidebarItems = [
@@ -118,6 +119,19 @@ const sidebarItems = [
       },
     ],
   },
+  {
+    title: 'Admin',
+    href: '/dashboard/admin',
+    icon: Code,
+    requireRole: 'SUPERADMIN',
+    children: [
+      {
+        title: 'API Documentation',
+        href: '/dashboard/admin/api-docs',
+        requireRole: 'SUPERADMIN',
+      },
+    ],
+  },
 ]
 
 export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => void }) {
@@ -155,6 +169,20 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
         return false
       }
       return true
+    }).map(item => {
+      // Filter children if they exist
+      if (item.children && item.children.length > 0) {
+        return {
+          ...item,
+          children: item.children.filter((child: any) => {
+            if (child.requireRole && userRole !== child.requireRole) {
+              return false
+            }
+            return true
+          })
+        }
+      }
+      return item
     })
   }
 
