@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 export interface Invoice {
   invoice_id: string
   invoice_number: string
+  invoice_type: 'PROFORMA' | 'FINAL'
   order_id: string
   customer_id: string
   invoice_date: string
@@ -73,6 +74,7 @@ export interface PaymentRecord {
 export interface CreateInvoiceInput {
   order_id: string
   customer_id: string
+  invoice_type: 'PROFORMA' | 'FINAL'
   due_date: string
   service_type: string
   service_name: string
@@ -402,6 +404,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     .from('invoices')
     .insert({
       invoice_number: invoiceNumber,
+      invoice_type: input.invoice_type,
       order_id: input.order_id,
       customer_id: input.customer_id,
       invoice_date: new Date().toISOString().split('T')[0],
@@ -501,7 +504,26 @@ export async function updateInvoice(
 export async function deleteInvoice(invoiceId: string): Promise<void> {
   const supabase = await createClient()
 
-  // Check if invoice has payments
+  // Get invoice details first
+  const { data: invoice, error: fetchError } = await supabase
+    .from('invoices')
+    .select('status, payment_status, paid_amount, invoice_number')
+    .eq('invoice_id', invoiceId)
+    .single()
+
+  if (fetchError || !invoice) {
+    throw new Error('Invoice tidak ditemukan')
+  }
+
+  // Protection 1: Only allow delete if status is DRAFT
+  if (invoice.status !== 'DRAFT') {
+    throw new Error(
+      `Invoice tidak dapat dihapus karena sudah berstatus ${invoice.status}. ` +
+      `Gunakan fitur CANCEL untuk membatalkan invoice yang sudah dikirim.`
+    )
+  }
+
+  // Protection 2: Check if invoice has payments
   const { data: payments } = await supabase
     .from('payment_records')
     .select('payment_id')
@@ -510,6 +532,20 @@ export async function deleteInvoice(invoiceId: string): Promise<void> {
 
   if (payments && payments.length > 0) {
     throw new Error('Invoice tidak dapat dihapus karena sudah memiliki pembayaran')
+  }
+
+  // Protection 3: Check if has been sent (communication log)
+  const { data: communications } = await supabase
+    .from('invoice_communications')
+    .select('communication_id')
+    .eq('invoice_id', invoiceId)
+    .limit(1)
+
+  if (communications && communications.length > 0) {
+    throw new Error(
+      'Invoice tidak dapat dihapus karena sudah pernah dikirim ke customer. ' +
+      'Gunakan fitur CANCEL untuk membatalkan invoice.'
+    )
   }
 
   const { error } = await supabase.from('invoices').delete().eq('invoice_id', invoiceId)

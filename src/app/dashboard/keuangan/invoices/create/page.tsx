@@ -93,8 +93,24 @@ export default function CreateInvoicePage() {
 
   const loadCompletedOrders = async () => {
     try {
-      const result = await getOrders({ status: 'DONE', limit: 100 })
-      setOrders(result.data || [])
+      // Load orders for proforma/final invoice (Option C: Maximum flexibility)
+      // PROFORMA: Any order that has been assigned (ASSIGNED, OTW, ARRIVED, IN_PROGRESS)
+      // FINAL: Orders that are DONE
+      const [assignedResult, otwResult, arrivedResult, inProgressResult, doneResult] = await Promise.all([
+        getOrders({ status: 'ASSIGNED', limit: 100 }),
+        getOrders({ status: 'OTW', limit: 100 }),
+        getOrders({ status: 'ARRIVED', limit: 100 }),
+        getOrders({ status: 'IN_PROGRESS', limit: 100 }),
+        getOrders({ status: 'DONE', limit: 100 })
+      ])
+      const combinedOrders = [
+        ...(assignedResult.data || []),
+        ...(otwResult.data || []),
+        ...(arrivedResult.data || []),
+        ...(inProgressResult.data || []),
+        ...(doneResult.data || [])
+      ]
+      setOrders(combinedOrders)
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -249,9 +265,13 @@ export default function CreateInvoicePage() {
         ? 'Multiple Services' 
         : (baseService?.service_name || baseServiceNames[0] || 'Service')
 
+      // Determine invoice type based on order status
+      const invoiceType = selectedOrder.status === 'DONE' ? 'FINAL' : 'PROFORMA'
+
       await createInvoice({
         order_id: data.orderId,
         customer_id: selectedOrder.customer_id,
+        invoice_type: invoiceType,
         due_date: data.dueDate,
         service_type: selectedOrder.order_type, // Keep for DB constraint
         service_name: serviceName,
@@ -264,7 +284,7 @@ export default function CreateInvoicePage() {
 
       toast({
         title: 'Berhasil',
-        description: 'Invoice berhasil dibuat',
+        description: `Invoice ${invoiceType === 'PROFORMA' ? 'Proforma' : 'Final'} berhasil dibuat`,
       })
 
       router.push('/dashboard/keuangan/invoices')
@@ -328,15 +348,16 @@ export default function CreateInvoicePage() {
             <CardHeader>
               <CardTitle>Step 1: Pilih Order</CardTitle>
               <CardDescription>
-                Pilih order yang sudah selesai untuk dibuatkan invoice
-                <Badge variant="outline" className="ml-2">Status: DONE</Badge>
+                Pilih order untuk dibuatkan invoice (Proforma atau Final)
+                <Badge variant="outline" className="ml-2">ONGOING = Proforma</Badge>
+                <Badge variant="outline" className="ml-2">DONE = Final</Badge>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {orders.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <p>Tidak ada order dengan status DONE</p>
-                  <p className="text-sm mt-2">Pastikan order sudah diselesaikan terlebih dahulu</p>
+                  <p>Tidak ada order yang tersedia</p>
+                  <p className="text-sm mt-2">Order harus sudah di-assign atau selesai</p>
                 </div>
               ) : (
                 <>
@@ -349,7 +370,10 @@ export default function CreateInvoicePage() {
                       <SelectContent>
                         {orders.map((order) => (
                           <SelectItem key={order.order_id} value={order.order_id}>
-                            {order.order_id} - {order.customers?.customer_name} ({order.order_type})
+                            {order.order_id} - {order.customers?.customer_name} ({order.order_type}) - 
+                            <Badge className="ml-2" variant={order.status === 'DONE' ? 'default' : 'secondary'}>
+                              {order.status}
+                            </Badge>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -363,6 +387,12 @@ export default function CreateInvoicePage() {
 
               {selectedOrder && (
                 <div className="rounded-lg border p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium">Invoice Type:</span>
+                    <Badge variant={selectedOrder.status === 'DONE' ? 'default' : 'secondary'}>
+                      {selectedOrder.status === 'DONE' ? 'FINAL INVOICE' : 'PROFORMA INVOICE'}
+                    </Badge>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Customer:</span>
                     <span className="text-sm">{selectedOrder.customers?.customer_name}</span>

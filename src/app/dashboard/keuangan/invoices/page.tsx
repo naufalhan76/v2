@@ -265,6 +265,7 @@ export default function InvoicesPage() {
                     <SortableTableHead sortKey="invoice_number" currentSort={sortConfig} onSort={requestSort}>
                       Invoice Number
                     </SortableTableHead>
+                    <TableHead>Type</TableHead>
                     <SortableTableHead sortKey="customers.customer_name" currentSort={sortConfig} onSort={requestSort}>
                       Customer
                     </SortableTableHead>
@@ -291,6 +292,11 @@ export default function InvoicesPage() {
                     <TableRow key={invoice.invoice_id}>
                       <TableCell className="font-mono font-semibold">
                         {invoice.invoice_number}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={invoice.invoice_type === 'FINAL' ? 'default' : 'secondary'}>
+                          {invoice.invoice_type}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div>

@@ -90,6 +90,7 @@ export default function InvoiceDetailPage() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
 
   // Payment form state
@@ -192,7 +193,7 @@ export default function InvoiceDetailPage() {
   }
 
   const handleDelete = async () => {
-    if (!invoice || !confirm('Apakah Anda yakin ingin menghapus invoice ini?')) return
+    if (!invoice) return
 
     try {
       setIsProcessing(true)
@@ -205,11 +206,12 @@ export default function InvoiceDetailPage() {
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Error',
+        title: 'Tidak Dapat Menghapus',
         description: error.message || 'Gagal menghapus invoice',
       })
     } finally {
       setIsProcessing(false)
+      setIsDeleteDialogOpen(false)
     }
   }
 
@@ -530,8 +532,15 @@ export default function InvoiceDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{invoice.invoice_number}</h1>
-            <p className="text-muted-foreground">Detail invoice</p>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold tracking-tight">{invoice.invoice_number}</h1>
+              <Badge variant={invoice.invoice_type === 'FINAL' ? 'default' : 'secondary'}>
+                {invoice.invoice_type}
+              </Badge>
+            </div>
+            <p className="text-muted-foreground">
+              {invoice.invoice_type === 'PROFORMA' ? 'Invoice Proforma' : 'Invoice Final'}
+            </p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -566,10 +575,27 @@ export default function InvoiceDetailPage() {
             <Download className="mr-2 h-4 w-4" />
             Export PDF
           </Button>
+          {/* Only show delete button for DRAFT invoices */}
           {invoice.status === 'DRAFT' && (
-            <Button variant="destructive" onClick={handleDelete} disabled={isProcessing}>
+            <Button 
+              variant="destructive" 
+              onClick={() => setIsDeleteDialogOpen(true)} 
+              disabled={isProcessing}
+            >
               <Trash2 className="mr-2 h-4 w-4" />
               Hapus
+            </Button>
+          )}
+          {/* Show cancel button for non-DRAFT invoices */}
+          {invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED' && (
+            <Button 
+              variant="outline" 
+              onClick={() => handleStatusChange('CANCELLED')} 
+              disabled={isProcessing}
+              className="border-orange-200 text-orange-700 hover:bg-orange-50"
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              Cancel Invoice
             </Button>
           )}
         </div>
@@ -1033,6 +1059,48 @@ export default function InvoiceDetailPage() {
                 </>
               ) : (
                 'Record Payment'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Invoice</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus invoice <strong>{invoice?.invoice_number}</strong>?
+              <br />
+              <span className="text-red-600 font-medium mt-2 block">
+                Tindakan ini tidak dapat dibatalkan.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isProcessing}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete} 
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menghapus...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Ya, Hapus
+                </>
               )}
             </Button>
           </DialogFooter>
