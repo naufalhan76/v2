@@ -1,5 +1,7 @@
 # REST API Implementation Guide
 
+**Base URL:** `https://admin.yaleya.biz.id`
+
 ## Overview
 
 This document outlines the REST API layer being implemented to refactor existing server actions into REST endpoints. The API provides AppSheet integration capability and standardizes data access patterns.
@@ -130,24 +132,26 @@ Response:
 ### Update Order Status
 
 ```bash
-POST /api/orders/550e8400-e29b-41d4-a716-446655440000/status
+POST https://admin.yaleya.biz.id/api/orders/REQ%2F2026-01%2F036148/status
 Authorization: Bearer YOUR_TOKEN
 Content-Type: application/json
 
 {
-  "newStatus": "ASSIGNED"
+  "newStatus": "EN ROUTE"
 }
 
 Response:
 {
   "success": true,
   "data": {
-    "order_id": "uuid",
-    "status": "ASSIGNED",
+    "order_id": "REQ/2026-01/036148",
+    "status": "EN ROUTE",
     "updated_at": "2024-01-15T10:30:00.000Z"
   }
 }
 ```
+
+**Note:** Order IDs with slashes must be URL-encoded (e.g., `REQ/2026-01/036148` becomes `REQ%2F2026-01%2F036148`)
 
 ### Get Dashboard KPI
 

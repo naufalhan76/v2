@@ -34,7 +34,7 @@ export const OrderStatusEnum = z.enum([
   'NEW',
   'ACCEPTED',
   'ASSIGNED',
-  'OTW',
+  'EN ROUTE',
   'ARRIVED',
   'IN_PROGRESS',
   'DONE',
@@ -51,8 +51,8 @@ export const OrderStatusEnum = z.enum([
 export const OrderStatusTransitionMap: Record<string, string[]> = {
   NEW: ['ACCEPTED', 'CANCELLED'],
   ACCEPTED: ['ASSIGNED', 'CANCELLED'],
-  ASSIGNED: ['OTW', 'CANCELLED'],
-  OTW: ['ARRIVED', 'CANCELLED'],
+  ASSIGNED: ['EN ROUTE', 'CANCELLED'],
+  'EN ROUTE': ['ARRIVED', 'CANCELLED'],
   ARRIVED: ['IN_PROGRESS', 'CANCELLED'],
   IN_PROGRESS: ['DONE', 'TO_WORKSHOP', 'CANCELLED'],
   DONE: ['INVOICED', 'CANCELLED'],
@@ -78,11 +78,11 @@ export const GetOrdersQuerySchema = z.object({
 })
 
 export const GetOrderByIdParamSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1), // Support custom order ID format like REQ/2026-01/036148
 })
 
 export const UpdateOrderStatusSchema = z.object({
-  orderId: z.string().uuid(),
+  orderId: z.string().min(1), // Support custom order ID format like REQ/2026-01/036148
   newStatus: OrderStatusEnum,
 })
 

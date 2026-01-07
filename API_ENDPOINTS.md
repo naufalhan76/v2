@@ -1,5 +1,7 @@
 # REST API Endpoints Reference
 
+**Base URL:** `https://admin.yaleya.biz.id`
+
 ## ✅ Implemented Endpoints
 
 ### Orders Management
@@ -78,10 +80,13 @@ Create a new order.
 #### `POST /api/orders/[id]/status`
 Update order status with validation.
 
+**URL Parameter:**
+- `id` - Order ID (supports custom format like `REQ/2026-01/036148`, must be URL-encoded)
+
 **Request Body:**
 ```json
 {
-  "newStatus": "ACCEPTED|ASSIGNED|OTW|ARRIVED|IN_PROGRESS|DONE|INVOICED|PAID|CLOSED|CANCELLED"
+  "newStatus": "ACCEPTED|ASSIGNED|EN ROUTE|ARRIVED|IN_PROGRESS|DONE|INVOICED|PAID|CLOSED|CANCELLED"
 }
 ```
 
