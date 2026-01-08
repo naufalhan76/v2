@@ -66,9 +66,22 @@ import { id as localeId } from 'date-fns/locale'
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: 'bg-gray-500',
   SENT: 'bg-blue-500',
+  PARTIAL_PAID: 'bg-amber-500',
   PAID: 'bg-green-500',
   OVERDUE: 'bg-red-500',
   CANCELLED: 'bg-gray-400',
+}
+
+const getStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    DRAFT: 'Draft',
+    SENT: 'Sent',
+    PARTIAL_PAID: 'Partial Paid',
+    PAID: 'Paid',
+    OVERDUE: 'Overdue',
+    CANCELLED: 'Cancelled',
+  }
+  return labels[status] || status
 }
 
 export default function InvoiceDetailPage() {
@@ -142,7 +155,7 @@ export default function InvoiceDetailPage() {
       setIsProcessing(true)
       await updateInvoiceStatus(
         invoice.invoice_id,
-        newStatus as 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED'
+        newStatus as 'DRAFT' | 'SENT' | 'PARTIAL_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED'
       )
       toast({
         title: 'Berhasil',
@@ -649,7 +662,7 @@ export default function InvoiceDetailPage() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Badge className={STATUS_COLORS[invoice.status]}>{invoice.status}</Badge>
+                  <Badge className={STATUS_COLORS[invoice.status]}>{getStatusLabel(invoice.status)}</Badge>
                   <Badge
                     className={
                       invoice.payment_status === 'PAID'
@@ -928,6 +941,7 @@ export default function InvoiceDetailPage() {
                   <SelectContent>
                     <SelectItem value="DRAFT">Draft</SelectItem>
                     <SelectItem value="SENT">Sent</SelectItem>
+                    <SelectItem value="PARTIAL_PAID">Partial Paid</SelectItem>
                     <SelectItem value="PAID">Paid</SelectItem>
                     <SelectItem value="OVERDUE">Overdue</SelectItem>
                     <SelectItem value="CANCELLED">Cancelled</SelectItem>

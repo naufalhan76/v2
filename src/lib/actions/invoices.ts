@@ -23,7 +23,7 @@ export interface Invoice {
   tax_percentage: number
   tax_amount: number
   total_amount: number
-  status: string
+  status: 'DRAFT' | 'SENT' | 'PARTIAL_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED'
   payment_status: string
   paid_amount: number
   notes: string | null
@@ -221,6 +221,8 @@ export async function getInvoices(filters?: {
     .order('created_at', { ascending: false })
     .range(from, to)
 
+  // Note: Computed overdue status handled in post-processing
+
   if (filters?.status) {
     query = query.eq('status', filters.status)
   }
@@ -254,8 +256,23 @@ export async function getInvoices(filters?: {
     throw new Error('Gagal memuat data invoice')
   }
 
+  // Compute overdue status for display
+  const today = new Date().toISOString().split('T')[0]
+  const invoicesWithOverdue = (data || []).map(invoice => {
+    // Auto-compute OVERDUE: due_date passed AND not paid/cancelled
+    if (
+      invoice.due_date < today &&
+      invoice.status !== 'PAID' &&
+      invoice.status !== 'CANCELLED' &&
+      invoice.payment_status !== 'PAID'
+    ) {
+      return { ...invoice, computed_status: 'OVERDUE' }
+    }
+    return { ...invoice, computed_status: invoice.status }
+  })
+
   return {
-    data: data || [],
+    data: invoicesWithOverdue,
     total: count || 0,
     page,
     limit,
@@ -317,6 +334,20 @@ export async function getInvoiceById(invoiceId: string): Promise<{
     console.error('Error fetching invoice details:', itemsError || paymentsError)
   }
 
+  // Compute overdue status for display
+  const today = new Date().toISOString().split('T')[0]
+  let invoiceWithOverdue = invoice
+  if (
+    invoice.due_date < today &&
+    invoice.status !== 'PAID' &&
+    invoice.status !== 'CANCELLED' &&
+    invoice.payment_status !== 'PAID'
+  ) {
+    invoiceWithOverdue = { ...invoice, computed_status: 'OVERDUE' }
+  } else {
+    invoiceWithOverdue = { ...invoice, computed_status: invoice.status }
+  }
+
   // Fetch detailed order items with AC unit information
   let orderItemsDetailed = []
   if (invoice.order_id) {
@@ -348,7 +379,7 @@ export async function getInvoiceById(invoiceId: string): Promise<{
   }
 
   return {
-    invoice,
+    invoice: invoiceWithOverdue,
     items: items || [],
     payments: payments || [],
     orderItemsDetailed: orderItemsDetailed || [],
@@ -461,6 +492,22 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     throw new Error('Gagal membuat invoice items')
   }
 
+  // Sync order status: DONE → INVOICED (only for FINAL invoices)
+  if (input.invoice_type === 'FINAL' && input.order_id) {
+    const { data: order } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('order_id', input.order_id)
+      .single()
+    
+    if (order?.status === 'DONE') {
+      await supabase
+        .from('orders')
+        .update({ status: 'INVOICED', updated_at: new Date().toISOString() })
+        .eq('order_id', input.order_id)
+    }
+  }
+
   revalidatePath('/dashboard/keuangan/invoices')
   return invoice
 }
@@ -548,11 +595,26 @@ export async function deleteInvoice(invoiceId: string): Promise<void> {
     )
   }
 
+  // Get invoice details for order sync
+  const { data: invoiceDetails } = await supabase
+    .from('invoices')
+    .select('order_id, invoice_type')
+    .eq('invoice_id', invoiceId)
+    .single()
+
   const { error } = await supabase.from('invoices').delete().eq('invoice_id', invoiceId)
 
   if (error) {
     console.error('Error deleting invoice:', error)
     throw new Error('Gagal menghapus invoice')
+  }
+
+  // Revert order status: INVOICED → DONE
+  if (invoiceDetails?.order_id && invoiceDetails?.invoice_type === 'FINAL') {
+    await supabase
+      .from('orders')
+      .update({ status: 'DONE', updated_at: new Date().toISOString() })
+      .eq('order_id', invoiceDetails.order_id)
   }
 
   revalidatePath('/dashboard/keuangan/invoices')
@@ -598,10 +660,14 @@ export async function recordPayment(
 
   // Determine new payment status
   let paymentStatus = 'UNPAID'
+  let newStatus = 'SENT'
+  
   if (newPaidAmount >= invoice.total_amount) {
     paymentStatus = 'PAID'
+    newStatus = 'PAID'
   } else if (newPaidAmount > 0) {
     paymentStatus = 'PARTIAL'
+    newStatus = 'PARTIAL_PAID'
   }
 
   // Create payment record
@@ -625,15 +691,25 @@ export async function recordPayment(
   }
 
   // Update invoice
-  await supabase
+  const { data: updatedInvoice } = await supabase
     .from('invoices')
     .update({
       paid_amount: newPaidAmount,
       payment_status: paymentStatus,
-      status: paymentStatus === 'PAID' ? 'PAID' : 'SENT',
+      status: newStatus,
       updated_at: new Date().toISOString(),
     })
     .eq('invoice_id', invoiceId)
+    .select('order_id, invoice_type')
+    .single()
+
+  // Sync order status: If invoice fully paid, update order to PAID
+  if (paymentStatus === 'PAID' && updatedInvoice?.order_id && updatedInvoice?.invoice_type === 'FINAL') {
+    await supabase
+      .from('orders')
+      .update({ status: 'PAID', updated_at: new Date().toISOString() })
+      .eq('order_id', updatedInvoice.order_id)
+  }
 
   revalidatePath('/dashboard/keuangan/invoices')
   revalidatePath(`/dashboard/keuangan/invoices/${invoiceId}`)
@@ -645,7 +721,7 @@ export async function recordPayment(
  */
 export async function updateInvoiceStatus(
   invoiceId: string,
-  status: 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED'
+  status: 'DRAFT' | 'SENT' | 'PARTIAL_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED'
 ): Promise<Invoice> {
   const supabase = await createClient()
 
@@ -656,12 +732,20 @@ export async function updateInvoiceStatus(
       updated_at: new Date().toISOString(),
     })
     .eq('invoice_id', invoiceId)
-    .select()
+    .select('*')
     .single()
 
   if (error) {
     console.error('Error updating invoice status:', error)
     throw new Error('Gagal mengupdate status invoice')
+  }
+
+  // Sync order status: If invoice cancelled, revert order to DONE
+  if (status === 'CANCELLED' && data?.order_id && data?.invoice_type === 'FINAL') {
+    await supabase
+      .from('orders')
+      .update({ status: 'DONE', updated_at: new Date().toISOString() })
+      .eq('order_id', data.order_id)
   }
 
   revalidatePath('/dashboard/keuangan/invoices')
@@ -676,6 +760,7 @@ export async function getInvoiceStats(): Promise<{
   total: number
   draft: number
   sent: number
+  partialPaid: number
   paid: number
   overdue: number
   totalRevenue: number
@@ -683,7 +768,7 @@ export async function getInvoiceStats(): Promise<{
 }> {
   const supabase = await createClient()
 
-  const [totalResult, draftResult, sentResult, paidResult, overdueResult, revenueResult] =
+  const [totalResult, draftResult, sentResult, partialPaidResult, paidResult, overdueResult, revenueResult] =
     await Promise.all([
       supabase.from('invoices').select('invoice_id', { count: 'exact', head: true }),
       supabase
@@ -694,6 +779,10 @@ export async function getInvoiceStats(): Promise<{
         .from('invoices')
         .select('invoice_id', { count: 'exact', head: true })
         .eq('status', 'SENT'),
+      supabase
+        .from('invoices')
+        .select('invoice_id', { count: 'exact', head: true })
+        .eq('status', 'PARTIAL_PAID'),
       supabase
         .from('invoices')
         .select('invoice_id', { count: 'exact', head: true })
@@ -722,6 +811,7 @@ export async function getInvoiceStats(): Promise<{
     total: totalResult.count || 0,
     draft: draftResult.count || 0,
     sent: sentResult.count || 0,
+    partialPaid: partialPaidResult.count || 0,
     paid: paidResult.count || 0,
     overdue: overdueResult.count || 0,
     totalRevenue,

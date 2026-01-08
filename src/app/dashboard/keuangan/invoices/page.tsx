@@ -42,9 +42,22 @@ import { id as localeId } from 'date-fns/locale'
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: 'bg-gray-500',
   SENT: 'bg-blue-500',
+  PARTIAL_PAID: 'bg-amber-500',
   PAID: 'bg-green-500',
   OVERDUE: 'bg-red-500',
   CANCELLED: 'bg-gray-400',
+}
+
+const getStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    DRAFT: 'Draft',
+    SENT: 'Sent',
+    PARTIAL_PAID: 'Partial Paid',
+    PAID: 'Paid',
+    OVERDUE: 'Overdue',
+    CANCELLED: 'Cancelled',
+  }
+  return labels[status] || status
 }
 
 const PAYMENT_STATUS_COLORS: Record<string, string> = {
@@ -210,6 +223,7 @@ export default function InvoicesPage() {
                 <SelectItem value="ALL">Semua Status</SelectItem>
                 <SelectItem value="DRAFT">Draft</SelectItem>
                 <SelectItem value="SENT">Terkirim</SelectItem>
+                <SelectItem value="PARTIAL_PAID">Partial Paid</SelectItem>
                 <SelectItem value="PAID">Dibayar</SelectItem>
                 <SelectItem value="OVERDUE">Overdue</SelectItem>
                 <SelectItem value="CANCELLED">Dibatalkan</SelectItem>
@@ -323,7 +337,7 @@ export default function InvoicesPage() {
                       </TableCell>
                       <TableCell>
                         <Badge className={STATUS_COLORS[invoice.status]}>
-                          {invoice.status}
+                          {getStatusLabel(invoice.status)}
                         </Badge>
                       </TableCell>
                       <TableCell>
