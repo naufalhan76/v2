@@ -86,9 +86,16 @@ Update order status with validation.
 **Request Body:**
 ```json
 {
-  "newStatus": "ACCEPTED|ASSIGNED|EN ROUTE|ARRIVED|IN_PROGRESS|DONE|RESCHEDULE|INVOICED|PAID|CLOSED|CANCELLED"
+  "newStatus": "ACCEPTED|ASSIGNED|EN ROUTE|ARRIVED|IN_PROGRESS|DONE|RESCHEDULE|INVOICED|PAID|CLOSED|CANCELLED",
+  "req_visit_date": "2026-01-15T09:00:00Z"  // Required when newStatus = "RESCHEDULE"
 }
 ```
+
+**Special Behavior for RESCHEDULE:**
+- `req_visit_date` field becomes **required**
+- Automatically deletes all technician assignments (`order_technicians` table)
+- Automatically resets `assigned_technician_id` to NULL
+- All operations executed in a single transaction
 
 **Response:**
 ```json
@@ -96,7 +103,9 @@ Update order status with validation.
   "success": true,
   "data": {
     "order_id": "uuid",
-    "status": "ASSIGNED",
+    "status": "RESCHEDULE",
+    "req_visit_date": "2026-01-15T09:00:00Z",
+    "assigned_technician_id": null,
     "updated_at": "2024-01-15T10:35:00Z"
   }
 }

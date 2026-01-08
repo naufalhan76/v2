@@ -212,9 +212,12 @@ export async function createOrder(orderData: {
   }
 }
 
-export async function updateOrderStatus(orderId: string, newStatus: string, notes?: string) {
+export async function updateOrderStatus(orderId: string, newStatus: string, notes?: string, reqVisitDate?: string, useAdminClient = false) {
   try {
-    const supabase = await createClient()
+    // Use admin client if specified (for API routes that bypass RLS)
+    const supabase = useAdminClient 
+      ? (await import('@/lib/supabase-admin')).createAdminClient()
+      : await createClient()
     
     // Get current order
     const { data: currentOrder, error: fetchError } = await supabase
@@ -225,10 +228,35 @@ export async function updateOrderStatus(orderId: string, newStatus: string, note
     
     if (fetchError) throw fetchError
     
-    // Update order status
+    // Prepare update data
+    const updateData: any = {
+      status: newStatus,
+      updated_at: new Date().toISOString()
+    }
+    
+    // If status is RESCHEDULE, update req_visit_date and reset technician assignment
+    if (newStatus === 'RESCHEDULE') {
+      if (reqVisitDate) {
+        updateData.req_visit_date = reqVisitDate
+      }
+      updateData.assigned_technician_id = null
+      
+      // Delete all technician assignments for this order
+      const { error: deleteError } = await supabase
+        .from('order_technicians')
+        .delete()
+        .eq('order_id', orderId)
+      
+      if (deleteError) {
+        console.error('Error deleting technician assignments:', deleteError)
+        throw deleteError
+      }
+    }
+    
+    // Update order status (and potentially scheduled_visit_date)
     const { data, error } = await supabase
       .from('orders')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq('order_id', orderId)
       .select()
       .single()

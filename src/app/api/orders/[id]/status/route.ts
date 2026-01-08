@@ -43,6 +43,7 @@ export async function POST(
     const validation = UpdateOrderStatusSchema.safeParse({
       orderId,
       newStatus: body.newStatus,
+      req_visit_date: body.req_visit_date,
     })
 
     if (!validation.success) {
@@ -50,14 +51,14 @@ export async function POST(
       return handleValidationError(validation.error)
     }
 
-    const { newStatus } = validation.data
+    const { newStatus, req_visit_date } = validation.data
 
     // Get current order to check transition validity
     // Note: This is simplified - in production, fetch current status from DB
     // For now, we'll rely on the server action to validate
     
-    // Call server action to update status
-    const result = await updateOrderStatus(orderId, newStatus)
+    // Call server action to update status (use admin client for API routes)
+    const result = await updateOrderStatus(orderId, newStatus, undefined, req_visit_date, true)
 
     const duration = getDuration()
 

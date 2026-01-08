@@ -86,7 +86,20 @@ export const GetOrderByIdParamSchema = z.object({
 export const UpdateOrderStatusSchema = z.object({
   orderId: z.string().min(1), // Support custom order ID format like REQ/2026-01/036148
   newStatus: OrderStatusEnum,
-})
+  req_visit_date: z.string().datetime().optional(), // Required when status = RESCHEDULE
+}).refine(
+  (data) => {
+    // If status is RESCHEDULE, req_visit_date must be provided
+    if (data.newStatus === 'RESCHEDULE' && !data.req_visit_date) {
+      return false
+    }
+    return true
+  },
+  {
+    message: 'req_visit_date is required when status is RESCHEDULE',
+    path: ['req_visit_date'],
+  }
+)
 
 export const AssignTechnicianSchema = z.object({
   orderId: z.string().uuid(),

@@ -49,9 +49,10 @@ const API_ENDPOINTS = [
       {
         method: 'POST',
         path: '/api/orders/[id]/status',
-        description: 'Update order status with validation',
+        description: 'Update order status with validation. When status is RESCHEDULE, req_visit_date is required and technician assignments are auto-reset.',
         body: {
           newStatus: 'enum (required)',
+          req_visit_date: 'ISO 8601 datetime (required when newStatus = RESCHEDULE)',
         },
         auth: true,
       },
