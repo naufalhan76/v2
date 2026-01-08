@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, Suspense, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { getOrders, getOrderById, addHelperTechnician, removeHelperTechnician } from '@/lib/actions/orders'
 import { getTechnicians } from '@/lib/actions/technicians'
 import { updateOrderStatus } from '@/lib/actions/orders'
@@ -83,6 +84,20 @@ function getServicesGrouped(orderItems: any[]) {
   return { count: orderItems.length, types: serviceTypes }
 }
 
+// Helper function to get unique service types for display
+function getUniqueServiceTypes(orderItems: any[]) {
+  if (!orderItems || orderItems.length === 0) return []
+  
+  const uniqueTypes = new Set<string>()
+  orderItems.forEach(item => {
+    if (item.service_type) {
+      uniqueTypes.add(item.service_type)
+    }
+  })
+  
+  return Array.from(uniqueTypes)
+}
+
 const STATUS_GROUPS = {
   NON_ASSIGNED: ['NEW', 'ACCEPTED'],
   ASSIGNED: ['ASSIGNED', 'EN ROUTE', 'ARRIVED', 'IN_PROGRESS', 'RESCHEDULE'],
@@ -122,8 +137,19 @@ const PAYMENT_STATUSES = [
 ]
 
 export default function MonitoringOngoingPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <MonitoringOngoingContent />
+    </Suspense>
+  )
+}
+
+function MonitoringOngoingContent() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const hasHandledRedirect = useRef(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [statusGroupFilter, setStatusGroupFilter] = useState<string>('ALL') // NEW, ACCEPTED, ASSIGNED, etc. or 'ALL'
@@ -140,6 +166,31 @@ export default function MonitoringOngoingPage() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false)
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false)
   const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null)
+  
+  // Handle notification redirect - open order detail automatically (ONLY ONCE)
+  useEffect(() => {
+    const orderId = searchParams.get('orderId')
+    const handledKey = `handled_redirect_${orderId}`
+    const alreadyHandled = sessionStorage.getItem(handledKey) === 'true'
+    
+    if (orderId && !alreadyHandled && !hasHandledRedirect.current && !detailOrderId) {
+      // Set BOTH ref AND sessionStorage to prevent any duplicates
+      hasHandledRedirect.current = true
+      sessionStorage.setItem(handledKey, 'true')
+      
+      // Clear URL immediately
+      router.replace('/dashboard/operasional/monitoring-ongoing', { scroll: false })
+      
+      // Open dialog after a brief delay to ensure URL is cleared first
+      setTimeout(() => {
+        setDetailOrderId(orderId)
+        // Clear the flag after opening to allow future clicks
+        setTimeout(() => {
+          sessionStorage.removeItem(handledKey)
+        }, 1000)
+      }, 100)
+    }
+  }, [searchParams, router, detailOrderId])
   
   // Date range state (default: 30 days ago to today)
   const [dateRange, setDateRange] = useState<{from: Date | undefined, to?: Date | undefined}>(() => {
@@ -364,7 +415,15 @@ export default function MonitoringOngoingPage() {
         })
         setCancelModalOpen(false)
         setDetailOrderId(null)
+        hasHandledRedirect.current = false
         queryClient.invalidateQueries({ queryKey: ['orders'] })
+        
+        // Force refresh notifications
+        if (typeof window !== 'undefined' && (window as any).refreshNotifications) {
+          setTimeout(() => {
+            (window as any).refreshNotifications()
+          }, 500)
+        }
       } else {
         toast({
           title: 'Error',
@@ -391,12 +450,24 @@ export default function MonitoringOngoingPage() {
       const supabase = await import('@/lib/supabase-browser').then(m => m.createClient())
       const formattedDate = format(rescheduleDate, 'yyyy-MM-dd')
       
-      // Update order with new dates and status
+      // First, delete all technician assignments for this order
+      const { error: deleteTechError } = await supabase
+        .from('order_technicians')
+        .delete()
+        .eq('order_id', detailOrderId)
+      
+      if (deleteTechError) {
+        console.error('Error deleting technicians:', deleteTechError)
+        // Continue even if deletion fails, but log the error
+      }
+      
+      // Update order with new dates, reset assigned_technician_id, and set status to RESCHEDULE
       const { error } = await supabase
         .from('orders')
         .update({
           scheduled_visit_date: formattedDate,
           req_visit_date: formattedDate,
+          assigned_technician_id: null,
           status: 'RESCHEDULE',
           updated_at: new Date().toISOString()
         })
@@ -406,12 +477,21 @@ export default function MonitoringOngoingPage() {
       
       toast({
         title: 'Success',
-        description: `Order rescheduled to ${format(rescheduleDate, 'dd MMM yyyy')}`
+        description: `Order rescheduled to ${format(rescheduleDate, 'dd MMM yyyy')}. Technician assignments have been reset.`
       })
       setRescheduleModalOpen(false)
       setDetailOrderId(null)
       setRescheduleDate(null)
+      hasHandledRedirect.current = false
       queryClient.invalidateQueries({ queryKey: ['orders'] })
+      queryClient.invalidateQueries({ queryKey: ['order', detailOrderId] })
+      
+      // Force refresh notifications
+      if (typeof window !== 'undefined' && (window as any).refreshNotifications) {
+        setTimeout(() => {
+          (window as any).refreshNotifications()
+        }, 500)
+      }
     } catch (error) {
       toast({
         title: 'Error',
@@ -743,9 +823,18 @@ export default function MonitoringOngoingPage() {
                           </Popover>
                         </TableCell>
                         <TableCell>
-                          <Badge variant='outline'>
-                            {SERVICE_TYPES.find(t => t.value === order.order_type)?.label || order.order_type}
-                          </Badge>
+                          <div className="flex flex-wrap gap-1">
+                            {getUniqueServiceTypes(order.order_items || []).map((serviceType) => (
+                              <Badge key={serviceType} variant='outline' className="text-xs">
+                                {SERVICE_TYPES.find(t => t.value === serviceType)?.label || serviceType}
+                              </Badge>
+                            ))}
+                            {getUniqueServiceTypes(order.order_items || []).length === 0 && (
+                              <Badge variant='outline'>
+                                {SERVICE_TYPES.find(t => t.value === order.order_type)?.label || order.order_type || '-'}
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge className={cn('text-white', STATUS_COLORS[order.status] || 'bg-gray-500')}>
@@ -788,7 +877,13 @@ export default function MonitoringOngoingPage() {
       </Card>
 
       {/* Order Detail Modal */}
-      <Dialog open={!!detailOrderId} onOpenChange={(open) => !open && setDetailOrderId(null)}>
+      <Dialog open={!!detailOrderId} onOpenChange={(open) => {
+        if (!open) {
+          setDetailOrderId(null)
+          // Reset redirect handler untuk allow future notifications
+          hasHandledRedirect.current = false
+        }
+      }}>
         <DialogContent className='max-w-3xl max-h-[85vh] overflow-y-auto'>
           <DialogHeader>
             <DialogTitle>Order Detail</DialogTitle>
@@ -838,11 +933,18 @@ export default function MonitoringOngoingPage() {
                       </p>
                     </div>
                     <div>
-                      <span className='text-muted-foreground'>Order Type (Dominant):</span>
-                      <div className='mt-1'>
-                        <Badge variant='outline'>
-                          {SERVICE_TYPES.find(t => t.value === orderDetail.data.order_type)?.label || orderDetail.data.order_type}
-                        </Badge>
+                      <span className='text-muted-foreground'>Order Types:</span>
+                      <div className='mt-1 flex flex-wrap gap-1'>
+                        {getUniqueServiceTypes(orderDetail.data.order_items || []).map((serviceType) => (
+                          <Badge key={serviceType} variant='outline'>
+                            {SERVICE_TYPES.find(t => t.value === serviceType)?.label || serviceType}
+                          </Badge>
+                        ))}
+                        {getUniqueServiceTypes(orderDetail.data.order_items || []).length === 0 && (
+                          <Badge variant='outline'>
+                            {SERVICE_TYPES.find(t => t.value === orderDetail.data.order_type)?.label || orderDetail.data.order_type || '-'}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div>

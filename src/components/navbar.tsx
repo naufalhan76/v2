@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { Clock } from 'lucide-react'
+import { OrderNotifications } from '@/components/order-notifications'
 
 function JakartaTime() {
   const [time, setTime] = useState('')
@@ -70,9 +71,15 @@ export function Navbar() {
             </h1>
           </div>
           
-          {/* Real-time Jakarta Time - Hidden on small mobile */}
-          <div className="hidden sm:block">
-            <JakartaTime />
+          {/* Notifications and Jakarta Time */}
+          <div className="flex items-center gap-3">
+            {/* Order Notifications */}
+            <OrderNotifications />
+            
+            {/* Real-time Jakarta Time - Hidden on small mobile */}
+            <div className="hidden sm:block">
+              <JakartaTime />
+            </div>
           </div>
         </div>
       </div>
