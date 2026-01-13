@@ -33,9 +33,11 @@ import { getOrders } from '@/lib/actions/orders'
 import { getServicePricingByType } from '@/lib/actions/service-pricing'
 import { getActiveAddons, type Addon } from '@/lib/actions/addons'
 import { createInvoice, getOrderItemsForInvoice } from '@/lib/actions/invoices'
+import { type BankAccount } from '@/app/dashboard/konfigurasi/invoice-config/bank-accounts-section'
 
 const invoiceSchema = z.object({
   orderId: z.string().min(1, 'Order wajib dipilih'),
+  paymentAccountId: z.string().min(1, 'Payment account wajib dipilih'),
   dueDate: z.string().min(1, 'Tanggal jatuh tempo wajib diisi'),
   discountAmount: z.string().optional(),
   discountPercentage: z.string().optional(),
@@ -60,6 +62,7 @@ export default function CreateInvoicePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [orders, setOrders] = useState<any[]>([])
   const [addons, setAddons] = useState<Addon[]>([])
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
   const [baseService, setBaseService] = useState<any>(null)
   const [lineItems, setLineItems] = useState<LineItem[]>([])
@@ -83,6 +86,7 @@ export default function CreateInvoicePage() {
   useEffect(() => {
     loadCompletedOrders()
     loadAddons()
+    loadBankAccounts()
   }, [])
 
   useEffect(() => {
@@ -110,7 +114,18 @@ export default function CreateInvoicePage() {
         ...(inProgressResult.data || []),
         ...(doneResult.data || [])
       ]
-      setOrders(combinedOrders)
+      
+      // Filter out orders that already have an invoice
+      const ordersWithInvoiceStatus = await Promise.all(
+        combinedOrders.map(async (order) => {
+          const hasInvoice = await checkOrderHasInvoice(order.order_id)
+          return { ...order, hasInvoice }
+        })
+      )
+      
+      // Only show orders without invoice
+      const availableOrders = ordersWithInvoiceStatus.filter(order => !order.hasInvoice)
+      setOrders(availableOrders)
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -120,12 +135,55 @@ export default function CreateInvoicePage() {
     }
   }
 
+  // Check if order already has invoice
+  const checkOrderHasInvoice = async (orderId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/invoices?orderId=${orderId}`)
+      if (response.ok) {
+        const data = await response.json()
+        return data.data && data.data.length > 0
+      }
+      return false
+    } catch (error) {
+      console.error('Error checking invoice:', error)
+      return false
+    }
+  }
+
   const loadAddons = async () => {
     try {
       const data = await getActiveAddons()
       setAddons(data)
     } catch (error) {
       console.error('Error loading addons:', error)
+    }
+  }
+
+  const loadBankAccounts = async () => {
+    try {
+      const { createClient } = await import('@/lib/supabase-browser')
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('invoice_configuration')
+        .select('bank_accounts')
+        .eq('is_active', true)
+        .single()
+      
+      if (error) throw error
+      
+      if (data?.bank_accounts) {
+        const accounts = typeof data.bank_accounts === 'string' 
+          ? JSON.parse(data.bank_accounts) 
+          : data.bank_accounts
+        setBankAccounts(accounts || [])
+      }
+    } catch (error) {
+      console.error('Error loading bank accounts:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Warning',
+        description: 'Gagal memuat daftar payment accounts. Silakan config payment account terlebih dahulu.',
+      })
     }
   }
 
@@ -217,7 +275,12 @@ export default function CreateInvoicePage() {
     const discountAmount = parseFloat(watch('discountAmount') || '0')
     const discountPercentage = parseFloat(watch('discountPercentage') || '0')
     const discountTotal = discountAmount + (subtotal * discountPercentage) / 100
-    const taxPercentage = 11
+    
+    // Get tax from selected payment account
+    const selectedAccountId = watch('paymentAccountId')
+    const selectedAccount = bankAccounts.find(acc => acc.id === selectedAccountId)
+    const taxPercentage = selectedAccount?.tax_percentage || 11
+    
     const taxAmount = ((subtotal - discountTotal) * taxPercentage) / 100
     const total = subtotal - discountTotal + taxAmount
 
@@ -225,6 +288,7 @@ export default function CreateInvoicePage() {
       subtotal,
       discountAmount: discountTotal,
       taxAmount,
+      taxPercentage,
       total,
     }
   }
@@ -268,6 +332,12 @@ export default function CreateInvoicePage() {
       // Determine invoice type based on order status
       const invoiceType = selectedOrder.status === 'DONE' ? 'FINAL' : 'PROFORMA'
 
+      // Get selected bank account details
+      const selectedBankAccount = bankAccounts.find(acc => acc.id === data.paymentAccountId)
+      if (!selectedBankAccount) {
+        throw new Error('Payment account tidak ditemukan')
+      }
+
       await createInvoice({
         order_id: data.orderId,
         customer_id: selectedOrder.customer_id,
@@ -280,6 +350,12 @@ export default function CreateInvoicePage() {
         discount_amount: parseFloat(data.discountAmount || '0'),
         discount_percentage: parseFloat(data.discountPercentage || '0'),
         notes: data.notes,
+        payment_account_id: selectedBankAccount.id,
+        payment_account_label: selectedBankAccount.account_label,
+        payment_bank_name: selectedBankAccount.bank,
+        payment_account_number: selectedBankAccount.account_number,
+        payment_account_name: selectedBankAccount.account_name,
+        tax_percentage: selectedBankAccount.tax_percentage, // Use tax from selected account
       })
 
       toast({
@@ -587,12 +663,41 @@ export default function CreateInvoicePage() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Tanggal Jatuh Tempo</Label>
+                  <Label>Payment Account *</Label>
+                  <Select
+                    value={watch('paymentAccountId')}
+                    onValueChange={(value) => setValue('paymentAccountId', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih payment account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bankAccounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          <div className="flex flex-col">
+                            <span className="font-semibold">{account.account_label}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {account.bank} - {account.account_number} (PPN {account.tax_percentage}%)
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.paymentAccountId && (
+                    <p className="text-sm text-destructive">{errors.paymentAccountId.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Tanggal Jatuh Tempo *</Label>
                   <Input type="date" {...register('dueDate')} />
                   {errors.dueDate && (
                     <p className="text-sm text-destructive">{errors.dueDate.message}</p>
                   )}
                 </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Diskon (Rp)</Label>
                   <Input type="number" {...register('discountAmount')} />
@@ -619,7 +724,7 @@ export default function CreateInvoicePage() {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>PPN (11%):</span>
+                  <span>PPN ({totals.taxPercentage}%):</span>
                   <span className="font-semibold">{formatCurrency(totals.taxAmount)}</span>
                 </div>
                 <Separator />

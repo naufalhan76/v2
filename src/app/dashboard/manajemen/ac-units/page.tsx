@@ -80,8 +80,25 @@ export default function AcUnitsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Apply sorting
-  const { sortedData: acUnits, sortConfig, requestSort } = useSortableTable(acUnitsBase, {
+  // Filter by search query (client-side for customer name)
+  const filteredAcUnits = acUnitsBase.filter(unit => {
+    if (!searchQuery) return true
+    const query = searchQuery.toLowerCase()
+    
+    // Search in AC unit fields
+    const matchesUnit = 
+      unit.brand?.toLowerCase().includes(query) ||
+      unit.model_number?.toLowerCase().includes(query) ||
+      unit.serial_number?.toLowerCase().includes(query)
+    
+    // Search in customer name
+    const matchesCustomer = unit.locations?.customers?.customer_name?.toLowerCase().includes(query)
+    
+    return matchesUnit || matchesCustomer
+  })
+
+  // Apply sorting to filtered data
+  const { sortedData: acUnits, sortConfig, requestSort } = useSortableTable(filteredAcUnits, {
     key: 'brand',
     direction: 'asc'
   })
@@ -98,14 +115,13 @@ export default function AcUnitsPage() {
 
   useEffect(() => {
     fetchAcUnits()
-  }, [searchQuery])
+  }, [])
 
   const fetchAcUnits = async () => {
     setLoading(true)
     try {
       const result = await getAcUnits({
-        search: searchQuery,
-        limit: 100,
+        limit: 1000, // Fetch more for client-side filtering
       })
       if (result.success) {
         setAcUnits(result.data)
@@ -236,7 +252,7 @@ export default function AcUnitsPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 type="text"
-                placeholder="Search by brand, model, or serial number..."
+                placeholder="Search by brand, model, serial number, or customer name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"

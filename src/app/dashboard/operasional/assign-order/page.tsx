@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
+import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import { ChevronLeft, ChevronRight, Eye, MapPin, User } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -169,14 +170,6 @@ export default function AssignOrderPage() {
       }
     }
   }
-  
-  const toggleHelperSelection = (helperId: string) => {
-    if (selectedHelpers.includes(helperId)) {
-      setSelectedHelpers(selectedHelpers.filter(id => id !== helperId))
-    } else {
-      setSelectedHelpers([...selectedHelpers, helperId])
-    }
-  }
 
   const selectedTechnicianData = techniciansData?.data?.find((t: any) => t.technician_id === selectedTechnician)
 
@@ -317,41 +310,19 @@ export default function AssignOrderPage() {
                       <h3 className='font-semibold mb-3'>
                         Helper Technicians <span className='text-muted-foreground text-sm font-normal'>(Optional)</span>
                       </h3>
-                      <div className='grid gap-3 max-h-[250px] overflow-y-auto pr-2'>
-                        {filteredTechnicians
+                      <MultiSelectDropdown
+                        options={filteredTechnicians
                           .filter((tech: any) => tech.technician_id !== selectedTechnician)
-                          .map((technician: any) => {
-                            const isSelected = selectedHelpers.includes(technician.technician_id)
-                            return (
-                              <div
-                                key={technician.technician_id}
-                                className={cn(
-                                  'flex items-center space-x-4 rounded-lg p-3 cursor-pointer transition-all',
-                                  isSelected 
-                                    ? 'border-2 border-blue-500 bg-blue-50' 
-                                    : 'border border-border hover:bg-muted/50'
-                                )}
-                                onClick={() => toggleHelperSelection(technician.technician_id)}
-                              >
-                                <Checkbox
-                                  checked={isSelected}
-                                  onCheckedChange={() => toggleHelperSelection(technician.technician_id)}
-                                />
-                                <div className='flex-1'>
-                                  <div className='font-medium text-sm'>{technician.technician_name}</div>
-                                  {technician.company && (
-                                    <div className='text-xs text-muted-foreground'>{technician.company}</div>
-                                  )}
-                                </div>
-                              </div>
-                            )
-                          })}
-                      </div>
-                      {selectedHelpers.length > 0 && (
-                        <div className='mt-2 text-sm text-muted-foreground'>
-                          {selectedHelpers.length} helper(s) selected
-                        </div>
-                      )}
+                          .map((tech: any) => ({
+                            id: tech.technician_id,
+                            label: tech.technician_name,
+                            secondaryLabel: tech.company || tech.contact_number
+                          }))}
+                        selected={selectedHelpers}
+                        onSelectionChange={setSelectedHelpers}
+                        placeholder='Select helper technicians...'
+                        searchPlaceholder='Search technicians...'
+                      />
                     </div>
                   )}
                 </div>

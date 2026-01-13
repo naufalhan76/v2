@@ -91,6 +91,12 @@ export interface CreateInvoiceInput {
   discount_amount?: number
   discount_percentage?: number
   notes?: string
+  payment_account_id?: string
+  payment_account_label?: string
+  payment_bank_name?: string
+  payment_account_number?: string
+  payment_account_name?: string
+  tax_percentage?: number  // Tax from selected payment account
 }
 
 export interface OrderItemForInvoice {
@@ -412,7 +418,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
   const subtotal = baseServiceTotal + addonsSubtotal
   const discountAmount = input.discount_amount || 0
   const discountPercentage = input.discount_percentage || 0
-  const taxPercentage = 11 // Default PPN 11%
+  const taxPercentage = input.tax_percentage || 11 // Use tax from payment account, default 11%
   const taxAmount = ((subtotal - discountAmount) * taxPercentage) / 100
   const totalAmount = subtotal - discountAmount + taxAmount
 
@@ -457,6 +463,11 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
       paid_amount: 0,
       notes: input.notes || null,
       terms_conditions: config?.terms_conditions_template || null,
+      payment_account_id: input.payment_account_id || null,
+      payment_account_label: input.payment_account_label || null,
+      payment_bank_name: input.payment_bank_name || null,
+      payment_account_number: input.payment_account_number || null,
+      payment_account_name: input.payment_account_name || null,
       created_by: user.id,
     })
     .select()

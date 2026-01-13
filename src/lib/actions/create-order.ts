@@ -373,7 +373,7 @@ export async function getServicePricing(): Promise<{
 export async function createLocation(data: {
   customer_id: string;
   full_address: string;
-  house_number?: number;
+  house_number?: string; // Support alphanumeric (e.g., "12A", "5B")
   city?: string;
   landmarks?: string;
 }): Promise<{
@@ -389,7 +389,7 @@ export async function createLocation(data: {
       .insert({
         customer_id: data.customer_id,
         full_address: data.full_address,
-        house_number: data.house_number || 1,
+        house_number: data.house_number || '1',
         city: data.city || '',
         landmarks: data.landmarks
       })

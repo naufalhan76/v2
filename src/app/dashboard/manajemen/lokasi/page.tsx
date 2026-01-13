@@ -40,7 +40,7 @@ interface Location {
   location_id: string
   customer_id: string
   full_address: string
-  house_number: number
+  house_number: string // Support alphanumeric
   city: string
   landmarks?: string
   customers?: {
@@ -71,7 +71,7 @@ export default function LocationsPage() {
 
   const [formData, setFormData] = useState({
     full_address: '',
-    house_number: 1,
+    house_number: '1',
     city: '',
     landmarks: '',
   })
@@ -329,9 +329,10 @@ export default function LocationsPage() {
               <Label htmlFor="house_number">House Number *</Label>
               <Input
                 id="house_number"
-                type="number"
+                type="text"
+                placeholder="e.g., 1, 12A, 5B"
                 value={formData.house_number}
-                onChange={(e) => setFormData({ ...formData, house_number: parseInt(e.target.value) || 1 })}
+                onChange={(e) => setFormData({ ...formData, house_number: e.target.value || '1' })}
                 required
               />
             </div>

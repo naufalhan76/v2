@@ -65,7 +65,7 @@ export type CreateOrderInput = {
 export type LocationFormData = {
   location_id?: string; // undefined = new location
   full_address?: string;
-  house_number?: number;
+  house_number?: string; // Support alphanumeric (e.g., "12A", "5B")
   city?: string;
   landmarks?: string;
   
@@ -129,7 +129,7 @@ export type CustomerSearchResult = {
   locations?: Array<{
     location_id: string;
     full_address: string;
-    house_number: number;
+    house_number: string; // Support alphanumeric
     city: string;
     landmarks: string | null;
     ac_units?: Array<{

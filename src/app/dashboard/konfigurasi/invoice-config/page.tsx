@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Loader2, Save, Building2, Banknote, FileText } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getInvoiceConfig, updateInvoiceConfig } from '@/lib/actions/invoice-config'
+import { BankAccountsSection, type BankAccount } from './bank-accounts-section'
 
 const invoiceConfigSchema = z.object({
   companyName: z.string().min(1, 'Nama perusahaan wajib diisi'),
@@ -20,9 +21,6 @@ const invoiceConfigSchema = z.object({
   companyPhone: z.string().optional(),
   companyEmail: z.string().email('Email tidak valid').optional().or(z.literal('')),
   companyWebsite: z.string().optional(),
-  bankName: z.string().optional(),
-  bankAccountNumber: z.string().optional(),
-  bankAccountHolder: z.string().optional(),
   npwp: z.string().optional(),
   taxPercentage: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Format tidak valid').default('11.00'),
   defaultDueDays: z.string().regex(/^\d+$/, 'Harus berupa angka').default('30'),
@@ -36,6 +34,7 @@ type InvoiceConfigFormData = z.infer<typeof invoiceConfigSchema>
 export default function InvoiceConfigPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const { toast } = useToast()
 
   const {
@@ -43,6 +42,8 @@ export default function InvoiceConfigPage() {
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
+    watch,
   } = useForm<InvoiceConfigFormData>({
     resolver: zodResolver(invoiceConfigSchema),
     defaultValues: {
@@ -51,9 +52,6 @@ export default function InvoiceConfigPage() {
       companyPhone: '',
       companyEmail: '',
       companyWebsite: '',
-      bankName: '',
-      bankAccountNumber: '',
-      bankAccountHolder: '',
       npwp: '',
       taxPercentage: '11.00',
       defaultDueDays: '30',
@@ -72,22 +70,24 @@ export default function InvoiceConfigPage() {
       setIsFetching(true)
       const config = await getInvoiceConfig()
       if (config) {
-        // Parse bank_accounts JSON to get first bank account
-        let bankData = { bankName: '', bankAccountNumber: '', bankAccountHolder: '' }
+        // Parse bank_accounts JSON
+        let accounts: BankAccount[] = []
         if (config.bank_accounts) {
           try {
             const banks = JSON.parse(config.bank_accounts)
-            if (banks && banks.length > 0) {
-              bankData = {
-                bankName: banks[0].bank || '',
-                bankAccountNumber: banks[0].account_number || '',
-                bankAccountHolder: banks[0].account_name || '',
-              }
-            }
+            accounts = banks.map((bank: any, index: number) => ({
+              id: bank.id || `${index}`,
+              account_label: bank.account_label || `Payment Account ${index + 1}`,
+              bank: bank.bank || '',
+              account_number: bank.account_number || '',
+              account_name: bank.account_name || '',
+              tax_percentage: bank.tax_percentage || 11,
+            }))
           } catch (e) {
             console.error('Error parsing bank_accounts:', e)
           }
         }
+        setBankAccounts(accounts)
 
         reset({
           companyName: config.company_name,
@@ -95,7 +95,6 @@ export default function InvoiceConfigPage() {
           companyPhone: config.company_phone || '',
           companyEmail: config.company_email || '',
           companyWebsite: config.company_website || '',
-          ...bankData,
           npwp: config.npwp || '',
           taxPercentage: config.default_tax_percentage?.toString() || '11.00',
           defaultDueDays: config.default_due_days?.toString() || '30',
@@ -119,15 +118,12 @@ export default function InvoiceConfigPage() {
     try {
       setIsLoading(true)
 
-      // Create bank_accounts array
-      const bankAccounts = []
-      if (data.bankName && data.bankAccountNumber && data.bankAccountHolder) {
-        bankAccounts.push({
-          bank: data.bankName,
-          account_number: data.bankAccountNumber,
-          account_name: data.bankAccountHolder,
-        })
-      }
+      // Convert bank accounts to API format
+      const bankAccountsData = bankAccounts.map(acc => ({
+        bank: acc.bank,
+        account_number: acc.account_number,
+        account_name: acc.account_name,
+      }))
 
       await updateInvoiceConfig({
         company_name: data.companyName,
@@ -135,7 +131,7 @@ export default function InvoiceConfigPage() {
         company_phone: data.companyPhone,
         company_email: data.companyEmail,
         company_website: data.companyWebsite,
-        bank_accounts: bankAccounts.length > 0 ? bankAccounts : undefined,
+        bank_accounts: bankAccountsData.length > 0 ? bankAccountsData : undefined,
         npwp: data.npwp,
         default_tax_percentage: parseFloat(data.taxPercentage),
         default_due_days: parseInt(data.defaultDueDays),
@@ -277,42 +273,10 @@ export default function InvoiceConfigPage() {
 
           {/* Bank Information Tab */}
           <TabsContent value="bank">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informasi Bank</CardTitle>
-                <CardDescription>
-                  Informasi rekening untuk pembayaran invoice
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bankName">Nama Bank</Label>
-                  <Input
-                    id="bankName"
-                    placeholder="Bank Mandiri"
-                    {...register('bankName')}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bankAccountNumber">Nomor Rekening</Label>
-                  <Input
-                    id="bankAccountNumber"
-                    placeholder="1234567890"
-                    {...register('bankAccountNumber')}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bankAccountHolder">Atas Nama</Label>
-                  <Input
-                    id="bankAccountHolder"
-                    placeholder="PT. AC Service Indonesia"
-                    {...register('bankAccountHolder')}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <BankAccountsSection
+              accounts={bankAccounts}
+              onChange={setBankAccounts}
+            />
           </TabsContent>
 
           {/* Invoice Settings Tab */}
@@ -325,35 +289,21 @@ export default function InvoiceConfigPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="invoicePrefix">
-                      Prefix Invoice <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="invoicePrefix"
-                      placeholder="INV"
-                      {...register('invoicePrefix')}
-                    />
-                    {errors.invoicePrefix && (
-                      <p className="text-sm text-destructive">{errors.invoicePrefix.message}</p>
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      Format: {register('invoicePrefix').name || 'INV'}/2025/01/0001
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="taxPercentage">Pajak (%)</Label>
-                    <Input
-                      id="taxPercentage"
-                      placeholder="11.00"
-                      {...register('taxPercentage')}
-                    />
-                    {errors.taxPercentage && (
-                      <p className="text-sm text-destructive">{errors.taxPercentage.message}</p>
-                    )}
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invoicePrefix">
+                    Prefix Invoice <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="invoicePrefix"
+                    placeholder="INV"
+                    {...register('invoicePrefix')}
+                  />
+                  {errors.invoicePrefix && (
+                    <p className="text-sm text-destructive">{errors.invoicePrefix.message}</p>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Format: {register('invoicePrefix').name || 'INV'}/2025/01/0001
+                  </p>
                 </div>
 
                 <div className="space-y-2">

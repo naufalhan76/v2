@@ -107,7 +107,7 @@ export async function getLocationById(locationId: string) {
 
 export async function updateLocation(locationId: string, locationData: Partial<{
   full_address: string
-  house_number: number
+  house_number: string // Support alphanumeric
   city: string
   landmarks: string
 }>) {

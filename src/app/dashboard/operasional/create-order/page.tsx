@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { 
   Dialog,
   DialogContent,
@@ -718,18 +719,18 @@ export default function CreateOrderPage() {
                   <div>
                     <Label>Assign Lead Technician (Optional)</Label>
                     <div className="flex gap-2">
-                      <Select value={technicianId} onValueChange={setTechnicianId}>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select lead technician" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {technicians.map(tech => (
-                            <SelectItem key={tech.technician_id} value={tech.technician_id}>
-                              {tech.full_name} ({tech.employee_id})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <SearchableSelect
+                        options={technicians.map(tech => ({
+                          id: tech.technician_id,
+                          label: tech.full_name,
+                          secondaryLabel: tech.employee_id
+                        }))}
+                        value={technicianId}
+                        onValueChange={setTechnicianId}
+                        placeholder="Select lead technician"
+                        searchPlaceholder="Search technician..."
+                        className="flex-1"
+                      />
                       {technicianId && (
                         <Button
                           type="button"
@@ -747,54 +748,19 @@ export default function CreateOrderPage() {
                   {technicianId && (
                     <div>
                       <Label>Helper Technicians (Optional)</Label>
-                      <Select
-                        value=""
-                        onValueChange={(value) => {
-                          if (value && !helperTechnicianIds.includes(value)) {
-                            setHelperTechnicianIds([...helperTechnicianIds, value])
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select helper technicians..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {technicians
-                            .filter(t => t.technician_id !== technicianId && !helperTechnicianIds.includes(t.technician_id))
-                            .map(tech => (
-                              <SelectItem key={tech.technician_id} value={tech.technician_id}>
-                                {tech.full_name} ({tech.employee_id})
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      {/* Selected Helpers */}
-                      {helperTechnicianIds.length > 0 && (
-                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                          <div className="text-sm font-medium mb-2 text-blue-900">
-                            Selected Helpers ({helperTechnicianIds.length})
-                          </div>
-                          <div className="space-y-1">
-                            {helperTechnicianIds.map(helperId => {
-                              const helper = technicians.find(t => t.technician_id === helperId)
-                              return (
-                                <div key={helperId} className="flex items-center justify-between p-2 bg-white rounded">
-                                  <span className="text-sm">{helper?.full_name} ({helper?.employee_id})</span>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setHelperTechnicianIds(helperTechnicianIds.filter(id => id !== helperId))}
-                                  >
-                                    <X className="h-4 w-4 text-red-500" />
-                                  </Button>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
+                      <MultiSelectDropdown
+                        options={technicians
+                          .filter(t => t.technician_id !== technicianId)
+                          .map(tech => ({
+                            id: tech.technician_id,
+                            label: tech.full_name,
+                            secondaryLabel: tech.employee_id
+                          }))}
+                        selected={helperTechnicianIds}
+                        onSelectionChange={setHelperTechnicianIds}
+                        placeholder="Select helper technicians..."
+                        searchPlaceholder="Search technicians..."
+                      />
                     </div>
                   )}
                 </div>
@@ -985,10 +951,10 @@ function LocationCard({
                 <div>
                   <Label>House Number</Label>
                   <Input
-                    type="number"
-                    placeholder="e.g., 1, 2, 3"
+                    type="text"
+                    placeholder="e.g., 1, 12A, 5B"
                     value={location.house_number || ''}
-                    onChange={(e) => onChange({ ...location, house_number: e.target.value ? parseInt(e.target.value) : undefined })}
+                    onChange={(e) => onChange({ ...location, house_number: e.target.value || undefined })}
                   />
                 </div>
                 <div>
