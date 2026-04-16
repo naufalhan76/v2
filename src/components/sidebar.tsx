@@ -67,12 +67,8 @@ const sidebarItems = [
         href: '/dashboard/konfigurasi/invoice-config',
       },
       {
-        title: 'Service Pricing',
-        href: '/dashboard/konfigurasi/service-pricing',
-      },
-      {
-        title: 'Addons Catalog',
-        href: '/dashboard/konfigurasi/addons-catalog',
+        title: 'Konfigurasi Service',
+        href: '/dashboard/konfigurasi/service-config',
       },
       {
         title: 'SLA Service',

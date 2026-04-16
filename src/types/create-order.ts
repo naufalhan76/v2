@@ -1,11 +1,11 @@
 // Types for Create Order feature with order_items structure
 
 // Import base types
-export type ServiceType = 
+export type ServiceTypeEnum = 
   | 'INSTALLATION' 
   | 'MAINTENANCE' 
   | 'REPAIR' 
-  | 'CLEANING';
+  | 'CLEANING'; // Legacy enum format for backward compatibility
 
 export type OrderStatus = 
   | 'NEW' 
@@ -26,7 +26,13 @@ export type OrderItem = {
   order_id: string;
   location_id: string;
   ac_unit_id: string | null; // NULL = new AC (details filled by technician)
-  service_type: ServiceType;
+  unit_type_id?: string;
+  capacity_id?: string;
+  brand_id?: string;
+  service_type_id?: string;
+  catalog_id?: string;
+  msn_code?: string;
+  service_type: string;
   quantity: number; // for new AC units
   description: string | null;
   estimated_price: number;
@@ -39,14 +45,22 @@ export type OrderItem = {
 export type CreateOrderItemInput = {
   location_id: string;
   ac_unit_id?: string | null;
-  service_type: ServiceType;
-  quantity: number;
+  unit_type_id?: string;
+  capacity_id?: string;
+  brand_id?: string;
+  service_type_id?: string;
+  catalog_id?: string;
+  msn_code?: string;
+  service_type: string;
+  quantity?: number;
   description?: string;
   estimated_price?: number;
+  
+  // Data for new AC units that haven't been registered yet
   new_ac_data?: {
     brand: string;
     model_number: string;
-    capacity_btu?: number;
+    capacity_btu?: number | null; // NULL if waiting for technician to fill
   };
 };
 
@@ -75,7 +89,17 @@ export type LocationFormData = {
     brand: string;
     model_number: string;
     serial_number: string;
-    selected_services: ServiceType[];
+    unit_type_id?: string; // Loaded from DB if available
+    capacity_id?: string;
+    selected_services: Array<{
+      catalog_id: string;
+      msn_code: string;
+      service_type: string;
+      service_type_id: string;
+      price: number;
+      unit_type_id: string;
+      capacity_id: string;
+    }>;
     notes: string;
     is_selected?: boolean; // Track if AC is checked in dropdown (independent of services)
   }>;
@@ -83,11 +107,20 @@ export type LocationFormData = {
   // New AC units (individual units with their own services)
   new_ac_units: Array<{
     temp_id: string; // temporary ID for form tracking
-    selected_services: ServiceType[];
+    unit_type_id: string;
+    capacity_id: string;
+    brand_id: string;
+    selected_services: Array<{
+      catalog_id: string;
+      msn_code: string;
+      service_type: string;
+      service_type_id: string;
+      price: number;
+      unit_type_id: string;
+      capacity_id: string;
+    }>;
     notes: string;
     notes_room?: string; // Room/Location name
-    notes_pk?: string; // Power (PK)
-    notes_brand?: string; // Brand/Model
   }>;
 };
 
@@ -146,8 +179,21 @@ export type CustomerSearchResult = {
 
 export type ServicePricing = {
   pricing_id: string;
-  service_type: ServiceType;
+  service_type: string;
   service_name: string;
   base_price: number;
   description: string | null;
+};
+
+export type ServiceCatalogEntry = {
+  catalog_id: string;
+  msn_code: string;
+  unit_type_id: string;
+  capacity_id: string;
+  service_type_id: string;
+  service_name: string;
+  base_price: number;
+  unit_types?: { name: string };
+  capacity_ranges?: { capacity_label: string };
+  service_types?: { name: string, code: string };
 };

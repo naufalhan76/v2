@@ -203,6 +203,9 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
     // 2. Create AC units for new units (where ac_unit_id is null)
     const newAcUnits: Array<{
       location_id: string;
+      brand_id?: string;
+      unit_type_id?: string;
+      capacity_id?: string;
       brand: string;
       model_number: string;
       capacity_btu: number | null;
@@ -216,6 +219,9 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
         // This is a new AC unit, prepare for insertion
         newAcUnits.push({
           location_id: item.location_id,
+          brand_id: item.brand_id,
+          unit_type_id: item.unit_type_id,
+          capacity_id: item.capacity_id,
           brand: item.new_ac_data.brand,
           model_number: item.new_ac_data.model_number,
           capacity_btu: item.new_ac_data.capacity_btu || null,
@@ -257,6 +263,12 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
       order_id: order.order_id,
       location_id: item.location_id,
       ac_unit_id: item.ac_unit_id || createdAcUnitIds.get(index) || null,
+      unit_type_id: item.unit_type_id,
+      capacity_id: item.capacity_id,
+      brand_id: item.brand_id,
+      service_type_id: item.service_type_id,
+      catalog_id: item.catalog_id,
+      msn_code: item.msn_code,
       service_type: item.service_type,
       quantity: item.quantity || 1,
       description: item.description,
@@ -452,5 +464,31 @@ export async function getTechnicians(): Promise<{
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch technicians'
     }
+  }
+}
+
+export async function getOrderConfigMasterData() {
+  try {
+    const supabase = await createClient()
+    const [unitTypes, capacityRanges, acBrands, serviceTypes, serviceCatalog] = await Promise.all([
+      supabase.from('unit_types').select('*').eq('is_active', true).order('display_order'),
+      supabase.from('capacity_ranges').select('*').eq('is_active', true).order('display_order'),
+      supabase.from('ac_brands').select('*').eq('is_active', true).order('name'),
+      supabase.from('service_types').select('*').eq('is_active', true).order('display_order'),
+      supabase.from('service_catalog').select('*, unit_types(name), capacity_ranges(capacity_label), service_types(name, code)').eq('is_active', true)
+    ])
+
+    return {
+      success: true,
+      data: {
+        unitTypes: unitTypes.data || [],
+        capacityRanges: capacityRanges.data || [],
+        acBrands: acBrands.data || [],
+        serviceTypes: serviceTypes.data || [],
+        serviceCatalog: serviceCatalog.data || []
+      }
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message }
   }
 }

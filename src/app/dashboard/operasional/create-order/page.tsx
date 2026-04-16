@@ -32,16 +32,15 @@ import {
   createCustomer,
   createLocation,
   createOrderWithItems,
-  getServicePricing,
+  getOrderConfigMasterData,
   getTechnicians
 } from '@/lib/actions/create-order'
 import { updateCustomer } from '@/lib/actions/customers'
 import type { 
   OrderFormState, 
-  LocationFormData, 
-  ServiceType,
-  ServicePricing 
+  LocationFormData
 } from '@/types/create-order'
+import { LocationCard } from './components/LocationCard'
 import { 
   Search, 
   Plus, 
@@ -120,12 +119,14 @@ export default function CreateOrderPage() {
   const [validationErrors, setValidationErrors] = useState<string[]>([])
   const [showValidationModal, setShowValidationModal] = useState(false)
 
-  // Fetch service pricing
-  const { data: pricingData } = useQuery({
-    queryKey: ['service-pricing'],
-    queryFn: getServicePricing
+  // Fetch master data
+  const { data: masterDataResult } = useQuery({
+    queryKey: ['order-master-data'],
+    queryFn: getOrderConfigMasterData
   })
-  const servicePricing = pricingData?.data || []
+  const masterData = masterDataResult?.data || {
+    unitTypes: [], capacityRanges: [], acBrands: [], serviceTypes: [], serviceCatalog: []
+  }
 
   // Fetch technicians
   const { data: techniciansData } = useQuery({
@@ -250,25 +251,20 @@ export default function CreateOrderPage() {
   // Calculate estimated total
   const calculateTotal = (): number => {
     let total = 0
-    
     locations.forEach(loc => {
       // Existing AC services
       loc.existing_acs.forEach(ac => {
-        ac.selected_services.forEach(serviceType => {
-          const pricing = servicePricing.find(p => p.service_type === serviceType)
-          total += pricing?.base_price || 0
+        ac.selected_services?.forEach((service: any) => {
+          total += service.price || 0
         })
       })
-      
       // New AC services (each unit can have different services)
       loc.new_ac_units.forEach(unit => {
-        unit.selected_services.forEach(serviceType => {
-          const pricing = servicePricing.find(p => p.service_type === serviceType)
-          total += pricing?.base_price || 0
+        unit.selected_services?.forEach((service: any) => {
+          total += service.price || 0
         })
       })
     })
-    
     return total
   }
 
@@ -394,44 +390,48 @@ export default function CreateOrderPage() {
 
         // Add existing AC services
         for (const ac of loc.existing_acs) {
-          for (const serviceType of ac.selected_services) {
-            const pricing = servicePricing.find(p => p.service_type === serviceType)
+          if (!ac.selected_services) continue;
+          for (const service of ac.selected_services as any[]) {
             orderItems.push({
               location_id: locationId,
               ac_unit_id: ac.ac_unit_id,
-              service_type: serviceType,
+              unit_type_id: service.unit_type_id,
+              capacity_id: service.capacity_id,
+              brand_id: undefined as any,
+              service_type_id: service.service_type_id,
+              catalog_id: service.catalog_id,
+              msn_code: service.msn_code,
+              service_type: service.service_type,
               quantity: 1,
               description: ac.notes || undefined,
-              estimated_price: pricing?.base_price || 0
+              estimated_price: service.price || 0
             })
           }
         }
 
         // Add new AC services (each unit individually)
         for (const unit of loc.new_ac_units) {
-          for (const serviceType of unit.selected_services) {
-            const pricing = servicePricing.find(p => p.service_type === serviceType)
-            
-            // Combine 3 notes fields into one
-            const notesArray = []
-            if (unit.notes_room) notesArray.push(`Ruangan: ${unit.notes_room}`)
-            if (unit.notes_pk) notesArray.push(`PK: ${unit.notes_pk}`)
-            if (unit.notes_brand) notesArray.push(`Merk: ${unit.notes_brand}`)
-            const combinedNotes = notesArray.length > 0 ? notesArray.join(' | ') : 'New AC unit - details to be filled by technician'
-            
+          if (!unit.selected_services) continue;
+          for (const service of unit.selected_services as any[]) {
             orderItems.push({
               location_id: locationId,
               ac_unit_id: null, // Will be created as placeholder
-              service_type: serviceType,
+              unit_type_id: service.unit_type_id,
+              capacity_id: service.capacity_id,
+              brand_id: unit.brand_id,
+              service_type_id: service.service_type_id,
+              catalog_id: service.catalog_id,
+              msn_code: service.msn_code,
+              service_type: service.service_type,
               quantity: 1, // Each new AC unit = 1 quantity
-              description: combinedNotes,
-              estimated_price: pricing?.base_price || 0,
+              description: unit.notes || undefined,
+              estimated_price: service.price || 0,
               new_ac_data: {
-                brand: 'TBD', // To be determined by technician
+                brand: unit.brand_id || 'TBD', // To be determined by technician
                 model_number: 'TBD',
                 capacity_btu: undefined
               }
-            })
+            } as any)
           }
         }
       }
@@ -667,9 +667,7 @@ export default function CreateOrderPage() {
                       next[locIndex] = updated
                       setLocations(next)
                     }}
-                    servicePricing={servicePricing}
-                    customerLocations={customer?.customer_id ? locations : []}
-                    isNewCustomer={isNewCustomer}
+                    masterData={masterData}
                   />
                 ))
               )}
@@ -833,7 +831,6 @@ export default function CreateOrderPage() {
         scheduledDate={scheduledDate}
         technicianId={technicianId}
         technicians={technicians}
-        servicePricing={servicePricing}
         notes={notes}
         totalPrice={calculateTotal()}
       />
@@ -891,316 +888,6 @@ export default function CreateOrderPage() {
           }
         }}
       />
-    </div>
-  )
-}
-
-// Location Card Component (continued in next file due to length)
-function LocationCard({
-  location,
-  index,
-  isExpanded,
-  onToggle,
-  onRemove,
-  onChange,
-  servicePricing,
-  customerLocations,
-  isNewCustomer
-}: {
-  location: LocationFormData
-  index: number
-  isExpanded: boolean
-  onToggle: () => void
-  onRemove: () => void
-  onChange: (location: LocationFormData) => void
-  servicePricing: ServicePricing[]
-  customerLocations: LocationFormData[]
-  isNewCustomer: boolean
-}) {
-  const isNewLocation = !location.location_id
-
-  return (
-    <div className="border rounded-lg p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={onToggle} className="flex items-center gap-2">
-          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          <Package className="h-4 w-4" />
-          <span className="font-semibold">
-            Location {index + 1} {location.full_address && `- ${location.full_address}`}
-          </span>
-        </Button>
-        <Button variant="ghost" size="sm" onClick={onRemove}>
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
-      </div>
-
-      {isExpanded && (
-        <div className="space-y-4 pl-6">
-          {/* Location Selection/Input */}
-          {isNewLocation ? (
-            <div className="space-y-3 bg-muted/50 p-3 rounded-lg">
-              <div>
-                <Label>Full Address *</Label>
-                <Input
-                  placeholder="e.g., Head Office, Branch A"
-                  value={location.full_address || ''}
-                  onChange={(e) => onChange({ ...location, full_address: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>House Number</Label>
-                  <Input
-                    type="text"
-                    placeholder="e.g., 1, 12A, 5B"
-                    value={location.house_number || ''}
-                    onChange={(e) => onChange({ ...location, house_number: e.target.value || undefined })}
-                  />
-                </div>
-                <div>
-                  <Label>City</Label>
-                  <Input
-                    placeholder="e.g., Jakarta, Bandung"
-                    value={location.city || ''}
-                    onChange={(e) => onChange({ ...location, city: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <Alert>
-              <AlertDescription>
-                <strong>{location.full_address}</strong> - House {location.house_number}, {location.city}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Existing AC Units - Multi-Select Dropdown */}
-          <div className="space-y-3">
-            <Label className="text-base">Select Existing AC Units</Label>
-            {location.existing_acs.length > 0 ? (
-              <div className="space-y-3">
-                <MultiSelectDropdown
-                  options={location.existing_acs.map(ac => ({
-                    id: ac.ac_unit_id,
-                    label: `${ac.brand} ${ac.model_number}`,
-                    secondaryLabel: ac.serial_number || 'No SN',
-                  }))}
-                  selected={location.existing_acs
-                    .filter(ac => ac.is_selected)
-                    .map(ac => ac.ac_unit_id)}
-                  onSelectionChange={(selectedIds) => {
-                    const updated = { ...location }
-                    updated.existing_acs = updated.existing_acs.map(ac => {
-                      const isNowSelected = selectedIds.includes(ac.ac_unit_id)
-                      
-                      if (isNowSelected && !ac.is_selected) {
-                        // Just selected
-                        return {
-                          ...ac,
-                          is_selected: true
-                        }
-                      } else if (!isNowSelected && ac.is_selected) {
-                        // Just deselected - clear services too
-                        return {
-                          ...ac,
-                          is_selected: false,
-                          selected_services: []
-                        }
-                      }
-                      // No change needed
-                      return ac
-                    })
-                    onChange(updated)
-                  }}
-                  placeholder="Select AC units..."
-                  searchPlaceholder="Search by brand, model, or serial..."
-                />
-
-                {/* Selected AC Details - Service Selection */}
-                {location.existing_acs
-                  .filter(ac => ac.is_selected)
-                  .length > 0 && (
-                  <div className="space-y-3 mt-4 border-t pt-4">
-                    <Label className="text-sm font-medium">Configure Services for Selected AC Units:</Label>
-                    {location.existing_acs.map((ac, acIndex) => {
-                      // Show if AC is selected
-                      if (!ac.is_selected) return null
-
-                      return (
-                        <div key={acIndex} className="border rounded p-3 space-y-2 bg-card">
-                          <div className="font-medium text-sm">
-                            {ac.brand} {ac.model_number} {ac.serial_number && `(${ac.serial_number})`}
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Select Services:</Label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {servicePricing.map(svc => (
-                                <div key={svc.service_type} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`ac-${index}-${acIndex}-${svc.service_type}`}
-                                    checked={ac.selected_services.includes(svc.service_type)}
-                                    onCheckedChange={(checked) => {
-                                      const updated = { ...location }
-                                      if (checked) {
-                                        updated.existing_acs[acIndex].selected_services.push(svc.service_type)
-                                      } else {
-                                        updated.existing_acs[acIndex].selected_services = 
-                                          updated.existing_acs[acIndex].selected_services.filter(s => s !== svc.service_type)
-                                      }
-                                      onChange(updated)
-                                    }}
-                                  />
-                                  <label htmlFor={`ac-${index}-${acIndex}-${svc.service_type}`} className="text-sm cursor-pointer">
-                                    {svc.service_name}
-                                    <span className="text-xs text-muted-foreground ml-1">
-                                      (Rp {svc.base_price.toLocaleString('id-ID')})
-                                    </span>
-                                  </label>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Alert>
-                <AlertDescription>
-                  No existing AC units for this location. Add new AC units below.
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-
-          {/* New AC Units */}
-          <div className="space-y-3 border-t pt-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-base">New AC Units (to be registered by technician)</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const updated = { ...location }
-                  updated.new_ac_units.push({
-                    temp_id: `new-ac-${Date.now()}-${Math.random()}`,
-                    selected_services: [],
-                    notes: ''
-                  })
-                  onChange(updated)
-                }}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add New AC
-              </Button>
-            </div>
-            
-            {location.new_ac_units.length > 0 && (
-              <div className="space-y-3">
-                {location.new_ac_units.map((unit, unitIndex) => (
-                  <div key={unit.temp_id} className="border rounded p-3 space-y-2 bg-muted/30">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">New AC #{unitIndex + 1} (Details will be filled by technician)</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          const updated = { ...location }
-                          updated.new_ac_units = updated.new_ac_units.filter((_, i) => i !== unitIndex)
-                          onChange(updated)
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <Label className="text-xs">Select Services:</Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {servicePricing.map(svc => (
-                          <div key={svc.service_type} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`new-ac-${index}-${unitIndex}-${svc.service_type}`}
-                              checked={unit.selected_services.includes(svc.service_type)}
-                              onCheckedChange={(checked) => {
-                                const updated = { ...location }
-                                if (checked) {
-                                  updated.new_ac_units[unitIndex].selected_services.push(svc.service_type)
-                                } else {
-                                  updated.new_ac_units[unitIndex].selected_services = 
-                                    updated.new_ac_units[unitIndex].selected_services.filter(s => s !== svc.service_type)
-                                }
-                                onChange(updated)
-                              }}
-                            />
-                            <label htmlFor={`new-ac-${index}-${unitIndex}-${svc.service_type}`} className="text-sm cursor-pointer">
-                              {svc.service_name}
-                              <span className="text-xs text-muted-foreground ml-1">
-                                (Rp {svc.base_price.toLocaleString('id-ID')})
-                              </span>
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <Label className="text-xs font-semibold">Notes for Technician</Label>
-                      
-                      {/* Ruangan */}
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Ruangan</Label>
-                        <Input
-                          placeholder="e.g., Ruang Meeting, Ruang Server..."
-                          value={unit.notes_room || ''}
-                          onChange={(e) => {
-                            const updated = { ...location }
-                            updated.new_ac_units[unitIndex].notes_room = e.target.value
-                            onChange(updated)
-                          }}
-                        />
-                      </div>
-                      
-                      {/* PK */}
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Estimasi PK</Label>
-                        <Input
-                          placeholder="e.g., 1.5 PK, 2.5 PK..."
-                          value={unit.notes_pk || ''}
-                          onChange={(e) => {
-                            const updated = { ...location }
-                            updated.new_ac_units[unitIndex].notes_pk = e.target.value
-                            onChange(updated)
-                          }}
-                        />
-                      </div>
-                      
-                      {/* Merk Unit */}
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Merk/Tipe Unit</Label>
-                        <Input
-                          placeholder="e.g., Daikin, LG, Panasonic..."
-                          value={unit.notes_brand || ''}
-                          onChange={(e) => {
-                            const updated = { ...location }
-                            updated.new_ac_units[unitIndex].notes_brand = e.target.value
-                            onChange(updated)
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -1282,7 +969,6 @@ function ConfirmationModal({
   scheduledDate,
   technicianId,
   technicians,
-  servicePricing,
   notes,
   totalPrice
 }: {
@@ -1298,7 +984,6 @@ function ConfirmationModal({
   scheduledDate: Date | undefined
   technicianId: string
   technicians: any[]
-  servicePricing: ServicePricing[]
   notes: string
   totalPrice: number
 }) {
