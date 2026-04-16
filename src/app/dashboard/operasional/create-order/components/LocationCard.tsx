@@ -92,6 +92,14 @@ export function LocationCard({
     selectedCapacity = location.existing_acs[activeAcIndex].capacity_id || ''
   }
 
+  // Compute already selected catalog IDs for the active AC to prevent duplicates
+  let alreadySelectedCatalogIds: string[] = []
+  if (activeAcType === 'new' && activeAcIndex >= 0 && location.new_ac_units[activeAcIndex]) {
+    alreadySelectedCatalogIds = (location.new_ac_units[activeAcIndex].selected_services || []).map((s: any) => s.catalog_id)
+  } else if (activeAcType === 'existing' && activeAcIndex >= 0 && location.existing_acs[activeAcIndex]) {
+    alreadySelectedCatalogIds = (location.existing_acs[activeAcIndex].selected_services || []).map((s: any) => s.catalog_id)
+  }
+
   return (
     <div className="border rounded-lg p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -372,6 +380,7 @@ export function LocationCard({
         onAddService={handleAddService}
         defaultUnitTypeId={selectedUnitType}
         defaultCapacityId={selectedCapacity}
+        alreadySelectedCatalogIds={alreadySelectedCatalogIds}
       />
     </div>
   )

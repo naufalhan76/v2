@@ -24,11 +24,15 @@ interface ServiceSelectionModalProps {
   masterData?: MasterData
   defaultUnitTypeId?: string
   defaultCapacityId?: string
+  alreadySelectedCatalogIds?: string[]
 }
 
-export function ServiceSelectionModal({ open, onClose, onAddService, masterData, defaultUnitTypeId, defaultCapacityId }: ServiceSelectionModalProps) {
+export function ServiceSelectionModal({ open, onClose, onAddService, masterData, defaultUnitTypeId, defaultCapacityId, alreadySelectedCatalogIds = [] }: ServiceSelectionModalProps) {
   const [mode, setMode] = useState<'cascade' | 'search'>('cascade')
   
+  // Whether the parent already locked in unit type & capacity
+  const isLocked = !!(defaultUnitTypeId && defaultCapacityId)
+
   // Cascade state
   const [unitTypeId, setUnitTypeId] = useState<string>(defaultUnitTypeId || '')
   const [capacityId, setCapacityId] = useState<string>(defaultCapacityId || '')
@@ -39,8 +43,8 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
 
   // Reset when opened
   !open && setTimeout(() => {
-    if (unitTypeId !== defaultUnitTypeId) setUnitTypeId(defaultUnitTypeId || '')
-    if (capacityId !== defaultCapacityId) setCapacityId(defaultCapacityId || '')
+    setUnitTypeId(defaultUnitTypeId || '')
+    setCapacityId(defaultCapacityId || '')
     setServiceTypeId('')
     setSearchQuery('')
     setMode('cascade')
@@ -54,21 +58,30 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
 
   const availableCatalogs = useMemo(() => {
     if (!masterData) return []
+    let results: any[] = []
     if (mode === 'search') {
       if (!searchQuery || searchQuery.length < 2) return []
-      return masterData.serviceCatalog.filter((c: any) => 
+      results = masterData.serviceCatalog.filter((c: any) => 
         c.msn_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.service_name.toLowerCase().includes(searchQuery.toLowerCase())
       )
+      // If locked, also filter search results to only matching unit type + capacity
+      if (isLocked) {
+        results = results.filter((c: any) =>
+          c.unit_type_id === unitTypeId && c.capacity_id === capacityId
+        )
+      }
     } else {
       if (!unitTypeId || !capacityId || !serviceTypeId) return []
-      return masterData.serviceCatalog.filter((c: any) => 
+      results = masterData.serviceCatalog.filter((c: any) => 
         c.unit_type_id === unitTypeId &&
         c.capacity_id === capacityId &&
         c.service_type_id === serviceTypeId
       )
     }
-  }, [masterData, unitTypeId, capacityId, serviceTypeId, mode, searchQuery])
+    // Filter out already selected services
+    return results.filter((c: any) => !alreadySelectedCatalogIds.includes(c.catalog_id))
+  }, [masterData, unitTypeId, capacityId, serviceTypeId, mode, searchQuery, alreadySelectedCatalogIds, isLocked])
 
   const handleSelect = (catalogItem: any) => {
     onAddService(catalogItem)
@@ -93,29 +106,48 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
         </div>
 
         {mode === 'cascade' ? (
-          <div className="grid grid-cols-3 gap-4 pt-4">
-            <div className="space-y-2">
-              <Label>Unit Type (Tipe AC)</Label>
-              <Select value={unitTypeId} onValueChange={(val) => { setUnitTypeId(val); setCapacityId(''); setServiceTypeId(''); }}>
-                <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
-                <SelectContent>
-                  {masterData?.unitTypes.map((u: any) => (
-                    <SelectItem key={u.unit_type_id} value={u.unit_type_id}>{u.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Capacity (Kapasitas)</Label>
-              <Select value={capacityId} onValueChange={setCapacityId} disabled={!unitTypeId}>
-                <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
-                <SelectContent>
-                  {capacities.map((c: any) => (
-                    <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="pt-4 space-y-4">
+            {isLocked ? (
+              <div className="flex gap-4">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs text-muted-foreground">Unit Type</Label>
+                  <div className="text-sm font-medium bg-muted px-3 py-2 rounded-md">
+                    {masterData?.unitTypes.find((u: any) => u.unit_type_id === unitTypeId)?.name || '-'}
+                  </div>
+                </div>
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs text-muted-foreground">Capacity</Label>
+                  <div className="text-sm font-medium bg-muted px-3 py-2 rounded-md">
+                    {masterData?.capacityRanges.find((c: any) => c.capacity_id === capacityId)?.capacity_label || '-'}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Unit Type (Tipe AC)</Label>
+                  <Select value={unitTypeId} onValueChange={(val) => { setUnitTypeId(val); setCapacityId(''); setServiceTypeId(''); }}>
+                    <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                    <SelectContent>
+                      {masterData?.unitTypes.map((u: any) => (
+                        <SelectItem key={u.unit_type_id} value={u.unit_type_id}>{u.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Capacity (Kapasitas)</Label>
+                  <Select value={capacityId} onValueChange={setCapacityId} disabled={!unitTypeId}>
+                    <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                    <SelectContent>
+                      {capacities.map((c: any) => (
+                        <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Master Service Type</Label>
               <Select value={serviceTypeId} onValueChange={setServiceTypeId} disabled={!capacityId}>
