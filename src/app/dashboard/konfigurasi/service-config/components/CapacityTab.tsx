@@ -27,6 +27,7 @@ export function CapacityTab() {
   const [editingItem, setEditingItem] = useState<any | null>(null)
   const [deletingItem, setDeletingItem] = useState<any | null>(null)
   
+  const [unitTypeId, setUnitTypeId] = useState('')
   const [capacityLabel, setCapacityLabel] = useState('')
   const [isActive, setIsActive] = useState(true)
 
@@ -51,6 +52,7 @@ export function CapacityTab() {
   }
 
   const handleOpenDialog = (item?: any) => {
+    if (item) {
       setEditingItem(item)
       setUnitTypeId(item.unit_type_id)
       setCapacityLabel(item.capacity_label)
