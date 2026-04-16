@@ -29,12 +29,12 @@ export default function ServiceConfigPage() {
 
       <Tabs defaultValue="catalog" className="w-full">
         <TabsList className="w-full flex justify-start overflow-x-auto overflow-y-hidden mb-4 bg-muted/50 p-1">
-          <TabsTrigger value="catalog" className="flex-1 max-w-[200px]">Service Catalog 💰</TabsTrigger>
+          <TabsTrigger value="catalog" className="flex-1 max-w-[200px]">Service Catalog</TabsTrigger>
           <TabsTrigger value="unit" className="flex-1 max-w-[150px]">Unit Type</TabsTrigger>
           <TabsTrigger value="capacity" className="flex-1 max-w-[150px]">Capacity</TabsTrigger>
           <TabsTrigger value="servicetype" className="flex-1 max-w-[150px]">Master Service</TabsTrigger>
           <TabsTrigger value="brand" className="flex-1 max-w-[150px]">Merk AC</TabsTrigger>
-          <TabsTrigger value="addons" className="flex-1 max-w-[150px]">Add-Ons 📦</TabsTrigger>
+          <TabsTrigger value="addons" className="flex-1 max-w-[150px]">Add-Ons</TabsTrigger>
         </TabsList>
 
         <TabsContent value="catalog" className="mt-0">

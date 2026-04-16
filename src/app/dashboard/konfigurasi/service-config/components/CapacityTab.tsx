@@ -11,7 +11,9 @@ import { Loader2, Plus, Pencil, Trash2, CheckCircle2, XCircle } from 'lucide-rea
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog'
-import { getCapacityRanges, createCapacityRange, updateCapacityRange, deleteCapacityRange, getUnitTypes } from '@/lib/actions/service-config'
+import { getCapacityRanges, createCapacityRange, updateCapacityRange, deleteCapacityRange, getUnitTypes, bulkImportCapacityRanges } from '@/lib/actions/service-config'
+import { BulkImportDialog } from './BulkImportDialog'
+import { UploadCloud } from 'lucide-react'
 
 export function CapacityTab() {
   const [items, setItems] = useState<any[]>([])
@@ -25,10 +27,11 @@ export function CapacityTab() {
   const [editingItem, setEditingItem] = useState<any | null>(null)
   const [deletingItem, setDeletingItem] = useState<any | null>(null)
   
-  const [unitTypeId, setUnitTypeId] = useState('')
   const [capacityLabel, setCapacityLabel] = useState('')
-  const [displayOrder, setDisplayOrder] = useState('0')
   const [isActive, setIsActive] = useState(true)
+
+  // Bulk import state
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false)
 
   const { toast } = useToast()
 
@@ -48,17 +51,14 @@ export function CapacityTab() {
   }
 
   const handleOpenDialog = (item?: any) => {
-    if (item) {
       setEditingItem(item)
       setUnitTypeId(item.unit_type_id)
       setCapacityLabel(item.capacity_label)
-      setDisplayOrder(item.display_order?.toString() || '0')
       setIsActive(item.is_active)
     } else {
       setEditingItem(null)
       setUnitTypeId(filterUnitTypeId !== 'ALL' ? filterUnitTypeId : '')
       setCapacityLabel('')
-      setDisplayOrder('0')
       setIsActive(true)
     }
     setIsDialogOpen(true)
@@ -75,7 +75,6 @@ export function CapacityTab() {
     const input = {
       unit_type_id: unitTypeId,
       capacity_label: capacityLabel,
-      display_order: parseInt(displayOrder) || 0,
       is_active: isActive
     }
 
@@ -110,6 +109,19 @@ export function CapacityTab() {
     setIsLoading(false)
   }
 
+  const handleBulkImport = async (csvText: string) => {
+    setIsLoading(true)
+    const res = await bulkImportCapacityRanges(csvText)
+    if (res.success) {
+      toast({ title: 'Import Berhasil', description: res.message })
+      setIsBulkDialogOpen(false)
+      loadData()
+    } else {
+      toast({ variant: 'destructive', title: 'Import Gagal', description: res.error })
+    }
+    setIsLoading(false)
+  }
+
   return (
     <div className="space-y-4">
       <Card>
@@ -118,9 +130,14 @@ export function CapacityTab() {
             <CardTitle>Capacity Ranges</CardTitle>
             <CardDescription>Kelola kapasitas AC (contoh: 0.5 - 1.5 HP, Kg) per Unit Type</CardDescription>
           </div>
-          <Button onClick={() => handleOpenDialog()} className="gap-2">
-            <Plus className="h-4 w-4" /> Tambah
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setIsBulkDialogOpen(true)} variant="outline" className="gap-2">
+              <UploadCloud className="h-4 w-4" /> Bulk Import
+            </Button>
+            <Button onClick={() => handleOpenDialog()} className="gap-2">
+              <Plus className="h-4 w-4" /> Tambah
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="mb-6 flex gap-4 items-end">
@@ -200,10 +217,6 @@ export function CapacityTab() {
                   <Label>Capacity Label *</Label>
                   <Input value={capacityLabel} onChange={e => setCapacityLabel(e.target.value)} required placeholder="Misal: 0.5 - 1.5 HP" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Urutan Display</Label>
-                  <Input type="number" value={displayOrder} onChange={e => setDisplayOrder(e.target.value)} />
-                </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
                   <Button type="submit" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan'}</Button>
@@ -221,6 +234,16 @@ export function CapacityTab() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          <BulkImportDialog 
+            open={isBulkDialogOpen}
+            onOpenChange={setIsBulkDialogOpen}
+            title="Bulk Import Capacity Ranges (CSV)"
+            description={<span>Paste data CSV dari Excel atau Drop File di atas. Sesuai format: <code>Type AC, Capacity</code></span>}
+            placeholder={"Type AC,Capacity\nRoom Air,0.5 - 1.5 HP\nStanding Floor,5 PK"}
+            onImport={handleBulkImport}
+            isLoading={isLoading}
+          />
         </CardContent>
       </Card>
     </div>

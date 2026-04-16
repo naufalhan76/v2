@@ -10,7 +10,9 @@ import { Loader2, Plus, Pencil, Trash2, CheckCircle2, XCircle } from 'lucide-rea
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { getUnitTypes, createUnitType, updateUnitType, deleteUnitType } from '@/lib/actions/service-config'
+import { getUnitTypes, createUnitType, updateUnitType, deleteUnitType, bulkImportUnitTypes } from '@/lib/actions/service-config'
+import { BulkImportDialog } from './BulkImportDialog'
+import { UploadCloud } from 'lucide-react'
 
 export function UnitTypeTab() {
   const [items, setItems] = useState<any[]>([])
@@ -21,11 +23,12 @@ export function UnitTypeTab() {
   const [editingItem, setEditingItem] = useState<any | null>(null)
   const [deletingItem, setDeletingItem] = useState<any | null>(null)
   
-  // form state
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [displayOrder, setDisplayOrder] = useState('0')
   const [isActive, setIsActive] = useState(true)
+
+  // Bulk import state
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false)
 
   const { toast } = useToast()
 
@@ -43,13 +46,11 @@ export function UnitTypeTab() {
       setEditingItem(item)
       setName(item.name)
       setDescription(item.description || '')
-      setDisplayOrder(item.display_order?.toString() || '0')
       setIsActive(item.is_active)
     } else {
       setEditingItem(null)
       setName('')
       setDescription('')
-      setDisplayOrder('0')
       setIsActive(true)
     }
     setIsDialogOpen(true)
@@ -61,7 +62,6 @@ export function UnitTypeTab() {
     const input = {
       name,
       description: description || null,
-      display_order: parseInt(displayOrder) || 0,
       is_active: isActive
     }
 
@@ -96,6 +96,19 @@ export function UnitTypeTab() {
     setIsLoading(false)
   }
 
+  const handleBulkImport = async (csvText: string) => {
+    setIsLoading(true)
+    const res = await bulkImportUnitTypes(csvText)
+    if (res.success) {
+      toast({ title: 'Import Berhasil', description: res.message })
+      setIsBulkDialogOpen(false)
+      loadData()
+    } else {
+      toast({ variant: 'destructive', title: 'Import Gagal', description: res.error })
+    }
+    setIsLoading(false)
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -103,9 +116,14 @@ export function UnitTypeTab() {
           <CardTitle>Unit Types (Tipe AC)</CardTitle>
           <CardDescription>Kelola master data tipe AC (Room Air, Standing Floor, dll)</CardDescription>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
-          <Plus className="h-4 w-4" /> Tambah
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsBulkDialogOpen(true)} variant="outline" className="gap-2">
+            <UploadCloud className="h-4 w-4" /> Bulk Import
+          </Button>
+          <Button onClick={() => handleOpenDialog()} className="gap-2">
+            <Plus className="h-4 w-4" /> Tambah
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {isFetching ? (
@@ -154,10 +172,6 @@ export function UnitTypeTab() {
                 <Label>Deskripsi</Label>
                 <Input value={description} onChange={e => setDescription(e.target.value)} />
               </div>
-              <div className="space-y-2">
-                <Label>Urutan Display</Label>
-                <Input type="number" value={displayOrder} onChange={e => setDisplayOrder(e.target.value)} />
-              </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
                 <Button type="submit" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan'}</Button>
@@ -175,6 +189,16 @@ export function UnitTypeTab() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <BulkImportDialog 
+          open={isBulkDialogOpen}
+          onOpenChange={setIsBulkDialogOpen}
+          title="Bulk Import Unit Types (CSV)"
+          description={<span>Paste data CSV dari Excel atau Drop File di atas. Sesuai format: <code>Nama, Deskripsi</code></span>}
+          placeholder={"Nama,Deskripsi\nRoom Air,AC Standar untuk rumahan\nStanding Floor,AC Floor standing\nAHU,Air Handling Unit"}
+          onImport={handleBulkImport}
+          isLoading={isLoading}
+        />
       </CardContent>
     </Card>
   )

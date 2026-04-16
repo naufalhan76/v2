@@ -10,7 +10,9 @@ import { Loader2, Plus, Pencil, Trash2, CheckCircle2, XCircle } from 'lucide-rea
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog'
-import { getAcBrands, createAcBrand, updateAcBrand, deleteAcBrand } from '@/lib/actions/service-config'
+import { getAcBrands, createAcBrand, updateAcBrand, deleteAcBrand, bulkImportAcBrands } from '@/lib/actions/service-config'
+import { BulkImportDialog } from './BulkImportDialog'
+import { UploadCloud } from 'lucide-react'
 
 export function BrandTab() {
   const [items, setItems] = useState<any[]>([])
@@ -23,6 +25,9 @@ export function BrandTab() {
   
   const [name, setName] = useState('')
   const [isActive, setIsActive] = useState(true)
+
+  // Bulk import state
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false)
 
   const { toast } = useToast()
 
@@ -84,6 +89,19 @@ export function BrandTab() {
     setIsLoading(false)
   }
 
+  const handleBulkImport = async (csvText: string) => {
+    setIsLoading(true)
+    const res = await bulkImportAcBrands(csvText)
+    if (res.success) {
+      toast({ title: 'Import Berhasil', description: res.message })
+      setIsBulkDialogOpen(false)
+      loadData()
+    } else {
+      toast({ variant: 'destructive', title: 'Import Gagal', description: res.error })
+    }
+    setIsLoading(false)
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -91,9 +109,14 @@ export function BrandTab() {
           <CardTitle>Merk AC (Brands)</CardTitle>
           <CardDescription>Kelola master data merk AC</CardDescription>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
-          <Plus className="h-4 w-4" /> Tambah
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsBulkDialogOpen(true)} variant="outline" className="gap-2">
+            <UploadCloud className="h-4 w-4" /> Bulk Import
+          </Button>
+          <Button onClick={() => handleOpenDialog()} className="gap-2">
+            <Plus className="h-4 w-4" /> Tambah
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {isFetching ? (
@@ -153,6 +176,16 @@ export function BrandTab() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <BulkImportDialog 
+          open={isBulkDialogOpen}
+          onOpenChange={setIsBulkDialogOpen}
+          title="Bulk Import Merk AC (CSV)"
+          description={<span>Paste data CSV dari Excel atau Drop File di atas. Sesuai format: <code>Nama Merk</code></span>}
+          placeholder={"Nama Merk\nDaikin\nPanasonic\nLG"}
+          onImport={handleBulkImport}
+          isLoading={isLoading}
+        />
       </CardContent>
     </Card>
   )

@@ -22,6 +22,7 @@ import {
   getServiceTypes
 } from '@/lib/actions/service-config'
 import { Textarea } from '@/components/ui/textarea'
+import { BulkImportDialog } from './BulkImportDialog'
 
 export function ServiceCatalogTab() {
   const [items, setItems] = useState<any[]>([])
@@ -54,9 +55,6 @@ export function ServiceCatalogTab() {
   const [basePrice, setBasePrice] = useState('')
   const [description, setDescription] = useState('')
   const [isActive, setIsActive] = useState(true)
-
-  // Bulk State
-  const [csvText, setCsvText] = useState('')
 
   const { toast } = useToast()
 
@@ -160,17 +158,12 @@ export function ServiceCatalogTab() {
     setIsLoading(false)
   }
 
-  const handleBulkImport = async () => {
-    if (!csvText.trim()) {
-       toast({ variant: 'destructive', title: 'Error', description: 'CSV kosong' })
-       return;
-    }
+  const handleBulkImport = async (csvText: string) => {
     setIsLoading(true)
     const res = await bulkImportServiceCatalog(csvText)
     if (res.success) {
        toast({ title: 'Import Berhasil', description: res.message })
        setIsBulkDialogOpen(false)
-       setCsvText('')
        loadMasterData()
        loadData()
     } else {
@@ -346,29 +339,15 @@ export function ServiceCatalogTab() {
             </DialogContent>
           </Dialog>
 
-          <Dialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}>
-             <DialogContent className="max-w-3xl">
-                <DialogHeader>
-                   <DialogTitle>Bulk Import Service Catalog (CSV)</DialogTitle>
-                   <DialogDescription>Paste data CSV dari Excel di bawah ini. Sesuai format: <code>MSN Code, Type AC, Capacity, Tipe Service, Price</code></DialogDescription>
-                </DialogHeader>
-                <div className="mt-4">
-                   <Textarea 
-                      placeholder={"MSN Code,Type AC,Capacity,Tipe Service,Price\nCARERA001P,Room Air,0.5 - 1.5 HP,Jasa Service Room Air (Checking),100000"} 
-                      className="min-h-[300px] font-mono text-xs whitespace-pre" 
-                      value={csvText}
-                      onChange={e => setCsvText(e.target.value)}
-                   />
-                </div>
-                <div className="mt-2 text-sm text-yellow-600 dark:text-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 p-2 rounded">
-                   Pastikan header CSV ada di baris pertama dan menggunakan pemisah koma (,) atau TAB.
-                </div>
-                <DialogFooter className="mt-4">
-                   <Button variant="outline" onClick={() => setIsBulkDialogOpen(false)}>Batal</Button>
-                   <Button onClick={handleBulkImport} disabled={isLoading || !csvText}>{isLoading ? 'Importing...' : 'Start Import'}</Button>
-                </DialogFooter>
-             </DialogContent>
-          </Dialog>
+          <BulkImportDialog 
+            open={isBulkDialogOpen}
+            onOpenChange={setIsBulkDialogOpen}
+            title="Bulk Import Service Catalog (CSV)"
+            description={<span>Paste data CSV dari Excel atau Drop File di atas. Sesuai format: <code>MSN Code, Type AC, Capacity, Tipe Service, Price</code></span>}
+            placeholder={"MSN Code,Type AC,Capacity,Tipe Service,Price\nCARERA001P,Room Air,0.5 - 1.5 HP,Jasa Service Room Air (Checking),100000"}
+            onImport={handleBulkImport}
+            isLoading={isLoading}
+          />
 
           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogContent>

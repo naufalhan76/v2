@@ -11,6 +11,7 @@ import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import { ServiceSelectionModal, MasterData } from './ServiceSelectionModal'
 import { Package, ChevronDown, ChevronRight, Trash2, Plus, PenSquare } from 'lucide-react'
 import type { LocationFormData } from '@/types/create-order'
+import { normalizeOrderServiceType } from '@/lib/service-types'
 
 export function LocationCard({
   location,
@@ -47,7 +48,7 @@ export function LocationCard({
     const newService = {
       catalog_id: catalogEntry.catalog_id,
       msn_code: catalogEntry.msn_code,
-      service_type: catalogEntry.service_types?.code || 'CHECKING',
+      service_type: normalizeOrderServiceType(catalogEntry.service_types?.code),
       service_type_id: catalogEntry.service_type_id,
       price: catalogEntry.base_price,
       unit_type_id: catalogEntry.unit_type_id,

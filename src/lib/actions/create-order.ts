@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { normalizeOrderServiceType } from '@/lib/service-types'
 import type { 
   CustomerSearchResult, 
   CreateOrderInput, 
@@ -169,16 +170,17 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
     // - If explicitly provided, use that
     // - If all items have same service_type, use that
     // - If mixed, find most common service type (or first if tied)
-    let orderType = input.order_type
+    let orderType = input.order_type ? normalizeOrderServiceType(input.order_type) : undefined
     if (!orderType) {
       const serviceTypeCounts = input.items.reduce((acc, item) => {
-        acc[item.service_type] = (acc[item.service_type] || 0) + 1
+        const normalizedType = normalizeOrderServiceType(item.service_type)
+        acc[normalizedType] = (acc[normalizedType] || 0) + 1
         return acc
       }, {} as Record<string, number>)
       
       // Find the most common service type
       const sortedTypes = Object.entries(serviceTypeCounts).sort((a, b) => b[1] - a[1])
-      orderType = sortedTypes[0][0] // Most common (or first if tied)
+      orderType = (sortedTypes[0]?.[0] as any) || 'INSPECTION' // Most common (or first if tied)
     }
     
     // 1. Create order
@@ -269,7 +271,7 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
       service_type_id: item.service_type_id,
       catalog_id: item.catalog_id,
       msn_code: item.msn_code,
-      service_type: item.service_type,
+      service_type: normalizeOrderServiceType(item.service_type),
       quantity: item.quantity || 1,
       description: item.description,
       estimated_price: item.estimated_price || 0,

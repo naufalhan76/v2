@@ -4,6 +4,7 @@ import { CreateOrderSchema } from '@/app/api/schemas'
 import { jsonSuccess, jsonError, handleValidationError, handleApiError } from '@/app/api/utils'
 import { requireAuth } from '@/app/api/middleware/auth'
 import { logRequest, logResponse, measureDuration, createAuditLog } from '@/app/api/middleware/logging'
+import { normalizeOrderServiceType } from '@/lib/service-types'
 
 /**
  * POST /api/orders
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     const result = await createOrder({
       customer_id: customerId,
       location_id: locationId,
-      order_type: orderType,
+      order_type: normalizeOrderServiceType(orderType),
       priority: 'NORMAL',
       description,
     })

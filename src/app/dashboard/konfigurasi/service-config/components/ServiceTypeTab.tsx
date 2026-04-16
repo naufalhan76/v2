@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Plus, Pencil, Trash2, CheckCircle2, XCircle } from 'lucide-react'
+import { Loader2, Plus, Pencil, Trash2, CheckCircle2, XCircle, UploadCloud } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog'
-import { getServiceTypes, createServiceType, updateServiceType, deleteServiceType } from '@/lib/actions/service-config'
+import { getServiceTypes, createServiceType, updateServiceType, deleteServiceType, bulkImportServiceTypes } from '@/lib/actions/service-config'
+import { BulkImportDialog } from './BulkImportDialog'
 
 export function ServiceTypeTab() {
   const [items, setItems] = useState<any[]>([])
@@ -24,8 +25,10 @@ export function ServiceTypeTab() {
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [displayOrder, setDisplayOrder] = useState('0')
   const [isActive, setIsActive] = useState(true)
+
+  // Bulk import state
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false)
 
   const { toast } = useToast()
 
@@ -44,14 +47,12 @@ export function ServiceTypeTab() {
       setCode(item.code)
       setName(item.name)
       setDescription(item.description || '')
-      setDisplayOrder(item.display_order?.toString() || '0')
       setIsActive(item.is_active)
     } else {
       setEditingItem(null)
       setCode('')
       setName('')
       setDescription('')
-      setDisplayOrder('0')
       setIsActive(true)
     }
     setIsDialogOpen(true)
@@ -64,7 +65,6 @@ export function ServiceTypeTab() {
       code,
       name,
       description: description || null,
-      display_order: parseInt(displayOrder) || 0,
       is_active: isActive
     }
 
@@ -99,6 +99,19 @@ export function ServiceTypeTab() {
     setIsLoading(false)
   }
 
+  const handleBulkImport = async (csvText: string) => {
+    setIsLoading(true)
+    const res = await bulkImportServiceTypes(csvText)
+    if (res.success) {
+      toast({ title: 'Import Berhasil', description: res.message })
+      setIsBulkDialogOpen(false)
+      loadData()
+    } else {
+      toast({ variant: 'destructive', title: 'Import Gagal', description: res.error })
+    }
+    setIsLoading(false)
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -106,9 +119,14 @@ export function ServiceTypeTab() {
           <CardTitle>Master Data Service Types</CardTitle>
           <CardDescription>Kelola kategori tipe service (Checking, Cleaning, Repair, dll)</CardDescription>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
-          <Plus className="h-4 w-4" /> Tambah
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsBulkDialogOpen(true)} variant="outline" className="gap-2">
+            <UploadCloud className="h-4 w-4" /> Bulk Import
+          </Button>
+          <Button onClick={() => handleOpenDialog()} className="gap-2">
+            <Plus className="h-4 w-4" /> Tambah
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {isFetching ? (
@@ -153,7 +171,7 @@ export function ServiceTypeTab() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label>Code (Unik) *</Label>
-                <Input value={code} onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))} required placeholder="Misal: CHECKING" />
+                <Input value={code} onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))} required placeholder="Misal: INSPECTION" />
               </div>
               <div className="space-y-2">
                 <Label>Nama Tipe Service *</Label>
@@ -162,10 +180,6 @@ export function ServiceTypeTab() {
               <div className="space-y-2">
                 <Label>Deskripsi</Label>
                 <Input value={description} onChange={e => setDescription(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Urutan Display</Label>
-                <Input type="number" value={displayOrder} onChange={e => setDisplayOrder(e.target.value)} />
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
@@ -184,6 +198,16 @@ export function ServiceTypeTab() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <BulkImportDialog 
+          open={isBulkDialogOpen}
+          onOpenChange={setIsBulkDialogOpen}
+          title="Bulk Import Service Types (CSV)"
+          description={<span>Paste data CSV dari Excel atau Drop File di atas. Sesuai format: <code>Code, Nama, Deskripsi</code></span>}
+          placeholder={"Code,Nama,Deskripsi\nCLEANING,Cuci AC,Membersihkan filter dan komponen AC\nCHECKING,Pengecekan,Pengecekan kondisi AC\nREPAIR,Perbaikan,Perbaikan komponen AC yang rusak"}
+          onImport={handleBulkImport}
+          isLoading={isLoading}
+        />
       </CardContent>
     </Card>
   )

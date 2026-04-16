@@ -332,3 +332,108 @@ export async function bulkImportServiceCatalog(csvText: string) {
      return { success: false, error: err.message || "Failed to process import" };
   }
 }
+
+export async function bulkImportUnitTypes(csvText: string) {
+  const supabase = await createClient()
+  const lines = csvText.split('\n').filter(l => l.trim().length > 0)
+  if (lines.length < 2) return { success: false, error: 'CSV format is invalid or empty' }
+  const headers = lines[0].split('\t').map(h => h.trim().toLowerCase())
+  const delimiter = headers.length > 1 ? '\t' : ','
+  const records = lines.slice(1).map(l => l.split(delimiter))
+
+  let createdCount = 0
+  for (const record of records) {
+    if (record.length < 1) continue
+    const name = record[0].trim()
+    const description = record.length > 1 ? record[1].trim() : null
+    
+    if (name) {
+      const { error } = await supabase.from('unit_types').insert({ name, description })
+      if (!error) createdCount++
+    }
+  }
+  revalidatePath('/dashboard/konfigurasi/service-config')
+  return { success: true, message: `Successfully imported ${createdCount} unit types.` }
+}
+
+export async function bulkImportCapacityRanges(csvText: string) {
+  const supabase = await createClient()
+  const lines = csvText.split('\n').filter(l => l.trim().length > 0)
+  if (lines.length < 2) return { success: false, error: 'CSV format is invalid or empty' }
+  const headers = lines[0].split('\t').map(h => h.trim().toLowerCase())
+  const delimiter = headers.length > 1 ? '\t' : ','
+  const records = lines.slice(1).map(l => l.split(delimiter))
+
+  let createdCount = 0
+  for (const record of records) {
+    if (record.length < 2) continue
+    const unitTypeName = record[0].trim()
+    const capacityLabel = record[1].trim()
+
+    if (unitTypeName && capacityLabel) {
+      let { data: ut } = await supabase.from('unit_types').select('unit_type_id').ilike('name', unitTypeName).single()
+      if (!ut) {
+         const { data: newUt } = await supabase.from('unit_types').insert({ name: unitTypeName }).select().single()
+         ut = newUt
+      }
+      if (ut?.unit_type_id) {
+        const { error } = await supabase.from('capacity_ranges').insert({ 
+          unit_type_id: ut.unit_type_id, 
+          capacity_label: capacityLabel 
+        })
+        if (!error) createdCount++
+      }
+    }
+  }
+  revalidatePath('/dashboard/konfigurasi/service-config')
+  return { success: true, message: `Successfully imported ${createdCount} capacity ranges.` }
+}
+
+export async function bulkImportAcBrands(csvText: string) {
+  const supabase = await createClient()
+  const lines = csvText.split('\n').filter(l => l.trim().length > 0)
+  if (lines.length < 2) return { success: false, error: 'CSV format is invalid or empty' }
+  const headers = lines[0].split('\t').map(h => h.trim().toLowerCase())
+  const delimiter = headers.length > 1 ? '\t' : ','
+  const records = lines.slice(1).map(l => l.split(delimiter))
+
+  let createdCount = 0
+  for (const record of records) {
+    if (record.length < 1) continue
+    const name = record[0].trim()
+    if (name) {
+      const { error } = await supabase.from('ac_brands').insert({ name })
+      if (!error) createdCount++
+    }
+  }
+  revalidatePath('/dashboard/konfigurasi/service-config')
+  return { success: true, message: `Successfully imported ${createdCount} brands.` }
+}
+
+export async function bulkImportServiceTypes(csvText: string) {
+  const supabase = await createClient()
+  const lines = csvText.split('\n').filter(l => l.trim().length > 0)
+  if (lines.length < 2) return { success: false, error: 'CSV format is invalid or empty' }
+  const headers = lines[0].split('\t').map(h => h.trim().toLowerCase())
+  const delimiter = headers.length > 1 ? '\t' : ','
+  const records = lines.slice(1).map(l => l.split(delimiter))
+
+  let createdCount = 0
+  for (const record of records) {
+    if (record.length < 2) continue
+    const codeRaw = record[0].trim().toUpperCase().replace(/[^A-Z0-9_]/g, '')
+    const name = record[1].trim()
+    const description = record.length > 2 ? record[2].trim() : null
+
+    if (codeRaw && name) {
+      const { error } = await supabase.from('service_types').insert({ 
+        code: codeRaw, 
+        name, 
+        description 
+      })
+      if (!error) createdCount++
+    }
+  }
+  revalidatePath('/dashboard/konfigurasi/service-config')
+  return { success: true, message: `Successfully imported ${createdCount} service types.` }
+}
