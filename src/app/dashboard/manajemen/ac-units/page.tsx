@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getAcUnits, updateAcUnit, deleteAcUnit } from '@/lib/actions/ac-units'
+import { getUnitTypes, getCapacityRanges, getAcBrands } from '@/lib/actions/service-config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -55,11 +56,28 @@ interface AcUnit {
   installation_date?: string
   status: string
   last_service_date?: string
+  // New hierarchical fields
+  unit_type_id?: string
+  capacity_id?: string
+  brand_id?: string
+  unit_types?: {
+    unit_type_id: string
+    name: string
+  }
+  capacity_ranges?: {
+    capacity_id: string
+    capacity_label: string
+  }
+  ac_brands?: {
+    brand_id: string
+    name: string
+  }
   locations?: {
     location_id: string
-    building_name: string
-    floor: number
-    room_number: string
+    building_name?: string
+    floor?: number
+    room_number?: string
+    full_address?: string
     customers?: {
       customer_id: string
       customer_name: string
@@ -80,6 +98,12 @@ export default function AcUnitsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Master data for dropdowns
+  const [unitTypes, setUnitTypes] = useState<any[]>([])
+  const [capacityRanges, setCapacityRanges] = useState<any[]>([])
+  const [filteredCapacities, setFilteredCapacities] = useState<any[]>([])
+  const [masterBrands, setMasterBrands] = useState<any[]>([])
+
   // Filter by search query (client-side for customer name)
   const filteredAcUnits = acUnitsBase.filter(unit => {
     if (!searchQuery) return true
@@ -89,7 +113,9 @@ export default function AcUnitsPage() {
     const matchesUnit = 
       unit.brand?.toLowerCase().includes(query) ||
       unit.model_number?.toLowerCase().includes(query) ||
-      unit.serial_number?.toLowerCase().includes(query)
+      unit.serial_number?.toLowerCase().includes(query) ||
+      unit.unit_types?.name?.toLowerCase().includes(query) ||
+      unit.capacity_ranges?.capacity_label?.toLowerCase().includes(query)
     
     // Search in customer name
     const matchesCustomer = unit.locations?.customers?.customer_name?.toLowerCase().includes(query)
@@ -111,17 +137,50 @@ export default function AcUnitsPage() {
     capacity_btu: 0,
     installation_date: '',
     status: 'ACTIVE',
+    unit_type_id: '' as string | undefined,
+    capacity_id: '' as string | undefined,
+    brand_id: '' as string | undefined,
   })
 
   useEffect(() => {
     fetchAcUnits()
+    fetchMasterData()
   }, [])
+
+  // When unit_type_id changes in the form, filter capacities
+  useEffect(() => {
+    if (formData.unit_type_id) {
+      const filtered = capacityRanges.filter(c => c.unit_type_id === formData.unit_type_id)
+      setFilteredCapacities(filtered)
+      // Reset capacity if it doesn't belong to new unit type
+      if (formData.capacity_id && !filtered.find(c => c.capacity_id === formData.capacity_id)) {
+        setFormData(prev => ({ ...prev, capacity_id: '' }))
+      }
+    } else {
+      setFilteredCapacities(capacityRanges)
+    }
+  }, [formData.unit_type_id, capacityRanges])
+
+  const fetchMasterData = async () => {
+    try {
+      const [unitTypesResult, capacityResult, brandsResult] = await Promise.all([
+        getUnitTypes(),
+        getCapacityRanges(),
+        getAcBrands(),
+      ])
+      setUnitTypes(unitTypesResult.success ? (unitTypesResult.data || []) : [])
+      setCapacityRanges(capacityResult.success ? (capacityResult.data || []) : [])
+      setMasterBrands(brandsResult.success ? (brandsResult.data || []) : [])
+    } catch (error) {
+      console.error('Error fetching master data:', error)
+    }
+  }
 
   const fetchAcUnits = async () => {
     setLoading(true)
     try {
       const result = await getAcUnits({
-        limit: 1000, // Fetch more for client-side filtering
+        limit: 1000,
       })
       if (result.success) {
         setAcUnits(result.data)
@@ -148,6 +207,9 @@ export default function AcUnitsPage() {
       capacity_btu: acUnit.capacity_btu || 0,
       installation_date: acUnit.installation_date || '',
       status: acUnit.status || 'ACTIVE',
+      unit_type_id: acUnit.unit_type_id || '',
+      capacity_id: acUnit.capacity_id || '',
+      brand_id: acUnit.brand_id || '',
     })
     setIsEditOpen(true)
   }
@@ -197,7 +259,19 @@ export default function AcUnitsPage() {
 
     setIsSubmitting(true)
     try {
-      const result = await updateAcUnit(selectedAcUnit.ac_unit_id, formData)
+      const updateData = {
+        brand: formData.brand,
+        model_number: formData.model_number,
+        serial_number: formData.serial_number,
+        ac_type: formData.ac_type,
+        capacity_btu: formData.capacity_btu,
+        installation_date: formData.installation_date,
+        status: formData.status,
+        unit_type_id: formData.unit_type_id || undefined,
+        capacity_id: formData.capacity_id || undefined,
+        brand_id: formData.brand_id || undefined,
+      }
+      const result = await updateAcUnit(selectedAcUnit.ac_unit_id, updateData)
       
       if (result.success) {
         toast({
@@ -252,7 +326,7 @@ export default function AcUnitsPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 type="text"
-                placeholder="Search by brand, model, serial number, or customer name..."
+                placeholder="Search by brand, model, serial number, unit type, or customer name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -276,12 +350,10 @@ export default function AcUnitsPage() {
                     <SortableTableHead sortKey="serial_number" currentSort={sortConfig} onSort={requestSort}>
                       Serial Number
                     </SortableTableHead>
-                    <SortableTableHead sortKey="ac_type" currentSort={sortConfig} onSort={requestSort}>
-                      AC Type
+                    <SortableTableHead sortKey="unit_types.name" currentSort={sortConfig} onSort={requestSort}>
+                      Unit Type
                     </SortableTableHead>
-                    <SortableTableHead sortKey="capacity_btu" currentSort={sortConfig} onSort={requestSort}>
-                      Capacity (BTU)
-                    </SortableTableHead>
+                    <TableHead>Capacity</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead>Customer</TableHead>
                     <SortableTableHead sortKey="status" currentSort={sortConfig} onSort={requestSort}>
@@ -303,12 +375,32 @@ export default function AcUnitsPage() {
                         <TableCell className="font-medium">{acUnit.brand}</TableCell>
                         <TableCell>{acUnit.model_number}</TableCell>
                         <TableCell>{acUnit.serial_number}</TableCell>
-                        <TableCell>{acUnit.ac_type || '-'}</TableCell>
-                        <TableCell>{acUnit.capacity_btu || '-'}</TableCell>
+                        <TableCell>
+                          {acUnit.unit_types?.name ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {acUnit.unit_types.name}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">
+                              {acUnit.ac_type || '-'}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {acUnit.capacity_ranges?.capacity_label ? (
+                            <span className="text-sm font-mono">
+                              {acUnit.capacity_ranges.capacity_label}
+                            </span>
+                          ) : acUnit.capacity_btu ? (
+                            <span className="text-muted-foreground text-xs">
+                              {acUnit.capacity_btu} BTU
+                            </span>
+                          ) : '-'}
+                        </TableCell>
                         <TableCell>
                           {acUnit.locations ? (
                             <div className="text-sm">
-                              <div>{acUnit.locations.building_name} - Floor {acUnit.locations.floor}</div>
+                              <div>{acUnit.locations.full_address || `${acUnit.locations.building_name ? `${acUnit.locations.building_name} - ` : ''}Floor ${acUnit.locations.floor}`}</div>
                               <div className="text-muted-foreground">{acUnit.locations.room_number}</div>
                             </div>
                           ) : (
@@ -373,8 +465,79 @@ export default function AcUnitsPage() {
             </SheetDescription>
           </SheetHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+            
+            {/* === Hierarchical Fields (new schema) === */}
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Klasifikasi Unit</p>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="brand">Brand *</Label>
+              <Label htmlFor="unit_type_id">Unit Type</Label>
+              <Select
+                value={formData.unit_type_id || ''}
+                onValueChange={(value) => setFormData({ ...formData, unit_type_id: value, capacity_id: '' })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Unit Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">— Tidak diisi —</SelectItem>
+                  {unitTypes.map((ut: any) => (
+                    <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>
+                      {ut.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="capacity_id">Capacity</Label>
+              <Select
+                value={formData.capacity_id || ''}
+                onValueChange={(value) => setFormData({ ...formData, capacity_id: value })}
+                disabled={!formData.unit_type_id}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={formData.unit_type_id ? 'Pilih Capacity' : 'Pilih Unit Type dulu'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">— Tidak diisi —</SelectItem>
+                  {filteredCapacities.map((cap: any) => (
+                    <SelectItem key={cap.capacity_id} value={cap.capacity_id}>
+                      {cap.capacity_label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="brand_id">Merk AC (dari master)</Label>
+              <Select
+                value={formData.brand_id || ''}
+                onValueChange={(value) => setFormData({ ...formData, brand_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Merk (opsional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">— Tidak diisi —</SelectItem>
+                  {masterBrands.map((b: any) => (
+                    <SelectItem key={b.brand_id} value={b.brand_id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1 pt-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Informasi Unit</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="brand">Brand (teks) *</Label>
               <Input
                 id="brand"
                 value={formData.brand}
@@ -401,22 +564,12 @@ export default function AcUnitsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ac_type">AC Type</Label>
+              <Label htmlFor="ac_type">AC Type (legacy)</Label>
               <Input
                 id="ac_type"
                 value={formData.ac_type}
                 onChange={(e) => setFormData({ ...formData, ac_type: e.target.value })}
                 placeholder="e.g., Window, Cassette, Split"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="capacity_btu">Capacity (BTU)</Label>
-              <Input
-                id="capacity_btu"
-                type="number"
-                value={formData.capacity_btu}
-                onChange={(e) => setFormData({ ...formData, capacity_btu: parseInt(e.target.value) || 0 })}
-                placeholder="e.g., 18000"
               />
             </div>
             <div className="space-y-2">

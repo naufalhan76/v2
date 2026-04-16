@@ -102,57 +102,93 @@ export interface CreateInvoiceInput {
 export interface OrderItemForInvoice {
   serviceType: string
   serviceName: string
+  msnCode?: string
+  unitTypeName?: string
+  capacityLabel?: string
   quantity: number
   estimatedPrice: number
 }
 
 /**
  * Get order items with service details for invoice creation
- * Returns empty array for old orders without order_items (backward compatible)
+ * Joins service_catalog + unit_types + capacity_ranges for new orders
+ * Falls back to service_type text for old orders (backward compatible)
  */
 export async function getOrderItemsForInvoice(orderId: string): Promise<OrderItemForInvoice[]> {
   const supabase = await createClient()
   
   const { data, error } = await supabase
     .from('order_items')
-    .select('service_type, quantity, estimated_price')
+    .select(`
+      order_item_id,
+      service_type,
+      quantity,
+      estimated_price,
+      msn_code,
+      catalog_id,
+      unit_type_id,
+      capacity_id,
+      service_catalog (
+        catalog_id,
+        msn_code,
+        service_name,
+        base_price
+      ),
+      unit_types (
+        unit_type_id,
+        name
+      ),
+      capacity_ranges (
+        capacity_id,
+        capacity_label
+      )
+    `)
     .eq('order_id', orderId)
   
   if (error || !data || data.length === 0) {
-    // Empty array means no order_items (old order) or error
     return []
   }
   
-  // Group by service_type and sum quantities
-  const grouped = data.reduce((acc, item) => {
-    if (!acc[item.service_type]) {
-      acc[item.service_type] = {
-        quantity: 0,
-        totalPrice: 0
-      }
-    }
-    acc[item.service_type].quantity += item.quantity || 1
-    acc[item.service_type].totalPrice += (item.estimated_price || 0) * (item.quantity || 1)
-    return acc
-  }, {} as Record<string, {quantity: number, totalPrice: number}>)
-  
-  // Convert to array and fetch service names from service_pricing
   const result: OrderItemForInvoice[] = []
-  
-  for (const [serviceType, data] of Object.entries(grouped)) {
-    const { data: pricing } = await supabase
-      .from('service_pricing')
-      .select('service_name, base_price')
-      .eq('service_type', serviceType)
-      .eq('is_active', true)
-      .single()
-    
-    result.push({
-      serviceType,
-      serviceName: pricing?.service_name || serviceType,
-      quantity: data.quantity,
-      estimatedPrice: data.totalPrice / data.quantity // average price per unit
-    })
+
+  for (const item of data) {
+    const catalog = item.service_catalog as any
+    const unitType = item.unit_types as any
+    const capacityRange = item.capacity_ranges as any
+
+    if (catalog) {
+      // NEW ORDER: Has service_catalog join data
+      const displayName = catalog.service_name || item.service_type
+      const msnCode = catalog.msn_code || item.msn_code
+      const unitTypeName = unitType?.name
+      const capacityLabel = capacityRange?.capacity_label
+      
+      result.push({
+        serviceType: item.service_type,
+        serviceName: displayName,
+        msnCode,
+        unitTypeName,
+        capacityLabel,
+        quantity: item.quantity || 1,
+        estimatedPrice: item.estimated_price || catalog.base_price || 0,
+      })
+    } else {
+      // OLD ORDER: No catalog join, use service_type text as fallback
+      // Try to look up from old service_pricing table for backward compat
+      const { data: pricing } = await supabase
+        .from('service_pricing')
+        .select('service_name, base_price')
+        .eq('service_type', item.service_type)
+        .eq('is_active', true)
+        .maybeSingle()
+      
+      result.push({
+        serviceType: item.service_type,
+        serviceName: pricing?.service_name || item.service_type,
+        quantity: item.quantity || 1,
+        estimatedPrice: item.estimated_price || pricing?.base_price || 0,
+      })
+    }
   }
   
   return result

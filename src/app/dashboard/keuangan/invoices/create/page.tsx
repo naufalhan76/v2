@@ -193,19 +193,32 @@ export default function CreateInvoicePage() {
       const orderItems = await getOrderItemsForInvoice(selectedOrder.order_id)
       
       if (orderItems.length > 0) {
-        // NEW ORDERS: Create line items from order_items
-        const newLineItems = orderItems.map(item => ({
-          type: 'BASE_SERVICE' as const,
-          description: `${item.serviceName} (${item.quantity} unit${item.quantity > 1 ? 's' : ''})`,
-          quantity: item.quantity,
-          unitPrice: item.estimatedPrice,
-          total: item.quantity * item.estimatedPrice
-        }))
+        // NEW ORDERS: Create line items from order_items with MSN code + unit info
+        const newLineItems = orderItems.map(item => {
+          // Build rich description: [MSN] Service Name (Unit Type Capacity) — qty x
+          let desc = item.serviceName
+          if (item.msnCode) {
+            const unitInfo = [item.unitTypeName, item.capacityLabel].filter(Boolean).join(' ')
+            desc = `[${item.msnCode}] ${item.serviceName}${unitInfo ? ` (${unitInfo})` : ''}`
+          }
+          if (item.quantity > 1) {
+            desc += ` × ${item.quantity}`
+          }
+          return {
+            type: 'BASE_SERVICE' as const,
+            description: desc,
+            quantity: item.quantity,
+            unitPrice: item.estimatedPrice,
+            total: item.quantity * item.estimatedPrice
+          }
+        })
         setLineItems(newLineItems)
         
         // Set baseService to first service (for reference)
-        const firstPricing = await getServicePricingByType(orderItems[0].serviceType)
-        if (firstPricing) setBaseService(firstPricing)
+        if (orderItems[0].serviceType) {
+          const firstPricing = await getServicePricingByType(orderItems[0].serviceType).catch(() => null)
+          if (firstPricing) setBaseService(firstPricing)
+        }
         
       } else {
         // OLD ORDERS: Fallback to order_type (backward compatibility)

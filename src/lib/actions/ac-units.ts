@@ -21,6 +21,18 @@ export async function getAcUnits(filters?: {
       .from('ac_units')
       .select(`
         *,
+        unit_types (
+          unit_type_id,
+          name
+        ),
+        capacity_ranges (
+          capacity_id,
+          capacity_label
+        ),
+        ac_brands (
+          brand_id,
+          name
+        ),
         locations (
           location_id,
           full_address,
@@ -52,16 +64,6 @@ export async function getAcUnits(filters?: {
     const { data, error, count } = await query
     
     if (error) throw error
-    
-    // Debug logging
-    console.log('🔧 AC Units data sample:', data?.[0] ? {
-      ac_unit_id: data[0].ac_unit_id,
-      brand: data[0].brand,
-      location: data[0].locations ? {
-        full_address: data[0].locations.full_address,
-        customer: data[0].locations.customers
-      } : null
-    } : 'No data')
     
     return {
       success: true,
@@ -187,6 +189,10 @@ export async function updateAcUnit(acUnitId: string, acUnitData: Partial<{
   capacity_btu: number
   installation_date: string
   status: string
+  // New hierarchical fields (Phase 3)
+  unit_type_id: string
+  capacity_id: string
+  brand_id: string
 }>) {
   try {
     const supabase = await createClient()
@@ -203,7 +209,7 @@ export async function updateAcUnit(acUnitId: string, acUnitData: Partial<{
     
     if (error) throw error
     
-    revalidatePath('/ac-units')
+    revalidatePath('/dashboard/manajemen/ac-units')
     
     return {
       success: true,

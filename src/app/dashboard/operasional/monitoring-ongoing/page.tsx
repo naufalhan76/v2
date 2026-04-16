@@ -76,15 +76,45 @@ function getServicesGrouped(orderItems: any[]) {
   
   const serviceTypes: Record<string, number> = {}
   orderItems.forEach(item => {
-    if (item.service_type) {
-      serviceTypes[item.service_type] = (serviceTypes[item.service_type] || 0) + 1
+    // Use msn_code as key if available, else service_type
+    const key = item.msn_code || item.service_type
+    if (key) {
+      serviceTypes[key] = (serviceTypes[key] || 0) + 1
     }
   })
   
   return { count: orderItems.length, types: serviceTypes }
 }
 
-// Helper function to get unique service types for display
+// Helper: get rich service label from an order item
+function getServiceLabel(item: any): string {
+  if (item.msn_code) {
+    const parts = [item.msn_code]
+    if (item.unit_types?.name) parts.push(item.unit_types.name)
+    if (item.capacity_ranges?.capacity_label) parts.push(item.capacity_ranges.capacity_label)
+    return parts.join(' • ')
+  }
+  return item.service_type || '-'
+}
+
+// Helper function to get unique service display info for badges
+function getUniqueServiceLabels(orderItems: any[]): string[] {
+  if (!orderItems || orderItems.length === 0) return []
+  
+  const seen = new Set<string>()
+  const labels: string[] = []
+  orderItems.forEach(item => {
+    const label = getServiceLabel(item)
+    if (!seen.has(label)) {
+      seen.add(label)
+      labels.push(label)
+    }
+  })
+  
+  return labels
+}
+
+// Legacy: get unique service types (for old orders without msn_code)
 function getUniqueServiceTypes(orderItems: any[]) {
   if (!orderItems || orderItems.length === 0) return []
   
@@ -806,14 +836,14 @@ function MonitoringOngoingContent() {
                               </Button>
                             </PopoverTrigger>
                             {Object.keys(servicesInfo.types).length > 0 && (
-                              <PopoverContent className="w-64" align="start">
+                              <PopoverContent className="w-72" align="start">
                                 <div className="space-y-2">
                                   <h4 className="font-semibold text-sm">Service Breakdown</h4>
                                   <div className="space-y-1">
-                                    {Object.entries(servicesInfo.types).map(([type, count]) => (
-                                      <div key={type} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
-                                        <span className="font-medium">{SERVICE_TYPES.find(t => t.value === type)?.label || type}</span>
-                                        <Badge variant="secondary">{count}x</Badge>
+                                    {Object.entries(servicesInfo.types).map(([key, count]) => (
+                                      <div key={key} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
+                                        <span className="font-mono text-xs font-medium">{key}</span>
+                                        <Badge variant="secondary">{count as number}x</Badge>
                                       </div>
                                     ))}
                                   </div>
@@ -824,14 +854,14 @@ function MonitoringOngoingContent() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {getUniqueServiceTypes(order.order_items || []).map((serviceType) => (
-                              <Badge key={serviceType} variant='outline' className="text-xs">
-                                {SERVICE_TYPES.find(t => t.value === serviceType)?.label || serviceType}
+                            {getUniqueServiceLabels(order.order_items || []).map((label) => (
+                              <Badge key={label} variant='outline' className="text-xs font-mono">
+                                {label}
                               </Badge>
                             ))}
-                            {getUniqueServiceTypes(order.order_items || []).length === 0 && (
+                            {getUniqueServiceLabels(order.order_items || []).length === 0 && (
                               <Badge variant='outline'>
-                                {SERVICE_TYPES.find(t => t.value === order.order_type)?.label || order.order_type || '-'}
+                                {order.order_type || '-'}
                               </Badge>
                             )}
                           </div>
@@ -933,16 +963,16 @@ function MonitoringOngoingContent() {
                       </p>
                     </div>
                     <div>
-                      <span className='text-muted-foreground'>Order Types:</span>
+                      <span className='text-muted-foreground'>Services:</span>
                       <div className='mt-1 flex flex-wrap gap-1'>
-                        {getUniqueServiceTypes(orderDetail.data.order_items || []).map((serviceType) => (
-                          <Badge key={serviceType} variant='outline'>
-                            {SERVICE_TYPES.find(t => t.value === serviceType)?.label || serviceType}
+                        {getUniqueServiceLabels(orderDetail.data.order_items || []).map((label) => (
+                          <Badge key={label} variant='outline' className='font-mono text-xs'>
+                            {label}
                           </Badge>
                         ))}
-                        {getUniqueServiceTypes(orderDetail.data.order_items || []).length === 0 && (
+                        {getUniqueServiceLabels(orderDetail.data.order_items || []).length === 0 && (
                           <Badge variant='outline'>
-                            {SERVICE_TYPES.find(t => t.value === orderDetail.data.order_type)?.label || orderDetail.data.order_type || '-'}
+                            {orderDetail.data.order_type || '-'}
                           </Badge>
                         )}
                       </div>
@@ -1105,16 +1135,31 @@ function MonitoringOngoingContent() {
                             <div className='space-y-2'>
                               {group.items.map((item: any) => (
                                 <div key={item.order_item_id} className='flex items-center justify-between p-3 bg-muted/30 rounded-lg'>
-                                  <div className='flex items-center gap-3'>
-                                    <Badge variant='outline' className='font-semibold'>
-                                      {SERVICE_TYPES.find(t => t.value === item.service_type)?.label || item.service_type}
-                                    </Badge>
-                                    <span className='text-sm'>
-                                      {item.ac_units ? 
-                                        `${item.ac_units.brand} ${item.ac_units.model_number}` : 
-                                        `New AC Unit ${item.quantity > 1 ? `(${item.quantity}x)` : ''}`
-                                      }
-                                    </span>
+                                  <div className='space-y-1'>
+                                    <div className='flex items-center gap-2'>
+                                      {item.msn_code ? (
+                                        <Badge variant='outline' className='font-mono text-xs font-semibold'>
+                                          {item.msn_code}
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant='outline' className='font-semibold'>
+                                          {item.service_type}
+                                        </Badge>
+                                      )}
+                                      {item.unit_types?.name && (
+                                        <span className='text-xs text-muted-foreground'>
+                                          {item.unit_types.name}{item.capacity_ranges?.capacity_label ? ` · ${item.capacity_ranges.capacity_label}` : ''}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {item.service_catalog?.service_name && (
+                                      <div className='text-xs text-muted-foreground pl-1'>{item.service_catalog.service_name}</div>
+                                    )}
+                                    {item.ac_units && (
+                                      <div className='text-xs text-muted-foreground pl-1'>
+                                        {item.ac_units.brand} {item.ac_units.model_number}
+                                      </div>
+                                    )}
                                   </div>
                                   <span className='font-semibold text-sm'>
                                     Rp {((item.estimated_price || 0) * (item.quantity || 1)).toLocaleString('id-ID')}
