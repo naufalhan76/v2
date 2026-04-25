@@ -1,14 +1,12 @@
 'use server'
 
 import { createClient } from '@/lib/supabase-server'
+import { logger } from '@/lib/logger'
 
-console.log('📦 Dashboard actions module loaded')
 
 export async function getDashboardKpis(startDate?: string, endDate?: string) {
   try {
-    console.log('🔍 getDashboardKpis: Starting...', { startDate, endDate })
     const supabase = await createClient()
-    console.log('✅ Supabase client created')
     
     // Set default date range if not provided (30 days ago to today)
     const defaultEndDate = new Date().toISOString().split('T')[0]
@@ -16,11 +14,7 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
     
     const dateStart = startDate || defaultStartDate
     const dateEnd = endDate || defaultEndDate
-    
-    console.log('📅 Date range:', { dateStart, dateEnd })
-    console.log('🚀 Fetching all data in parallel...')
-    
-    // 🚀 OPTIMIZATION: Run ALL queries in parallel with Promise.all
+
     const [
       totalOrdersResult,
       pendingOrdersResult,
@@ -89,7 +83,6 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
         .lte('payment_date', dateEnd)
     ])
     
-    console.log('✅ All parallel queries completed')
     
     // Check for errors in any query
     if (totalOrdersResult.error) throw totalOrdersResult.error
@@ -101,10 +94,10 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
     
     // Payments and unpaid are non-critical, log errors but don't throw
     if (paymentsResult.error) {
-      console.error('Payments query error:', paymentsResult.error)
+      logger.error('Payments query error:', paymentsResult.error)
     }
     if (unpaidResult.error) {
-      console.error('Unpaid query error:', unpaidResult.error)
+      logger.error('Unpaid query error:', unpaidResult.error)
     }
     
     // Calculate total revenue
@@ -124,14 +117,13 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
       unpaidTransactions: unpaidResult.count || 0,
     }
     
-    console.log('🎯 Final KPI result:', result)
     
     return {
       success: true,
       data: result,
     }
   } catch (error: any) {
-    console.error('Error fetching dashboard KPIs:', error)
+    logger.error('Error fetching dashboard KPIs:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch dashboard data',
@@ -165,7 +157,7 @@ export async function getRecentOrders(limit: number = 5) {
       data: data || []
     }
   } catch (error: any) {
-    console.error('Error fetching recent orders:', error)
+    logger.error('Error fetching recent orders:', error)
     return {
       success: false,
       error: error.message
@@ -175,7 +167,6 @@ export async function getRecentOrders(limit: number = 5) {
 
 export async function getChartData(startDate?: string, endDate?: string) {
   try {
-    console.log('📈 getChartData: Starting...', { startDate, endDate })
     const supabase = await createClient()
     
     // Set default date range if not provided (30 days ago to today)
@@ -185,7 +176,6 @@ export async function getChartData(startDate?: string, endDate?: string) {
     const dateStart = startDate || defaultStartDate
     const dateEnd = endDate || defaultEndDate
     
-    console.log('📅 Chart date range:', { dateStart, dateEnd })
     
     // Get daily orders count
     const { data: ordersData, error: ordersError } = await supabase
@@ -249,14 +239,13 @@ export async function getChartData(startDate?: string, endDate?: string) {
       new Date(a.date).getTime() - new Date(b.date).getTime()
     )
     
-    console.log('📈 Chart data processed:', { totalPoints: chartData.length })
     
     return {
       success: true,
       data: chartData
     }
   } catch (error: any) {
-    console.error('❌ Error fetching chart data:', error)
+    logger.error('❌ Error fetching chart data:', error)
     return {
       success: false,
       error: error.message,

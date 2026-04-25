@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 interface UpdateProfileData {
   full_name: string
@@ -31,13 +32,13 @@ export async function getUserProfile() {
       .maybeSingle()
 
     if (error) {
-      console.error('Error fetching user profile:', error)
+      logger.error('Error fetching user profile:', error)
       return { success: false, error: error.message }
     }
 
     // If user not found in user_management, create from auth.users
     if (!data) {
-      console.log('User not found in user_management, creating...')
+      logger.debug('User not found in user_management, creating...')
       
       // Insert user into user_management
       const { data: newUser, error: insertError } = await supabase
@@ -55,7 +56,7 @@ export async function getUserProfile() {
         .single()
 
       if (insertError) {
-        console.error('Error creating user in user_management:', insertError)
+        logger.error('Error creating user in user_management:', insertError)
         // Return data from auth.users as fallback
         return {
           success: true,
@@ -92,7 +93,7 @@ export async function getUserProfile() {
       }
     }
   } catch (error: any) {
-    console.error('Error in getUserProfile:', error)
+    logger.error('Error in getUserProfile:', error)
     return { success: false, error: error.message }
   }
 }
@@ -126,7 +127,7 @@ export async function updateUserProfile(data: UpdateProfileData) {
       .eq('auth_user_id', user.id)
 
     if (updateError) {
-      console.error('Error updating user_management:', updateError)
+      logger.error('Error updating user_management:', updateError)
       return { success: false, error: updateError.message }
     }
 
@@ -141,7 +142,7 @@ export async function updateUserProfile(data: UpdateProfileData) {
       )
 
       if (emailError) {
-        console.error('Error updating auth email:', emailError)
+        logger.error('Error updating auth email:', emailError)
         return { 
           success: false, 
           error: 'Failed to update email. Please try again.' 
@@ -157,7 +158,7 @@ export async function updateUserProfile(data: UpdateProfileData) {
       )
 
       if (verifyError) {
-        console.log('Verification email error:', verifyError)
+        logger.debug('Verification email error:', verifyError)
       }
 
       revalidatePath('/dashboard/profile')
@@ -172,7 +173,7 @@ export async function updateUserProfile(data: UpdateProfileData) {
     revalidatePath('/dashboard/profile')
     return { success: true, message: 'Profile updated successfully' }
   } catch (error: any) {
-    console.error('Error in updateUserProfile:', error)
+    logger.error('Error in updateUserProfile:', error)
     return { success: false, error: error.message }
   }
 }
@@ -207,13 +208,13 @@ export async function updateUserPassword(currentPassword: string, newPassword: s
     })
 
     if (updateError) {
-      console.error('Error updating password:', updateError)
+      logger.error('Error updating password:', updateError)
       return { success: false, error: updateError.message }
     }
 
     return { success: true, message: 'Password updated successfully' }
   } catch (error: any) {
-    console.error('Error in updateUserPassword:', error)
+    logger.error('Error in updateUserPassword:', error)
     return { success: false, error: error.message }
   }
 }
@@ -252,7 +253,7 @@ export async function updateProfilePhoto(formData: FormData) {
       })
 
     if (uploadError) {
-      console.error('Error uploading file:', uploadError)
+      logger.error('Error uploading file:', uploadError)
       return { success: false, error: uploadError.message }
     }
 
@@ -273,14 +274,14 @@ export async function updateProfilePhoto(formData: FormData) {
       .eq('auth_user_id', user.id)
 
     if (updateError) {
-      console.error('Error updating photo_url:', updateError)
+      logger.error('Error updating photo_url:', updateError)
       return { success: false, error: updateError.message }
     }
 
     revalidatePath('/dashboard/profile')
     return { success: true, data: { photo_url: photoUrl } }
   } catch (error: any) {
-    console.error('Error in updateProfilePhoto:', error)
+    logger.error('Error in updateProfilePhoto:', error)
     return { success: false, error: error.message }
   }
 }

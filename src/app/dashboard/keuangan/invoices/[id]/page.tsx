@@ -62,6 +62,7 @@ import {
 import { exportInvoiceToPDF } from '@/lib/pdf-export'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
+import { logger } from '@/lib/logger'
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: 'bg-gray-500',
@@ -247,7 +248,7 @@ export default function InvoiceDetailPage() {
         description: 'Invoice berhasil di-export ke PDF',
       })
     } catch (error: any) {
-      console.error('Export PDF error:', error)
+      logger.error('Export PDF error:', error)
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -314,7 +315,7 @@ export default function InvoiceDetailPage() {
           message += `_Mohon cantumkan No. Invoice (${invoiceNumber}) dalam keterangan transfer._\n`
         }
       } catch (e) {
-        console.error('Failed to parse bank accounts:', e)
+        logger.error('Failed to parse bank accounts:', e)
       }
     }
 
@@ -358,7 +359,7 @@ export default function InvoiceDetailPage() {
         description: 'Pesan invoice siap dikirim ke customer',
       })
     } catch (error: any) {
-      console.error('WhatsApp error:', error)
+      logger.error('WhatsApp error:', error)
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -432,7 +433,7 @@ export default function InvoiceDetailPage() {
           body += `Mohon cantumkan No. Invoice (${invoiceNumber}) dalam keterangan transfer.\n`
         }
       } catch (e) {
-        console.error('Failed to parse bank accounts:', e)
+        logger.error('Failed to parse bank accounts:', e)
       }
     }
 
@@ -497,7 +498,7 @@ export default function InvoiceDetailPage() {
         await loadInvoice() // Reload to show new status
       }
     } catch (error: any) {
-      console.error('Send email error:', error)
+      logger.error('Send email error:', error)
       toast({
         variant: 'destructive',
         title: 'Gagal Kirim Email',

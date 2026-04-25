@@ -35,6 +35,7 @@ import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
 import { Edit, Trash2, Search } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 interface Location {
   location_id: string
@@ -91,7 +92,7 @@ export default function LocationsPage() {
         setLocations(result.data)
       }
     } catch (error) {
-      console.error('Error fetching locations:', error)
+      logger.error('Error fetching locations:', error)
       toast({
         title: 'Error',
         description: 'Failed to fetch locations',
@@ -141,7 +142,7 @@ export default function LocationsPage() {
         })
       }
     } catch (error) {
-      console.error('Error deleting location:', error)
+      logger.error('Error deleting location:', error)
       toast({
         title: 'Error',
         description: 'Failed to delete location',
@@ -176,7 +177,7 @@ export default function LocationsPage() {
         })
       }
     } catch (error) {
-      console.error('Error updating location:', error)
+      logger.error('Error updating location:', error)
       toast({
         title: 'Error',
         description: 'Failed to update location',

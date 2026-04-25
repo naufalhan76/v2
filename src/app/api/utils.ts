@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 // ============================================================================
 // API RESPONSE HELPERS
@@ -45,7 +46,7 @@ export const jsonSuccess = <T,>(
 }
 
 export const jsonError = (error: string | Error, status: number = 400, message?: string) => {
-  console.error('[API Error]', error)
+  logger.error('[API Error]', error)
   return NextResponse.json(errorResponse(error, message), { status })
 }
 
@@ -65,7 +66,7 @@ export class ApiError extends Error {
 }
 
 export const handleApiError = (error: unknown) => {
-  console.error('[API Handler Error]', error)
+  logger.error('[API Handler Error]', error)
 
   if (error instanceof ApiError) {
     return jsonError(error.message, error.statusCode, JSON.stringify(error.details))

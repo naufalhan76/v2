@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
 import { unauthorizedResponse } from '@/app/api/utils'
-import { verifyApiKey, extractApiKeyFromHeader } from '@/lib/api-key'
+import { logger } from '@/lib/logger'
+
+const log = logger.child('auth-middleware')
 
 export type ApiRequest = NextRequest & {
   user?: {
@@ -12,8 +14,8 @@ export type ApiRequest = NextRequest & {
 }
 
 /**
- * Middleware to verify JWT token from Authorization header
- * and attach user info to request
+ * Verify JWT token from Authorization header. Returns the Supabase user on
+ * success or an `unauthorizedResponse()` on failure.
  */
 export async function verifyAuth(request: NextRequest) {
   try {
@@ -25,7 +27,6 @@ export async function verifyAuth(request: NextRequest) {
     const token = authHeader.substring(7)
     const supabase = await createClient()
 
-    // Verify token using Supabase
     const {
       data: { user },
       error,
@@ -35,42 +36,25 @@ export async function verifyAuth(request: NextRequest) {
       return unauthorizedResponse()
     }
 
-    // Attach user to request (note: we can't modify request in Next.js)
-    // Instead, return the user object and let the handler use it
     return user
   } catch (error) {
-    console.error('[Auth Middleware Error]', error)
+    log.error('verifyAuth failed', error)
     return unauthorizedResponse()
   }
 }
 
 /**
- * Get user from Authorization header
- * Supports both JWT tokens and API keys
- * Returns null if no valid auth found
+ * Resolve a user from the Authorization header (JWT only).
+ *
+ * NOTE: API key authentication is intentionally not supported here. The legacy
+ * implementation accepted any string matching `sk_<64 chars>` as SUPERADMIN
+ * with no verification, which is a critical auth bypass. Re-enable only when a
+ * proper key store + HMAC verification is in place (see `src/lib/api-key.ts`).
  */
 export async function getUserFromRequest(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return null
-    }
-
-    // Try API key first
-    const apiKey = extractApiKeyFromHeader(authHeader)
-    if (apiKey && apiKey.startsWith('sk_') && apiKey.length === 67) {
-      // For API keys, we accept them as-is for now
-      // In production, you'd verify the signature and check expiration
-      // This is a simplified implementation
-      return {
-        id: 'api-key-user', // Placeholder - in production, extract from key metadata
-        email: 'api-key@system.local',
-        user_metadata: { role: 'SUPERADMIN' }, // API keys are for SUPERADMIN only
-      }
-    }
-
-    // Fall back to JWT token
-    if (!authHeader.startsWith('Bearer ')) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return null
     }
 
@@ -81,30 +65,39 @@ export async function getUserFromRequest(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser(token)
 
-    return user || null
+    return user ?? null
   } catch (error) {
-    console.error('[Auth Error]', error)
+    log.error('getUserFromRequest failed', error)
     return null
   }
 }
 
 /**
- * Check if user has required role
+ * Check whether the authenticated user has any of the required roles.
  */
 export async function checkRole(request: NextRequest, requiredRoles: string[]) {
   const user = await getUserFromRequest(request)
   if (!user) return false
 
-  // TODO: Fetch user role from user_management table
-  // For now, this is a placeholder
-  return true
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('user_management')
+      .select('role')
+      .eq('auth_user_id', user.id)
+      .maybeSingle()
+
+    if (error || !data?.role) return false
+    return requiredRoles.includes(data.role)
+  } catch (error) {
+    log.error('checkRole failed', error)
+    return false
+  }
 }
 
 /**
- * Require authentication
- * Returns the user or null if not authenticated
+ * Require authentication. Returns the user or null.
  */
 export async function requireAuth(request: NextRequest) {
-  const user = await getUserFromRequest(request)
-  return user
+  return getUserFromRequest(request)
 }

@@ -8,6 +8,7 @@ import type {
   CreateOrderInput, 
   ServicePricing 
 } from '@/types/create-order'
+import { logger } from '@/lib/logger'
 
 /**
  * Search customer by phone number
@@ -77,7 +78,7 @@ export async function searchCustomerByPhone(phone: string): Promise<{
       }
     }
   } catch (error) {
-    console.error('[searchCustomerByPhone] Error:', error)
+    logger.error('[searchCustomerByPhone] Error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to search customer'
@@ -139,7 +140,7 @@ export async function createCustomer(data: {
       data: { customer_id: newCustomer.customer_id }
     }
   } catch (error) {
-    console.error('[createCustomer] Error:', error)
+    logger.error('[createCustomer] Error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create customer'
@@ -327,7 +328,7 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
         .insert(technicianAssignments)
       
       if (techError) {
-        console.error('[createOrderWithItems] Failed to assign technicians:', techError)
+        logger.error('[createOrderWithItems] Failed to assign technicians:', techError)
         // Don't rollback entire order, just log the error
       }
     }
@@ -339,7 +340,7 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
       data: { order_id: order.order_id }
     }
   } catch (error) {
-    console.error('[createOrderWithItems] Error:', error)
+    logger.error('[createOrderWithItems] Error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create order'
@@ -372,7 +373,7 @@ export async function getServicePricing(): Promise<{
       data: data || []
     }
   } catch (error) {
-    console.error('[getServicePricing] Error:', error)
+    logger.error('[getServicePricing] Error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch pricing'
@@ -419,7 +420,7 @@ export async function createLocation(data: {
       data: { location_id: newLocation.location_id }
     }
   } catch (error) {
-    console.error('[createLocation] Error:', error)
+    logger.error('[createLocation] Error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create location'
@@ -461,7 +462,7 @@ export async function getTechnicians(): Promise<{
       data: mapped
     }
   } catch (error) {
-    console.error('[getTechnicians] Error:', error)
+    logger.error('[getTechnicians] Error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch technicians'

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { updateInvoiceStatus } from './invoices'
+import { logger } from '@/lib/logger'
 
 export interface InvoiceCommunication {
   communication_id: string
@@ -41,7 +42,7 @@ export async function logInvoiceCommunication(data: {
   })
 
   if (error) {
-    console.error('Error logging communication:', error)
+    logger.error('Error logging communication:', error)
     throw new Error('Failed to log communication')
   }
 
@@ -72,7 +73,7 @@ export async function getInvoiceCommunications(
     .order('sent_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching communications:', error)
+    logger.error('Error fetching communications:', error)
     throw new Error('Failed to fetch communications')
   }
 
@@ -98,7 +99,7 @@ export async function getInvoiceCommunicationStats(invoiceId: string): Promise<{
     .order('sent_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching communication stats:', error)
+    logger.error('Error fetching communication stats:', error)
     return {
       totalSent: 0,
       emailSent: 0,

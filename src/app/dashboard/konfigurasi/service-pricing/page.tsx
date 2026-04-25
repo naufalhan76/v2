@@ -54,6 +54,7 @@ import {
   deleteServicePricing,
   type ServicePricing,
 } from '@/lib/actions/service-pricing'
+import { logger } from '@/lib/logger'
 
 const servicePricingSchema = z.object({
   serviceType: z.string().min(1, 'Jenis service wajib diisi'),
@@ -111,27 +112,27 @@ export default function ServicePricingPage() {
     try {
       setIsFetching(true)
       const data = await getServicePricing()
-      console.log('Raw data from API:', data)
+      logger.debug('Raw data from API:', data)
       
       // Ensure includes is properly parsed as array
       const normalizedData = data.map(service => {
         let includes = service.includes
-        console.log('Processing service:', service.service_type, 'includes:', includes, 'type:', typeof includes)
+        logger.debug('Processing service:', service.service_type, 'includes:', includes, 'type:', typeof includes)
         
         // If includes is a string, try to parse it
         if (includes && typeof includes === 'string') {
           try {
             includes = JSON.parse(includes)
-            console.log('Parsed includes:', includes)
+            logger.debug('Parsed includes:', includes)
           } catch (e) {
-            console.error('Failed to parse includes:', e)
+            logger.error('Failed to parse includes:', e)
             includes = null
           }
         }
         
         // Ensure it's an array or null
         if (includes && !Array.isArray(includes)) {
-          console.log('includes is not an array, setting to null')
+          logger.debug('includes is not an array, setting to null')
           includes = null
         }
         
@@ -140,10 +141,10 @@ export default function ServicePricingPage() {
           includes
         }
       })
-      console.log('Normalized data:', normalizedData)
+      logger.debug('Normalized data:', normalizedData)
       setServices(normalizedData)
     } catch (error) {
-      console.error('Error loading services:', error)
+      logger.error('Error loading services:', error)
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -263,7 +264,7 @@ export default function ServicePricingPage() {
   }
 
   const getIncludesArray = (includes: any): string[] => {
-    console.log('getIncludesArray input:', includes, 'type:', typeof includes, 'isArray:', Array.isArray(includes))
+    logger.debug('getIncludesArray input:', includes, 'type:', typeof includes, 'isArray:', Array.isArray(includes))
     
     // Always return a NEW array, never the original reference
     if (!includes) return []
@@ -276,19 +277,19 @@ export default function ServicePricingPage() {
     if (typeof includes === 'string') {
       try {
         const parsed = JSON.parse(includes)
-        console.log('Parsed includes:', parsed, 'isArray:', Array.isArray(parsed))
+        logger.debug('Parsed includes:', parsed, 'isArray:', Array.isArray(parsed))
         if (Array.isArray(parsed)) {
           // Return a NEW array copy
           return [...parsed]
         }
         return []
       } catch (e) {
-        console.error('Failed to parse includes:', e)
+        logger.error('Failed to parse includes:', e)
         return []
       }
     }
     
-    console.log('Includes is neither array nor string, returning empty')
+    logger.debug('Includes is neither array nor string, returning empty')
     return []
   }
 
@@ -490,11 +491,11 @@ export default function ServicePricingPage() {
                         {(() => {
                           try {
                             const includesArray = getIncludesArray(service.includes)
-                            console.log('About to render includes. Array:', includesArray, 'isArray:', Array.isArray(includesArray), 'length:', includesArray?.length)
+                            logger.debug('About to render includes. Array:', includesArray, 'isArray:', Array.isArray(includesArray), 'length:', includesArray?.length)
                             
                             // Triple-check it's an array with methods
                             if (!includesArray || !Array.isArray(includesArray) || typeof includesArray.slice !== 'function') {
-                              console.error('includesArray is not a proper array!', includesArray)
+                              logger.error('includesArray is not a proper array!', includesArray)
                               return <span className="text-muted-foreground text-sm">-</span>
                             }
                             
@@ -521,7 +522,7 @@ export default function ServicePricingPage() {
                               </div>
                             )
                           } catch (error) {
-                            console.error('Error rendering includes:', error, service)
+                            logger.error('Error rendering includes:', error, service)
                             return <span className="text-muted-foreground text-sm">Error</span>
                           }
                         })()}

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 export interface ServicePricing {
   pricing_id: string
@@ -47,7 +48,7 @@ export async function getServicePricing(): Promise<ServicePricing[]> {
     .order('service_type', { ascending: true })
 
   if (error) {
-    console.error('Error fetching service pricing:', error)
+    logger.error('Error fetching service pricing:', error)
     throw new Error('Gagal memuat data harga service')
   }
 
@@ -69,7 +70,7 @@ export async function getServicePricingById(
     .single()
 
   if (error) {
-    console.error('Error fetching service pricing:', error)
+    logger.error('Error fetching service pricing:', error)
     throw new Error('Gagal memuat data harga service')
   }
 
@@ -96,7 +97,7 @@ export async function getServicePricingByType(
     if (error.code === 'PGRST116') {
       return null
     }
-    console.error('Error fetching service pricing:', error)
+    logger.error('Error fetching service pricing:', error)
     throw new Error('Gagal memuat data harga service')
   }
 
@@ -137,7 +138,7 @@ export async function createServicePricing(
     .single()
 
   if (error) {
-    console.error('Error creating service pricing:', error)
+    logger.error('Error creating service pricing:', error)
     throw new Error('Gagal menambahkan harga service')
   }
 
@@ -165,7 +166,7 @@ export async function updateServicePricing(
     .single()
 
   if (error) {
-    console.error('Error updating service pricing:', error)
+    logger.error('Error updating service pricing:', error)
     throw new Error('Gagal mengupdate harga service')
   }
 
@@ -185,7 +186,7 @@ export async function deleteServicePricing(pricingId: string): Promise<void> {
     .eq('pricing_id', pricingId)
 
   if (error) {
-    console.error('Error deleting service pricing:', error)
+    logger.error('Error deleting service pricing:', error)
     throw new Error('Gagal menghapus harga service')
   }
 
@@ -215,7 +216,7 @@ export async function getActiveServicePricing(): Promise<ServicePricing[]> {
     .order('service_type', { ascending: true })
 
   if (error) {
-    console.error('Error fetching active service pricing:', error)
+    logger.error('Error fetching active service pricing:', error)
     throw new Error('Gagal memuat data harga service')
   }
 

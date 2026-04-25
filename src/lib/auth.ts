@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { logger } from '@/lib/logger'
 
 export async function createClient() {
   const cookieStore = await cookies()
@@ -49,7 +50,7 @@ export async function getUserRole() {
     .single()
 
   if (error) {
-    console.error('Error fetching user role:', error)
+    logger.error('Error fetching user role:', error)
     return null
   }
 

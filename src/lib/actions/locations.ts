@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 export async function getLocations(filters?: {
   search?: string
@@ -54,7 +55,7 @@ export async function getLocations(filters?: {
       },
     }
   } catch (error: any) {
-    console.error('Error fetching locations:', error)
+    logger.error('Error fetching locations:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch locations',
@@ -97,7 +98,7 @@ export async function getLocationById(locationId: string) {
       data,
     }
   } catch (error: any) {
-    console.error('Error fetching location:', error)
+    logger.error('Error fetching location:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch location',
@@ -133,7 +134,7 @@ export async function updateLocation(locationId: string, locationData: Partial<{
       data,
     }
   } catch (error: any) {
-    console.error('Error updating location:', error)
+    logger.error('Error updating location:', error)
     return {
       success: false,
       error: error.message || 'Failed to update location',
@@ -172,7 +173,7 @@ export async function deleteLocation(locationId: string) {
       success: true,
     }
   } catch (error: any) {
-    console.error('Error deleting location:', error)
+    logger.error('Error deleting location:', error)
     return {
       success: false,
       error: error.message || 'Failed to delete location',

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 export async function getOrders(filters?: {
   status?: string
@@ -94,7 +95,7 @@ export async function getOrders(filters?: {
       },
     }
   } catch (error: any) {
-    console.error('Error fetching orders:', error)
+    logger.error('Error fetching orders:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch orders',
@@ -166,7 +167,7 @@ export async function getOrderById(orderId: string) {
       data,
     }
   } catch (error: any) {
-    console.error('Error fetching order:', error)
+    logger.error('Error fetching order:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch order',
@@ -204,7 +205,7 @@ export async function createOrder(orderData: {
       data,
     }
   } catch (error: any) {
-    console.error('Error creating order:', error)
+    logger.error('Error creating order:', error)
     return {
       success: false,
       error: error.message || 'Failed to create order',
@@ -248,7 +249,7 @@ export async function updateOrderStatus(orderId: string, newStatus: string, note
         .eq('order_id', orderId)
       
       if (deleteError) {
-        console.error('Error deleting technician assignments:', deleteError)
+        logger.error('Error deleting technician assignments:', deleteError)
         throw deleteError
       }
     }
@@ -280,7 +281,7 @@ export async function updateOrderStatus(orderId: string, newStatus: string, note
       data,
     }
   } catch (error: any) {
-    console.error('Error updating order status:', error)
+    logger.error('Error updating order status:', error)
     return {
       success: false,
       error: error.message || 'Failed to update order status',
@@ -295,7 +296,7 @@ export async function assignOrdersToTechnician(data: {
   scheduledDate: string
 }) {
   try {
-    console.log('Assigning orders:', data)
+    logger.debug('Assigning orders:', data)
     const supabase = await createClient()
     
     // Update all selected orders
@@ -310,7 +311,7 @@ export async function assignOrdersToTechnician(data: {
       .in('order_id', data.orderIds)
     
     if (orderError) {
-      console.error('Order update error:', orderError)
+      logger.error('Order update error:', orderError)
       throw orderError
     }
     
@@ -346,12 +347,12 @@ export async function assignOrdersToTechnician(data: {
         .insert(technicianAssignments)
       
       if (assignError) {
-        console.error('Technician assignment error:', assignError)
+        logger.error('Technician assignment error:', assignError)
         throw assignError
       }
     }
     
-    console.log('Orders assigned successfully')
+    logger.debug('Orders assigned successfully')
     revalidatePath('/dashboard/operasional/assign-order')
     revalidatePath('/dashboard/operasional/monitoring-ongoing')
     revalidatePath('/dashboard')
@@ -361,7 +362,7 @@ export async function assignOrdersToTechnician(data: {
       message: `Successfully assigned ${data.orderIds.length} order(s) to technician`
     }
   } catch (error: any) {
-    console.error('Error assigning orders:', error)
+    logger.error('Error assigning orders:', error)
     return {
       success: false,
       error: error.message || 'Failed to assign orders',
@@ -393,7 +394,7 @@ export async function addHelperTechnician(orderId: string, helperTechnicianId: s
       message: 'Helper technician added successfully'
     }
   } catch (error: any) {
-    console.error('Error adding helper technician:', error)
+    logger.error('Error adding helper technician:', error)
     return {
       success: false,
       error: error.message || 'Failed to add helper technician',
@@ -423,7 +424,7 @@ export async function removeHelperTechnician(orderId: string, helperTechnicianId
       message: 'Helper technician removed successfully'
     }
   } catch (error: any) {
-    console.error('Error removing helper technician:', error)
+    logger.error('Error removing helper technician:', error)
     return {
       success: false,
       error: error.message || 'Failed to remove helper technician',
@@ -469,7 +470,7 @@ export async function cancelOrder(orderId: string, reason?: string) {
         .eq('status', 'PENDING') // Only update pending units
       
       if (acUpdateError) {
-        console.error('Error updating AC units status:', acUpdateError)
+        logger.error('Error updating AC units status:', acUpdateError)
         // Don't throw, continue with order cancellation
       }
     }
@@ -507,7 +508,7 @@ export async function cancelOrder(orderId: string, reason?: string) {
       message: 'Order cancelled successfully'
     }
   } catch (error: any) {
-    console.error('Error cancelling order:', error)
+    logger.error('Error cancelling order:', error)
     return {
       success: false,
       error: error.message || 'Failed to cancel order',
@@ -533,7 +534,7 @@ export async function deleteOrder(orderId: string) {
       success: true,
     }
   } catch (error: any) {
-    console.error('Error deleting order:', error)
+    logger.error('Error deleting order:', error)
     return {
       success: false,
       error: error.message || 'Failed to delete order',

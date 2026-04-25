@@ -38,6 +38,7 @@ import { useToast } from '@/hooks/use-toast'
 import { getInvoices, getInvoiceStats, type Invoice } from '@/lib/actions/invoices'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
+import { logger } from '@/lib/logger'
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: 'bg-gray-500',
@@ -120,7 +121,7 @@ export default function InvoicesPage() {
       const data = await getInvoiceStats()
       setStats(data)
     } catch (error) {
-      console.error('Error loading stats:', error)
+      logger.error('Error loading stats:', error)
     }
   }
 

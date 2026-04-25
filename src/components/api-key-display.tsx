@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useEffect } from 'react'
 import { generateNewApiKey } from '@/lib/actions/api-keys'
+import { logger } from '@/lib/logger'
 
 const API_KEY_STORAGE_KEY = 'webpanel_api_key'
 
@@ -41,7 +42,7 @@ export function ApiKeyDisplay() {
         }
         // Don't auto-generate - let user click a button to generate/reset
       } catch (error) {
-        console.error('Error loading API key:', error)
+        logger.error('Error loading API key:', error)
       } finally {
         setIsInitialized(true)
       }

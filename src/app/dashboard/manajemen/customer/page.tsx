@@ -46,6 +46,7 @@ import { TableSkeleton } from '@/components/ui/skeleton'
 import { LoadingState, LoadingOverlay } from '@/components/ui/loading-state'
 import { useOptimisticArray } from '@/hooks/use-optimistic'
 import { ResourceHints } from '@/components/ui/priority-components'
+import { logger } from '@/lib/logger'
 
 interface CustomerFormData {
   customer_name: string
@@ -166,17 +167,17 @@ export default function CustomerManagementPage() {
       return
     }
     
-    console.log('Submitting customer data:', formData)
+    logger.debug('Submitting customer data:', formData)
     
     // Use API route for create
-    console.log('Creating customer via API...')
+    logger.debug('Creating customer via API...')
     setIsCreating(true)
     fetch('/api/customers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData)
     }).then(res => res.json()).then(result => {
-      console.log('Create API result:', result)
+      logger.debug('Create API result:', result)
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['customers'] })
         queryClient.refetchQueries({ queryKey: ['customers', page, searchTerm] })
@@ -194,7 +195,7 @@ export default function CustomerManagementPage() {
         })
       }
     }).catch(error => {
-      console.error('Create API error:', error)
+      logger.error('Create API error:', error)
       toast({
         title: "Error",
         description: "Terjadi kesalahan saat menambahkan customer",
@@ -223,14 +224,14 @@ export default function CustomerManagementPage() {
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault()
     if (editingId) {
-      console.log('Updating customer via API...')
+      logger.debug('Updating customer via API...')
       setIsUpdating(true)
       fetch(`/api/customers/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       }).then(res => res.json()).then(result => {
-        console.log('Update API result:', result)
+        logger.debug('Update API result:', result)
         if (result.success) {
           queryClient.invalidateQueries({ queryKey: ['customers'] })
           queryClient.refetchQueries({ queryKey: ['customers', page, searchTerm] })
@@ -249,7 +250,7 @@ export default function CustomerManagementPage() {
           })
         }
       }).catch(error => {
-        console.error('Update API error:', error)
+        logger.error('Update API error:', error)
         toast({
           title: "Error",
           description: "Terjadi kesalahan saat mengupdate customer",
@@ -268,7 +269,7 @@ export default function CustomerManagementPage() {
 
   const confirmDelete = () => {
     if (deletingId) {
-      console.log('Deleting customer via API...')
+      logger.debug('Deleting customer via API...')
       setIsDeleting(true)
       
       // Optimistic UI - hapus item dari array sebelum API call
@@ -277,7 +278,7 @@ export default function CustomerManagementPage() {
       fetch(`/api/customers/${deletingId}`, {
         method: 'DELETE',
       }).then(res => res.json()).then(result => {
-        console.log('Delete API result:', result)
+        logger.debug('Delete API result:', result)
         if (result.success) {
           queryClient.invalidateQueries({ queryKey: ['customers'] })
           queryClient.refetchQueries({ queryKey: ['customers', page, searchTerm] })
@@ -297,7 +298,7 @@ export default function CustomerManagementPage() {
           })
         }
       }).catch(error => {
-        console.error('Delete API error:', error)
+        logger.error('Delete API error:', error)
         // Jika error, refresh data untuk mengembalikan item yang terhapus
         queryClient.refetchQueries({ queryKey: ['customers', page, searchTerm] })
         toast({

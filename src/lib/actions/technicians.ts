@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 export async function getTechnicians(filters?: {
   search?: string
@@ -45,7 +46,7 @@ export async function getTechnicians(filters?: {
       },
     }
   } catch (error: any) {
-    console.error('Error fetching technicians:', error)
+    logger.error('Error fetching technicians:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch technicians',
@@ -73,7 +74,7 @@ export async function getTechnicianById(technicianId: string) {
       data,
     }
   } catch (error: any) {
-    console.error('Error fetching technician:', error)
+    logger.error('Error fetching technician:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch technician',
@@ -110,7 +111,7 @@ export async function createTechnician(technicianData: {
       data,
     }
   } catch (error: any) {
-    console.error('Error creating technician:', error)
+    logger.error('Error creating technician:', error)
     return {
       success: false,
       error: error.message || 'Failed to create technician',
@@ -146,7 +147,7 @@ export async function updateTechnician(technicianId: string, technicianData: Par
       data,
     }
   } catch (error: any) {
-    console.error('Error updating technician:', error)
+    logger.error('Error updating technician:', error)
     return {
       success: false,
       error: error.message || 'Failed to update technician',
@@ -186,7 +187,7 @@ export async function deleteTechnician(technicianId: string) {
       success: true,
     }
   } catch (error: any) {
-    console.error('Error deleting technician:', error)
+    logger.error('Error deleting technician:', error)
     return {
       success: false,
       error: error.message || 'Failed to delete technician',
@@ -238,7 +239,7 @@ export async function getTechnicianAvailability(date?: string) {
       data: availability,
     }
   } catch (error: any) {
-    console.error('Error fetching technician availability:', error)
+    logger.error('Error fetching technician availability:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch technician availability',

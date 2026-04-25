@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 export type RequestLog = {
   timestamp: string
@@ -29,7 +30,7 @@ export function logRequest(
     ...details,
   }
 
-  console.log('[API Request]', JSON.stringify(log, null, 2))
+  logger.debug('[API Request]', JSON.stringify(log, null, 2))
   return log
 }
 
@@ -50,7 +51,7 @@ export function logResponse(
   }
 
   const level = status >= 400 ? 'error' : 'info'
-  console.log(`[API Response ${level.toUpperCase()}]`, JSON.stringify(responseLog, null, 2))
+  logger.debug(`[API Response ${level.toUpperCase()}]`, JSON.stringify(responseLog, null, 2))
 }
 
 /**
@@ -72,7 +73,7 @@ export async function createAuditLog(
     changes,
   }
 
-  console.log('[Audit Log]', JSON.stringify(auditLog, null, 2))
+  logger.debug('[Audit Log]', JSON.stringify(auditLog, null, 2))
 
   // TODO: Store audit log in database (audit_logs table)
   // This is a placeholder for future implementation

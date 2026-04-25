@@ -34,6 +34,7 @@ import { getServicePricingByType } from '@/lib/actions/service-pricing'
 import { getActiveAddons, type Addon } from '@/lib/actions/addons'
 import { createInvoice, getOrderItemsForInvoice } from '@/lib/actions/invoices'
 import { type BankAccount } from '@/app/dashboard/konfigurasi/invoice-config/bank-accounts-section'
+import { logger } from '@/lib/logger'
 
 const invoiceSchema = z.object({
   orderId: z.string().min(1, 'Order wajib dipilih'),
@@ -145,7 +146,7 @@ export default function CreateInvoicePage() {
       }
       return false
     } catch (error) {
-      console.error('Error checking invoice:', error)
+      logger.error('Error checking invoice:', error)
       return false
     }
   }
@@ -155,7 +156,7 @@ export default function CreateInvoicePage() {
       const data = await getActiveAddons()
       setAddons(data)
     } catch (error) {
-      console.error('Error loading addons:', error)
+      logger.error('Error loading addons:', error)
     }
   }
 
@@ -178,7 +179,7 @@ export default function CreateInvoicePage() {
         setBankAccounts(accounts || [])
       }
     } catch (error) {
-      console.error('Error loading bank accounts:', error)
+      logger.error('Error loading bank accounts:', error)
       toast({
         variant: 'destructive',
         title: 'Warning',
@@ -237,7 +238,7 @@ export default function CreateInvoicePage() {
         }
       }
     } catch (error) {
-      console.error('Error loading service pricing:', error)
+      logger.error('Error loading service pricing:', error)
     }
   }
 

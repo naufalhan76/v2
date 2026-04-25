@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 export interface BankAccount {
   bank: string
@@ -64,7 +65,7 @@ export async function getInvoiceConfig(): Promise<InvoiceConfig | null> {
     if (error.code === 'PGRST116') {
       return null
     }
-    console.error('Error fetching invoice config:', error)
+    logger.error('Error fetching invoice config:', error)
     throw new Error('Gagal memuat konfigurasi invoice')
   }
 
@@ -142,7 +143,7 @@ export async function updateInvoiceConfig(
   }
 
   if (error) {
-    console.error('Error updating invoice config:', error)
+    logger.error('Error updating invoice config:', error)
     throw new Error('Gagal menyimpan konfigurasi invoice')
   }
 

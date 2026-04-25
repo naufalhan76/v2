@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { logger } from '@/lib/logger'
 
 // Simple in-memory cache to reduce database queries (expires after 30 seconds)
 const userCache = new Map<string, { data: any; expiry: number }>()
@@ -115,7 +116,7 @@ export async function middleware(req: NextRequest) {
 
       // If user is not found or not active, sign out and redirect to login
       if (error || !data || !data.is_active) {
-        console.log('Middleware check failed:', { error, data, userId: user.id })
+        logger.debug('Middleware check failed:', { error, data, userId: user.id })
         await supabase.auth.signOut()
         const redirectUrl = new URL('/login', req.url)
         redirectUrl.searchParams.set('error', 'Account is inactive or not found')

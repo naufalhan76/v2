@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
+import { logger } from '@/lib/logger'
 
 interface OrderNotification {
   order_id: string
@@ -42,7 +43,7 @@ export function OrderNotifications() {
           setUserId(user.id)
         }
       } catch (error) {
-        console.error('Error getting user ID:', error)
+        logger.error('Error getting user ID:', error)
       }
     }
     getUserId()
@@ -93,7 +94,7 @@ export function OrderNotifications() {
       setNotifications(formattedNotifications)
       setUnreadCount(formattedNotifications.filter(n => !n.read).length)
     } catch (error) {
-      console.error('Error fetching notifications:', error)
+      logger.error('Error fetching notifications:', error)
     }
   }, [userId])
 

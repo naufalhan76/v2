@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 export async function getAcUnits(filters?: {
   search?: string
@@ -76,7 +77,7 @@ export async function getAcUnits(filters?: {
       },
     }
   } catch (error: any) {
-    console.error('Error fetching AC units:', error)
+    logger.error('Error fetching AC units:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch AC units',
@@ -133,7 +134,7 @@ export async function getAcUnitById(acUnitId: string) {
       data,
     }
   } catch (error: any) {
-    console.error('Error fetching AC unit:', error)
+    logger.error('Error fetching AC unit:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch AC unit',
@@ -173,7 +174,7 @@ export async function createAcUnit(acUnitData: {
       data,
     }
   } catch (error: any) {
-    console.error('Error creating AC unit:', error)
+    logger.error('Error creating AC unit:', error)
     return {
       success: false,
       error: error.message || 'Failed to create AC unit',
@@ -216,7 +217,7 @@ export async function updateAcUnit(acUnitId: string, acUnitData: Partial<{
       data,
     }
   } catch (error: any) {
-    console.error('Error updating AC unit:', error)
+    logger.error('Error updating AC unit:', error)
     return {
       success: false,
       error: error.message || 'Failed to update AC unit',
@@ -255,7 +256,7 @@ export async function deleteAcUnit(acUnitId: string) {
       success: true,
     }
   } catch (error: any) {
-    console.error('Error deleting AC unit:', error)
+    logger.error('Error deleting AC unit:', error)
     return {
       success: false,
       error: error.message || 'Failed to delete AC unit',

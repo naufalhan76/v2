@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cleanupOrphanedAuthUsers } from '@/lib/actions/users'
+import { logger } from '@/lib/logger'
 
 /**
  * TEMPORARY ENDPOINT FOR CLEANUP
@@ -28,7 +29,7 @@ export async function GET() {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Error in cleanup endpoint:', error)
+    logger.error('Error in cleanup endpoint:', error)
     return NextResponse.json(
       { 
         success: false, 

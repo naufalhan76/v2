@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 export async function getCustomers(filters?: {
   search?: string
@@ -80,7 +81,7 @@ export async function getCustomers(filters?: {
       },
     }
   } catch (error: any) {
-    console.error('Error fetching customers:', error)
+    logger.error('Error fetching customers:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch customers',
@@ -123,7 +124,7 @@ export async function getCustomerById(customerId: string) {
       data,
     }
   } catch (error: any) {
-    console.error('Error fetching customer:', error)
+    logger.error('Error fetching customer:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch customer',
@@ -139,13 +140,12 @@ export async function createCustomer(customerData: {
   billing_address: string
   notes?: string
 }) {
-  console.log('=== SERVER ACTION CALLED ===')
-  console.log('Creating customer with data:', customerData)
+  logger.debug('Creating customer with data:', customerData)
   
   try {
-    console.log('Getting Supabase client...')
+    logger.debug('Getting Supabase client...')
     const supabase = await createClient()
-    console.log('Supabase client obtained')
+    logger.debug('Supabase client obtained')
     
     // Clean the data - remove empty strings for optional fields
     const cleanData = {
@@ -153,8 +153,8 @@ export async function createCustomer(customerData: {
       notes: customerData.notes || null
     }
     
-    console.log('Clean data for insert:', cleanData)
-    console.log('About to insert into customers table...')
+    logger.debug('Clean data for insert:', cleanData)
+    logger.debug('About to insert into customers table...')
     
     const { data, error } = await supabase
       .from('customers')
@@ -162,28 +162,26 @@ export async function createCustomer(customerData: {
       .select()
       .single()
     
-    console.log('Supabase insert result:', { data, error })
+    logger.debug('Supabase insert result:', { data, error })
     
     if (error) {
-      console.error('Supabase insert error:', error)
+      logger.error('Supabase insert error:', error)
       return {
         success: false,
         error: error.message || 'Database insert failed',
       }
     }
     
-    console.log('Insert successful, revalidating paths...')
+    logger.debug('Insert successful, revalidating paths...')
     revalidatePath('/dashboard/manajemen/customer')
     revalidatePath('/dashboard')
     
-    console.log('=== SERVER ACTION SUCCESS ===')
     return {
       success: true,
       data,
     }
   } catch (error: any) {
-    console.error('=== SERVER ACTION ERROR ===')
-    console.error('Error creating customer:', error)
+    logger.error('Error creating customer:', error)
     return {
       success: false,
       error: error.message || 'Failed to create customer',
@@ -221,7 +219,7 @@ export async function updateCustomer(customerId: string, customerData: Partial<{
       data,
     }
   } catch (error: any) {
-    console.error('Error updating customer:', error)
+    logger.error('Error updating customer:', error)
     return {
       success: false,
       error: error.message || 'Failed to update customer',
@@ -261,7 +259,7 @@ export async function deleteCustomer(customerId: string) {
       success: true,
     }
   } catch (error: any) {
-    console.error('Error deleting customer:', error)
+    logger.error('Error deleting customer:', error)
     return {
       success: false,
       error: error.message || 'Failed to delete customer',

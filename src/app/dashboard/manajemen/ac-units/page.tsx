@@ -44,6 +44,7 @@ import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
 import { Edit, Trash2, Search } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 interface AcUnit {
   ac_unit_id: string
@@ -172,7 +173,7 @@ export default function AcUnitsPage() {
       setCapacityRanges(capacityResult.success ? (capacityResult.data || []) : [])
       setMasterBrands(brandsResult.success ? (brandsResult.data || []) : [])
     } catch (error) {
-      console.error('Error fetching master data:', error)
+      logger.error('Error fetching master data:', error)
     }
   }
 
@@ -186,7 +187,7 @@ export default function AcUnitsPage() {
         setAcUnits(result.data)
       }
     } catch (error) {
-      console.error('Error fetching AC units:', error)
+      logger.error('Error fetching AC units:', error)
       toast({
         title: 'Error',
         description: 'Failed to fetch AC units',
@@ -242,7 +243,7 @@ export default function AcUnitsPage() {
         })
       }
     } catch (error) {
-      console.error('Error deleting AC unit:', error)
+      logger.error('Error deleting AC unit:', error)
       toast({
         title: 'Error',
         description: 'Failed to delete AC unit',
@@ -289,7 +290,7 @@ export default function AcUnitsPage() {
         })
       }
     } catch (error) {
-      console.error('Error updating AC unit:', error)
+      logger.error('Error updating AC unit:', error)
       toast({
         title: 'Error',
         description: 'Failed to update AC unit',

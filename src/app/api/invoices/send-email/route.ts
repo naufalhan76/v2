@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createClient } from '@/lib/supabase-server'
 import { logInvoiceCommunication } from '@/lib/actions/invoice-communications'
+import { logger } from '@/lib/logger'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
     const emailDomain = companyEmail.split('@')[1]?.toLowerCase()
     
     if (invalidDomains.includes(emailDomain)) {
-      console.warn(`Company email uses invalid domain (${emailDomain}), using fallback: noreply@yaleya.biz.id`)
+      logger.warn(`Company email uses invalid domain (${emailDomain}), using fallback: noreply@yaleya.biz.id`)
       companyEmail = 'noreply@yaleya.biz.id'
     }
 
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
       try {
         bankAccounts = JSON.parse(config.bank_accounts)
       } catch (e) {
-        console.error('Failed to parse bank accounts:', e)
+        logger.error('Failed to parse bank accounts:', e)
       }
     }
 
@@ -315,7 +316,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (emailError) {
-      console.error('Resend error:', emailError)
+      logger.error('Resend error:', emailError)
       return NextResponse.json(
         { error: 'Failed to send email', details: emailError },
         { status: 500 }
@@ -332,7 +333,7 @@ export async function POST(request: NextRequest) {
         status: 'sent',
       })
     } catch (logError) {
-      console.error('Failed to log communication:', logError)
+      logger.error('Failed to log communication:', logError)
       // Don't fail the request if logging fails
     }
 
@@ -342,7 +343,7 @@ export async function POST(request: NextRequest) {
       emailId: emailData?.id,
     })
   } catch (error: any) {
-    console.error('Send email error:', error)
+    logger.error('Send email error:', error)
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

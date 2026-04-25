@@ -44,6 +44,7 @@ import {
   type ApiKeyInfo,
   type ApiKeyWithSecret,
 } from '@/lib/actions/api-keys'
+import { logger } from '@/lib/logger'
 
 export function ApiKeysManagement() {
   const [keys, setKeys] = useState<ApiKeyInfo[]>([])
@@ -80,7 +81,7 @@ export function ApiKeysManagement() {
         })
       }
     } catch (error) {
-      console.error('Error loading API keys:', error)
+      logger.error('Error loading API keys:', error)
       toast({
         title: 'Error',
         description: 'Failed to load API keys',
@@ -117,7 +118,7 @@ export function ApiKeysManagement() {
         })
       }
     } catch (error) {
-      console.error('Error creating API key:', error)
+      logger.error('Error creating API key:', error)
       toast({
         title: 'Error',
         description: 'Failed to create API key',
@@ -150,7 +151,7 @@ export function ApiKeysManagement() {
         })
       }
     } catch (error) {
-      console.error('Error regenerating API key:', error)
+      logger.error('Error regenerating API key:', error)
       toast({
         title: 'Error',
         description: 'Failed to regenerate API key',
@@ -182,7 +183,7 @@ export function ApiKeysManagement() {
         })
       }
     } catch (error) {
-      console.error('Error deleting API key:', error)
+      logger.error('Error deleting API key:', error)
       toast({
         title: 'Error',
         description: 'Failed to delete API key',

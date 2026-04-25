@@ -39,6 +39,7 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase-browser'
+import { logger } from '@/lib/logger'
 
 const SERVICE_TYPES = [
   { value: 'REFILL_FREON', label: 'Refill Freon' },
@@ -129,7 +130,7 @@ export default function AcceptOrderPage() {
       setActionOrderId(null)
       setActionType(null)
     } catch (error) {
-      console.error('Error updating order:', error)
+      logger.error('Error updating order:', error)
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to update order',

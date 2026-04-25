@@ -35,6 +35,7 @@ import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
 import { Edit, Trash2, Search, Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 interface Technician {
   technician_id: string
@@ -84,7 +85,7 @@ export default function TechniciansPage() {
         setTechnicians(result.data)
       }
     } catch (error) {
-      console.error('Error fetching technicians:', error)
+      logger.error('Error fetching technicians:', error)
       toast({
         title: 'Error',
         description: 'Failed to fetch technicians',
@@ -144,7 +145,7 @@ export default function TechniciansPage() {
         })
       }
     } catch (error) {
-      console.error('Error deleting technician:', error)
+      logger.error('Error deleting technician:', error)
       toast({
         title: 'Error',
         description: 'Failed to delete technician',
@@ -176,7 +177,7 @@ export default function TechniciansPage() {
         })
       }
     } catch (error) {
-      console.error('Error creating technician:', error)
+      logger.error('Error creating technician:', error)
       toast({
         title: 'Error',
         description: 'Failed to create technician',
@@ -211,7 +212,7 @@ export default function TechniciansPage() {
         })
       }
     } catch (error) {
-      console.error('Error updating technician:', error)
+      logger.error('Error updating technician:', error)
       toast({
         title: 'Error',
         description: 'Failed to update technician',

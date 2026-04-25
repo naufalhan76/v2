@@ -2,7 +2,7 @@
 
 **Base URL:** `https://admin.yaleya.biz.id`
 
-## ✅ Implemented Endpoints
+## Implemented Endpoints
 
 ### Orders Management
 

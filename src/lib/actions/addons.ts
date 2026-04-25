@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 export interface Addon {
   addon_id: string
@@ -94,7 +95,7 @@ export async function getAddons(filters?: GetAddonsFilters): Promise<{
   const { data, error, count } = await query
 
   if (error) {
-    console.error('Error fetching add-ons:', error)
+    logger.error('Error fetching add-ons:', error)
     throw new Error('Gagal memuat data add-ons')
   }
 
@@ -119,7 +120,7 @@ export async function getAddonById(addonId: string): Promise<Addon | null> {
     .single()
 
   if (error) {
-    console.error('Error fetching add-on:', error)
+    logger.error('Error fetching add-on:', error)
     throw new Error('Gagal memuat data add-on')
   }
 
@@ -140,7 +141,7 @@ export async function getAddonsByCategory(category: string): Promise<Addon[]> {
     .order('item_name', { ascending: true })
 
   if (error) {
-    console.error('Error fetching add-ons by category:', error)
+    logger.error('Error fetching add-ons by category:', error)
     throw new Error('Gagal memuat data add-ons')
   }
 
@@ -161,7 +162,7 @@ export async function getActiveAddons(): Promise<Addon[]> {
     .order('item_name', { ascending: true })
 
   if (error) {
-    console.error('Error fetching active add-ons:', error)
+    logger.error('Error fetching active add-ons:', error)
     throw new Error('Gagal memuat data add-ons aktif')
   }
 
@@ -205,7 +206,7 @@ export async function createAddon(input: CreateAddonInput): Promise<Addon> {
     .single()
 
   if (error) {
-    console.error('Error creating add-on:', error)
+    logger.error('Error creating add-on:', error)
     throw new Error('Gagal menambahkan add-on')
   }
 
@@ -247,7 +248,7 @@ export async function updateAddon(
     .single()
 
   if (error) {
-    console.error('Error updating add-on:', error)
+    logger.error('Error updating add-on:', error)
     throw new Error('Gagal mengupdate add-on')
   }
 
@@ -280,7 +281,7 @@ export async function deleteAddon(addonId: string): Promise<void> {
     .eq('addon_id', addonId)
 
   if (error) {
-    console.error('Error deleting add-on:', error)
+    logger.error('Error deleting add-on:', error)
     throw new Error('Gagal menghapus add-on')
   }
 
@@ -315,7 +316,7 @@ export async function updateStock(
     .single()
 
   if (fetchError) {
-    console.error('Error fetching current stock:', fetchError)
+    logger.error('Error fetching current stock:', fetchError)
     throw new Error('Gagal memuat stok saat ini')
   }
 
@@ -352,7 +353,7 @@ export async function getLowStockAddons(): Promise<Addon[]> {
     .order('item_name', { ascending: true })
 
   if (error) {
-    console.error('Error fetching low stock add-ons:', error)
+    logger.error('Error fetching low stock add-ons:', error)
     throw new Error('Gagal memuat data add-ons dengan stok rendah')
   }
 
@@ -388,7 +389,7 @@ export async function bulkUpdateStock(
   // Check for errors
   const errors = results.filter((result) => result.error)
   if (errors.length > 0) {
-    console.error('Errors in bulk update:', errors)
+    logger.error('Errors in bulk update:', errors)
     throw new Error('Gagal mengupdate beberapa stok')
   }
 

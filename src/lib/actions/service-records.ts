@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase-server'
+import { logger } from '@/lib/logger'
 
 export async function getServiceRecords(filters?: {
   search?: string
@@ -73,7 +74,7 @@ export async function getServiceRecords(filters?: {
     const { data, error, count } = await query
     
     if (error) {
-      console.error('Error fetching service records:', error)
+      logger.error('Error fetching service records:', error)
       throw error
     }
     
@@ -105,7 +106,7 @@ export async function getServiceRecords(filters?: {
       },
     }
   } catch (error: any) {
-    console.error('Error fetching service records:', error)
+    logger.error('Error fetching service records:', error)
     return {
       success: false,
       error: error.message,
@@ -169,7 +170,7 @@ export async function getServiceRecordById(serviceId: string) {
       data,
     }
   } catch (error: any) {
-    console.error('Error fetching service record:', error)
+    logger.error('Error fetching service record:', error)
     return {
       success: false,
       error: error.message,
@@ -204,7 +205,7 @@ export async function updateServiceRecord(
       message: 'Service record updated successfully',
     }
   } catch (error: any) {
-    console.error('Error updating service record:', error)
+    logger.error('Error updating service record:', error)
     return {
       success: false,
       error: error.message,
@@ -234,7 +235,7 @@ export async function trackReminder(serviceId: string, orderId: string, phoneNum
       message: 'Reminder logged successfully'
     }
   } catch (error: any) {
-    console.error('Error tracking reminder:', error)
+    logger.error('Error tracking reminder:', error)
     return {
       success: false,
       error: error.message,
@@ -264,7 +265,7 @@ export async function getReminderStats(serviceId: string) {
       lastSentAt
     }
   } catch (error: any) {
-    console.error('Error fetching reminder stats:', error)
+    logger.error('Error fetching reminder stats:', error)
     return {
       success: false,
       count: 0,

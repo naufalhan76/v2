@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { CheckCircle2, ArrowLeft, Calendar, User, MapPin, Phone, Mail, Building } from 'lucide-react'
 import { format } from 'date-fns'
 import { Separator } from '@/components/ui/separator'
+import { logger } from '@/lib/logger'
 
 function AssignmentSuccessContent() {
   const router = useRouter()
@@ -21,8 +22,8 @@ function AssignmentSuccessContent() {
   const helperIds = searchParams.get('helpers')?.split(',').filter(Boolean) || []
   const scheduledDate = searchParams.get('date') || ''
 
-  console.log('Technician ID:', technicianId) // Debug
-  console.log('Helper IDs:', helperIds) // Debug
+  logger.debug('Technician ID:', technicianId) // Debug
+  logger.debug('Helper IDs:', helperIds) // Debug
 
   const { data: technicianData, isLoading: technicianLoading, error: technicianError } = useQuery({
     queryKey: ['technician', technicianId],
@@ -41,9 +42,9 @@ function AssignmentSuccessContent() {
 
   const helpers = helperQueries.map(q => q.data?.data).filter(Boolean)
 
-  console.log('Technician Data:', technicianData) // Debug
-  console.log('Technician Loading:', technicianLoading) // Debug
-  console.log('Technician Error:', technicianError) // Debug
+  logger.debug('Technician Data:', technicianData) // Debug
+  logger.debug('Technician Loading:', technicianLoading) // Debug
+  logger.debug('Technician Error:', technicianError) // Debug
 
   // Fetch all orders
   const orderQueries = orderIds.map(orderId => 

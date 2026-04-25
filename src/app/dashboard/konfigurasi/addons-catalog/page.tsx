@@ -63,6 +63,7 @@ import {
   getLowStockAddons,
   type Addon,
 } from '@/lib/actions/addons'
+import { logger } from '@/lib/logger'
 
 const addonSchema = z.object({
   category: z.string().min(1, 'Kategori wajib diisi'),
@@ -152,7 +153,7 @@ export default function AddonsCatalogPage() {
       const data = await getLowStockAddons()
       setLowStockAddons(data)
     } catch (error) {
-      console.error('Error loading low stock add-ons:', error)
+      logger.error('Error loading low stock add-ons:', error)
     }
   }
 

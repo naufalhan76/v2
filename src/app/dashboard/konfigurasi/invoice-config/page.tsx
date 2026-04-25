@@ -14,6 +14,7 @@ import { Loader2, Save, Building2, Banknote, FileText } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getInvoiceConfig, updateInvoiceConfig } from '@/lib/actions/invoice-config'
 import { BankAccountsSection, type BankAccount } from './bank-accounts-section'
+import { logger } from '@/lib/logger'
 
 const invoiceConfigSchema = z.object({
   companyName: z.string().min(1, 'Nama perusahaan wajib diisi'),
@@ -84,7 +85,7 @@ export default function InvoiceConfigPage() {
               tax_percentage: bank.tax_percentage || 11,
             }))
           } catch (e) {
-            console.error('Error parsing bank_accounts:', e)
+            logger.error('Error parsing bank_accounts:', e)
           }
         }
         setBankAccounts(accounts)

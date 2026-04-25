@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 export interface Invoice {
   invoice_id: string
@@ -203,7 +204,7 @@ export async function generateInvoiceNumber(): Promise<string> {
   const { data, error } = await supabase.rpc('generate_invoice_number')
 
   if (error) {
-    console.error('Error generating invoice number:', error)
+    logger.error('Error generating invoice number:', error)
     // Fallback to manual generation
     const date = new Date()
     const year = date.getFullYear()
@@ -294,7 +295,7 @@ export async function getInvoices(filters?: {
   const { data, error, count } = await query
 
   if (error) {
-    console.error('Error fetching invoices:', error)
+    logger.error('Error fetching invoices:', error)
     throw new Error('Gagal memuat data invoice')
   }
 
@@ -356,7 +357,7 @@ export async function getInvoiceById(invoiceId: string): Promise<{
     .single()
 
   if (invoiceError) {
-    console.error('Error fetching invoice:', invoiceError)
+    logger.error('Error fetching invoice:', invoiceError)
     return null
   }
 
@@ -373,7 +374,7 @@ export async function getInvoiceById(invoiceId: string): Promise<{
     .order('payment_date', { ascending: false })
 
   if (itemsError || paymentsError) {
-    console.error('Error fetching invoice details:', itemsError || paymentsError)
+    logger.error('Error fetching invoice details:', itemsError || paymentsError)
   }
 
   // Compute overdue status for display
@@ -510,7 +511,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     .single()
 
   if (invoiceError) {
-    console.error('Error creating invoice:', invoiceError)
+    logger.error('Error creating invoice:', invoiceError)
     throw new Error('Gagal membuat invoice')
   }
 
@@ -533,7 +534,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     .insert(itemsToInsert)
 
   if (itemsError) {
-    console.error('Error creating invoice items:', itemsError)
+    logger.error('Error creating invoice items:', itemsError)
     // Rollback invoice creation
     await supabase.from('invoices').delete().eq('invoice_id', invoice.invoice_id)
     throw new Error('Gagal membuat invoice items')
@@ -583,7 +584,7 @@ export async function updateInvoice(
     .single()
 
   if (error) {
-    console.error('Error updating invoice:', error)
+    logger.error('Error updating invoice:', error)
     throw new Error('Gagal mengupdate invoice')
   }
 
@@ -652,7 +653,7 @@ export async function deleteInvoice(invoiceId: string): Promise<void> {
   const { error } = await supabase.from('invoices').delete().eq('invoice_id', invoiceId)
 
   if (error) {
-    console.error('Error deleting invoice:', error)
+    logger.error('Error deleting invoice:', error)
     throw new Error('Gagal menghapus invoice')
   }
 
@@ -733,7 +734,7 @@ export async function recordPayment(
     .single()
 
   if (paymentError) {
-    console.error('Error recording payment:', paymentError)
+    logger.error('Error recording payment:', paymentError)
     throw new Error('Gagal mencatat pembayaran')
   }
 
@@ -783,7 +784,7 @@ export async function updateInvoiceStatus(
     .single()
 
   if (error) {
-    console.error('Error updating invoice status:', error)
+    logger.error('Error updating invoice status:', error)
     throw new Error('Gagal mengupdate status invoice')
   }
 

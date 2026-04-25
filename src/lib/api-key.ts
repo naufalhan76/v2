@@ -5,6 +5,7 @@
  */
 
 import crypto from 'crypto'
+import { logger } from '@/lib/logger'
 
 const API_KEY_SECRET = process.env.API_KEY_SECRET || 'your-secret-key-change-in-production'
 
@@ -89,10 +90,10 @@ export async function verifyApiKey(
 
     // Without metadata lookup, we can't verify stateless tokens
     // This is a limitation - in production, always use metadata lookup
-    console.warn('Warning: API key verification without metadata lookup is not secure')
+    logger.warn('Warning: API key verification without metadata lookup is not secure')
     return null
   } catch (error) {
-    console.error('Error verifying API key:', error)
+    logger.error('Error verifying API key:', error)
     return null
   }
 }

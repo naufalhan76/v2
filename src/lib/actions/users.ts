@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/logger'
 
 export interface User {
   user_id: string
@@ -40,13 +41,13 @@ export async function getUsers() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching users:', error)
+      logger.error('Error fetching users:', error)
       return { users: [], error: error.message }
     }
 
     return { users: data as User[], error: null }
   } catch (error) {
-    console.error('Unexpected error in getUsers:', error)
+    logger.error('Unexpected error in getUsers:', error)
     return { users: [], error: 'Failed to fetch users' }
   }
 }
@@ -84,7 +85,7 @@ export async function createUser(input: CreateUserInput) {
     })
 
     if (authError) {
-      console.error('Error creating auth user:', authError)
+      logger.error('Error creating auth user:', authError)
       return { success: false, error: authError.message }
     }
 
@@ -100,7 +101,7 @@ export async function createUser(input: CreateUserInput) {
     revalidatePath('/dashboard/manajemen/user')
     return { success: true, error: null }
   } catch (error) {
-    console.error('Unexpected error in createUser:', error)
+    logger.error('Unexpected error in createUser:', error)
     return { success: false, error: 'Failed to create user' }
   }
 }
@@ -125,14 +126,14 @@ export async function updateUser(input: UpdateUserInput) {
       .eq('user_id', input.user_id)
 
     if (error) {
-      console.error('Error updating user:', error)
+      logger.error('Error updating user:', error)
       return { success: false, error: error.message }
     }
 
     revalidatePath('/dashboard/manajemen/user')
     return { success: true, error: null }
   } catch (error) {
-    console.error('Unexpected error in updateUser:', error)
+    logger.error('Unexpected error in updateUser:', error)
     return { success: false, error: 'Failed to update user' }
   }
 }
@@ -153,14 +154,14 @@ export async function toggleUserStatus(userId: string, isActive: boolean) {
       .eq('user_id', userId)
 
     if (error) {
-      console.error('Error toggling user status:', error)
+      logger.error('Error toggling user status:', error)
       return { success: false, error: error.message }
     }
 
     revalidatePath('/dashboard/manajemen/user')
     return { success: true, error: null }
   } catch (error) {
-    console.error('Unexpected error in toggleUserStatus:', error)
+    logger.error('Unexpected error in toggleUserStatus:', error)
     return { success: false, error: 'Failed to toggle user status' }
   }
 }
@@ -192,7 +193,7 @@ export async function deleteUser(userId: string) {
       .eq('user_id', userId)
 
     if (dbError) {
-      console.error('Error deleting user from database:', dbError)
+      logger.error('Error deleting user from database:', dbError)
       return { success: false, error: dbError.message }
     }
 
@@ -200,15 +201,15 @@ export async function deleteUser(userId: string) {
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userData.auth_user_id)
 
     if (authError) {
-      console.error('Error deleting auth user:', authError)
+      logger.error('Error deleting auth user:', authError)
       // User already deleted from DB, log but don't fail
-      console.warn('Database record deleted but auth user deletion failed')
+      logger.warn('Database record deleted but auth user deletion failed')
     }
 
     revalidatePath('/dashboard/manajemen/user')
     return { success: true, error: null }
   } catch (error) {
-    console.error('Unexpected error in deleteUser:', error)
+    logger.error('Unexpected error in deleteUser:', error)
     return { success: false, error: 'Failed to delete user' }
   }
 }
@@ -240,7 +241,7 @@ export async function permanentDeleteUser(userId: string) {
       .eq('user_id', userId)
 
     if (dbError) {
-      console.error('Error deleting user from database:', dbError)
+      logger.error('Error deleting user from database:', dbError)
       return { success: false, error: dbError.message }
     }
 
@@ -248,14 +249,14 @@ export async function permanentDeleteUser(userId: string) {
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userData.auth_user_id)
 
     if (authError) {
-      console.error('Error deleting auth user:', authError)
+      logger.error('Error deleting auth user:', authError)
       return { success: false, error: authError.message }
     }
 
     revalidatePath('/dashboard/manajemen/user')
     return { success: true, error: null }
   } catch (error) {
-    console.error('Unexpected error in permanentDeleteUser:', error)
+    logger.error('Unexpected error in permanentDeleteUser:', error)
     return { success: false, error: 'Failed to permanently delete user' }
   }
 }
@@ -273,7 +274,7 @@ export async function cleanupOrphanedAuthUsers() {
     const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers()
     
     if (authError) {
-      console.error('Error listing auth users:', authError)
+      logger.error('Error listing auth users:', authError)
       return { success: false, error: authError.message, cleaned: 0 }
     }
 
@@ -283,7 +284,7 @@ export async function cleanupOrphanedAuthUsers() {
       .select('auth_user_id')
     
     if (dbError) {
-      console.error('Error fetching user_management:', dbError)
+      logger.error('Error fetching user_management:', dbError)
       return { success: false, error: dbError.message, cleaned: 0 }
     }
 
@@ -296,7 +297,7 @@ export async function cleanupOrphanedAuthUsers() {
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(orphan.id)
       if (!deleteError) {
         cleanedCount++
-        console.log(`Deleted orphaned auth user: ${orphan.email}`)
+        logger.debug(`Deleted orphaned auth user: ${orphan.email}`)
       }
     }
 
@@ -307,7 +308,7 @@ export async function cleanupOrphanedAuthUsers() {
       message: `Cleaned up ${cleanedCount} orphaned auth user(s)`
     }
   } catch (error) {
-    console.error('Unexpected error in cleanupOrphanedAuthUsers:', error)
+    logger.error('Unexpected error in cleanupOrphanedAuthUsers:', error)
     return { success: false, error: 'Failed to cleanup orphaned users', cleaned: 0 }
   }
 }

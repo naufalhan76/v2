@@ -3,6 +3,7 @@ import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { Invoice, InvoiceItem, PaymentRecord } from './actions/invoices'
 import { InvoiceConfig, BankAccount } from './actions/invoice-config'
+import { logger } from '@/lib/logger'
 
 export interface PDFExportOptions {
   invoice: Invoice
@@ -48,7 +49,7 @@ export function exportInvoiceToPDF({
     try {
       bankAccounts = JSON.parse(invoiceConfig.bank_accounts)
     } catch (e) {
-      console.error('Failed to parse bank accounts:', e)
+      logger.error('Failed to parse bank accounts:', e)
     }
   }
 

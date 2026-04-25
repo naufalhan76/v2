@@ -2,6 +2,7 @@
 
 import { getUser, getUserRole } from '@/lib/auth'
 import { generateApiKey, maskApiKey, getApiKeyCreatedDate, getApiKeyExpirationDate } from '@/lib/api-key'
+import { logger } from '@/lib/logger'
 
 export interface ApiKeyInfo {
   api_key_id: string
@@ -50,7 +51,7 @@ export async function generateNewApiKey() {
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
     }
   } catch (error: any) {
-    console.error('Error generating API key:', error)
+    logger.error('Error generating API key:', error)
     return {
       success: false,
       error: error.message || 'Failed to generate API key',
@@ -106,7 +107,7 @@ export async function getUserApiKeys() {
       keys,
     }
   } catch (error: any) {
-    console.error('Error fetching API keys:', error)
+    logger.error('Error fetching API keys:', error)
     return {
       success: false,
       error: error.message || 'Failed to fetch API keys',
@@ -162,7 +163,7 @@ export async function createApiKey(
       data: keyData,
     }
   } catch (error: any) {
-    console.error('Error creating API key:', error)
+    logger.error('Error creating API key:', error)
     return {
       success: false,
       error: error.message || 'Failed to create API key',
@@ -213,7 +214,7 @@ export async function regenerateApiKey(keyId: string) {
       data: keyData,
     }
   } catch (error: any) {
-    console.error('Error regenerating API key:', error)
+    logger.error('Error regenerating API key:', error)
     return {
       success: false,
       error: error.message || 'Failed to regenerate API key',
@@ -250,7 +251,7 @@ export async function deleteApiKey(keyId: string) {
       success: true,
     }
   } catch (error: any) {
-    console.error('Error deleting API key:', error)
+    logger.error('Error deleting API key:', error)
     return {
       success: false,
       error: error.message || 'Failed to delete API key',
@@ -299,7 +300,7 @@ export async function updateApiKey(
       },
     }
   } catch (error: any) {
-    console.error('Error updating API key:', error)
+    logger.error('Error updating API key:', error)
     return {
       success: false,
       error: error.message || 'Failed to update API key',

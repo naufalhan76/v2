@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { LoadingOverlay } from '@/components/ui/loading-state'
+import { logger } from '@/lib/logger'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -75,7 +76,7 @@ function LoginForm() {
       })
 
       if (error) {
-        console.error('Supabase auth error:', error)
+        logger.error('Supabase auth error:', error)
         
         // Better error messages
         if (error.message.includes('Invalid login credentials')) {
@@ -98,9 +99,9 @@ function LoginForm() {
         .single()
 
       if (userError) {
-        console.error('Error fetching user role:', userError)
-        console.error('User ID:', data.user?.id)
-        console.error('User Email:', data.user?.email)
+        logger.error('Error fetching user role:', userError)
+        logger.error('User ID:', data.user?.id)
+        logger.error('User Email:', data.user?.email)
         
         // More helpful error message
         if (userError.code === 'PGRST116') {
@@ -138,7 +139,7 @@ function LoginForm() {
       // Keep loading state active - akan hilang saat component unmount
       // Ini memastikan overlay tetap ada sampai dashboard selesai load
     } catch (error: any) {
-      console.error('Login error:', error)
+      logger.error('Login error:', error)
       setLoadingMessage('')
       setIsLoading(false)
       toast({
@@ -209,7 +210,7 @@ function LoginForm() {
       })
 
       if (error) {
-        console.error('Supabase signup error:', error)
+        logger.error('Supabase signup error:', error)
         
         // Better error messages
         if (error.message.includes('already registered')) {
@@ -233,7 +234,7 @@ function LoginForm() {
       setConfirmPassword('')
       setFullName('')
     } catch (error: any) {
-      console.error('Registration error:', error)
+      logger.error('Registration error:', error)
       toast({
         title: "Registration failed",
         description: error.message || "An error occurred during registration",

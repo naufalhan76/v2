@@ -31,6 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useToast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 const SERVICE_TYPES = [
   { value: 'REFILL_FREON', label: 'Refill Freon', color: 'bg-blue-500' },
@@ -130,7 +131,7 @@ export default function AssignOrderPage() {
     if (selectedDate && selectedTechnician && selectedOrders.length > 0) {
       try {
         setIsAssigning(true)
-        console.log('Starting assignment...')
+        logger.debug('Starting assignment...')
         const formattedDate = format(selectedDate, 'yyyy-MM-dd')
         
         // Call server action directly
@@ -141,7 +142,7 @@ export default function AssignOrderPage() {
           scheduledDate: formattedDate
         })
         
-        console.log('Assignment result:', result)
+        logger.debug('Assignment result:', result)
         
         if (result.success) {
           toast({ title: 'Success', description: result.message })
@@ -159,7 +160,7 @@ export default function AssignOrderPage() {
           toast({ title: 'Error', description: result.error || 'Failed to assign orders', variant: 'destructive' })
         }
       } catch (error) {
-        console.error('Assignment error:', error)
+        logger.error('Assignment error:', error)
         toast({ 
           title: 'Error', 
           description: error instanceof Error ? error.message : 'Failed to assign orders',

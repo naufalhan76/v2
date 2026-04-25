@@ -52,6 +52,7 @@ import { Activity, Package, FileText, Search, Eye, User, MapPin, Phone, Mail, Bu
 import { format, subDays } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { id } from 'date-fns/locale'
+import { logger } from '@/lib/logger'
 
 // Helper functions for multi-location orders
 function getLocationsSummary(orderItems: any[]) {
@@ -487,7 +488,7 @@ function MonitoringOngoingContent() {
         .eq('order_id', detailOrderId)
       
       if (deleteTechError) {
-        console.error('Error deleting technicians:', deleteTechError)
+        logger.error('Error deleting technicians:', deleteTechError)
         // Continue even if deletion fails, but log the error
       }
       
