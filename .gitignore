@@ -37,3 +37,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temp/working files
+.sisyphus/
+diff_files.txt
+tsc_output.txt
+tsc_output_2.txt
+update_page.js
+update_page.py
