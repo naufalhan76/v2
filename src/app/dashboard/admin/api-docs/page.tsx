@@ -200,7 +200,7 @@ const HTTP_STATUS_CODES = [
   { code: 403, meaning: 'Forbidden', description: 'User lacks required permissions' },
   { code: 404, meaning: 'Not Found', description: 'Resource does not exist' },
   { code: 409, meaning: 'Conflict', description: 'Duplicate entry or constraint violation' },
-  { code: 500, meaning: 'Server Error', description: 'Unexpected server-side error' },
+  { code: 500, meaning: 'Server Error', description: "Unexpected server-side error" },
 ]
 
 export default function ApiDocsPage() {
