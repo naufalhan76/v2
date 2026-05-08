@@ -56,7 +56,8 @@ import {
   X,
   Edit2,
   Building2,
-  AlertCircle
+  AlertCircle,
+  FileText
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -1202,6 +1203,13 @@ function SuccessModal({
         <DialogFooter className="sm:justify-center gap-2">
           <Button variant="outline" onClick={onClose}>
             Create Another Order
+          </Button>
+          <Button onClick={() => {
+            onClose()
+            window.location.href = `/dashboard/keuangan/invoices/create?order_id=${orderId}&type=PROFORMA`
+          }} variant="outline">
+            <FileText className="w-4 h-4 mr-2" />
+            Create Invoice Proforma
           </Button>
           <Button onClick={() => {
             onClose()

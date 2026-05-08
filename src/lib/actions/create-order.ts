@@ -11,6 +11,28 @@ import type {
 import { logger } from '@/lib/logger'
 
 /**
+ * Search customers by name or phone number (for autocomplete)
+ */
+export async function searchCustomers(query: string): Promise<{
+  success: boolean;
+  data?: Array<{ customer_id: string; customer_name: string; phone_number: string; email: string }>;
+  error?: string;
+}> {
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('customers')
+      .select('customer_id, customer_name, phone_number, email')
+      .or(`customer_name.ilike.%${query}%,phone_number.ilike.%${query}%`)
+      .limit(7)
+    if (error) throw error
+    return { success: true, data: data || [] }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * Search customer by phone number
  * Returns customer with locations and AC units if found
  */
