@@ -216,7 +216,7 @@ export default function LocationsPage() {
           {loading ? (
             <div className="text-center py-8">Loading...</div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
+            <div className="data-table-container overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>

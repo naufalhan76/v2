@@ -368,7 +368,7 @@ export default function ManajemenUserPage() {
           </div>
           
           {/* Desktop Table View */}
-          <div className="hidden md:block rounded-md border overflow-x-auto">
+            <div className="hidden md:block data-table-container overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

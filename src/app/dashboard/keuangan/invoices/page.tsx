@@ -273,7 +273,7 @@ export default function InvoicesPage() {
               </Button>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="data-table-container">
               <Table>
                 <TableHeader>
                   <TableRow>

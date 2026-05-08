@@ -616,7 +616,7 @@ export default function CreateInvoicePage() {
               </div>
 
               {lineItems.length > 0 && (
-                <div className="rounded-md border">
+                <div className="data-table-container">
                   <Table>
                     <TableHeader>
                       <TableRow>

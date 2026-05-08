@@ -350,7 +350,7 @@ export default function CustomerManagementPage() {
           </div>
         </div>
 
-        <div className="border rounded-lg">
+        <div className="data-table-container">
           <LoadingState
             isLoading={isLoading}
             timeout={8000}

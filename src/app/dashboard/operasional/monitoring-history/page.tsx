@@ -446,7 +446,7 @@ Terima kasih.`
           ) : filteredRecords.length === 0 ? (
             <div className='text-center py-8 text-muted-foreground'>No service records found</div>
           ) : (
-            <div className='rounded-md border'>
+            <div className='data-table-container'>
               <Table>
                 <TableHeader>
                   <TableRow>

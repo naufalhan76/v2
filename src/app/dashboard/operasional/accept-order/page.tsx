@@ -192,7 +192,7 @@ export default function AcceptOrderPage() {
               {searchQuery ? 'No orders found matching your search' : 'No new orders at this time'}
             </div>
           ) : (
-            <div className='rounded-md border'>
+            <div className='data-table-container'>
               <Table>
                 <TableHeader>
                   <TableRow>
