@@ -180,13 +180,13 @@ export function ServiceCatalogTab() {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardContent className="pt-6">
           <div className="flex gap-4 items-end flex-wrap">
             <div className="w-[200px] space-y-2">
-              <Label>Filter Type AC</Label>
+              <Label className="text-sm font-medium text-foreground">Filter Type AC</Label>
               <Select value={filterUnitTypeId} onValueChange={setFilterUnitTypeId}>
-                <SelectTrigger><SelectValue placeholder="Semua Type" /></SelectTrigger>
+                <SelectTrigger className="h-10"><SelectValue placeholder="Semua Type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Semua Type AC</SelectItem>
                   {unitTypes.map(ut => <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>{ut.name}</SelectItem>)}
@@ -194,9 +194,9 @@ export function ServiceCatalogTab() {
               </Select>
             </div>
             <div className="w-[200px] space-y-2">
-              <Label>Filter Capacity</Label>
+              <Label className="text-sm font-medium text-foreground">Filter Capacity</Label>
               <Select value={filterCapacityId} onValueChange={setFilterCapacityId} disabled={filterUnitTypeId === 'ALL'}>
-                <SelectTrigger><SelectValue placeholder="Semua Capacity" /></SelectTrigger>
+                <SelectTrigger className="h-10"><SelectValue placeholder="Semua Capacity" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Semua Capacity</SelectItem>
                   {capacityRanges.filter(c => c.unit_type_id === filterUnitTypeId).map(c => 
@@ -206,10 +206,10 @@ export function ServiceCatalogTab() {
               </Select>
             </div>
             <div className="flex-1 space-y-2">
-              <Label>Cari (MSN / Nama)</Label>
+              <Label className="text-sm font-medium text-foreground">Cari (MSN / Nama)</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Cari..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+                <Input placeholder="Cari..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-10 pl-10" />
               </div>
             </div>
             <div className="flex gap-2">
@@ -224,18 +224,19 @@ export function ServiceCatalogTab() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardHeader>
-          <CardTitle>Daftar Harga & Service Catalog</CardTitle>
+          <CardTitle className="text-lg font-semibold text-foreground">Daftar Harga & Service Catalog</CardTitle>
           <CardDescription>Master data harga berdasarkan MSN code, Unit Type, dan Capacity</CardDescription>
         </CardHeader>
         <CardContent>
           {isFetching ? (
             <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : (
+            <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
             <Table>
-              <TableHeader>
-                <TableRow>
+              <TableHeader className="[&_tr]:border-0">
+                <TableRow className="border-0">
                   <TableHead>MSN Code</TableHead>
                   <TableHead>Type AC</TableHead>
                   <TableHead>Capacity</TableHead>
@@ -247,7 +248,7 @@ export function ServiceCatalogTab() {
               </TableHeader>
               <TableBody>
                 {items.map((item) => (
-                  <TableRow key={item.catalog_id}>
+                  <TableRow key={item.catalog_id} className="border-0 hover:bg-muted/50">
                     <TableCell className="font-mono font-bold text-primary">{item.msn_code}</TableCell>
                     <TableCell>{item.unit_types?.name}</TableCell>
                     <TableCell>{item.capacity_ranges?.capacity_label}</TableCell>
@@ -263,57 +264,58 @@ export function ServiceCatalogTab() {
                   </TableRow>
                 ))}
                 {items.length === 0 && (
-                  <TableRow>
+                  <TableRow className="border-0 hover:bg-muted/50">
                     <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Tidak ada data catalog.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+            </div>
           )}
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl rounded-xl border border-border/50 shadow-sm">
               <DialogHeader>
-                <DialogTitle>{editingItem ? 'Edit' : 'Tambah'} Service Catalog</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-foreground">{editingItem ? 'Edit' : 'Tambah'} Service Catalog</DialogTitle>
                 <DialogDescription>Input kombinasi service baru. Pastikan MSN Code unik.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                    <div className="space-y-2">
-                     <Label>MSN Code *</Label>
-                     <Input value={msnCode} onChange={e => setMsnCode(e.target.value)} required placeholder="Misal: CARERA001" />
-                   </div>
-                   <div className="space-y-2">
-                     <Label>Base Price *</Label>
-                     <Input type="number" value={basePrice} onChange={e => setBasePrice(e.target.value)} required placeholder="Misal: 150000" />
-                   </div>
-                </div>
+                     <Label className="text-sm font-medium text-foreground">MSN Code *</Label>
+                     <Input value={msnCode} onChange={e => setMsnCode(e.target.value)} required placeholder="Misal: CARERA001" className="h-10" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-foreground">Base Price *</Label>
+                      <Input type="number" value={basePrice} onChange={e => setBasePrice(e.target.value)} required placeholder="Misal: 150000" className="h-10" />
+                    </div>
+                 </div>
                 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Type AC *</Label>
-                    <Select value={unitTypeId} onValueChange={setUnitTypeId}>
-                      <SelectTrigger><SelectValue placeholder="Pilih type AC" /></SelectTrigger>
+                 <div className="grid grid-cols-3 gap-4">
+                   <div className="space-y-2">
+                     <Label className="text-sm font-medium text-foreground">Type AC *</Label>
+                     <Select value={unitTypeId} onValueChange={setUnitTypeId}>
+                       <SelectTrigger className="h-10"><SelectValue placeholder="Pilih type AC" /></SelectTrigger>
                       <SelectContent>
                         {unitTypes.map(ut => <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>{ut.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Capacity *</Label>
-                    <Select value={capacityId} onValueChange={setCapacityId} disabled={!unitTypeId}>
-                      <SelectTrigger><SelectValue placeholder="Pilih capacity" /></SelectTrigger>
+                   </div>
+                   <div className="space-y-2">
+                     <Label className="text-sm font-medium text-foreground">Capacity *</Label>
+                     <Select value={capacityId} onValueChange={setCapacityId} disabled={!unitTypeId}>
+                       <SelectTrigger className="h-10"><SelectValue placeholder="Pilih capacity" /></SelectTrigger>
                       <SelectContent>
                         {capacityRanges.filter(c => c.unit_type_id === unitTypeId).map(c => 
                           <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Master Service Type *</Label>
-                    <Select value={serviceTypeId} onValueChange={setServiceTypeId}>
-                      <SelectTrigger><SelectValue placeholder="Pilih service type" /></SelectTrigger>
+                   </div>
+                   <div className="space-y-2">
+                     <Label className="text-sm font-medium text-foreground">Master Service Type *</Label>
+                     <Select value={serviceTypeId} onValueChange={setServiceTypeId}>
+                       <SelectTrigger className="h-10"><SelectValue placeholder="Pilih service type" /></SelectTrigger>
                       <SelectContent>
                         {serviceTypes.map(st => <SelectItem key={st.service_type_id} value={st.service_type_id}>{st.name}</SelectItem>)}
                       </SelectContent>
@@ -322,13 +324,13 @@ export function ServiceCatalogTab() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Nama Service (di Invoice/Tampilan) *</Label>
-                  <Input value={serviceName} onChange={e => setServiceName(e.target.value)} required placeholder="Misal: Jasa Service Room Air (Checking)" />
+                  <Label className="text-sm font-medium text-foreground">Nama Service (di Invoice/Tampilan) *</Label>
+                  <Input value={serviceName} onChange={e => setServiceName(e.target.value)} required placeholder="Misal: Jasa Service Room Air (Checking)" className="h-10" />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Keterangan Tambahan / Deskripsi</Label>
-                  <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Opsional" />
+                  <Label className="text-sm font-medium text-foreground">Keterangan Tambahan / Deskripsi</Label>
+                  <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Opsional" className="h-10" />
                 </div>
 
                 <DialogFooter>

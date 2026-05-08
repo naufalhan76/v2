@@ -75,9 +75,9 @@ export function BulkImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl rounded-xl border border-border/50 shadow-sm">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-foreground">{title}</DialogTitle>
           <DialogDescription asChild>
             <div className="text-sm text-muted-foreground mt-2">{description}</div>
           </DialogDescription>
@@ -85,8 +85,8 @@ export function BulkImportDialog({
 
         <div className="mt-4 space-y-4">
           <div 
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-              isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/20 hover:border-primary/50'
+            className={`rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
+              isDragging ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/50'
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -101,7 +101,7 @@ export function BulkImportDialog({
               className="hidden" 
             />
             <div className="flex flex-col items-center justify-center gap-2 cursor-pointer">
-              <div className="p-3 bg-muted rounded-full">
+              <div className="rounded-full bg-muted p-3">
                 <UploadCloud className="h-6 w-6 text-muted-foreground" />
               </div>
               <div>
@@ -122,13 +122,13 @@ export function BulkImportDialog({
 
           <Textarea 
             placeholder={placeholder} 
-            className="min-h-[250px] font-mono text-xs whitespace-pre" 
+            className="min-h-[250px] rounded-xl border-border/50 shadow-sm font-mono text-xs whitespace-pre" 
             value={csvText}
             onChange={e => setCsvText(e.target.value)}
           />
         </div>
 
-        <div className="mt-2 text-sm text-yellow-600 dark:text-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 p-2 rounded">
+        <div className="mt-2 rounded-xl border border-border/50 bg-muted/50 p-2 text-sm text-foreground">
           Pastikan header CSV ada di baris pertama dan menggunakan pemisah koma (,) atau TAB.
         </div>
 

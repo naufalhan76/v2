@@ -14,27 +14,27 @@ export default function ServiceConfigPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Konfigurasi Service</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Konfigurasi Service</h1>
         <p className="text-muted-foreground">
           Kelola master data harga service, spesifikasi AC, dan katalog addons
         </p>
       </div>
       
-      <div className="bg-blue-50 dark:bg-blue-950/20 text-blue-800 dark:text-blue-300 p-4 border border-blue-200 dark:border-blue-900 rounded-lg flex gap-3 text-sm">
-         <Info className="h-5 w-5 shrink-0" />
-         <div>
-            <span className="font-semibold">Informasi Hierarki Harga:</span> Harga service ditentukan dari kombinasi <span className="font-mono bg-blue-100 dark:bg-blue-900 px-1 rounded">Unit Type &rarr; Capacity &rarr; Tipe Service</span>. Fitur <b>Bulk Import</b> dengan format Excel tersedia di tab Service Catalog.
-         </div>
+      <div className="rounded-xl border border-border/50 bg-muted/50 p-4 text-sm text-foreground shadow-sm flex gap-3">
+          <Info className="h-5 w-5 shrink-0" />
+          <div>
+             <span className="font-semibold">Informasi Hierarki Harga:</span> Harga service ditentukan dari kombinasi <span className="font-mono rounded bg-background px-1">Unit Type &rarr; Capacity &rarr; Tipe Service</span>. Fitur <b>Bulk Import</b> dengan format Excel tersedia di tab Service Catalog.
+          </div>
       </div>
 
       <Tabs defaultValue="catalog" className="w-full">
-        <TabsList className="w-full flex justify-start overflow-x-auto overflow-y-hidden mb-4 bg-muted/50 p-1">
-          <TabsTrigger value="catalog" className="flex-1 max-w-[200px]">Service Catalog</TabsTrigger>
-          <TabsTrigger value="unit" className="flex-1 max-w-[150px]">Unit Type</TabsTrigger>
-          <TabsTrigger value="capacity" className="flex-1 max-w-[150px]">Capacity</TabsTrigger>
-          <TabsTrigger value="servicetype" className="flex-1 max-w-[150px]">Master Service</TabsTrigger>
-          <TabsTrigger value="brand" className="flex-1 max-w-[150px]">Merk AC</TabsTrigger>
-          <TabsTrigger value="addons" className="flex-1 max-w-[150px]">Add-Ons</TabsTrigger>
+        <TabsList className="mb-4 flex w-full justify-start overflow-x-auto overflow-y-hidden rounded-xl border border-border/50 bg-muted/50 p-1">
+          <TabsTrigger value="catalog" className="flex-1 max-w-[200px] rounded-lg">Service Catalog</TabsTrigger>
+          <TabsTrigger value="unit" className="flex-1 max-w-[150px] rounded-lg">Unit Type</TabsTrigger>
+          <TabsTrigger value="capacity" className="flex-1 max-w-[150px] rounded-lg">Capacity</TabsTrigger>
+          <TabsTrigger value="servicetype" className="flex-1 max-w-[150px] rounded-lg">Master Service</TabsTrigger>
+          <TabsTrigger value="brand" className="flex-1 max-w-[150px] rounded-lg">Merk AC</TabsTrigger>
+          <TabsTrigger value="addons" className="flex-1 max-w-[150px] rounded-lg">Add-Ons</TabsTrigger>
         </TabsList>
 
         <TabsContent value="catalog" className="mt-0">
@@ -58,12 +58,12 @@ export default function ServiceConfigPage() {
         </TabsContent>
 
         <TabsContent value="addons" className="mt-0 pt-2">
-          <Card>
-             <CardHeader>
-               <CardTitle>Master Data Add-ons</CardTitle>
-               <CardDescription>Kelola parts, freon, labor terpisah dari Jasa Service</CardDescription>
-             </CardHeader>
-          </Card>
+          <Card className="rounded-xl border border-border/50 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-foreground">Master Data Add-ons</CardTitle>
+                <CardDescription>Kelola parts, freon, labor terpisah dari Jasa Service</CardDescription>
+              </CardHeader>
+           </Card>
           <div className="mt-4"><AddonsTab /></div>
         </TabsContent>
       </Tabs>

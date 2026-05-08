@@ -167,7 +167,7 @@ export default function InvoiceConfigPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Konfigurasi Invoice</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Konfigurasi Invoice</h1>
         <p className="text-muted-foreground">
           Kelola informasi perusahaan, bank, dan pengaturan invoice
         </p>
@@ -175,16 +175,16 @@ export default function InvoiceConfigPage() {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Tabs defaultValue="company" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="company" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-3 rounded-xl border border-border/50 bg-muted/50 p-1">
+            <TabsTrigger value="company" className="flex items-center gap-2 rounded-lg">
               <Building2 className="h-4 w-4" />
               Data Perusahaan
             </TabsTrigger>
-            <TabsTrigger value="bank" className="flex items-center gap-2">
+            <TabsTrigger value="bank" className="flex items-center gap-2 rounded-lg">
               <Banknote className="h-4 w-4" />
               Informasi Bank
             </TabsTrigger>
-            <TabsTrigger value="invoice" className="flex items-center gap-2">
+            <TabsTrigger value="invoice" className="flex items-center gap-2 rounded-lg">
               <FileText className="h-4 w-4" />
               Pengaturan Invoice
             </TabsTrigger>
@@ -192,21 +192,22 @@ export default function InvoiceConfigPage() {
 
           {/* Company Information Tab */}
           <TabsContent value="company">
-            <Card>
+            <Card className="rounded-xl border border-border/50 shadow-sm">
               <CardHeader>
-                <CardTitle>Informasi Perusahaan</CardTitle>
+                <CardTitle className="text-lg font-semibold text-foreground">Informasi Perusahaan</CardTitle>
                 <CardDescription>
                   Informasi ini akan ditampilkan di header invoice
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="companyName">
+                  <Label htmlFor="companyName" className="text-sm font-medium text-foreground">
                     Nama Perusahaan <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="companyName"
                     placeholder="PT. AC Service Indonesia"
+                    className="h-10"
                     {...register('companyName')}
                   />
                   {errors.companyName && (
@@ -215,7 +216,7 @@ export default function InvoiceConfigPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="companyAddress">Alamat</Label>
+                  <Label htmlFor="companyAddress" className="text-sm font-medium text-foreground">Alamat</Label>
                   <Textarea
                     id="companyAddress"
                     placeholder="Jl. Contoh No. 123, Jakarta Selatan"
@@ -226,20 +227,22 @@ export default function InvoiceConfigPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="companyPhone">Telepon</Label>
+                    <Label htmlFor="companyPhone" className="text-sm font-medium text-foreground">Telepon</Label>
                     <Input
                       id="companyPhone"
                       placeholder="021-12345678"
+                      className="h-10"
                       {...register('companyPhone')}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="companyEmail">Email</Label>
+                    <Label htmlFor="companyEmail" className="text-sm font-medium text-foreground">Email</Label>
                     <Input
                       id="companyEmail"
                       type="email"
                       placeholder="info@acservice.com"
+                      className="h-10"
                       {...register('companyEmail')}
                     />
                     {errors.companyEmail && (
@@ -249,19 +252,21 @@ export default function InvoiceConfigPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="npwp">NPWP</Label>
+                  <Label htmlFor="npwp" className="text-sm font-medium text-foreground">NPWP</Label>
                   <Input
                     id="npwp"
                     placeholder="12.345.678.9-012.000"
+                    className="h-10"
                     {...register('npwp')}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="logoUrl">URL Logo</Label>
+                  <Label htmlFor="logoUrl" className="text-sm font-medium text-foreground">URL Logo</Label>
                   <Input
                     id="logoUrl"
                     placeholder="https://example.com/logo.png"
+                    className="h-10"
                     {...register('logoUrl')}
                   />
                   <p className="text-sm text-muted-foreground">
@@ -282,21 +287,22 @@ export default function InvoiceConfigPage() {
 
           {/* Invoice Settings Tab */}
           <TabsContent value="invoice">
-            <Card>
+            <Card className="rounded-xl border border-border/50 shadow-sm">
               <CardHeader>
-                <CardTitle>Pengaturan Invoice</CardTitle>
+                <CardTitle className="text-lg font-semibold text-foreground">Pengaturan Invoice</CardTitle>
                 <CardDescription>
                   Konfigurasi format dan ketentuan invoice
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="invoicePrefix">
+                  <Label htmlFor="invoicePrefix" className="text-sm font-medium text-foreground">
                     Prefix Invoice <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="invoicePrefix"
                     placeholder="INV"
+                    className="h-10"
                     {...register('invoicePrefix')}
                   />
                   {errors.invoicePrefix && (
@@ -308,11 +314,12 @@ export default function InvoiceConfigPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="defaultDueDays">Jatuh Tempo (hari)</Label>
+                  <Label htmlFor="defaultDueDays" className="text-sm font-medium text-foreground">Jatuh Tempo (hari)</Label>
                   <Input
                     id="defaultDueDays"
                     placeholder="30"
                     type="number"
+                    className="h-10"
                     {...register('defaultDueDays')}
                   />
                   <p className="text-sm text-muted-foreground">
@@ -321,7 +328,7 @@ export default function InvoiceConfigPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="termsConditions">Syarat & Ketentuan</Label>
+                  <Label htmlFor="termsConditions" className="text-sm font-medium text-foreground">Syarat & Ketentuan</Label>
                   <Textarea
                     id="termsConditions"
                     placeholder="Terima kasih atas kepercayaan Anda..."

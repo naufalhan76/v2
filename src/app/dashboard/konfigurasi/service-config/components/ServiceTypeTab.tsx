@@ -113,10 +113,10 @@ export function ServiceTypeTab() {
   }
 
   return (
-    <Card>
+    <Card className="rounded-xl border border-border/50 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Master Data Service Types</CardTitle>
+          <CardTitle className="text-lg font-semibold text-foreground">Master Data Service Types</CardTitle>
           <CardDescription>Kelola kategori tipe service (Checking, Cleaning, Repair, dll)</CardDescription>
         </div>
         <div className="flex gap-2">
@@ -132,9 +132,10 @@ export function ServiceTypeTab() {
         {isFetching ? (
           <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
         ) : (
+          <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
           <Table>
-            <TableHeader>
-              <TableRow>
+            <TableHeader className="[&_tr]:border-0">
+              <TableRow className="border-0">
                 <TableHead>Code</TableHead>
                 <TableHead>Nama Service</TableHead>
                 <TableHead>Deskripsi</TableHead>
@@ -144,7 +145,7 @@ export function ServiceTypeTab() {
             </TableHeader>
             <TableBody>
               {items.map((item) => (
-                <TableRow key={item.service_type_id}>
+                <TableRow key={item.service_type_id} className="border-0 hover:bg-muted/50">
                   <TableCell className="font-medium font-mono">{item.code}</TableCell>
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>{item.description || '-'}</TableCell>
@@ -161,25 +162,26 @@ export function ServiceTypeTab() {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent>
+          <DialogContent className="rounded-xl border border-border/50 shadow-sm sm:max-w-[520px]">
             <DialogHeader>
-              <DialogTitle>{editingItem ? 'Edit' : 'Tambah'} Service Type</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-foreground">{editingItem ? 'Edit' : 'Tambah'} Service Type</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>Code (Unik) *</Label>
-                <Input value={code} onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))} required placeholder="Misal: INSPECTION" />
+                <Label className="text-sm font-medium text-foreground">Code (Unik) *</Label>
+                <Input value={code} onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))} required placeholder="Misal: INSPECTION" className="h-10" />
               </div>
               <div className="space-y-2">
-                <Label>Nama Tipe Service *</Label>
-                <Input value={name} onChange={e => setName(e.target.value)} required placeholder="Misal: Jasa Layanan Pengecekan" />
+                <Label className="text-sm font-medium text-foreground">Nama Tipe Service *</Label>
+                <Input value={name} onChange={e => setName(e.target.value)} required placeholder="Misal: Jasa Layanan Pengecekan" className="h-10" />
               </div>
               <div className="space-y-2">
-                <Label>Deskripsi</Label>
-                <Input value={description} onChange={e => setDescription(e.target.value)} />
+                <Label className="text-sm font-medium text-foreground">Deskripsi</Label>
+                <Input value={description} onChange={e => setDescription(e.target.value)} className="h-10" />
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>

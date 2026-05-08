@@ -297,7 +297,7 @@ export default function ServicePricingPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Harga Service</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Harga Service</h1>
           <p className="text-muted-foreground">
             Kelola harga dasar untuk setiap jenis service
           </p>
@@ -309,18 +309,18 @@ export default function ServicePricingPage() {
               Tambah Harga Service
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>
-                {editingService ? 'Edit Harga Service' : 'Tambah Harga Service'}
-              </DialogTitle>
+            <DialogContent className="sm:max-w-[600px] rounded-xl border border-border/50 shadow-sm">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold text-foreground">
+                  {editingService ? 'Edit Harga Service' : 'Tambah Harga Service'}
+                </DialogTitle>
               <DialogDescription>
                 Atur harga dasar untuk jenis service tertentu
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="serviceType">
+                <Label htmlFor="serviceType" className="text-sm font-medium text-foreground">
                   Jenis Service <span className="text-destructive">*</span>
                 </Label>
                 <Select
@@ -328,7 +328,7 @@ export default function ServicePricingPage() {
                   onValueChange={(value) => setValue('serviceType', value)}
                   disabled={!!editingService}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
                     <SelectValue placeholder="Pilih jenis service" />
                   </SelectTrigger>
                   <SelectContent>
@@ -345,12 +345,13 @@ export default function ServicePricingPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="serviceName">
+                <Label htmlFor="serviceName" className="text-sm font-medium text-foreground">
                   Nama Service <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="serviceName"
                   placeholder="Contoh: AC Cleaning Service"
+                  className="h-10"
                   {...register('serviceName')}
                 />
                 {errors.serviceName && (
@@ -359,12 +360,13 @@ export default function ServicePricingPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="basePrice">
+                <Label htmlFor="basePrice" className="text-sm font-medium text-foreground">
                   Harga Dasar <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="basePrice"
                   placeholder="100000"
+                  className="h-10"
                   {...register('basePrice')}
                 />
                 {errors.basePrice && (
@@ -373,10 +375,11 @@ export default function ServicePricingPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="includes">Termasuk</Label>
+                <Label htmlFor="includes" className="text-sm font-medium text-foreground">Termasuk</Label>
                 <Input
                   id="includes"
                   placeholder="Cek kondisi, Pembersihan filter, Pengecekan freon"
+                  className="h-10"
                   {...register('includes')}
                 />
                 <p className="text-sm text-muted-foreground">
@@ -385,11 +388,12 @@ export default function ServicePricingPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="durationMinutes">Durasi (menit)</Label>
+                <Label htmlFor="durationMinutes" className="text-sm font-medium text-foreground">Durasi (menit)</Label>
                 <Input
                   id="durationMinutes"
                   placeholder="60"
                   type="number"
+                  className="h-10"
                   {...register('durationMinutes')}
                 />
                 {errors.durationMinutes && (
@@ -432,9 +436,9 @@ export default function ServicePricingPage() {
         </Dialog>
       </div>
 
-      <Card>
+        <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardHeader>
-          <CardTitle>Daftar Harga Service</CardTitle>
+          <CardTitle className="text-lg font-semibold text-foreground">Daftar Harga Service</CardTitle>
           <CardDescription>
             Harga dasar yang akan digunakan sebagai acuan dalam pembuatan invoice
           </CardDescription>
@@ -453,10 +457,10 @@ export default function ServicePricingPage() {
               </p>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
               <Table>
-                <TableHeader>
-                  <TableRow>
+                <TableHeader className="[&_tr]:border-0">
+                  <TableRow className="border-0">
                     <SortableTableHead sortKey="service_type" currentSort={sortConfig} onSort={requestSort}>
                       Jenis Service
                     </SortableTableHead>
@@ -478,7 +482,7 @@ export default function ServicePricingPage() {
                 </TableHeader>
                 <TableBody>
                   {services.map((service) => (
-                    <TableRow key={service.pricing_id}>
+                    <TableRow key={service.pricing_id} className="border-0 hover:bg-muted/50">
                       <TableCell>
                         <Badge variant="outline">
                           {SERVICE_TYPES.find((t) => t.value === service.service_type)?.label ||

@@ -126,10 +126,10 @@ export function CapacityTab() {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Capacity Ranges</CardTitle>
+            <CardTitle className="text-lg font-semibold text-foreground">Capacity Ranges</CardTitle>
             <CardDescription>Kelola kapasitas AC (contoh: 0.5 - 1.5 HP, Kg) per Unit Type</CardDescription>
           </div>
           <div className="flex gap-2">
@@ -144,9 +144,9 @@ export function CapacityTab() {
         <CardContent>
           <div className="mb-6 flex gap-4 items-end">
             <div className="w-[300px] space-y-2">
-              <Label>Filter berdasarkan Unit Type</Label>
+              <Label className="text-sm font-medium text-foreground">Filter berdasarkan Unit Type</Label>
               <Select value={filterUnitTypeId} onValueChange={setFilterUnitTypeId}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10">
                   <SelectValue placeholder="Pilih unit type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -162,9 +162,10 @@ export function CapacityTab() {
           {isFetching ? (
             <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : (
+            <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
             <Table>
-              <TableHeader>
-                <TableRow>
+              <TableHeader className="[&_tr]:border-0">
+                <TableRow className="border-0">
                   <TableHead>Unit Type</TableHead>
                   <TableHead>Capacity Label</TableHead>
                   <TableHead>Status</TableHead>
@@ -173,7 +174,7 @@ export function CapacityTab() {
               </TableHeader>
               <TableBody>
                 {items.map((item) => (
-                  <TableRow key={item.capacity_id}>
+                  <TableRow key={item.capacity_id} className="border-0 hover:bg-muted/50">
                     <TableCell>{item.unit_types?.name}</TableCell>
                     <TableCell className="font-medium">{item.capacity_label}</TableCell>
                     <TableCell>
@@ -194,18 +195,19 @@ export function CapacityTab() {
                 )}
               </TableBody>
             </Table>
+            </div>
           )}
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent>
+            <DialogContent className="rounded-xl border border-border/50 shadow-sm sm:max-w-[520px]">
               <DialogHeader>
-                <DialogTitle>{editingItem ? 'Edit' : 'Tambah'} Capacity Range</DialogTitle>
+                <DialogTitle className="text-lg font-semibold text-foreground">{editingItem ? 'Edit' : 'Tambah'} Capacity Range</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Unit Type *</Label>
+                  <Label className="text-sm font-medium text-foreground">Unit Type *</Label>
                   <Select value={unitTypeId} onValueChange={setUnitTypeId}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10">
                       <SelectValue placeholder="Pilih unit type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -216,8 +218,8 @@ export function CapacityTab() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Capacity Label *</Label>
-                  <Input value={capacityLabel} onChange={e => setCapacityLabel(e.target.value)} required placeholder="Misal: 0.5 - 1.5 HP" />
+                  <Label className="text-sm font-medium text-foreground">Capacity Label *</Label>
+                  <Input value={capacityLabel} onChange={e => setCapacityLabel(e.target.value)} required placeholder="Misal: 0.5 - 1.5 HP" className="h-10" />
                 </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>

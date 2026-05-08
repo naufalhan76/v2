@@ -290,9 +290,9 @@ export function AddonsTab() {
               Tambah Add-on
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] rounded-xl border border-border/50 shadow-sm">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-foreground">
                 {editingAddon ? 'Edit Add-on' : 'Tambah Add-on'}
               </DialogTitle>
               <DialogDescription>
@@ -302,14 +302,14 @@ export function AddonsTab() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="category">
+                  <Label htmlFor="category" className="text-sm font-medium text-foreground">
                     Kategori <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={selectedCategory}
                     onValueChange={(value) => setValue('category', value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10">
                       <SelectValue placeholder="Pilih kategori" />
                     </SelectTrigger>
                     <SelectContent>
@@ -326,22 +326,24 @@ export function AddonsTab() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="itemCode">Kode Item</Label>
+                  <Label htmlFor="itemCode" className="text-sm font-medium text-foreground">Kode Item</Label>
                   <Input
                     id="itemCode"
                     placeholder="CAP-10UF"
+                    className="h-10"
                     {...register('itemCode')}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="itemName">
+                <Label htmlFor="itemName" className="text-sm font-medium text-foreground">
                   Nama Item <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="itemName"
                   placeholder="Capacitor 10uF"
+                  className="h-10"
                   {...register('itemName')}
                 />
                 {errors.itemName && (
@@ -350,7 +352,7 @@ export function AddonsTab() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Deskripsi</Label>
+                <Label htmlFor="description" className="text-sm font-medium text-foreground">Deskripsi</Label>
                 <Textarea
                   id="description"
                   placeholder="Deskripsi item..."
@@ -361,14 +363,14 @@ export function AddonsTab() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="unitOfMeasure">
+                  <Label htmlFor="unitOfMeasure" className="text-sm font-medium text-foreground">
                     Satuan <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={watch('unitOfMeasure')}
                     onValueChange={(value) => setValue('unitOfMeasure', value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10">
                       <SelectValue placeholder="Pilih satuan" />
                     </SelectTrigger>
                     <SelectContent>
@@ -387,12 +389,13 @@ export function AddonsTab() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="unitPrice">
+                  <Label htmlFor="unitPrice" className="text-sm font-medium text-foreground">
                     Harga Satuan <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="unitPrice"
                     placeholder="50000"
+                    className="h-10"
                     {...register('unitPrice')}
                   />
                   {errors.unitPrice && (
@@ -403,11 +406,12 @@ export function AddonsTab() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="stockQuantity">Stok</Label>
+                  <Label htmlFor="stockQuantity" className="text-sm font-medium text-foreground">Stok</Label>
                   <Input
                     id="stockQuantity"
                     placeholder="0"
                     type="number"
+                    className="h-10"
                     {...register('stockQuantity')}
                   />
                   {errors.stockQuantity && (
@@ -418,11 +422,12 @@ export function AddonsTab() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="minimumStock">Stok Minimum</Label>
+                  <Label htmlFor="minimumStock" className="text-sm font-medium text-foreground">Stok Minimum</Label>
                   <Input
                     id="minimumStock"
                     placeholder="0"
                     type="number"
+                    className="h-10"
                     {...register('minimumStock')}
                   />
                   {errors.minimumStock && (
@@ -460,9 +465,9 @@ export function AddonsTab() {
 
       {/* Low Stock Alert */}
       {lowStockAddons.length > 0 && (
-        <Card className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-500">
+          <Card className="rounded-xl border border-border/50 shadow-sm bg-amber-50 dark:bg-amber-950/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-amber-700 dark:text-amber-500">
               <AlertTriangle className="h-5 w-5" />
               Stok Rendah
             </CardTitle>
@@ -494,7 +499,7 @@ export function AddonsTab() {
       )}
 
       {/* Filters */}
-      <Card>
+      <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardContent className="pt-6">
           <div className="flex gap-4">
             <div className="flex-1">
@@ -504,7 +509,7 @@ export function AddonsTab() {
                   placeholder="Cari berdasarkan nama atau kode item..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="h-10 pl-10"
                 />
               </div>
             </div>
@@ -513,10 +518,10 @@ export function AddonsTab() {
               onValueChange={setCategoryFilter}
               className="w-auto"
             >
-              <TabsList>
-                <TabsTrigger value="ALL">Semua</TabsTrigger>
+              <TabsList className="rounded-xl border border-border/50 bg-muted/50 p-1">
+                <TabsTrigger value="ALL" className="rounded-lg">Semua</TabsTrigger>
                 {CATEGORIES.map((cat) => (
-                  <TabsTrigger key={cat.value} value={cat.value}>
+                  <TabsTrigger key={cat.value} value={cat.value} className="rounded-lg">
                     {cat.label}
                   </TabsTrigger>
                 ))}
@@ -527,9 +532,9 @@ export function AddonsTab() {
       </Card>
 
       {/* Add-ons Table */}
-      <Card>
+      <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardHeader>
-          <CardTitle>Daftar Add-ons</CardTitle>
+          <CardTitle className="text-lg font-semibold text-foreground">Daftar Add-ons</CardTitle>
           <CardDescription>
             {addons.length} item dalam katalog
           </CardDescription>
@@ -548,10 +553,10 @@ export function AddonsTab() {
               </p>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
               <Table>
-                <TableHeader>
-                  <TableRow>
+                <TableHeader className="[&_tr]:border-0">
+                  <TableRow className="border-0">
                     <TableHead>Kategori</TableHead>
                     <TableHead>Kode</TableHead>
                     <TableHead>Nama Item</TableHead>
@@ -563,7 +568,7 @@ export function AddonsTab() {
                 </TableHeader>
                 <TableBody>
                   {addons.map((addon) => (
-                    <TableRow key={addon.addon_id}>
+                    <TableRow key={addon.addon_id} className="border-0 hover:bg-muted/50">
                       <TableCell>
                         <Badge className={getCategoryColor(addon.category)}>
                           {getCategoryLabel(addon.category)}

@@ -110,10 +110,10 @@ export function UnitTypeTab() {
   }
 
   return (
-    <Card>
+    <Card className="rounded-xl border border-border/50 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Unit Types (Tipe AC)</CardTitle>
+          <CardTitle className="text-lg font-semibold text-foreground">Unit Types (Tipe AC)</CardTitle>
           <CardDescription>Kelola master data tipe AC (Room Air, Standing Floor, dll)</CardDescription>
         </div>
         <div className="flex gap-2">
@@ -129,9 +129,10 @@ export function UnitTypeTab() {
         {isFetching ? (
           <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
         ) : (
+          <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
           <Table>
-            <TableHeader>
-              <TableRow>
+            <TableHeader className="[&_tr]:border-0">
+              <TableRow className="border-0">
                 <TableHead>Nama</TableHead>
                 <TableHead>Deskripsi</TableHead>
                 <TableHead>Status</TableHead>
@@ -140,7 +141,7 @@ export function UnitTypeTab() {
             </TableHeader>
             <TableBody>
               {items.map((item) => (
-                <TableRow key={item.unit_type_id}>
+                <TableRow key={item.unit_type_id} className="border-0 hover:bg-muted/50">
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>{item.description || '-'}</TableCell>
                   <TableCell>
@@ -156,21 +157,22 @@ export function UnitTypeTab() {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent>
+          <DialogContent className="rounded-xl border border-border/50 shadow-sm sm:max-w-[520px]">
             <DialogHeader>
-              <DialogTitle>{editingItem ? 'Edit' : 'Tambah'} Unit Type</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-foreground">{editingItem ? 'Edit' : 'Tambah'} Unit Type</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>Nama Tipe AC *</Label>
-                <Input value={name} onChange={e => setName(e.target.value)} required placeholder="Misal: Room Air" />
+                <Label className="text-sm font-medium text-foreground">Nama Tipe AC *</Label>
+                <Input value={name} onChange={e => setName(e.target.value)} required placeholder="Misal: Room Air" className="h-10" />
               </div>
               <div className="space-y-2">
-                <Label>Deskripsi</Label>
-                <Input value={description} onChange={e => setDescription(e.target.value)} />
+                <Label className="text-sm font-medium text-foreground">Deskripsi</Label>
+                <Input value={description} onChange={e => setDescription(e.target.value)} className="h-10" />
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>

@@ -103,10 +103,10 @@ export function BrandTab() {
   }
 
   return (
-    <Card>
+    <Card className="rounded-xl border border-border/50 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Merk AC (Brands)</CardTitle>
+          <CardTitle className="text-lg font-semibold text-foreground">Merk AC (Brands)</CardTitle>
           <CardDescription>Kelola master data merk AC</CardDescription>
         </div>
         <div className="flex gap-2">
@@ -122,9 +122,10 @@ export function BrandTab() {
         {isFetching ? (
           <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
         ) : (
+          <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
           <Table>
-            <TableHeader>
-              <TableRow>
+            <TableHeader className="[&_tr]:border-0">
+              <TableRow className="border-0">
                 <TableHead>Nama Merk</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
@@ -132,7 +133,7 @@ export function BrandTab() {
             </TableHeader>
             <TableBody>
               {items.map((item) => (
-                <TableRow key={item.brand_id}>
+                <TableRow key={item.brand_id} className="border-0 hover:bg-muted/50">
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>
                     {item.is_active ? <CheckCircle2 className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-gray-400" />}
@@ -147,17 +148,18 @@ export function BrandTab() {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent>
+          <DialogContent className="rounded-xl border border-border/50 shadow-sm sm:max-w-[520px]">
             <DialogHeader>
-              <DialogTitle>{editingItem ? 'Edit' : 'Tambah'} Merk AC</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-foreground">{editingItem ? 'Edit' : 'Tambah'} Merk AC</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>Nama Merk *</Label>
-                <Input value={name} onChange={e => setName(e.target.value)} required placeholder="Misal: Daikin" />
+                <Label className="text-sm font-medium text-foreground">Nama Merk *</Label>
+                <Input value={name} onChange={e => setName(e.target.value)} required placeholder="Misal: Daikin" className="h-10" />
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>

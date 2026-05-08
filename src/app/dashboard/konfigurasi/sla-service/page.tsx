@@ -8,12 +8,12 @@ export default function SlaServicePage() {
     <div className="space-y-4 md:space-y-6 p-4 md:p-0">
       <div className="flex items-center gap-2">
         <Settings className="h-5 w-5 md:h-6 md:w-6" />
-        <h1 className="text-2xl md:text-3xl font-bold">SLA Service</h1>
+        <h1 className="text-2xl md:text-3xl font-semibold text-foreground">SLA Service</h1>
       </div>
 
-      <Card>
+      <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardHeader>
-          <CardTitle>Konfigurasi SLA Service</CardTitle>
+          <CardTitle className="text-lg font-semibold text-foreground">Konfigurasi SLA Service</CardTitle>
           <CardDescription>
             Atur Service Level Agreement untuk setiap jenis service
           </CardDescription>

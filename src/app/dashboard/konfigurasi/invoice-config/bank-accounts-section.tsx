@@ -95,11 +95,11 @@ export function BankAccountsSection({ accounts, onChange }: BankAccountsSectionP
   return (
     <div className="space-y-6">
       {/* Bank Accounts */}
-      <Card>
+      <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Rekening Bank</CardTitle>
+              <CardTitle className="text-lg font-semibold text-foreground">Rekening Bank</CardTitle>
               <CardDescription>
                 Kelola rekening bank untuk pembayaran invoice (bisa lebih dari 1)
               </CardDescription>
@@ -119,51 +119,56 @@ export function BankAccountsSection({ accounts, onChange }: BankAccountsSectionP
             {accounts.map((account) => (
               <div
                 key={account.id}
-                className="p-4 border rounded-lg space-y-3"
+                className="space-y-3 rounded-xl border border-border/50 p-4 shadow-sm"
               >
                 {editingId === account.id ? (
                   // Edit Mode
                   <div className="space-y-3">
                     <div>
-                      <Label>Label Akun *</Label>
+                      <Label className="text-sm font-medium text-foreground">Label Akun *</Label>
                       <Input
                         value={formData.account_label}
                         onChange={(e) => setFormData({ ...formData, account_label: e.target.value })}
                         placeholder="Payment Account 1"
+                        className="h-10"
                       />
                     </div>
                     <div>
-                      <Label>Nama Bank *</Label>
+                      <Label className="text-sm font-medium text-foreground">Nama Bank *</Label>
                       <Input
                         value={formData.bank}
                         onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
                         placeholder="Bank Mandiri"
+                        className="h-10"
                       />
                     </div>
                     <div>
-                      <Label>Nomor Rekening</Label>
+                      <Label className="text-sm font-medium text-foreground">Nomor Rekening</Label>
                       <Input
                         value={formData.account_number}
                         onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
                         placeholder="1234567890"
+                        className="h-10"
                       />
                     </div>
                     <div>
-                      <Label>Atas Nama *</Label>
+                      <Label className="text-sm font-medium text-foreground">Atas Nama *</Label>
                       <Input
                         value={formData.account_name}
                         onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
                         placeholder="PT. AC Service Indonesia"
+                        className="h-10"
                       />
                     </div>
                     <div>
-                      <Label>PPN (%) *</Label>
+                      <Label className="text-sm font-medium text-foreground">PPN (%) *</Label>
                       <Input
                         type="number"
                         step="0.01"
                         value={formData.tax_percentage}
                         onChange={(e) => setFormData({ ...formData, tax_percentage: e.target.value })}
                         placeholder="11"
+                        className="h-10"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         Tarif PPN yang berlaku untuk payment account ini
@@ -227,51 +232,56 @@ export function BankAccountsSection({ accounts, onChange }: BankAccountsSectionP
 
         {/* Add New Account Form */}
         {isAdding && (
-          <div className="p-4 border rounded-lg space-y-3 bg-muted/50">
-            <h4 className="font-semibold">Tambah Rekening Baru</h4>
+          <div className="space-y-3 rounded-xl border border-border/50 bg-muted/50 p-4 shadow-sm">
+            <h4 className="text-lg font-semibold text-foreground">Tambah Rekening Baru</h4>
             <div>
-              <Label>Label Akun (opsional)</Label>
+              <Label className="text-sm font-medium text-foreground">Label Akun (opsional)</Label>
               <Input
                 value={formData.account_label}
                 onChange={(e) => setFormData({ ...formData, account_label: e.target.value })}
                 placeholder={`Payment Account ${accounts.length + 1}`}
+                className="h-10"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Kosongkan untuk auto-generate: Payment Account {accounts.length + 1}
               </p>
             </div>
             <div>
-              <Label>Nama Bank *</Label>
+              <Label className="text-sm font-medium text-foreground">Nama Bank *</Label>
               <Input
                 value={formData.bank}
                 onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
                 placeholder="Bank Mandiri"
+                className="h-10"
               />
             </div>
             <div>
-              <Label>Nomor Rekening *</Label>
+              <Label className="text-sm font-medium text-foreground">Nomor Rekening *</Label>
               <Input
                 value={formData.account_number}
                 onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
                 placeholder="1234567890"
+                className="h-10"
               />
             </div>
             <div>
-              <Label>Atas Nama *</Label>
+              <Label className="text-sm font-medium text-foreground">Atas Nama *</Label>
               <Input
                 value={formData.account_name}
                 onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
                 placeholder="PT. AC Service Indonesia"
+                className="h-10"
               />
             </div>
             <div>
-              <Label>PPN (%) *</Label>
+              <Label className="text-sm font-medium text-foreground">PPN (%) *</Label>
               <Input
                 type="number"
                 step="0.01"
                 value={formData.tax_percentage}
                 onChange={(e) => setFormData({ ...formData, tax_percentage: e.target.value })}
                 placeholder="11"
+                className="h-10"
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Tarif PPN yang berlaku (default 11%)
