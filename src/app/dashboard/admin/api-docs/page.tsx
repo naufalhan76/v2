@@ -193,14 +193,14 @@ const API_ENDPOINTS = [
 ]
 
 const HTTP_STATUS_CODES = [
-  { code: 200, meaning: 'OK', description: 'Successful GET/POST request' },
-  { code: 201, meaning: 'Created', description: 'Resource successfully created' },
-  { code: 400, meaning: 'Bad Request', description: 'Validation error or malformed request' },
-  { code: 401, meaning: 'Unauthorized', description: 'Missing or invalid authentication token' },
-  { code: 403, meaning: 'Forbidden', description: 'User lacks required permissions' },
-  { code: 404, meaning: 'Not Found', description: 'Resource does not exist' },
-  { code: 409, meaning: 'Conflict', description: 'Duplicate entry or constraint violation' },
-  { code: 500, meaning: 'Server Error', description: "Unexpected server-side error" },
+  { code: 200, meaning: "OK", description: "Successful GET/POST request" },
+  { code: 201, meaning: "Created", description: "Resource successfully created" },
+  { code: 400, meaning: "Bad Request", description: "Validation error or malformed request" },
+  { code: 401, meaning: "Unauthorized", description: "Missing or invalid authentication token" },
+  { code: 403, meaning: "Forbidden", description: "User lacks required permissions" },
+  { code: 404, meaning: "Not Found", description: "Resource does not exist" },
+  { code: 409, meaning: "Conflict", description: "Duplicate entry or constraint violation" },
+  { code: 500, meaning: "Server Error", description: "Unexpected server-side error" },
 ]
 
 export default function ApiDocsPage() {
