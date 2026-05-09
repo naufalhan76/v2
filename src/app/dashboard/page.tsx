@@ -115,8 +115,8 @@ export default function DashboardPage() {
           getRecentOrders(7),
         ])
         if (kpiResult.success && kpiResult.data) setKpiData(kpiResult.data)
-        if (chartResult.success) setChartData(chartResult.data)
-        if (ordersResult.success) setRecentOrders(ordersResult.data)
+        if (chartResult.success) setChartData(chartResult.data || [])
+        if (ordersResult.success) setRecentOrders(ordersResult.data || [])
       } catch (error: any) {
         toast({ title: 'Error loading dashboard', description: error.message, variant: 'destructive' })
       } finally {
@@ -200,7 +200,7 @@ export default function DashboardPage() {
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Welcome back, {userName}</h1>
-            <p className="text-muted-foreground text-sm mt-1">Here's your AC service overview</p>
+            <p className="text-muted-foreground text-sm mt-1">Here&apos;s your AC service overview</p>
           </div>
           <div className="flex flex-col items-end gap-1">
             <span className="text-xs text-muted-foreground">Filter Tanggal</span>
@@ -254,7 +254,7 @@ export default function DashboardPage() {
                   {sparkVals.length > 1 && (
                     <ResponsiveContainer width={60} height={30}>
                       <LineChart data={sparkVals}>
-                        <Line type="monotone" dataKey="v" stroke={up ? '#16a34a' : '#dc2626'} strokeWidth={1.5} dot={false} />
+                        <Line type="monotone" dataKey="v" stroke={up ? 'hsl(var(--chart-3))' : 'hsl(var(--destructive))'} strokeWidth={1.5} dot={false} />
                       </LineChart>
                     </ResponsiveContainer>
                   )}
