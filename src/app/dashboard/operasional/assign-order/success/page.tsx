@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { getOrderById } from '@/lib/actions/orders'
@@ -87,7 +87,7 @@ function AssignmentSuccessContent() {
   })
   const allOrderQueries = [orderQuery0, orderQuery1, orderQuery2, orderQuery3, orderQuery4]
   const orderQueries = allOrderQueries.slice(0, orderIds.length)
-  const orders = orderQueries.map(q => q.data?.data).filter(Boolean)
+  const orders = (orderQueries.map(q => q.data?.data).filter(Boolean)) as unknown[]
   const isLoading = orderQueries.some(q => q.isLoading)
 
   const SERVICE_TYPE_MAP: Record<string, { label: string; color: string }> = {
@@ -96,6 +96,143 @@ function AssignmentSuccessContent() {
     'REPAIR': { label: 'Repair', color: 'bg-orange-500' },
     'INSTALLATION': { label: 'Installation', color: 'bg-purple-500' },
     'INSPECTION': { label: 'Inspection', color: 'bg-cyan-500' },
+  }
+
+  const ordersContent: ReactNode[] = []
+  for (let index = 0; index < orders.length; index++) {
+    const o = orders[index] as Record<string, unknown>
+    const customers = o.customers as Record<string, unknown> | undefined
+    const orderItems = (o.order_items || []) as unknown[]
+    const groupedByLocation = orderItems.reduce((acc: Record<string, unknown>, item: unknown) => {
+      const it = item as Record<string, unknown>
+      const locationId = (it.location_id as string) || 'unknown'
+      if (!acc[locationId]) {
+        acc[locationId] = { location: it.locations, items: [] }
+      }
+      ;(acc[locationId] as Record<string, unknown[]>).items.push(item)
+      return acc
+    }, {})
+    const locationCount = Object.keys(groupedByLocation).length
+    ordersContent.push(
+    <div key={o.order_id as string}>
+      {index > 0 && <Separator className='my-4' />}
+      <div className='space-y-3'>
+        {/* Order Header */}
+        <div className='flex items-start justify-between'>
+          <div>
+            <div className='flex items-center gap-2 mb-1'>
+              <span className='font-mono text-sm font-bold'>{o.order_id as string}</span>
+              <Badge className={SERVICE_TYPE_MAP[o.order_type as string]?.color || 'bg-gray-500'}>
+                {SERVICE_TYPE_MAP[o.order_type as string]?.label || o.order_type as string}
+              </Badge>
+            </div>
+            <p className='text-xs text-muted-foreground'>
+              Order Date: {o.order_date ? format(new Date(o.order_date as string), 'dd MMM yyyy') : '-'}
+            </p>
+          </div>
+          <Badge variant='outline' className='bg-green-50 text-green-700 border-green-200'>
+            ASSIGNED
+          </Badge>
+        </div>
+
+        {/* Customer Info */}
+        <div className='bg-muted/50 rounded-lg p-3'>
+          <div className='flex items-center gap-2 mb-2'>
+            <User className='w-4 h-4 text-muted-foreground' />
+            <span className='text-sm font-semibold'>Customer</span>
+          </div>
+          <div className='ml-6 space-y-1'>
+            <p className='font-medium'>{String(customers?.customer_name ?? '')}</p>
+            {!!customers?.primary_contact_person && (
+              <p className='text-sm text-muted-foreground'>
+                Contact: {String(customers.primary_contact_person)}
+              </p>
+            )}
+            <div className='flex gap-3 text-sm'>
+              {!!customers?.phone_number && (
+                <span className='flex items-center gap-1'>
+                  <Phone className='w-3 h-3' />
+                  {String(customers.phone_number)}
+                </span>
+              )}
+              {!!customers?.email && (
+                <span className='flex items-center gap-1'>
+                  <Mail className='w-3 h-3' />
+                  {String(customers.email)}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Locations & Services */}
+        <div className='space-y-2'>
+          <div className='flex items-center gap-2'>
+            <MapPin className='w-4 h-4 text-muted-foreground' />
+            <span className='text-sm font-semibold'>
+              Locations & Services ({locationCount} location{locationCount > 1 ? 's' : ''})
+            </span>
+          </div>
+          <div className='space-y-3'>
+            {Object.entries(groupedByLocation).map(([locationId, data]: [string, unknown]) => {
+              const d = data as Record<string, unknown>
+              const loc = d.location as Record<string, unknown> | undefined
+              const items = d.items as unknown[]
+              return (
+              <div key={locationId} className='bg-muted/50 rounded-lg p-3 space-y-2'>
+                <div className='flex items-start gap-2'>
+                  <Building className='w-4 h-4 text-muted-foreground mt-0.5' />
+                  <div className='flex-1'>
+                    <p className='font-medium'>{loc?.building_name as string || 'Unknown Location'}</p>
+                    <p className='text-sm text-muted-foreground'>
+                      Floor {String(loc?.floor ?? '')}, Room {String(loc?.room_number ?? '')}
+                    </p>
+                  </div>
+                </div>
+                <div className='space-y-1.5 pl-6'>
+                  <p className='text-xs font-semibold text-muted-foreground'>Services:</p>
+                  {items.map((item: unknown, idx: number) => {
+                    const it = item as Record<string, unknown>
+                    const acUnits = it.ac_units as Record<string, unknown> | undefined
+                    return (
+                    <div key={idx} className='flex justify-between items-start text-sm p-2 bg-background rounded'>
+                      <div className='space-y-0.5'>
+                        <div className='flex items-center gap-2'>
+                          <Badge variant='outline' className='text-xs'>
+                            {SERVICE_TYPE_MAP[it.service_type as string]?.label || it.service_type as string}
+                          </Badge>
+                          <span className='text-xs text-muted-foreground'>×{it.quantity as number}</span>
+                        </div>
+                        {acUnits && (
+                          <p className='text-xs text-muted-foreground'>
+                            AC: {acUnits.brand as string} {acUnits.model_number as string}
+                            {!!acUnits.serial_number && ` (SN: ${String(acUnits.serial_number)})`}
+                          </p>
+                        )}
+                      </div>
+                      <div className='text-xs font-semibold'>
+                        Rp {(it.estimated_price as number)?.toLocaleString('id-ID') || '0'}
+                      </div>
+                    </div>
+                    )
+                  })}
+                </div>
+              </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Notes */}
+        {!!o.notes && (
+          <div className='bg-blue-50 border border-blue-200 rounded-lg p-3'>
+            <span className='text-sm font-semibold text-blue-900'>Order Notes:</span>
+            <p className='text-sm text-blue-800 mt-1'>{o.notes as string}</p>
+          </div>
+        )}
+      </div>
+    </div>
+    )
   }
 
   return (
@@ -161,10 +298,10 @@ function AssignmentSuccessContent() {
                       <div key={h.technician_id as string} className='flex items-center justify-between p-2 bg-muted/50 rounded-lg'>
                         <div>
                           <div className='font-medium'>{h.technician_name as string}</div>
-                          {h.contact_number && (
+                          {!!h.contact_number && (
                             <div className='flex items-center gap-2 text-xs text-muted-foreground mt-0.5'>
                               <Phone className='w-3 h-3' />
-                              {h.contact_number as string}
+                              {String(h.contact_number)}
                             </div>
                           )}
                         </div>
@@ -193,141 +330,7 @@ function AssignmentSuccessContent() {
             <p className='text-sm text-muted-foreground'>Loading orders...</p>
           ) : (
             <div className='space-y-4'>
-              {orders.map((order: unknown, index: number) => {
-                const o = order as Record<string, unknown>
-                const customers = o.customers as Record<string, unknown> | undefined
-                const orderItems = (o.order_items || []) as unknown[]
-                const groupedByLocation = orderItems.reduce((acc: Record<string, unknown>, item: unknown) => {
-                  const it = item as Record<string, unknown>
-                  const locationId = (it.location_id as string) || 'unknown'
-                  if (!acc[locationId]) {
-                    acc[locationId] = { location: it.locations, items: [] }
-                  }
-                  ;(acc[locationId] as Record<string, unknown[]>).items.push(item)
-                  return acc
-                }, {})
-                const locationCount = Object.keys(groupedByLocation).length
-                return (
-                <div key={o.order_id as string}>
-                  {index > 0 && <Separator className='my-4' />}
-                  <div className='space-y-3'>
-                    {/* Order Header */}
-                    <div className='flex items-start justify-between'>
-                      <div>
-                        <div className='flex items-center gap-2 mb-1'>
-                          <span className='font-mono text-sm font-bold'>{o.order_id as string}</span>
-                          <Badge className={SERVICE_TYPE_MAP[o.order_type as string]?.color || 'bg-gray-500'}>
-                            {SERVICE_TYPE_MAP[o.order_type as string]?.label || o.order_type as string}
-                          </Badge>
-                        </div>
-                        <p className='text-xs text-muted-foreground'>
-                          Order Date: {o.order_date ? format(new Date(o.order_date as string), 'dd MMM yyyy') : '-'}
-                        </p>
-                      </div>
-                      <Badge variant='outline' className='bg-green-50 text-green-700 border-green-200'>
-                        ASSIGNED
-                      </Badge>
-                    </div>
-
-                    {/* Customer Info */}
-                    <div className='bg-muted/50 rounded-lg p-3'>
-                      <div className='flex items-center gap-2 mb-2'>
-                        <User className='w-4 h-4 text-muted-foreground' />
-                        <span className='text-sm font-semibold'>Customer</span>
-                      </div>
-                      <div className='ml-6 space-y-1'>
-                        <p className='font-medium'>{customers?.customer_name as string}</p>
-                        {customers?.primary_contact_person && (
-                          <p className='text-sm text-muted-foreground'>
-                            Contact: {customers.primary_contact_person as string}
-                          </p>
-                        )}
-                        <div className='flex gap-3 text-sm'>
-                          {customers?.phone_number && (
-                            <span className='flex items-center gap-1'>
-                              <Phone className='w-3 h-3' />
-                              {customers.phone_number as string}
-                            </span>
-                          )}
-                          {customers?.email && (
-                            <span className='flex items-center gap-1'>
-                              <Mail className='w-3 h-3' />
-                              {customers.email as string}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Locations & Services */}
-                    <div className='space-y-2'>
-                      <div className='flex items-center gap-2'>
-                        <MapPin className='w-4 h-4 text-muted-foreground' />
-                        <span className='text-sm font-semibold'>
-                          Locations & Services ({locationCount} location{locationCount > 1 ? 's' : ''})
-                        </span>
-                      </div>
-                      <div className='space-y-3'>
-                        {Object.entries(groupedByLocation).map(([locationId, data]: [string, unknown]) => {
-                          const d = data as Record<string, unknown>
-                          const loc = d.location as Record<string, unknown> | undefined
-                          const items = d.items as unknown[]
-                          return (
-                          <div key={locationId} className='bg-muted/50 rounded-lg p-3 space-y-2'>
-                            <div className='flex items-start gap-2'>
-                              <Building className='w-4 h-4 text-muted-foreground mt-0.5' />
-                              <div className='flex-1'>
-                                <p className='font-medium'>{loc?.building_name as string || 'Unknown Location'}</p>
-                                <p className='text-sm text-muted-foreground'>
-                                  Floor {loc?.floor as string}, Room {loc?.room_number as string}
-                                </p>
-                              </div>
-                            </div>
-                            <div className='space-y-1.5 pl-6'>
-                              <p className='text-xs font-semibold text-muted-foreground'>Services:</p>
-                              {items.map((item: unknown, idx: number) => {
-                                const it = item as Record<string, unknown>
-                                const acUnits = it.ac_units as Record<string, unknown> | undefined
-                                return (
-                                <div key={idx} className='flex justify-between items-start text-sm p-2 bg-background rounded'>
-                                  <div className='space-y-0.5'>
-                                    <div className='flex items-center gap-2'>
-                                      <Badge variant='outline' className='text-xs'>
-                                        {SERVICE_TYPE_MAP[it.service_type as string]?.label || it.service_type as string}
-                                      </Badge>
-                                      <span className='text-xs text-muted-foreground'>×{it.quantity as number}</span>
-                                    </div>
-                                    {acUnits && (
-                                      <p className='text-xs text-muted-foreground'>
-                                        AC: {acUnits.brand as string} {acUnits.model_number as string}
-                                        {acUnits.serial_number && ` (SN: ${acUnits.serial_number as string})`}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <div className='text-xs font-semibold'>
-                                    Rp {(it.estimated_price as number)?.toLocaleString('id-ID') || '0'}
-                                  </div>
-                                </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Notes */}
-                    {o.notes && (
-                      <div className='bg-blue-50 border border-blue-200 rounded-lg p-3'>
-                        <span className='text-sm font-semibold text-blue-900'>Order Notes:</span>
-                        <p className='text-sm text-blue-800 mt-1'>{o.notes as string}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                )
-              })}
+              {ordersContent}
             </div>
           )}
         </CardContent>

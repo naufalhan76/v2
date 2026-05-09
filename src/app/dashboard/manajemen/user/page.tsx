@@ -66,10 +66,11 @@ export default function ManajemenUserPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Apply sorting
-  const { sortedData: users, sortConfig, requestSort } = useSortableTable(usersBase, {
+  const { sortedData: usersSorted, sortConfig, requestSort } = useSortableTable(usersBase as unknown as Record<string, unknown>[], {
     key: 'full_name',
     direction: 'asc'
   })
+  const users = usersSorted as unknown as UserType[]
   
   // Form state
   const [formData, setFormData] = useState({

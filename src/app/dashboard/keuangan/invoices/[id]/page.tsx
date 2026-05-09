@@ -764,7 +764,7 @@ export default function InvoiceDetailPage() {
                                       `New AC Unit ${(item.quantity as number) > 1 ? `(${item.quantity}x)` : ''}`
                                     )}
                                   </div>
-                                  {acUnits?.serial_number && (
+                                  {acUnits && (acUnits.serial_number as string) && (
                                     <div className="text-xs text-muted-foreground">
                                       S/N: {acUnits.serial_number as string}
                                     </div>

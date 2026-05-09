@@ -131,7 +131,7 @@ export async function middleware(req: NextRequest) {
     // Role-based access control for specific routes
     if (pathname.startsWith('/dashboard/manajemen/user')) {
       // Only SUPERADMIN can access user management
-      if (userData.role !== 'SUPERADMIN') {
+      if ((userData as Record<string, unknown>).role !== 'SUPERADMIN') {
         return NextResponse.redirect(new URL('/dashboard', req.url))
       }
     }

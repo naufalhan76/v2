@@ -265,13 +265,13 @@ export async function POST(request: NextRequest) {
               <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; border-radius: 6px;">
                 <h3 style="margin: 0 0 15px 0; color: #1e3a8a; font-size: 16px; font-weight: bold;">💳 Informasi Pembayaran</h3>
                 <p style="margin: 0 0 15px 0; color: #475569; font-size: 13px; font-style: italic;">Silakan transfer ke salah satu rekening berikut dan cantumkan No. Invoice (${invoice.invoice_number}) dalam keterangan transfer.</p>
-                ${bankAccounts.map((account, index) => `
+                ${bankAccounts.map((account, index) => { const a = account as Record<string, unknown>; return `
                   <div style="margin-bottom: 15px; padding: 12px; background-color: #ffffff; border-radius: 6px;">
-                    <p style="margin: 0 0 5px 0; color: #1e3a8a; font-size: 15px; font-weight: bold;">${index + 1}. ${account.bank}</p>
-                    <p style="margin: 0 0 3px 0; color: #475569; font-size: 14px;">No. Rekening: <strong>${account.account_number}</strong></p>
-                    <p style="margin: 0; color: #475569; font-size: 14px;">Atas Nama: <strong>${account.account_name}</strong></p>
+                    <p style="margin: 0 0 5px 0; color: #1e3a8a; font-size: 15px; font-weight: bold;">${index + 1}. ${a.bank}</p>
+                    <p style="margin: 0 0 3px 0; color: #475569; font-size: 14px;">No. Rekening: <strong>${a.account_number}</strong></p>
+                    <p style="margin: 0; color: #475569; font-size: 14px;">Atas Nama: <strong>${a.account_name}</strong></p>
                   </div>
-                `).join('')}
+                `}).join('')}
               </div>
             </td>
           </tr>

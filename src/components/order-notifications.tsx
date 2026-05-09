@@ -82,20 +82,23 @@ export function OrderNotifications() {
       const storageKey = `readNotifications_${userId}`
       const readNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]')
 
-      const formattedNotifications: OrderNotification[] = (orders || []).map((order: {
-        order_id: string
-        status: 'CANCELLED' | 'RESCHEDULE'
-        updated_at: string
-        scheduled_visit_date?: string
-        customers?: { customer_name?: string } | null
-      }) => ({
-        order_id: order.order_id,
-        customer_name: order.customers?.customer_name || 'Unknown Customer',
-        status: order.status,
-        updated_at: order.updated_at,
-        scheduled_visit_date: order.scheduled_visit_date,
-        read: readNotifications.includes(order.order_id)
-      }))
+      const formattedNotifications: OrderNotification[] = (orders || []).map((rawOrder: unknown) => {
+        const order = rawOrder as {
+          order_id: string
+          status: 'CANCELLED' | 'RESCHEDULE'
+          updated_at: string
+          scheduled_visit_date?: string
+          customers?: { customer_name?: string } | null
+        }
+        return {
+          order_id: order.order_id,
+          customer_name: order.customers?.customer_name || 'Unknown Customer',
+          status: order.status,
+          updated_at: order.updated_at,
+          scheduled_visit_date: order.scheduled_visit_date,
+          read: readNotifications.includes(order.order_id)
+        }
+      })
 
       setNotifications(formattedNotifications)
       setUnreadCount(formattedNotifications.filter(n => !n.read).length)

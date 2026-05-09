@@ -65,10 +65,11 @@ export default function LocationsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Apply sorting
-  const { sortedData: locations, sortConfig, requestSort } = useSortableTable(locationsBase, {
+  const { sortedData: locationsSorted, sortConfig, requestSort } = useSortableTable(locationsBase as unknown as Record<string, unknown>[], {
     key: 'customers.customer_name',
     direction: 'asc'
   })
+  const locations = locationsSorted as unknown as Location[]
 
   const [formData, setFormData] = useState({
     full_address: '',

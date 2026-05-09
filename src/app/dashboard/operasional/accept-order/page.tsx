@@ -412,7 +412,7 @@ export default function AcceptOrderPage() {
                           <div className='flex-1'>
                             <p className='font-semibold'>{(d.location?.building_name as string) || 'Unknown Location'}</p>
                             <p className='text-sm text-muted-foreground'>
-                              Floor {d.location?.floor as string} - Room {d.location?.room_number as string}
+                              Floor {String(d.location?.floor ?? '')} - Room {String(d.location?.room_number ?? '')}
                             </p>
                           </div>
                         </div>
@@ -431,8 +431,8 @@ export default function AcceptOrderPage() {
                                 </div>
                                 {it.ac_units && (
                                   <p className='text-xs text-muted-foreground'>
-                                    AC: {it.ac_units.brand as string} {it.ac_units.model_number as string}
-                                    {it.ac_units.serial_number && ` (SN: ${it.ac_units.serial_number as string})`}
+                                    AC: {String((it.ac_units as Record<string, unknown>).brand ?? '')} {String((it.ac_units as Record<string, unknown>).model_number ?? '')}
+                                    {!!(it.ac_units as Record<string, unknown>).serial_number && ` (SN: ${String((it.ac_units as Record<string, unknown>).serial_number)})`}
                                   </p>
                                 )}
                               </div>

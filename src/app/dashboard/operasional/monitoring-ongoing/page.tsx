@@ -561,7 +561,7 @@ function MonitoringOngoingContent() {
                 selected={tempDateRange}
                 onSelect={handleDateRangeSelect}
                 numberOfMonths={2}
-                locale={id}
+                locale={id as never}
               />
             </PopoverContent>
           </Popover>
@@ -1075,10 +1075,10 @@ function MonitoringOngoingContent() {
                             <div key={tc.id as string} className='flex items-center justify-between p-2 bg-white rounded border'>
                               <div className='flex-1'>
                                 <div className='font-medium text-sm'>{(technicians?.technician_name as string) || 'Unknown'}</div>
-                                {technicians?.contact_number && (
+                                {!!technicians?.contact_number && (
                                   <div className='text-xs text-muted-foreground flex items-center gap-1'>
                                     <Phone className='w-3 h-3' />
-                                    {technicians.contact_number as string}
+                                    {String(technicians.contact_number)}
                                   </div>
                                 )}
                               </div>
@@ -1162,14 +1162,14 @@ function MonitoringOngoingContent() {
                                           {it.service_type as string}
                                         </Badge>
                                       )}
-                                      {unitTypes?.name && (
+                                      {!!unitTypes?.name && (
                                         <span className='text-xs text-muted-foreground'>
-                                          {unitTypes.name as string}{capacityRanges?.capacity_label ? ` · ${capacityRanges.capacity_label as string}` : ''}
+                                          {String(unitTypes.name)}{capacityRanges?.capacity_label ? ` · ${String(capacityRanges.capacity_label)}` : ''}
                                         </span>
                                       )}
                                     </div>
-                                    {serviceCatalog?.service_name && (
-                                      <div className='text-xs text-muted-foreground pl-1'>{serviceCatalog.service_name as string}</div>
+                                    {!!serviceCatalog?.service_name && (
+                                      <div className='text-xs text-muted-foreground pl-1'>{String(serviceCatalog.service_name)}</div>
                                     )}
                                     {acUnits && (
                                       <div className='text-xs text-muted-foreground pl-1'>

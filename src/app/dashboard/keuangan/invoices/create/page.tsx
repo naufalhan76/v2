@@ -394,7 +394,7 @@ export default function CreateInvoicePage() {
       
       const serviceName = baseServiceNames.length > 1 
         ? 'Multiple Services' 
-        : (baseService?.service_name || baseServiceNames[0] || 'Service')
+        : ((baseService as Record<string, unknown>)?.service_name as string || baseServiceNames[0] || 'Service')
 
       // Determine invoice type strictly from order status — ignore URL param on submit
       // to prevent a crafted URL from forcing FINAL on a non-DONE order.
@@ -579,16 +579,18 @@ export default function CreateInvoicePage() {
               <CardDescription>Konfirmasi harga base service</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {baseService && (
+              {(baseService as Record<string, unknown> | null) && (() => {
+                const bs = baseService as Record<string, unknown>
+                return (
                 <div className="space-y-4">
                   <div className="rounded-lg border p-4 space-y-2">
-                    <h3 className="font-semibold">{baseService.service_type} Service</h3>
-                    <p className="text-sm text-muted-foreground">{baseService.description}</p>
+                    <h3 className="font-semibold">{bs.service_type as string} Service</h3>
+                    <p className="text-sm text-muted-foreground">{bs.description as string}</p>
                     <Separator className="my-2" />
                     <div className="flex justify-between items-center">
                       <span className="text-sm">Harga Base Service:</span>
                       <span className="text-lg font-bold">
-                        {formatCurrency(baseService.base_price)}
+                        {formatCurrency(bs.base_price as number)}
                       </span>
                     </div>
                   </div>
@@ -617,7 +619,8 @@ export default function CreateInvoicePage() {
                     </div>
                   </div>
                 </div>
-              )}
+                )
+              })()}
 
               <div className="flex justify-between">
                 <Button type="button" variant="outline" onClick={() => setCurrentStep(1)}>

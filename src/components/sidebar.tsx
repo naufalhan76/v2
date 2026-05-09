@@ -274,8 +274,8 @@ function ProfileSection() {
           .eq('auth_user_id', session.user.id)
           .single()
         setUser({
-          email: session.user.email,
-          full_name: userData?.full_name || session.user.email,
+          email: session.user.email ?? '',
+          full_name: userData?.full_name || session.user.email || '',
           role: userData?.role || 'USER',
           avatar_url: userData?.photo_url || session.user.user_metadata?.avatar_url
         })

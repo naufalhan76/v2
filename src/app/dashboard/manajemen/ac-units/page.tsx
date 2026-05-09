@@ -125,10 +125,11 @@ export default function AcUnitsPage() {
   })
 
   // Apply sorting to filtered data
-  const { sortedData: acUnits, sortConfig, requestSort } = useSortableTable(filteredAcUnits, {
+  const { sortedData: acUnitsSorted, sortConfig, requestSort } = useSortableTable(filteredAcUnits as unknown as Record<string, unknown>[], {
     key: 'brand',
     direction: 'asc'
   })
+  const acUnits = acUnitsSorted as unknown as AcUnit[]
 
   const [formData, setFormData] = useState({
     brand: '',

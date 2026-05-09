@@ -243,7 +243,10 @@ Terima kasih.`
     
     setIsProcessing(true)
     try {
-      const result = await updateOrderStatus(selectedRecord.orders?.order_id, 'CANCELLED', 'Cancelled from monitoring history')
+      const orderId = (selectedRecord as Record<string, unknown>).orders
+        ? ((selectedRecord as Record<string, unknown>).orders as Record<string, unknown>).order_id as string
+        : ''
+      const result = await updateOrderStatus(orderId, 'CANCELLED', 'Cancelled from monitoring history')
       
       if (result.success) {
         toast({
@@ -376,7 +379,7 @@ Terima kasih.`
                 selected={tempDateRange}
                 onSelect={handleDateRangeSelect}
                 numberOfMonths={2}
-                locale={id}
+                locale={id as never}
               />
             </PopoverContent>
           </Popover>

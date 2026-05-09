@@ -87,10 +87,11 @@ export default function InvoicesPage() {
   const [paymentFilter, setPaymentFilter] = useState('ALL')
 
   // Apply sorting
-  const { sortedData: invoices, sortConfig, requestSort } = useSortableTable(invoicesBase, {
+  const { sortedData: invoicesSorted, sortConfig, requestSort } = useSortableTable(invoicesBase as unknown as Record<string, unknown>[], {
     key: 'invoice_number',
     direction: 'desc'
   })
+  const invoices = invoicesSorted as unknown as Invoice[]
 
   useEffect(() => {
     loadInvoices()

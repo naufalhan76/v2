@@ -54,10 +54,11 @@ export default function TechniciansPage() {
   const [isEditOpen, setIsEditOpen] = useState(false)
 
   // Apply sorting
-  const { sortedData: technicians, sortConfig, requestSort } = useSortableTable(techniciansBase, {
+  const { sortedData: techniciansSorted, sortConfig, requestSort } = useSortableTable(techniciansBase as unknown as Record<string, unknown>[], {
     key: 'technician_name',
     direction: 'asc'
   })
+  const technicians = techniciansSorted as unknown as Technician[]
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)

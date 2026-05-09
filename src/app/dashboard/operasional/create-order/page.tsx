@@ -447,7 +447,7 @@ export default function CreateOrderPage() {
       if (!customerId) throw new Error('Customer ID not found')
 
       // Step 2: Create new locations if needed and collect order items
-      const orderItems = []
+      const orderItems: import('@/types/create-order').CreateOrderItemInput[] = []
       
       for (const loc of locations) {
         let locationId = loc.location_id
@@ -479,16 +479,16 @@ export default function CreateOrderPage() {
             orderItems.push({
               location_id: locationId,
               ac_unit_id: ac.ac_unit_id,
-              unit_type_id: svc.unit_type_id,
-              capacity_id: svc.capacity_id,
-              brand_id: undefined as unknown,
-              service_type_id: svc.service_type_id,
-              catalog_id: svc.catalog_id,
-              msn_code: svc.msn_code,
-              service_type: svc.service_type,
+              unit_type_id: svc.unit_type_id as string | undefined,
+              capacity_id: svc.capacity_id as string | undefined,
+              brand_id: undefined,
+              service_type_id: svc.service_type_id as string | undefined,
+              catalog_id: svc.catalog_id as string | undefined,
+              msn_code: svc.msn_code as string | undefined,
+              service_type: svc.service_type as string,
               quantity: 1,
               description: ac.notes || undefined,
-              estimated_price: svc.price || 0
+              estimated_price: (svc.price as number) || 0
             })
           }
         }
@@ -500,23 +500,23 @@ export default function CreateOrderPage() {
             const usvc = service as Record<string, unknown>
             orderItems.push({
               location_id: locationId,
-              ac_unit_id: null, // Will be created as placeholder
-              unit_type_id: usvc.unit_type_id,
-              capacity_id: usvc.capacity_id,
+              ac_unit_id: null,
+              unit_type_id: usvc.unit_type_id as string | undefined,
+              capacity_id: usvc.capacity_id as string | undefined,
               brand_id: unit.brand_id,
-              service_type_id: usvc.service_type_id,
-              catalog_id: usvc.catalog_id,
-              msn_code: usvc.msn_code,
-              service_type: usvc.service_type,
-              quantity: 1, // Each new AC unit = 1 quantity
+              service_type_id: usvc.service_type_id as string | undefined,
+              catalog_id: usvc.catalog_id as string | undefined,
+              msn_code: usvc.msn_code as string | undefined,
+              service_type: usvc.service_type as string,
+              quantity: 1,
               description: unit.notes || undefined,
-              estimated_price: usvc.price || 0,
+              estimated_price: (usvc.price as number) || 0,
               new_ac_data: {
-                brand: unit.brand_id || 'TBD', // To be determined by technician
+                brand: unit.brand_id || 'TBD',
                 model_number: 'TBD',
                 capacity_btu: undefined
               }
-            } as unknown)
+            })
           }
         }
       }
@@ -1145,8 +1145,8 @@ function ConfirmationModal({
   notes: string
   totalPrice: number
 }) {
-  const selectedTech = technicians.find(t => t.technician_id === technicianId)
-  
+  const selectedTech = technicians.find((t: unknown) => (t as Record<string, unknown>).technician_id === technicianId) as Record<string, unknown> | undefined
+
   // Count services
   const serviceCount = locations.reduce((acc, loc) => {
     const existingServices = loc.existing_acs.reduce((sum, ac) => sum + ac.selected_services.length, 0)
@@ -1177,16 +1177,16 @@ function ConfirmationModal({
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <span className="text-muted-foreground">Name:</span>
-                <p className="font-medium">{isNewCustomer ? newCustomerName : customer?.customer_name}</p>
+                <p className="font-medium">{isNewCustomer ? newCustomerName : (customer as Record<string, unknown>)?.customer_name as string}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Phone:</span>
                 <p className="font-medium">{phoneInput}</p>
               </div>
-              {(isNewCustomer ? newCustomerEmail : customer?.email) && (
+              {(isNewCustomer ? newCustomerEmail : (customer as Record<string, unknown>)?.email as string) && (
                 <div className="col-span-2">
                   <span className="text-muted-foreground">Email:</span>
-                  <p className="font-medium">{isNewCustomer ? newCustomerEmail : customer?.email}</p>
+                  <p className="font-medium">{isNewCustomer ? newCustomerEmail : (customer as Record<string, unknown>)?.email as string}</p>
                 </div>
               )}
               {isNewCustomer && (
@@ -1210,7 +1210,7 @@ function ConfirmationModal({
               </div>
               <div>
                 <span className="text-muted-foreground">Assigned Technician:</span>
-                <p className="font-medium">{selectedTech ? selectedTech.full_name : 'Not assigned'}</p>
+                <p className="font-medium">{selectedTech ? selectedTech.full_name as string : 'Not assigned'}</p>
               </div>
             </div>
           </div>
@@ -1299,8 +1299,8 @@ function SuccessModal({
   totalPrice: number
   serviceCount: number
 }) {
-  const selectedTech = technicians.find(t => t.technician_id === technicianId)
-  
+  const selectedTech = technicians.find((t: unknown) => (t as Record<string, unknown>).technician_id === technicianId) as Record<string, unknown> | undefined
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -1329,7 +1329,7 @@ function SuccessModal({
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Customer:</span>
-              <span className="font-medium">{isNewCustomer ? newCustomerName : customer?.customer_name}</span>
+              <span className="font-medium">{isNewCustomer ? newCustomerName : (customer as Record<string, unknown>)?.customer_name as string}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Phone:</span>
@@ -1342,7 +1342,7 @@ function SuccessModal({
             {selectedTech && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Technician:</span>
-                <span className="font-medium">{selectedTech.full_name}</span>
+                <span className="font-medium">{selectedTech.full_name as string}</span>
               </div>
             )}
             <div className="flex justify-between">
@@ -1408,7 +1408,7 @@ function EditBillingAddressModal({
   // Reset state when modal opens
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-      setManualAddress(customer?.billing_address || '')
+      setManualAddress((customer as Record<string, unknown>)?.billing_address as string || '')
       setMode('manual')
       setSelectedLocationIndex(null)
     } else {
@@ -1417,7 +1417,7 @@ function EditBillingAddressModal({
   }
 
   const handleSave = async () => {
-    if (!customer?.customer_id) return
+    if (!(customer as Record<string, unknown>)?.customer_id) return
 
     let newAddress = ''
     
@@ -1446,7 +1446,7 @@ function EditBillingAddressModal({
 
     setIsSaving(true)
     try {
-      const result = await updateCustomer(customer.customer_id, {
+      const result = await updateCustomer((customer as Record<string, unknown>).customer_id as string, {
         billing_address: newAddress
       })
 
@@ -1476,7 +1476,7 @@ function EditBillingAddressModal({
             Edit Billing Address
           </DialogTitle>
           <DialogDescription>
-            Update the billing address for {customer?.customer_name}
+            Update the billing address for {(customer as Record<string, unknown>)?.customer_name as string}
           </DialogDescription>
         </DialogHeader>
 

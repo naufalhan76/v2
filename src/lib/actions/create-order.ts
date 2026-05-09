@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
-import { normalizeOrderServiceType } from '@/lib/service-types'
+import { normalizeOrderServiceType, type OrderServiceType } from '@/lib/service-types'
 import type { 
   CustomerSearchResult, 
   CreateOrderInput, 
@@ -203,7 +203,7 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
       
       // Find the most common service type
       const sortedTypes = Object.entries(serviceTypeCounts).sort((a, b) => b[1] - a[1])
-      orderType = (sortedTypes[0]?.[0] as string) || 'INSPECTION' // Most common (or first if tied)
+      orderType = ((sortedTypes[0]?.[0] as string) || 'INSPECTION') as OrderServiceType // Most common (or first if tied)
     }
     
     // 1. Create order

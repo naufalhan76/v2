@@ -71,10 +71,10 @@ export function useOptimisticArray<T>(
         case 'add':
           return [...state, action.item]
         case 'remove':
-          return state.filter((item: unknown) => (item as { id?: string }).id !== action.id)
+          return state.filter((item: T) => (item as { id?: string }).id !== action.id)
         case 'update':
-          return state.map((item: unknown) =>
-            (item as { id?: string }).id === action.id ? { ...(item as object), ...action.item } : item
+          return state.map((item: T) =>
+            (item as { id?: string }).id === action.id ? { ...(item as object), ...action.item } as T : item
           )
         default:
           return state
@@ -232,7 +232,7 @@ export function useOptimisticDelete<T>(
   const { toast } = useToast()
   const [optimisticArray, setOptimisticArray] = useOptimistic(
     initialArray,
-    (state, deletedId: string) => state.filter((item: unknown) => (item as { id?: string }).id !== deletedId)
+    (state, deletedId: string) => state.filter((item: T) => (item as { id?: string }).id !== deletedId)
   )
   const [isPending, setIsPending] = useState(false)
 

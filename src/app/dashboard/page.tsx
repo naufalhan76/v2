@@ -219,7 +219,7 @@ export default function DashboardPage() {
                   selected={tempDateRange}
                   onSelect={handleDateRangeSelect}
                   numberOfMonths={2}
-                  locale={id}
+                  locale={id as never}
                 />
               </PopoverContent>
             </Popover>
@@ -357,9 +357,11 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentOrders.map((order) => (
-                  <TableRow key={order.order_id} className="border-0 hover:bg-muted/50">
-                    <TableCell className="font-mono text-xs text-muted-foreground">{order.order_id?.slice(0, 8)}…</TableCell>
+                {recentOrders.map((order) => {
+                  const o = order as Record<string, unknown>
+                  return (
+                  <TableRow key={o.order_id as string} className="border-0 hover:bg-muted/50">
+                    <TableCell className="font-mono text-xs text-muted-foreground">{(o.order_id as string)?.slice(0, 8)}…</TableCell>
                     <TableCell className="text-sm font-medium">{(order as Record<string, unknown> & { customers?: { name?: string } })?.customers?.name ?? '—'}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{(order as Record<string, unknown>).order_type as string ?? '—'}</TableCell>
                     <TableCell>{getStatusBadge((order as Record<string, unknown>).status as string)}</TableCell>
@@ -367,7 +369,8 @@ export default function DashboardPage() {
                       {(order as Record<string, unknown>).created_at ? format(new Date((order as Record<string, unknown>).created_at as string), 'dd MMM yyyy', { locale: id }) : '—'}
                     </TableCell>
                   </TableRow>
-                ))}
+                  )
+                })}
               </TableBody>
             </Table>
           )}

@@ -60,12 +60,12 @@ export function LocationCard({
       if (!updated.existing_acs[activeAcIndex].selected_services) updated.existing_acs[activeAcIndex].selected_services = []
       // Don't add duplicate
       if (!updated.existing_acs[activeAcIndex].selected_services.find((s: unknown) => (s as Record<string, unknown>).catalog_id === newService.catalog_id)) {
-        updated.existing_acs[activeAcIndex].selected_services.push(newService as unknown)
+        updated.existing_acs[activeAcIndex].selected_services.push(newService as never)
       }
     } else if (activeAcType === 'new' && activeAcIndex >= 0) {
       if (!updated.new_ac_units[activeAcIndex].selected_services) updated.new_ac_units[activeAcIndex].selected_services = []
       if (!updated.new_ac_units[activeAcIndex].selected_services.find((s: unknown) => (s as Record<string, unknown>).catalog_id === newService.catalog_id)) {
-        updated.new_ac_units[activeAcIndex].selected_services.push(newService as unknown)
+        updated.new_ac_units[activeAcIndex].selected_services.push(newService as never)
       }
     }
     onChange(updated)
@@ -289,9 +289,10 @@ export function LocationCard({
                           >
                              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger>
                              <SelectContent>
-                                {masterData.acBrands.map(b => (
-                                   <SelectItem key={b.brand_id} value={b.brand_id}>{b.name}</SelectItem>
-                                ))}
+                                {masterData.acBrands.map((b: unknown) => {
+                                   const brand = b as Record<string, unknown>
+                                   return <SelectItem key={brand.brand_id as string} value={brand.brand_id as string}>{brand.name as string}</SelectItem>
+                                })}
                              </SelectContent>
                           </Select>
                        </div>
@@ -309,9 +310,10 @@ export function LocationCard({
                           >
                              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger>
                              <SelectContent>
-                                {masterData.unitTypes.map(u => (
-                                   <SelectItem key={u.unit_type_id} value={u.unit_type_id}>{u.name}</SelectItem>
-                                ))}
+                                {masterData.unitTypes.map((u: unknown) => {
+                                   const ut = u as Record<string, unknown>
+                                   return <SelectItem key={ut.unit_type_id as string} value={ut.unit_type_id as string}>{ut.name as string}</SelectItem>
+                                })}
                              </SelectContent>
                           </Select>
                        </div>
@@ -329,9 +331,10 @@ export function LocationCard({
                           >
                              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger>
                              <SelectContent>
-                                {masterData.capacityRanges.filter((c: unknown) => (c as Record<string, unknown>).unit_type_id === unit.unit_type_id).map(c => (
-                                   <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>
-                                ))}
+                                {masterData.capacityRanges.filter((c: unknown) => (c as Record<string, unknown>).unit_type_id === unit.unit_type_id).map((c: unknown) => {
+                                   const cap = c as Record<string, unknown>
+                                   return <SelectItem key={cap.capacity_id as string} value={cap.capacity_id as string}>{cap.capacity_label as string}</SelectItem>
+                                })}
                              </SelectContent>
                           </Select>
                        </div>

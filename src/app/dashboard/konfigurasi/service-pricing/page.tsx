@@ -85,10 +85,11 @@ export default function ServicePricingPage() {
   const { toast } = useToast()
 
   // Apply sorting
-  const { sortedData: services, sortConfig, requestSort } = useSortableTable(servicesBase, {
+  const { sortedData: servicesSorted, sortConfig, requestSort } = useSortableTable(servicesBase as unknown as Record<string, unknown>[], {
     key: 'service_type',
     direction: 'asc'
   })
+  const services = servicesSorted as unknown as ServicePricing[]
 
   const {
     register,

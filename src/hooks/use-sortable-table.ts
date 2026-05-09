@@ -7,7 +7,7 @@ export interface SortConfig {
   direction: SortDirection
 }
 
-export function useSortableTable<T>(data: T[], initialSort?: SortConfig) {
+export function useSortableTable<T extends Record<string, unknown>>(data: T[], initialSort?: SortConfig) {
   const [sortConfig, setSortConfig] = useState<SortConfig>(
     initialSort || { key: null, direction: null }
   )
@@ -45,8 +45,8 @@ export function useSortableTable<T>(data: T[], initialSort?: SortConfig) {
       }
 
       // Try to parse as date strings
-      const aDate = new Date(aValue)
-      const bDate = new Date(bValue)
+      const aDate = new Date(aValue as string | number | Date)
+      const bDate = new Date(bValue as string | number | Date)
       if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
         return sortConfig.direction === 'asc'
           ? aDate.getTime() - bDate.getTime()

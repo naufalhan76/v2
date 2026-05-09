@@ -43,8 +43,8 @@ export default function InvoiceConfigPage() {
     handleSubmit,
     formState: { errors },
     reset,
-    _setValue,
-    _watch,
+    setValue: _setValue,
+    watch: _watch,
   } = useForm<InvoiceConfigFormData>({
     resolver: zodResolver(invoiceConfigSchema),
     defaultValues: {

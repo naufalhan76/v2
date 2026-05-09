@@ -99,8 +99,8 @@ export default function CustomerManagementPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Optimistic UI untuk delete operation
-  const { optimisticArray: optimisticCustomersBase, handleArrayAction } = useOptimisticArray(
-    data?.data || [],
+  const { optimisticArray: optimisticCustomersBase, handleArrayAction } = useOptimisticArray<Record<string, unknown>>(
+    (data?.data || []) as Record<string, unknown>[],
     async ({ type, id }) => {
       if (type === 'remove') {
         const response = await fetch(`/api/customers/${id}`, { method: 'DELETE' })
@@ -403,24 +403,25 @@ export default function CustomerManagementPage() {
                   </TableRow>
                 ) : (
                   optimisticCustomers.map((customer) => {
-                    const locations = customer.locations || []
+                    const c = customer as Record<string, unknown>
+                    const locations = (c.locations as Record<string, unknown>[]) || []
                     const locationsCount = locations.length
                     const totalAcUnits = locations.reduce((sum: number, loc: Record<string, unknown>) =>
                       sum + ((loc.ac_units as unknown[])?.length || 0), 0
                     )
-                    
+
                     return (
                       <TableRow
-                        key={customer.customer_id}
-                        className={deletingId === customer.customer_id ? "opacity-50" : ""}
+                        key={c.customer_id as string}
+                        className={deletingId === c.customer_id ? "opacity-50" : ""}
                       >
                         <TableCell className="font-medium">
-                          {customer.customer_name}
+                          {c.customer_name as string}
                         </TableCell>
-                        <TableCell>{customer.primary_contact_person}</TableCell>
-                        <TableCell>{customer.phone_number}</TableCell>
-                        <TableCell>{customer.email}</TableCell>
-                        <TableCell>{customer.billing_address}</TableCell>
+                        <TableCell>{c.primary_contact_person as string}</TableCell>
+                        <TableCell>{c.phone_number as string}</TableCell>
+                        <TableCell>{c.email as string}</TableCell>
+                        <TableCell>{c.billing_address as string}</TableCell>
                         <TableCell>
                           {locationsCount === 0 ? (
                             <Badge variant="secondary" className="gap-1">
@@ -466,9 +467,9 @@ export default function CustomerManagementPage() {
                                             </div>
                                             <div className="text-xs text-muted-foreground">
                                               Floor {loc.floor as number}
-                                              {loc.room_number && ` • Room ${loc.room_number as string}`}
+                                              {(loc.room_number as string) && ` • Room ${loc.room_number as string}`}
                                             </div>
-                                            {loc.description && (
+                                            {(loc.description as string) && (
                                               <div className="text-xs text-muted-foreground mt-1">
                                                 {loc.description as string}
                                               </div>
@@ -490,15 +491,15 @@ export default function CustomerManagementPage() {
                           )}
                         </TableCell>
                         <TableCell className="max-w-xs truncate">
-                          {customer.notes || '-'}
+                          {(c.notes as string) || '-'}
                         </TableCell>
                       <TableCell className="text-right w-[180px]">
                         <div className="flex justify-end gap-2">
-                          <LoadingOverlay isLoading={isUpdating && editingId === customer.customer_id}>
+                          <LoadingOverlay isLoading={isUpdating && editingId === c.customer_id}>
                             <Button
                               variant="outline"
                               className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
-                              onClick={() => handleEdit(customer)}
+                              onClick={() => handleEdit(c)}
                               disabled={isDeleting}
                             >
                               <Pencil className="h-4 w-4 flex-shrink-0" />
@@ -507,11 +508,11 @@ export default function CustomerManagementPage() {
                               </span>
                             </Button>
                           </LoadingOverlay>
-                          <LoadingOverlay isLoading={isDeleting && deletingId === customer.customer_id}>
+                          <LoadingOverlay isLoading={isDeleting && deletingId === c.customer_id}>
                             <Button
                               variant="destructive"
                               className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
-                              onClick={() => handleDelete(customer.customer_id)}
+                              onClick={() => handleDelete(c.customer_id as string)}
                               disabled={isUpdating}
                             >
                               <Trash2 className="h-4 w-4 flex-shrink-0" />

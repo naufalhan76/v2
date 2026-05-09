@@ -153,9 +153,9 @@ export async function getOrderItemsForInvoice(orderId: string): Promise<OrderIte
   const result: OrderItemForInvoice[] = []
 
   for (const item of data) {
-    const catalog = item.service_catalog as Record<string, unknown> | null
-    const unitType = item.unit_types as Record<string, unknown> | null
-    const capacityRange = item.capacity_ranges as Record<string, unknown> | null
+    const catalog = item.service_catalog as unknown as Record<string, unknown> | null
+    const unitType = item.unit_types as unknown as Record<string, unknown> | null
+    const capacityRange = item.capacity_ranges as unknown as Record<string, unknown> | null
 
     if (catalog) {
       // NEW ORDER: Has service_catalog join data
