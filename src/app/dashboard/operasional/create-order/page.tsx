@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +28,7 @@ import { Separator } from '@/components/ui/separator'
 import { LoadingOverlay } from '@/components/ui/loading-state'
 import { useToast } from '@/hooks/use-toast'
 import { 
+  searchCustomers,
   searchCustomerByPhone, 
   createCustomer,
   createLocation,
@@ -38,7 +39,8 @@ import {
 import { updateCustomer } from '@/lib/actions/customers'
 import type { 
   OrderFormState, 
-  LocationFormData
+  LocationFormData,
+  CustomerSearchResult
 } from '@/types/create-order'
 import { LocationCard } from './components/LocationCard'
 import { 
@@ -86,6 +88,13 @@ const SERVICE_TYPE_COLORS: Record<string, string> = {
   'CLEANING': 'bg-purple-500',
 }
 
+type CustomerSuggestion = {
+  customer_id: string
+  customer_name: string
+  phone_number: string
+  email: string | null
+}
+
 export default function CreateOrderPage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -93,6 +102,9 @@ export default function CreateOrderPage() {
   // Form State
   const [phoneInput, setPhoneInput] = useState('')
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false)
+  const [customerSuggestions, setCustomerSuggestions] = useState<CustomerSuggestion[]>([])
+  const [isLoadingCustomerSuggestions, setIsLoadingCustomerSuggestions] = useState(false)
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false)
   const [isPhoneVerified, setIsPhoneVerified] = useState(false)
   const [customer, setCustomer] = useState<OrderFormState['customer']>(null)
   const [isNewCustomer, setIsNewCustomer] = useState(false)
@@ -136,6 +148,105 @@ export default function CreateOrderPage() {
   })
   const technicians = techniciansData?.data || []
 
+  useEffect(() => {
+    const query = phoneInput.trim()
+
+    if (isPhoneVerified || query.length < 2) {
+      setCustomerSuggestions([])
+      setShowCustomerSuggestions(false)
+      return
+    }
+
+    let isActive = true
+    const timeoutId = window.setTimeout(async () => {
+      setIsLoadingCustomerSuggestions(true)
+      try {
+        const result = await searchCustomers(query)
+        if (!isActive) return
+
+        const suggestions = result.success ? result.data || [] : []
+        setCustomerSuggestions(suggestions)
+        setShowCustomerSuggestions(suggestions.length > 0)
+      } finally {
+        if (isActive) setIsLoadingCustomerSuggestions(false)
+      }
+    }, 300)
+
+    return () => {
+      isActive = false
+      window.clearTimeout(timeoutId)
+    }
+  }, [phoneInput, isPhoneVerified])
+
+  const applyExistingCustomer = (data: CustomerSearchResult) => {
+    setCustomer({
+      customer_id: data.customer_id,
+      customer_name: data.customer_name,
+      phone_number: data.phone_number,
+      email: data.email,
+      billing_address: data.billing_address
+    })
+    setIsNewCustomer(false)
+    setIsPhoneVerified(true)
+    setPhoneInput(data.phone_number)
+    setCustomerSuggestions([])
+    setShowCustomerSuggestions(false)
+    
+    // Pre-populate locations if available
+    if (data.locations && data.locations.length > 0) {
+      setLocations(data.locations.map(loc => ({
+        location_id: loc.location_id,
+        full_address: loc.full_address,
+        house_number: loc.house_number,
+        city: loc.city,
+        landmarks: loc.landmarks || undefined,
+        existing_acs: loc.ac_units?.map(ac => ({
+          ac_unit_id: ac.ac_unit_id,
+          brand: ac.brand,
+          model_number: ac.model_number,
+          serial_number: ac.serial_number || '',
+          selected_services: [],
+          notes: '',
+          is_selected: false
+        })) || [],
+        new_ac_units: []
+      })))
+      setExpandedLocations(new Set([0]))
+    }
+  }
+
+  const handleSelectCustomerSuggestion = async (suggestion: CustomerSuggestion) => {
+    setPhoneInput(suggestion.phone_number)
+    setShowCustomerSuggestions(false)
+    setIsSearchingCustomer(true)
+
+    try {
+      const result = await searchCustomerByPhone(normalizePhone(suggestion.phone_number))
+
+      if (result.success && result.data) {
+        applyExistingCustomer(result.data)
+        toast({
+          title: 'Customer Selected',
+          description: `${result.data.customer_name} is ready for this order.`
+        })
+      } else {
+        toast({
+          title: 'Customer Not Found',
+          description: 'Please search by phone number again.',
+          variant: 'destructive'
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Search Failed',
+        description: error instanceof Error ? error.message : 'Failed to load customer details',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsSearchingCustomer(false)
+    }
+  }
+
   // Step 1: Search Customer
   const handleSearchCustomer = async () => {
     if (!phoneInput.trim()) {
@@ -155,37 +266,7 @@ export default function CreateOrderPage() {
       
       if (result.success && result.data) {
         // Existing customer found
-        setCustomer({
-          customer_id: result.data.customer_id,
-          customer_name: result.data.customer_name,
-          phone_number: result.data.phone_number,
-          email: result.data.email,
-          billing_address: result.data.billing_address
-        })
-        setIsNewCustomer(false)
-        setIsPhoneVerified(true)
-        
-        // Pre-populate locations if available
-        if (result.data.locations && result.data.locations.length > 0) {
-          setLocations(result.data.locations.map(loc => ({
-            location_id: loc.location_id,
-            full_address: loc.full_address,
-            house_number: loc.house_number,
-            city: loc.city,
-            landmarks: loc.landmarks || undefined,
-            existing_acs: loc.ac_units?.map(ac => ({
-              ac_unit_id: ac.ac_unit_id,
-              brand: ac.brand,
-              model_number: ac.model_number,
-              serial_number: ac.serial_number || '',
-              selected_services: [],
-              notes: '',
-              is_selected: false
-            })) || [],
-            new_ac_units: []
-          })))
-          setExpandedLocations(new Set([0]))
-        }
+        applyExistingCustomer(result.data)
         
         toast({
           title: 'Customer Found',
@@ -196,6 +277,8 @@ export default function CreateOrderPage() {
         setIsPhoneVerified(true)
         setIsNewCustomer(true)
         setCustomer(null)
+        setCustomerSuggestions([])
+        setShowCustomerSuggestions(false)
         toast({
           title: 'New Customer',
           description: 'Phone not found. Please create new customer.',
@@ -489,16 +572,60 @@ export default function CreateOrderPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
-              <div className="flex-1">
-                <Label>Phone Number *</Label>
+              <div className="relative flex-1">
+                <Label>Customer Name or Phone Number *</Label>
                 <Input
-                  type="tel"
-                  placeholder="08123456789 or 628123456789"
+                  type="text"
+                  placeholder="Search name, company, or phone number"
                   value={phoneInput}
-                  onChange={(e) => setPhoneInput(e.target.value)}
+                  onChange={(e) => {
+                    setPhoneInput(e.target.value)
+                    setShowCustomerSuggestions(true)
+                  }}
+                  onFocus={() => setShowCustomerSuggestions(customerSuggestions.length > 0)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Escape') setShowCustomerSuggestions(false)
+                  }}
                   disabled={isPhoneVerified}
                   className={isPhoneVerified ? 'bg-muted' : ''}
                 />
+                {!isPhoneVerified && (showCustomerSuggestions || isLoadingCustomerSuggestions) && (
+                  <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md">
+                    {isLoadingCustomerSuggestions ? (
+                      <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Searching customers...
+                      </div>
+                    ) : customerSuggestions.length > 0 ? (
+                      <div className="max-h-72 overflow-y-auto p-1">
+                        {customerSuggestions.map((suggestion) => (
+                          <button
+                            key={suggestion.customer_id}
+                            type="button"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => handleSelectCustomerSuggestion(suggestion)}
+                            className="flex w-full items-start gap-3 rounded-sm px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                          >
+                            <User className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-medium">{suggestion.customer_name}</span>
+                              <span className="block truncate text-xs text-muted-foreground">
+                                {suggestion.phone_number}{suggestion.email ? ` • ${suggestion.email}` : ''}
+                              </span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">No matching customers found.</div>
+                    )}
+                  </div>
+                )}
+                {!isPhoneVerified && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Pick an existing customer from suggestions or enter a new phone number and press Search.
+                  </p>
+                )}
               </div>
               {!isPhoneVerified ? (
                 <Button 
@@ -517,6 +644,7 @@ export default function CreateOrderPage() {
                 <Button 
                   variant="outline"
                   onClick={() => {
+                    setPhoneInput('')
                     setIsPhoneVerified(false)
                     setCustomer(null)
                     setIsNewCustomer(false)
@@ -528,6 +656,8 @@ export default function CreateOrderPage() {
                     setScheduledDate(undefined)
                     setTechnicianId('')
                     setNotes('')
+                    setCustomerSuggestions([])
+                    setShowCustomerSuggestions(false)
                   }}
                   className="mt-auto"
                 >
