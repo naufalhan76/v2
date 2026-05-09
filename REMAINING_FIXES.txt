@@ -1,0 +1,27 @@
+Remaining known follow-up items
+================================
+
+1. Create-order success modal can offer "Create Invoice Proforma" for orders that are still ACCEPTED.
+   - Current behavior: createOrderWithItems sets status ASSIGNED only if a technician is assigned, otherwise ACCEPTED.
+   - Current invoice create page only loads ASSIGNED, OTW, ARRIVED, IN_PROGRESS, and DONE orders.
+   - Impact: after creating an unassigned order, the proforma invoice link can open but fail to preselect because that order is not yet invoice-eligible.
+   - Suggested fix: hide/disable the proforma button unless the created order is invoice-eligible, or include ACCEPTED in invoice eligibility if that matches business rules.
+
+2. Invoice type from URL currently overrides status-derived type too broadly.
+   - Current behavior: `type=PROFORMA` or `type=FINAL` is accepted and used on submit once the order is selected.
+   - Impact: a crafted URL could request FINAL for a non-DONE order, bypassing the page's normal status-based type choice.
+   - Suggested fix: only allow URL type when it is consistent with the selected order status, or treat it as display-only and keep submit logic status-derived.
+
+3. Existing lint warning backlog remains in the repo.
+   - Observed during `npm run lint` and `npm run build`.
+   - Common categories: `@typescript-eslint/no-explicit-any`, unused imports/variables, and `react-hooks/exhaustive-deps` warnings.
+   - Files touched in this patch still inherit some pre-existing warnings.
+   - Suggested fix: clean warnings incrementally by area/module rather than in one large refactor.
+
+4. Build depends on RESEND_API_KEY being present at build/runtime for `/api/invoices/send-email`.
+   - Observed during `npm run build`: build initially failed when `RESEND_API_KEY` was missing.
+   - Suggested fix: either guarantee the env var in all build environments or defer Resend client construction until request handling so build-time import does not fail.
+
+5. Customer autocomplete UX can still be improved.
+   - Current behavior: suggestions open for 2+ characters and can be dismissed with Escape, but there is no keyboard arrow navigation / Enter-to-select behavior yet.
+   - Suggested fix: convert the custom dropdown to a more fully accessible combobox pattern, or extend the current dropdown with keyboard navigation.
