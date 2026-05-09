@@ -37,8 +37,20 @@ import {
   getTechnicians
 } from '@/lib/actions/create-order'
 import { updateCustomer } from '@/lib/actions/customers'
-import type { 
-  OrderFormState, 
+import { createInvoice, getInvoiceById, getOrderItemsForInvoice } from '@/lib/actions/invoices'
+import { getInvoiceConfig } from '@/lib/actions/invoice-config'
+import { exportInvoiceToPDF } from '@/lib/pdf-export'
+import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import type { BankAccount } from '@/app/dashboard/konfigurasi/invoice-config/bank-accounts-section'
+import type {
+  OrderFormState,
   LocationFormData,
   CustomerSearchResult
 } from '@/types/create-order'
@@ -125,6 +137,15 @@ export default function CreateOrderPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [showEditBillingModal, setShowEditBillingModal] = useState(false)
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null)
+  const [createdInvoiceId, setCreatedInvoiceId] = useState<string | null>(null)
+  const [proformaError, setProformaError] = useState<string | null>(null)
+
+  // Proforma toggle state
+  const [createProforma, setCreateProforma] = useState(false)
+  const [proformaPaymentAccountId, setProformaPaymentAccountId] = useState('')
+  const [proformaDueDate, setProformaDueDate] = useState('')
+  const [proformaNotes, setProformaNotes] = useState('')
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   
   // Validation Alert Modal state
   const [validationErrors, setValidationErrors] = useState<string[]>([])
@@ -145,6 +166,37 @@ export default function CreateOrderPage() {
     queryFn: getTechnicians
   })
   const technicians = techniciansData?.data || []
+
+  // Load bank accounts for proforma payment account selection
+  useEffect(() => {
+    const loadBankAccounts = async () => {
+      try {
+        const { createClient } = await import('@/lib/supabase-browser')
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('invoice_configuration')
+          .select('bank_accounts, default_due_days')
+          .eq('is_active', true)
+          .single()
+
+        if (data?.bank_accounts) {
+          const accounts = typeof data.bank_accounts === 'string'
+            ? JSON.parse(data.bank_accounts)
+            : data.bank_accounts
+          setBankAccounts(accounts || [])
+        }
+
+        // Default due date: today + default_due_days
+        const dueDays = data?.default_due_days || 30
+        const due = new Date()
+        due.setDate(due.getDate() + dueDays)
+        setProformaDueDate(due.toISOString().split('T')[0])
+      } catch {
+        // Silent fail — toggle will show warning if user tries to enable
+      }
+    }
+    loadBankAccounts()
+  }, [])
 
   useEffect(() => {
     const query = phoneInput.trim()
@@ -390,6 +442,22 @@ export default function CreateOrderPage() {
       errors.push('Please select at least one service')
     }
 
+    // Proforma validation
+    if (createProforma) {
+      if (!technicianId) {
+        errors.push('Proforma requires a lead technician to be assigned')
+      }
+      if (!proformaPaymentAccountId) {
+        errors.push('Please select a payment account for the proforma')
+      }
+      if (!proformaDueDate) {
+        errors.push('Please pick a proforma due date')
+      }
+      if (bankAccounts.length === 0) {
+        errors.push('No payment accounts configured. Configure one in Invoice Config first.')
+      }
+    }
+
     // If there are errors, show modal instead of toast
     if (errors.length > 0) {
       setValidationErrors(errors)
@@ -539,8 +607,77 @@ export default function CreateOrderPage() {
         throw new Error(orderResult.error || 'Failed to create order')
       }
 
-      // Show success modal instead of toast
-      setCreatedOrderId(orderResult.data?.order_id || null)
+      const newOrderId = orderResult.data?.order_id || null
+      setCreatedOrderId(newOrderId)
+      setCreatedInvoiceId(null)
+      setProformaError(null)
+
+      // Auto-create proforma invoice if toggle enabled
+      if (createProforma && newOrderId) {
+        try {
+          const orderItemsForInvoice = await getOrderItemsForInvoice(newOrderId)
+
+          const invoiceItems = orderItemsForInvoice.map(item => {
+            let desc = item.serviceName
+            if (item.msnCode) {
+              const unitInfo = [item.unitTypeName, item.capacityLabel].filter(Boolean).join(' ')
+              desc = `[${item.msnCode}] ${item.serviceName}${unitInfo ? ` (${unitInfo})` : ''}`
+            }
+            if (item.quantity > 1) desc += ` × ${item.quantity}`
+            return {
+              item_type: 'BASE_SERVICE' as const,
+              description: desc,
+              quantity: item.quantity,
+              unit_price: item.estimatedPrice,
+            }
+          })
+
+          const baseServiceTotal = invoiceItems.reduce(
+            (sum, it) => sum + it.quantity * it.unit_price,
+            0
+          )
+
+          const serviceName = invoiceItems.length > 1
+            ? 'Multiple Services'
+            : (invoiceItems[0]?.description || 'Service')
+
+          const firstOrderItem = orderItems[0]
+          const serviceType = (firstOrderItem?.service_type as string) || 'PROFORMA'
+
+          const selectedBankAccount = bankAccounts.find(
+            acc => acc.id === proformaPaymentAccountId
+          )
+          if (!selectedBankAccount) {
+            throw new Error('Selected payment account not found')
+          }
+
+          const newInvoice = await createInvoice({
+            order_id: newOrderId,
+            customer_id: customerId,
+            invoice_type: 'PROFORMA',
+            due_date: proformaDueDate,
+            service_type: serviceType,
+            service_name: serviceName,
+            base_service_price: baseServiceTotal,
+            items: invoiceItems,
+            notes: proformaNotes || undefined,
+            payment_account_id: selectedBankAccount.id,
+            payment_account_label: selectedBankAccount.account_label,
+            payment_bank_name: selectedBankAccount.bank,
+            payment_account_number: selectedBankAccount.account_number,
+            payment_account_name: selectedBankAccount.account_name,
+            tax_percentage: selectedBankAccount.tax_percentage,
+          })
+
+          setCreatedInvoiceId(newInvoice.invoice_id)
+        } catch (err) {
+          setProformaError(
+            err instanceof Error ? err.message : 'Failed to create proforma invoice'
+          )
+        }
+      }
+
+      // Show success modal
       setShowSuccessModal(true)
     } catch (error) {
       toast({
@@ -945,6 +1082,94 @@ export default function CreateOrderPage() {
                 <span>Estimated Total:</span>
                 <span className="text-primary">Rp {calculateTotal().toLocaleString('id-ID')}</span>
               </div>
+
+              <Separator />
+
+              {/* Proforma toggle */}
+              <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      <Label htmlFor="create-proforma" className="text-sm font-medium cursor-pointer">
+                        Create Proforma Invoice
+                      </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Auto-generate a proforma invoice with this order. You can download the PDF right after creation.
+                    </p>
+                  </div>
+                  <Switch
+                    id="create-proforma"
+                    checked={createProforma}
+                    onCheckedChange={setCreateProforma}
+                    disabled={!technicianId}
+                  />
+                </div>
+
+                {!technicianId && createProforma && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Assign a lead technician first — proforma needs the order to be ASSIGNED.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {createProforma && technicianId && (
+                  <div className="space-y-3 pt-2 border-t">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Payment Account *</Label>
+                        <Select
+                          value={proformaPaymentAccountId}
+                          onValueChange={setProformaPaymentAccountId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pick payment account" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {bankAccounts.length === 0 ? (
+                              <div className="px-3 py-2 text-xs text-muted-foreground">
+                                No payment accounts configured
+                              </div>
+                            ) : (
+                              bankAccounts.map(acc => (
+                                <SelectItem key={acc.id} value={acc.id}>
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium">{acc.account_label}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {acc.bank} • PPN {acc.tax_percentage}%
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Due Date *</Label>
+                        <Input
+                          type="date"
+                          value={proformaDueDate}
+                          onChange={(e) => setProformaDueDate(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Proforma Notes (Optional)</Label>
+                      <Textarea
+                        placeholder="Any notes for the proforma..."
+                        value={proformaNotes}
+                        onChange={(e) => setProformaNotes(e.target.value)}
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <Separator />
               <div className="flex gap-3">
                 <Button variant="outline" onClick={() => router.back()} className="flex-1">
@@ -1011,8 +1236,15 @@ export default function CreateOrderPage() {
           setTechnicianId('')
           setNotes('')
           setCreatedOrderId(null)
+          setCreatedInvoiceId(null)
+          setCreateProforma(false)
+          setProformaPaymentAccountId('')
+          setProformaNotes('')
+          setProformaError(null)
         }}
         orderId={createdOrderId}
+        invoiceId={createdInvoiceId}
+        proformaError={proformaError}
         customer={customer}
         isNewCustomer={isNewCustomer}
         newCustomerName={newCustomerName}
@@ -1272,10 +1504,12 @@ function ConfirmationModal({
 }
 
 // Success Modal Component
-function SuccessModal({ 
-  open, 
-  onClose, 
+function SuccessModal({
+  open,
+  onClose,
   orderId,
+  invoiceId,
+  proformaError,
   customer,
   isNewCustomer,
   newCustomerName,
@@ -1289,6 +1523,8 @@ function SuccessModal({
   open: boolean
   onClose: () => void
   orderId: string | null
+  invoiceId: string | null
+  proformaError: string | null
   customer: unknown
   isNewCustomer: boolean
   newCustomerName: string
@@ -1299,7 +1535,42 @@ function SuccessModal({
   totalPrice: number
   serviceCount: number
 }) {
+  const { toast } = useToast()
+  const [isDownloading, setIsDownloading] = useState(false)
   const selectedTech = technicians.find((t: unknown) => (t as Record<string, unknown>).technician_id === technicianId) as Record<string, unknown> | undefined
+
+  const handleDownloadProforma = async () => {
+    if (!invoiceId) return
+    setIsDownloading(true)
+    try {
+      const [invoiceData, config] = await Promise.all([
+        getInvoiceById(invoiceId),
+        getInvoiceConfig(),
+      ])
+      if (!invoiceData) throw new Error('Invoice not found')
+
+      exportInvoiceToPDF({
+        invoice: invoiceData.invoice,
+        items: invoiceData.items,
+        payments: invoiceData.payments,
+        invoiceConfig: config,
+        orderItemsDetailed: invoiceData.orderItemsDetailed,
+      })
+
+      toast({
+        title: 'Downloaded',
+        description: 'Proforma PDF exported',
+      })
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Download Failed',
+        description: err instanceof Error ? err.message : 'Failed to export proforma',
+      })
+    } finally {
+      setIsDownloading(false)
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -1355,16 +1626,47 @@ function SuccessModal({
               <span className="text-green-600">Rp {totalPrice.toLocaleString('id-ID')}</span>
             </div>
           </div>
+
+          {/* Proforma status */}
+          {invoiceId && (
+            <Alert className="bg-blue-50 border-blue-200">
+              <FileText className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-900">
+                Proforma invoice created. Download the PDF below.
+              </AlertDescription>
+            </Alert>
+          )}
+          {proformaError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Order created, but proforma failed: {proformaError}
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
-        
+
         <DialogFooter className="sm:justify-center gap-2">
           <Button variant="outline" onClick={onClose}>
             Create Another Order
           </Button>
-          {/* Only show when a technician was assigned (order status = ASSIGNED).
-              If no technician, order status is ACCEPTED and the invoice create page
-              won't find it (it only loads ASSIGNED and beyond). */}
-          {technicianId && (
+          {invoiceId && (
+            <Button
+              onClick={handleDownloadProforma}
+              disabled={isDownloading}
+              variant="outline"
+              className="border-blue-600 text-blue-700 hover:bg-blue-50"
+            >
+              {isDownloading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4 mr-2" />
+              )}
+              Download Proforma PDF
+            </Button>
+          )}
+          {/* Manual create invoice link — only when no proforma was auto-created and tech assigned */}
+          {!invoiceId && technicianId && (
             <Button onClick={() => {
               onClose()
               window.location.href = `/dashboard/keuangan/invoices/create?order_id=${orderId}&type=PROFORMA`

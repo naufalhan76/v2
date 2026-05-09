@@ -12,7 +12,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [_isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
@@ -40,11 +40,14 @@ export default function DashboardLayout({
       </div>
 
       {/* Desktop Layout */}
-      <div className="hidden md:grid md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] h-full">
+      <div
+        className="hidden md:grid h-full transition-[grid-template-columns] duration-300"
+        style={{ gridTemplateColumns: `${isSidebarCollapsed ? '4rem' : '16rem'} 1fr` }}
+      >
         <aside className="h-full overflow-hidden">
           <Sidebar onCollapse={setIsSidebarCollapsed} />
         </aside>
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col h-full overflow-hidden min-w-0">
           <header className="flex-none">
             <Navbar />
           </header>
