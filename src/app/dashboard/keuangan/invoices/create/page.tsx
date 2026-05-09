@@ -47,6 +47,23 @@ const invoiceSchema = z.object({
 
 type InvoiceFormData = z.infer<typeof invoiceSchema>
 
+type InvoiceType = 'PROFORMA' | 'FINAL'
+
+interface InvoiceOrder {
+  order_id: string
+  customer_id: string
+  status: string
+  order_type: string
+  customers?: {
+    customer_name?: string | null
+    phone_number?: string | null
+  } | null
+}
+
+const isInvoiceType = (value: string | null): value is InvoiceType => {
+  return value === 'PROFORMA' || value === 'FINAL'
+}
+
 interface LineItem {
   type: 'BASE_SERVICE' | 'ADDON'
   description: string
@@ -61,14 +78,16 @@ export default function CreateInvoicePage() {
   const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
-  const [orders, setOrders] = useState<any[]>([])
+  const [orders, setOrders] = useState<InvoiceOrder[]>([])
   const [addons, setAddons] = useState<Addon[]>([])
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
-  const [selectedOrder, setSelectedOrder] = useState<any>(null)
+  const [selectedOrder, setSelectedOrder] = useState<InvoiceOrder | null>(null)
   const [baseService, setBaseService] = useState<any>(null)
   const [lineItems, setLineItems] = useState<LineItem[]>([])
   const [selectedAddon, setSelectedAddon] = useState<string>('')
   const [addonQuantity, setAddonQuantity] = useState<number>(1)
+  const [requestedInvoiceType, setRequestedInvoiceType] = useState<InvoiceType | null>(null)
+  const [prefillMessage, setPrefillMessage] = useState<string | null>(null)
 
   const {
     register,
@@ -85,7 +104,27 @@ export default function CreateInvoicePage() {
   })
 
   useEffect(() => {
-    loadCompletedOrders()
+    const loadInitialData = async () => {
+      const availableOrders = await loadCompletedOrders()
+      const params = new URLSearchParams(window.location.search)
+      const orderId = params.get('order_id') || params.get('orderId')
+      const invoiceType = params.get('type')
+
+      if (isInvoiceType(invoiceType)) {
+        setRequestedInvoiceType(invoiceType)
+      }
+
+      if (!orderId) return
+
+      const isSelected = selectOrder(orderId, availableOrders)
+      if (isSelected) {
+        setPrefillMessage('Order and invoice type were prefilled from the create-order flow.')
+      } else {
+        setPrefillMessage('The order from the URL is not available for invoice creation or already has an invoice.')
+      }
+    }
+
+    loadInitialData()
     loadAddons()
     loadBankAccounts()
   }, [])
@@ -96,7 +135,7 @@ export default function CreateInvoicePage() {
     }
   }, [selectedOrder])
 
-  const loadCompletedOrders = async () => {
+  const loadCompletedOrders = async (): Promise<InvoiceOrder[]> => {
     try {
       // Load orders for proforma/final invoice (Option C: Maximum flexibility)
       // PROFORMA: Any order that has been assigned (ASSIGNED, OTW, ARRIVED, IN_PROGRESS)
@@ -127,12 +166,14 @@ export default function CreateInvoicePage() {
       // Only show orders without invoice
       const availableOrders = ordersWithInvoiceStatus.filter(order => !order.hasInvoice)
       setOrders(availableOrders)
+      return availableOrders
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Error',
         description: 'Gagal memuat data order',
       })
+      return []
     }
   }
 
@@ -189,6 +230,8 @@ export default function CreateInvoicePage() {
   }
 
   const loadServicePricing = async () => {
+    if (!selectedOrder) return
+
     try {
       // Try to fetch order_items first (for new multi-service orders)
       const orderItems = await getOrderItemsForInvoice(selectedOrder.order_id)
@@ -242,10 +285,18 @@ export default function CreateInvoicePage() {
     }
   }
 
-  const handleOrderSelect = (orderId: string) => {
-    const order = orders.find((o) => o.order_id === orderId)
+  const selectOrder = (orderId: string, orderList: InvoiceOrder[] = orders): boolean => {
+    const order = orderList.find((o) => o.order_id === orderId)
+    if (!order) return false
+
     setSelectedOrder(order)
     setValue('orderId', orderId)
+    return true
+  }
+
+  const handleOrderSelect = (orderId: string) => {
+    selectOrder(orderId)
+    setPrefillMessage(null)
   }
 
   const handleAddAddon = () => {
@@ -344,7 +395,7 @@ export default function CreateInvoicePage() {
         : (baseService?.service_name || baseServiceNames[0] || 'Service')
 
       // Determine invoice type based on order status
-      const invoiceType = selectedOrder.status === 'DONE' ? 'FINAL' : 'PROFORMA'
+      const invoiceType = requestedInvoiceType || (selectedOrder.status === 'DONE' ? 'FINAL' : 'PROFORMA')
 
       // Get selected bank account details
       const selectedBankAccount = bankAccounts.find(acc => acc.id === data.paymentAccountId)
@@ -444,6 +495,12 @@ export default function CreateInvoicePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {prefillMessage && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
+                  {prefillMessage}
+                </div>
+              )}
+
               {orders.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>Tidak ada order yang tersedia</p>
@@ -479,8 +536,8 @@ export default function CreateInvoicePage() {
                 <div className="rounded-lg border p-4 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Invoice Type:</span>
-                    <Badge variant={selectedOrder.status === 'DONE' ? 'default' : 'secondary'}>
-                      {selectedOrder.status === 'DONE' ? 'FINAL INVOICE' : 'PROFORMA INVOICE'}
+                    <Badge variant={(requestedInvoiceType || (selectedOrder.status === 'DONE' ? 'FINAL' : 'PROFORMA')) === 'FINAL' ? 'default' : 'secondary'}>
+                      {(requestedInvoiceType || (selectedOrder.status === 'DONE' ? 'FINAL' : 'PROFORMA')) === 'FINAL' ? 'FINAL INVOICE' : 'PROFORMA INVOICE'}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
