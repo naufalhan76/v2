@@ -99,6 +99,7 @@ export default function ManajemenUserPage() {
 
   useEffect(() => {
     loadUsers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Filter users based on search

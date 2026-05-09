@@ -16,7 +16,7 @@ import {
   PieChart, Pie, Cell, LineChart, ResponsiveContainer
 } from 'recharts'
 import {
-  Plus, UserCheck, FileText, TrendingUp, TrendingDown,
+  Plus, UserCheck, FileText,
   Calendar, ArrowUpRight, ArrowDownRight, ClipboardList,
   CheckCircle, AlertCircle, Banknote
 } from 'lucide-react'
@@ -58,7 +58,7 @@ export default function DashboardPage() {
     totalCustomers: 0, totalTechnicians: 0, totalRevenue: 0, unpaidTransactions: 0,
   })
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
-  const [recentOrders, setRecentOrders] = useState<any[]>([])
+  const [recentOrders, setRecentOrders] = useState<unknown[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [userName, setUserName] = useState('there')
   const { toast } = useToast()
@@ -117,14 +117,14 @@ export default function DashboardPage() {
         if (kpiResult.success && kpiResult.data) setKpiData(kpiResult.data)
         if (chartResult.success) setChartData(chartResult.data || [])
         if (ordersResult.success) setRecentOrders(ordersResult.data || [])
-      } catch (error: any) {
-        toast({ title: 'Error loading dashboard', description: error.message, variant: 'destructive' })
+      } catch (error: unknown) {
+        toast({ title: 'Error loading dashboard', description: error instanceof Error ? error.message : String(error), variant: 'destructive' })
       } finally {
         setIsLoading(false)
       }
     }
     fetchData()
-  }, [dateRange.from, dateRange.to])
+  }, [dateRange.from, dateRange.to]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Derive sparkline data (last 7 entries)
   const sparklineData = chartData.slice(-7)
@@ -360,11 +360,11 @@ export default function DashboardPage() {
                 {recentOrders.map((order) => (
                   <TableRow key={order.order_id} className="border-0 hover:bg-muted/50">
                     <TableCell className="font-mono text-xs text-muted-foreground">{order.order_id?.slice(0, 8)}…</TableCell>
-                    <TableCell className="text-sm font-medium">{(order.customers as any)?.name ?? '—'}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{order.order_type ?? '—'}</TableCell>
-                    <TableCell>{getStatusBadge(order.status)}</TableCell>
+                    <TableCell className="text-sm font-medium">{(order as Record<string, unknown> & { customers?: { name?: string } })?.customers?.name ?? '—'}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{(order as Record<string, unknown>).order_type as string ?? '—'}</TableCell>
+                    <TableCell>{getStatusBadge((order as Record<string, unknown>).status as string)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {order.created_at ? format(new Date(order.created_at), 'dd MMM yyyy', { locale: id }) : '—'}
+                      {(order as Record<string, unknown>).created_at ? format(new Date((order as Record<string, unknown>).created_at as string), 'dd MMM yyyy', { locale: id }) : '—'}
                     </TableCell>
                   </TableRow>
                 ))}

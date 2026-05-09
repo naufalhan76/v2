@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -46,10 +46,7 @@ import { LocationCard } from './components/LocationCard'
 import { 
   Search, 
   Plus, 
-  Trash2, 
   Calendar as CalendarIcon,
-  ChevronDown,
-  ChevronRight,
   Package,
   MapPin,
   User,
@@ -81,7 +78,7 @@ const normalizePhone = (phone: string): string => {
 }
 
 // Service type colors mapping
-const SERVICE_TYPE_COLORS: Record<string, string> = {
+const _SERVICE_TYPE_COLORS: Record<string, string> = {
   'INSTALLATION': 'bg-blue-500',
   'MAINTENANCE': 'bg-green-500',
   'REPAIR': 'bg-orange-500',
@@ -105,6 +102,7 @@ export default function CreateOrderPage() {
   const [customerSuggestions, setCustomerSuggestions] = useState<CustomerSuggestion[]>([])
   const [isLoadingCustomerSuggestions, setIsLoadingCustomerSuggestions] = useState(false)
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false)
+  const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(-1)
   const [isPhoneVerified, setIsPhoneVerified] = useState(false)
   const [customer, setCustomer] = useState<OrderFormState['customer']>(null)
   const [isNewCustomer, setIsNewCustomer] = useState(false)
@@ -167,6 +165,7 @@ export default function CreateOrderPage() {
         const suggestions = result.success ? result.data || [] : []
         setCustomerSuggestions(suggestions)
         setShowCustomerSuggestions(suggestions.length > 0)
+        setHighlightedSuggestionIndex(-1)
       } finally {
         if (isActive) setIsLoadingCustomerSuggestions(false)
       }
@@ -338,14 +337,14 @@ export default function CreateOrderPage() {
     locations.forEach(loc => {
       // Existing AC services
       loc.existing_acs.forEach(ac => {
-        ac.selected_services?.forEach((service: any) => {
-          total += service.price || 0
+        ac.selected_services?.forEach((service: unknown) => {
+          total += (service as Record<string, unknown>).price as number || 0
         })
       })
       // New AC services (each unit can have different services)
       loc.new_ac_units.forEach(unit => {
-        unit.selected_services?.forEach((service: any) => {
-          total += service.price || 0
+        unit.selected_services?.forEach((service: unknown) => {
+          total += (service as Record<string, unknown>).price as number || 0
         })
       })
     })
@@ -475,20 +474,21 @@ export default function CreateOrderPage() {
         // Add existing AC services
         for (const ac of loc.existing_acs) {
           if (!ac.selected_services) continue;
-          for (const service of ac.selected_services as any[]) {
+          for (const service of ac.selected_services as unknown[]) {
+            const svc = service as Record<string, unknown>
             orderItems.push({
               location_id: locationId,
               ac_unit_id: ac.ac_unit_id,
-              unit_type_id: service.unit_type_id,
-              capacity_id: service.capacity_id,
-              brand_id: undefined as any,
-              service_type_id: service.service_type_id,
-              catalog_id: service.catalog_id,
-              msn_code: service.msn_code,
-              service_type: service.service_type,
+              unit_type_id: svc.unit_type_id,
+              capacity_id: svc.capacity_id,
+              brand_id: undefined as unknown,
+              service_type_id: svc.service_type_id,
+              catalog_id: svc.catalog_id,
+              msn_code: svc.msn_code,
+              service_type: svc.service_type,
               quantity: 1,
               description: ac.notes || undefined,
-              estimated_price: service.price || 0
+              estimated_price: svc.price || 0
             })
           }
         }
@@ -496,26 +496,27 @@ export default function CreateOrderPage() {
         // Add new AC services (each unit individually)
         for (const unit of loc.new_ac_units) {
           if (!unit.selected_services) continue;
-          for (const service of unit.selected_services as any[]) {
+          for (const service of unit.selected_services as unknown[]) {
+            const usvc = service as Record<string, unknown>
             orderItems.push({
               location_id: locationId,
               ac_unit_id: null, // Will be created as placeholder
-              unit_type_id: service.unit_type_id,
-              capacity_id: service.capacity_id,
+              unit_type_id: usvc.unit_type_id,
+              capacity_id: usvc.capacity_id,
               brand_id: unit.brand_id,
-              service_type_id: service.service_type_id,
-              catalog_id: service.catalog_id,
-              msn_code: service.msn_code,
-              service_type: service.service_type,
+              service_type_id: usvc.service_type_id,
+              catalog_id: usvc.catalog_id,
+              msn_code: usvc.msn_code,
+              service_type: usvc.service_type,
               quantity: 1, // Each new AC unit = 1 quantity
               description: unit.notes || undefined,
-              estimated_price: service.price || 0,
+              estimated_price: usvc.price || 0,
               new_ac_data: {
                 brand: unit.brand_id || 'TBD', // To be determined by technician
                 model_number: 'TBD',
                 capacity_btu: undefined
               }
-            } as any)
+            } as unknown)
           }
         }
       }
@@ -584,7 +585,28 @@ export default function CreateOrderPage() {
                   }}
                   onFocus={() => setShowCustomerSuggestions(customerSuggestions.length > 0)}
                   onKeyDown={(event) => {
-                    if (event.key === 'Escape') setShowCustomerSuggestions(false)
+                    if (event.key === 'Escape') {
+                      setShowCustomerSuggestions(false)
+                      setHighlightedSuggestionIndex(-1)
+                    } else if (event.key === 'ArrowDown') {
+                      if (!showCustomerSuggestions || customerSuggestions.length === 0) return
+                      event.preventDefault()
+                      setHighlightedSuggestionIndex(prev =>
+                        prev < customerSuggestions.length - 1 ? prev + 1 : 0
+                      )
+                    } else if (event.key === 'ArrowUp') {
+                      if (!showCustomerSuggestions || customerSuggestions.length === 0) return
+                      event.preventDefault()
+                      setHighlightedSuggestionIndex(prev =>
+                        prev > 0 ? prev - 1 : customerSuggestions.length - 1
+                      )
+                    } else if (event.key === 'Enter') {
+                      if (showCustomerSuggestions && highlightedSuggestionIndex >= 0 && customerSuggestions[highlightedSuggestionIndex]) {
+                        event.preventDefault()
+                        handleSelectCustomerSuggestion(customerSuggestions[highlightedSuggestionIndex])
+                        setHighlightedSuggestionIndex(-1)
+                      }
+                    }
                   }}
                   disabled={isPhoneVerified}
                   className={isPhoneVerified ? 'bg-muted' : ''}
@@ -598,13 +620,18 @@ export default function CreateOrderPage() {
                       </div>
                     ) : customerSuggestions.length > 0 ? (
                       <div className="max-h-72 overflow-y-auto p-1">
-                        {customerSuggestions.map((suggestion) => (
+                        {customerSuggestions.map((suggestion, index) => (
                           <button
                             key={suggestion.customer_id}
                             type="button"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => handleSelectCustomerSuggestion(suggestion)}
-                            className="flex w-full items-start gap-3 rounded-sm px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                            onMouseEnter={() => setHighlightedSuggestionIndex(index)}
+                            onMouseLeave={() => setHighlightedSuggestionIndex(-1)}
+                            className={cn(
+                              "flex w-full items-start gap-3 rounded-sm px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                              highlightedSuggestionIndex === index && "bg-accent text-accent-foreground"
+                            )}
                           >
                             <User className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                             <span className="min-w-0 flex-1">
@@ -1106,7 +1133,7 @@ function ConfirmationModal({
   open: boolean
   onClose: () => void
   onConfirm: () => void
-  customer: any
+  customer: unknown
   isNewCustomer: boolean
   newCustomerName: string
   newCustomerEmail: string
@@ -1114,7 +1141,7 @@ function ConfirmationModal({
   locations: LocationFormData[]
   scheduledDate: Date | undefined
   technicianId: string
-  technicians: any[]
+  technicians: unknown[]
   notes: string
   totalPrice: number
 }) {
@@ -1262,13 +1289,13 @@ function SuccessModal({
   open: boolean
   onClose: () => void
   orderId: string | null
-  customer: any
+  customer: unknown
   isNewCustomer: boolean
   newCustomerName: string
   phoneInput: string
   scheduledDate: Date | undefined
   technicianId: string
-  technicians: any[]
+  technicians: unknown[]
   totalPrice: number
   serviceCount: number
 }) {
@@ -1334,13 +1361,18 @@ function SuccessModal({
           <Button variant="outline" onClick={onClose}>
             Create Another Order
           </Button>
-          <Button onClick={() => {
-            onClose()
-            window.location.href = `/dashboard/keuangan/invoices/create?order_id=${orderId}&type=PROFORMA`
-          }} variant="outline">
-            <FileText className="w-4 h-4 mr-2" />
-            Create Invoice Proforma
-          </Button>
+          {/* Only show when a technician was assigned (order status = ASSIGNED).
+              If no technician, order status is ACCEPTED and the invoice create page
+              won't find it (it only loads ASSIGNED and beyond). */}
+          {technicianId && (
+            <Button onClick={() => {
+              onClose()
+              window.location.href = `/dashboard/keuangan/invoices/create?order_id=${orderId}&type=PROFORMA`
+            }} variant="outline">
+              <FileText className="w-4 h-4 mr-2" />
+              Create Invoice Proforma
+            </Button>
+          )}
           <Button onClick={() => {
             onClose()
             window.location.href = '/dashboard/operasional/monitoring-ongoing'
@@ -1363,7 +1395,7 @@ function EditBillingAddressModal({
 }: {
   open: boolean
   onClose: () => void
-  customer: any
+  customer: unknown
   locations: LocationFormData[]
   onUpdate: (newAddress: string) => void
 }) {

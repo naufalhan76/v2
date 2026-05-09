@@ -78,12 +78,13 @@ export default function AcceptOrderPage() {
   const orders = ordersData?.data || []
 
   // Client-side search filter
-  const filteredOrdersBase = orders.filter((order: any) => {
+  const filteredOrdersBase = orders.filter((order: unknown) => {
+    const o = order as Record<string, unknown> & { customers?: { customer_name?: string } }
     if (!searchQuery) return true
     const searchLower = searchQuery.toLowerCase()
-    const orderId = order.order_id?.toLowerCase() || ''
-    const customerName = order.customers?.customer_name?.toLowerCase() || ''
-    
+    const orderId = (o.order_id as string)?.toLowerCase() || ''
+    const customerName = o.customers?.customer_name?.toLowerCase() || ''
+
     return orderId.includes(searchLower) || customerName.includes(searchLower)
   })
 
@@ -218,24 +219,26 @@ export default function AcceptOrderPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredOrders.map((order: any) => (
-                    <TableRow key={order.order_id}>
-                      <TableCell className='font-mono text-sm'>{order.order_id}</TableCell>
-                      <TableCell className='font-medium'>{order.customers?.customer_name || '-'}</TableCell>
+                  {filteredOrders.map((order: unknown) => {
+                    const o = order as Record<string, unknown> & { customers?: { customer_name?: string }; order_id: string; order_date?: string; req_visit_date?: string; order_type?: string; status: string }
+                    return (
+                    <TableRow key={o.order_id}>
+                      <TableCell className='font-mono text-sm'>{o.order_id}</TableCell>
+                      <TableCell className='font-medium'>{o.customers?.customer_name || '-'}</TableCell>
                       <TableCell>
-                        {order.order_date ? format(new Date(order.order_date), 'dd MMM yyyy') : '-'}
+                        {o.order_date ? format(new Date(o.order_date), 'dd MMM yyyy') : '-'}
                       </TableCell>
                       <TableCell>
-                        {order.req_visit_date ? format(new Date(order.req_visit_date), 'dd MMM yyyy') : '-'}
+                        {o.req_visit_date ? format(new Date(o.req_visit_date), 'dd MMM yyyy') : '-'}
                       </TableCell>
                       <TableCell>
                         <Badge variant='outline'>
-                          {SERVICE_TYPES.find(t => t.value === order.order_type)?.label || order.order_type}
+                          {SERVICE_TYPES.find(t => t.value === o.order_type)?.label || o.order_type}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={cn('text-white', STATUS_COLORS[order.status] || 'bg-gray-500')}>
-                          {order.status}
+                        <Badge className={cn('text-white', STATUS_COLORS[o.status] || 'bg-gray-500')}>
+                          {o.status}
                         </Badge>
                       </TableCell>
                       <TableCell className='text-right'>
@@ -243,7 +246,7 @@ export default function AcceptOrderPage() {
                           <Button
                             variant='ghost'
                             size='sm'
-                            onClick={() => setDetailOrderId(order.order_id)}
+                            onClick={() => setDetailOrderId(o.order_id)}
                           >
                             <Eye className='w-4 h-4' />
                           </Button>
@@ -251,7 +254,7 @@ export default function AcceptOrderPage() {
                             variant='default'
                             className='group relative overflow-hidden transition-all duration-300 ease-in-out bg-blue-600 hover:bg-blue-700 text-white w-10 hover:w-28 flex items-center justify-start px-2'
                             onClick={() => {
-                              setActionOrderId(order.order_id)
+                              setActionOrderId(o.order_id)
                               setActionType('accept')
                             }}
                           >
@@ -264,7 +267,7 @@ export default function AcceptOrderPage() {
                             variant='destructive'
                             className='group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2'
                             onClick={() => {
-                              setActionOrderId(order.order_id)
+                              setActionOrderId(o.order_id)
                               setActionType('cancel')
                             }}
                           >
@@ -276,7 +279,8 @@ export default function AcceptOrderPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -293,11 +297,12 @@ export default function AcceptOrderPage() {
           </DialogHeader>
           {orderDetail?.data && (() => {
             // Group order_items by location
-            const groupedByLocation = (orderDetail.data.order_items || []).reduce((acc: any, item: any) => {
-              const locationId = item.location_id || 'unknown'
+            const groupedByLocation = (orderDetail.data.order_items || []).reduce((acc: Record<string, { location: unknown; items: unknown[] }>, item: unknown) => {
+              const i = item as Record<string, unknown>
+              const locationId = (i.location_id as string) || 'unknown'
               if (!acc[locationId]) {
                 acc[locationId] = {
-                  location: item.locations,
+                  location: i.locations,
                   items: []
                 }
               }
@@ -305,9 +310,10 @@ export default function AcceptOrderPage() {
               return acc
             }, {})
 
-            const totalEstimated = (orderDetail.data.order_items || []).reduce((sum: number, item: any) => 
-              sum + (item.estimated_price || 0), 0
-            )
+            const totalEstimated = (orderDetail.data.order_items || []).reduce((sum: number, item: unknown) => {
+              const i = item as Record<string, unknown>
+              return sum + ((i.estimated_price as number) || 0)
+            }, 0)
 
             return (
               <div className='space-y-4'>
@@ -397,44 +403,49 @@ export default function AcceptOrderPage() {
                     <h3 className='font-semibold text-lg'>Locations & Services ({Object.keys(groupedByLocation).length} locations)</h3>
                   </div>
                   <div className='space-y-3'>
-                    {Object.entries(groupedByLocation).map(([locationId, data]: [string, any]) => (
+                    {Object.entries(groupedByLocation).map(([locationId, data]: [string, unknown]) => {
+                      const d = data as { location: Record<string, unknown>; items: unknown[] }
+                      return (
                       <div key={locationId} className='border rounded-lg p-4 space-y-3'>
                         <div className='flex items-start gap-2'>
                           <Building className='w-4 h-4 text-muted-foreground mt-0.5' />
                           <div className='flex-1'>
-                            <p className='font-semibold'>{data.location?.building_name || 'Unknown Location'}</p>
+                            <p className='font-semibold'>{(d.location?.building_name as string) || 'Unknown Location'}</p>
                             <p className='text-sm text-muted-foreground'>
-                              Floor {data.location?.floor} - Room {data.location?.room_number}
+                              Floor {d.location?.floor as string} - Room {d.location?.room_number as string}
                             </p>
                           </div>
                         </div>
-                        
                         <div className='space-y-2 pl-6'>
                           <p className='text-sm font-semibold text-muted-foreground'>Services:</p>
-                          {data.items.map((item: any, idx: number) => (
+                          {d.items.map((item: unknown, idx: number) => {
+                            const it = item as Record<string, unknown> & { ac_units?: Record<string, unknown> }
+                            return (
                             <div key={idx} className='flex justify-between items-start text-sm p-2 bg-muted/50 rounded'>
                               <div className='space-y-1'>
                                 <div className='flex items-center gap-2'>
                                   <Badge variant='outline' className='text-xs'>
-                                    {SERVICE_TYPES.find(t => t.value === item.service_type)?.label || item.service_type}
+                                    {SERVICE_TYPES.find(t => t.value === it.service_type)?.label || it.service_type as string}
                                   </Badge>
-                                  <span className='text-muted-foreground'>×{item.quantity}</span>
+                                  <span className='text-muted-foreground'>×{it.quantity as number}</span>
                                 </div>
-                                {item.ac_units && (
+                                {it.ac_units && (
                                   <p className='text-xs text-muted-foreground'>
-                                    AC: {item.ac_units.brand} {item.ac_units.model_number}
-                                    {item.ac_units.serial_number && ` (SN: ${item.ac_units.serial_number})`}
+                                    AC: {it.ac_units.brand as string} {it.ac_units.model_number as string}
+                                    {it.ac_units.serial_number && ` (SN: ${it.ac_units.serial_number as string})`}
                                   </p>
                                 )}
                               </div>
                               <div className='font-semibold'>
-                                Rp {item.estimated_price?.toLocaleString('id-ID') || '0'}
+                                Rp {(it.estimated_price as number)?.toLocaleString('id-ID') || '0'}
                               </div>
                             </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                   
                   <div className='flex justify-between items-center pt-3 border-t font-semibold'>

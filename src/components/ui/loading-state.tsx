@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react'
 import { Button } from './button'
 import { Alert, AlertDescription } from './alert'
@@ -195,11 +196,11 @@ export function ProgressiveLoading({
   alt,
   className = '',
   priority = false,
-  fetchPriority = 'auto',
+  fetchPriority: _fetchPriority = 'auto',
   onLoad,
   onError,
-  placeholder = 'empty',
-  blurDataURL
+  placeholder: _placeholder = 'empty',
+  blurDataURL: _blurDataURL
 }: ProgressiveLoadingProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
@@ -249,16 +250,17 @@ export function ProgressiveLoading({
           </div>
         </div>
       ) : (
-        <img
+        <Image
           src={src}
           alt={alt}
+          width={800}
+          height={600}
           className={`w-full h-full object-cover transition-opacity duration-300 ${
             isLoading ? 'opacity-0' : 'opacity-100'
           }`}
           onLoad={handleLoad}
           onError={handleError}
-          fetchPriority={fetchPriority}
-          {...(priority && { priority: true })}
+          priority={priority}
         />
       )}
     </div>

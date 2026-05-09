@@ -37,9 +37,7 @@ import {
   ArrowLeft,
   Download,
   DollarSign,
-  Edit,
   Trash2,
-  CheckCircle,
   XCircle,
   Send,
   Mail,
@@ -54,7 +52,7 @@ import {
   type InvoiceItem,
   type PaymentRecord,
 } from '@/lib/actions/invoices'
-import { getInvoiceConfig, type InvoiceConfig, type BankAccount } from '@/lib/actions/invoice-config'
+import { getInvoiceConfig, type InvoiceConfig } from '@/lib/actions/invoice-config'
 import { 
   logInvoiceCommunication, 
   getInvoiceCommunicationStats 
@@ -93,7 +91,7 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [items, setItems] = useState<InvoiceItem[]>([])
   const [payments, setPayments] = useState<PaymentRecord[]>([])
-  const [orderItemsDetailed, setOrderItemsDetailed] = useState<any[]>([])
+  const [orderItemsDetailed, setOrderItemsDetailed] = useState<Record<string, unknown>[]>([])
   const [invoiceConfig, setInvoiceConfig] = useState<InvoiceConfig | null>(null)
   const [communicationStats, setCommunicationStats] = useState({
     totalSent: 0,
@@ -118,6 +116,7 @@ export default function InvoiceDetailPage() {
     if (invoiceId) {
       loadInvoice()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoiceId])
 
   const loadInvoice = async () => {
@@ -138,7 +137,7 @@ export default function InvoiceDetailPage() {
       }
       setInvoiceConfig(config)
       setCommunicationStats(stats)
-    } catch (error) {
+    } catch {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -163,7 +162,7 @@ export default function InvoiceDetailPage() {
         description: 'Status invoice berhasil diupdate',
       })
       loadInvoice()
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -195,11 +194,11 @@ export default function InvoiceDetailPage() {
       setIsPaymentDialogOpen(false)
       resetPaymentForm()
       loadInvoice()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'Gagal mencatat pembayaran',
+        description: error instanceof Error ? error.message : 'Gagal mencatat pembayaran',
       })
     } finally {
       setIsProcessing(false)
@@ -217,11 +216,11 @@ export default function InvoiceDetailPage() {
         description: 'Invoice berhasil dihapus',
       })
       router.push('/dashboard/keuangan/invoices')
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Tidak Dapat Menghapus',
-        description: error.message || 'Gagal menghapus invoice',
+        description: error instanceof Error ? error.message : 'Gagal menghapus invoice',
       })
     } finally {
       setIsProcessing(false)
@@ -247,12 +246,12 @@ export default function InvoiceDetailPage() {
         title: 'Sukses',
         description: 'Invoice berhasil di-export ke PDF',
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Export PDF error:', error)
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'Gagal export PDF',
+        description: error instanceof Error ? error.message : 'Gagal export PDF',
       })
     } finally {
       setIsProcessing(false)
@@ -307,10 +306,11 @@ export default function InvoiceDetailPage() {
         if (bankAccounts.length > 0) {
           message += `\n💳 *PEMBAYARAN*\n`
           message += `Silakan transfer ke salah satu rekening:\n\n`
-          bankAccounts.forEach((account: any, index: number) => {
-            message += `${index + 1}. *${account.bank}*\n`
-            message += `   ${account.account_number}\n`
-            message += `   a/n ${account.account_name}\n\n`
+          bankAccounts.forEach((account: unknown, index: number) => {
+            const acc = account as { bank: string; account_number: string; account_name: string }
+            message += `${index + 1}. *${acc.bank}*\n`
+            message += `   ${acc.account_number}\n`
+            message += `   a/n ${acc.account_name}\n\n`
           })
           message += `_Mohon cantumkan No. Invoice (${invoiceNumber}) dalam keterangan transfer._\n`
         }
@@ -358,17 +358,17 @@ export default function InvoiceDetailPage() {
         title: 'WhatsApp Dibuka ✅',
         description: 'Pesan invoice siap dikirim ke customer',
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('WhatsApp error:', error)
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'Gagal membuka WhatsApp',
+        description: error instanceof Error ? error.message : 'Gagal membuka WhatsApp',
       })
     }
   }
 
-  const generateEmailContent = () => {
+  const _generateEmailContent = () => {
     if (!invoice || !invoiceConfig) return { subject: '', body: '' }
 
     const companyName = invoiceConfig.company_name || 'AC Service Dashboard'
@@ -425,10 +425,11 @@ export default function InvoiceDetailPage() {
           body += `\n\nINFORMASI PEMBAYARAN\n`
           body += `═══════════════════════════════\n`
           body += `Silakan transfer ke salah satu rekening berikut:\n\n`
-          bankAccounts.forEach((account: any, index: number) => {
-            body += `${index + 1}. ${account.bank}\n`
-            body += `   No. Rekening: ${account.account_number}\n`
-            body += `   Atas Nama: ${account.account_name}\n\n`
+          bankAccounts.forEach((account: unknown, index: number) => {
+            const acc = account as { bank: string; account_number: string; account_name: string }
+            body += `${index + 1}. ${acc.bank}\n`
+            body += `   No. Rekening: ${acc.account_number}\n`
+            body += `   Atas Nama: ${acc.account_name}\n\n`
           })
           body += `Mohon cantumkan No. Invoice (${invoiceNumber}) dalam keterangan transfer.\n`
         }
@@ -497,12 +498,12 @@ export default function InvoiceDetailPage() {
         await updateInvoiceStatus(invoice.invoice_id, 'SENT')
         await loadInvoice() // Reload to show new status
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Send email error:', error)
       toast({
         variant: 'destructive',
         title: 'Gagal Kirim Email',
-        description: error.message || 'Terjadi kesalahan saat mengirim email',
+        description: error instanceof Error ? error.message : 'Terjadi kesalahan saat mengirim email',
       })
     } finally {
       setIsProcessing(false)
@@ -718,11 +719,12 @@ export default function InvoiceDetailPage() {
               {orderItemsDetailed.length > 0 ? (
                 // Group by location
                 (() => {
-                  const groupedByLocation = orderItemsDetailed.reduce((acc: any, item: any) => {
-                    const locId = item.location_id || 'unknown'
+                  type LocationGroup = { location: Record<string, unknown>; items: Record<string, unknown>[] }
+                  const groupedByLocation = orderItemsDetailed.reduce((acc: Record<string, LocationGroup>, item: Record<string, unknown>) => {
+                    const locId = (item.location_id as string) || 'unknown'
                     if (!acc[locId]) {
                       acc[locId] = {
-                        location: item.locations,
+                        location: item.locations as Record<string, unknown>,
                         items: []
                       }
                     }
@@ -730,74 +732,75 @@ export default function InvoiceDetailPage() {
                     return acc
                   }, {})
                   
-                  return Object.values(groupedByLocation).map((group: any, locIdx: number) => (
+                  return Object.values(groupedByLocation).map((g, locIdx: number) => (
                     <div key={locIdx} className="border rounded-lg p-4 space-y-3">
                       {/* Location Header */}
                       <div className="font-semibold text-base border-b pb-2">
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-primary" />
-                          {group.location?.building_name || 'Unknown Location'}
+                          {(g.location?.building_name as string) || 'Unknown Location'}
                         </div>
                         <div className="text-sm text-muted-foreground font-normal mt-1 pl-6">
-                          Floor {group.location?.floor}, Room {group.location?.room_number}
+                          Floor {g.location?.floor as number}, Room {g.location?.room_number as string}
                         </div>
                       </div>
-                      
+
                       {/* AC Units for this location */}
                       <div className="space-y-2">
-                        {group.items.map((item: any, itemIdx: number) => {
-                          const subtotal = (item.estimated_price || item.actual_price || 0) * (item.quantity || 1)
+                        {g.items.map((item: Record<string, unknown>, itemIdx: number) => {
+                          const subtotal = ((item.estimated_price as number) || (item.actual_price as number) || 0) * ((item.quantity as number) || 1)
+                          const acUnits = item.ac_units as Record<string, unknown> | undefined
                           return (
                             <div key={itemIdx} className="bg-muted/30 rounded-lg p-3 space-y-2">
                               {/* AC Unit Info */}
                               <div className="flex justify-between items-start">
                                 <div>
                                   <div className="font-medium text-sm">
-                                    {item.ac_units ? (
+                                    {acUnits ? (
                                       <>
-                                        {item.ac_units.brand} {item.ac_units.model_number}
+                                        {acUnits.brand as string} {acUnits.model_number as string}
                                       </>
                                     ) : (
-                                      `New AC Unit ${item.quantity > 1 ? `(${item.quantity}x)` : ''}`
+                                      `New AC Unit ${(item.quantity as number) > 1 ? `(${item.quantity}x)` : ''}`
                                     )}
                                   </div>
-                                  {item.ac_units?.serial_number && (
+                                  {acUnits?.serial_number && (
                                     <div className="text-xs text-muted-foreground">
-                                      S/N: {item.ac_units.serial_number}
+                                      S/N: {acUnits.serial_number as string}
                                     </div>
                                   )}
                                 </div>
                                 <Badge variant="outline" className="text-xs">
-                                  {item.service_type}
+                                  {item.service_type as string}
                                 </Badge>
                               </div>
-                              
+
                               {/* Service Details */}
                               <div className="flex justify-between items-center text-sm">
                                 <div className="text-muted-foreground">
-                                  {item.description || 'Service'}
+                                  {(item.description as string) || 'Service'}
                                 </div>
                                 <div className="font-semibold">
                                   {formatCurrency(subtotal)}
                                 </div>
                               </div>
-                              
+
                               {/* Price breakdown if multiple quantity */}
-                              {item.quantity > 1 && (
+                              {(item.quantity as number) > 1 && (
                                 <div className="text-xs text-muted-foreground">
-                                  {formatCurrency(item.estimated_price || item.actual_price || 0)} × {item.quantity}
+                                  {formatCurrency((item.estimated_price as number) || (item.actual_price as number) || 0)} × {item.quantity as number}
                                 </div>
                               )}
                             </div>
                           )
                         })}
                       </div>
-                      
+
                       {/* Location Subtotal */}
                       <div className="flex justify-between items-center pt-2 border-t font-semibold">
                         <span className="text-sm">Location Subtotal:</span>
-                        <span>{formatCurrency(group.items.reduce((sum: number, item: any) => 
-                          sum + ((item.estimated_price || item.actual_price || 0) * (item.quantity || 1)), 0
+                        <span>{formatCurrency(g.items.reduce((sum: number, item: Record<string, unknown>) =>
+                          sum + (((item.estimated_price as number) || (item.actual_price as number) || 0) * ((item.quantity as number) || 1)), 0
                         ))}</span>
                       </div>
                     </div>

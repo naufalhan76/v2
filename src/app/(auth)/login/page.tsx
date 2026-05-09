@@ -1,12 +1,13 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, Suspense, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
@@ -138,13 +139,13 @@ function LoginForm() {
       
       // Keep loading state active - akan hilang saat component unmount
       // Ini memastikan overlay tetap ada sampai dashboard selesai load
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Login error:', error)
       setLoadingMessage('')
       setIsLoading(false)
       toast({
         title: "Login failed",
-        description: error.message || "An error occurred during login",
+        description: error instanceof Error ? error.message : "An error occurred during login",
         variant: "destructive"
       })
     }
@@ -198,7 +199,7 @@ function LoginForm() {
       const supabase = createClient()
       
       // Sign up the user with Supabase Auth with display name
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -233,11 +234,11 @@ function LoginForm() {
       setPassword('')
       setConfirmPassword('')
       setFullName('')
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Registration error:', error)
       toast({
         title: "Registration failed",
-        description: error.message || "An error occurred during registration",
+        description: error instanceof Error ? error.message : "An error occurred during registration",
         variant: "destructive"
       })
     } finally {
@@ -255,9 +256,11 @@ function LoginForm() {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-4">
             <div className="flex justify-center py-4">
-              <img 
-                src="/logo.png" 
-                alt="MSN ERP" 
+              <Image
+                src="/logo.png"
+                alt="MSN ERP"
+                width={96}
+                height={96}
                 className="h-24 w-auto"
               />
             </div>

@@ -7,20 +7,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Search, Loader2 } from 'lucide-react'
+import { Search } from 'lucide-react'
 
 export interface MasterData {
-  unitTypes: any[]
-  capacityRanges: any[]
-  acBrands: any[]
-  serviceTypes: any[]
-  serviceCatalog: any[]
+  unitTypes: unknown[]
+  capacityRanges: unknown[]
+  acBrands: unknown[]
+  serviceTypes: unknown[]
+  serviceCatalog: unknown[]
 }
 
 interface ServiceSelectionModalProps {
   open: boolean
   onClose: () => void
-  onAddService: (catalogEntry: any) => void
+  onAddService: (catalogEntry: unknown) => void
   masterData?: MasterData
   defaultUnitTypeId?: string
   defaultCapacityId?: string
@@ -42,48 +42,53 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
   const [searchQuery, setSearchQuery] = useState('')
 
   // Reset when opened
-  !open && setTimeout(() => {
-    setUnitTypeId(defaultUnitTypeId || '')
-    setCapacityId(defaultCapacityId || '')
-    setServiceTypeId('')
-    setSearchQuery('')
-    setMode('cascade')
-  }, 200)
+  if (!open) {
+    setTimeout(() => {
+      setUnitTypeId(defaultUnitTypeId || '')
+      setCapacityId(defaultCapacityId || '')
+      setServiceTypeId('')
+      setSearchQuery('')
+      setMode('cascade')
+    }, 200)
+  }
 
   // Derived state
   const capacities = useMemo(() => {
     if (!masterData) return []
-    return masterData.capacityRanges.filter((c: any) => c.unit_type_id === unitTypeId)
+    return masterData.capacityRanges.filter((c: unknown) => (c as Record<string, unknown>).unit_type_id === unitTypeId)
   }, [masterData, unitTypeId])
 
   const availableCatalogs = useMemo(() => {
     if (!masterData) return []
-    let results: any[] = []
+    let results: unknown[] = []
     if (mode === 'search') {
       if (!searchQuery || searchQuery.length < 2) return []
-      results = masterData.serviceCatalog.filter((c: any) => 
-        c.msn_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.service_name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      results = masterData.serviceCatalog.filter((c: unknown) => {
+        const item = c as Record<string, unknown>
+        return (item.msn_code as string).toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (item.service_name as string).toLowerCase().includes(searchQuery.toLowerCase())
+      })
       // If locked, also filter search results to only matching unit type + capacity
       if (isLocked) {
-        results = results.filter((c: any) =>
-          c.unit_type_id === unitTypeId && c.capacity_id === capacityId
-        )
+        results = results.filter((c: unknown) => {
+          const item = c as Record<string, unknown>
+          return item.unit_type_id === unitTypeId && item.capacity_id === capacityId
+        })
       }
     } else {
       if (!unitTypeId || !capacityId || !serviceTypeId) return []
-      results = masterData.serviceCatalog.filter((c: any) => 
-        c.unit_type_id === unitTypeId &&
-        c.capacity_id === capacityId &&
-        c.service_type_id === serviceTypeId
-      )
+      results = masterData.serviceCatalog.filter((c: unknown) => {
+        const item = c as Record<string, unknown>
+        return item.unit_type_id === unitTypeId &&
+          item.capacity_id === capacityId &&
+          item.service_type_id === serviceTypeId
+      })
     }
     // Filter out already selected services
-    return results.filter((c: any) => !alreadySelectedCatalogIds.includes(c.catalog_id))
+    return results.filter((c: unknown) => !alreadySelectedCatalogIds.includes((c as Record<string, unknown>).catalog_id as string))
   }, [masterData, unitTypeId, capacityId, serviceTypeId, mode, searchQuery, alreadySelectedCatalogIds, isLocked])
 
-  const handleSelect = (catalogItem: any) => {
+  const handleSelect = (catalogItem: unknown) => {
     onAddService(catalogItem)
     onClose()
   }
@@ -112,13 +117,13 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
                 <div className="flex-1 space-y-1">
                   <Label className="text-xs text-muted-foreground">Unit Type</Label>
                   <div className="text-sm font-medium bg-muted px-3 py-2 rounded-md">
-                    {masterData?.unitTypes.find((u: any) => u.unit_type_id === unitTypeId)?.name || '-'}
+                    {masterData?.unitTypes.find((u: unknown) => (u as Record<string, unknown>).unit_type_id === unitTypeId) ? (masterData.unitTypes.find((u: unknown) => (u as Record<string, unknown>).unit_type_id === unitTypeId) as Record<string, unknown>).name as string : '-'}
                   </div>
                 </div>
                 <div className="flex-1 space-y-1">
                   <Label className="text-xs text-muted-foreground">Capacity</Label>
                   <div className="text-sm font-medium bg-muted px-3 py-2 rounded-md">
-                    {masterData?.capacityRanges.find((c: any) => c.capacity_id === capacityId)?.capacity_label || '-'}
+                    {masterData?.capacityRanges.find((c: unknown) => (c as Record<string, unknown>).capacity_id === capacityId) ? (masterData.capacityRanges.find((c: unknown) => (c as Record<string, unknown>).capacity_id === capacityId) as Record<string, unknown>).capacity_label as string : '-'}
                   </div>
                 </div>
               </div>
@@ -129,9 +134,10 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
                   <Select value={unitTypeId} onValueChange={(val) => { setUnitTypeId(val); setCapacityId(''); setServiceTypeId(''); }}>
                     <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
                     <SelectContent>
-                      {masterData?.unitTypes.map((u: any) => (
-                        <SelectItem key={u.unit_type_id} value={u.unit_type_id}>{u.name}</SelectItem>
-                      ))}
+                      {masterData?.unitTypes.map((u: unknown) => {
+                        const ut = u as Record<string, unknown>
+                        return <SelectItem key={ut.unit_type_id as string} value={ut.unit_type_id as string}>{ut.name as string}</SelectItem>
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -140,9 +146,10 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
                   <Select value={capacityId} onValueChange={setCapacityId} disabled={!unitTypeId}>
                     <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
                     <SelectContent>
-                      {capacities.map((c: any) => (
-                        <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>
-                      ))}
+                      {capacities.map((c: unknown) => {
+                        const cap = c as Record<string, unknown>
+                        return <SelectItem key={cap.capacity_id as string} value={cap.capacity_id as string}>{cap.capacity_label as string}</SelectItem>
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -153,9 +160,10 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
               <Select value={serviceTypeId} onValueChange={setServiceTypeId} disabled={!capacityId}>
                 <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
                 <SelectContent>
-                  {masterData?.serviceTypes.map((s: any) => (
-                    <SelectItem key={s.service_type_id} value={s.service_type_id}>{s.name}</SelectItem>
-                  ))}
+                  {masterData?.serviceTypes.map((s: unknown) => {
+                    const st = s as Record<string, unknown>
+                    return <SelectItem key={st.service_type_id as string} value={st.service_type_id as string}>{st.name as string}</SelectItem>
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -179,26 +187,31 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
         <div className="mt-4 min-h-[200px] border rounded-md bg-muted/20 p-2 overflow-y-auto max-h-[300px]">
            {availableCatalogs.length > 0 ? (
              <div className="space-y-2">
-               {availableCatalogs.map(catalog => (
-                 <Card key={catalog.catalog_id} className="cursor-pointer hover:border-primary transition-colors" onClick={() => handleSelect(catalog)}>
+               {availableCatalogs.map(catalogItem => {
+                 const catalog = catalogItem as Record<string, unknown>
+                 const unitTypes = catalog.unit_types as Record<string, unknown> | undefined
+                 const capacityRanges = catalog.capacity_ranges as Record<string, unknown> | undefined
+                 return (
+                 <Card key={catalog.catalog_id as string} className="cursor-pointer hover:border-primary transition-colors" onClick={() => handleSelect(catalogItem)}>
                    <CardContent className="p-3 flex justify-between items-center">
                      <div>
-                       <div className="font-mono text-sm font-bold text-primary">{catalog.msn_code}</div>
-                       <div className="font-medium text-sm">{catalog.service_name}</div>
+                       <div className="font-mono text-sm font-bold text-primary">{catalog.msn_code as string}</div>
+                       <div className="font-medium text-sm">{catalog.service_name as string}</div>
                        <div className="text-xs text-muted-foreground mt-1">
-                         {catalog.unit_types?.name} • {catalog.capacity_ranges?.capacity_label}
+                         {unitTypes?.name as string} • {capacityRanges?.capacity_label as string}
                        </div>
                      </div>
                      <div className="text-right">
-                       <span className="font-bold">Rp {catalog.base_price.toLocaleString('id-ID')}</span>
+                       <span className="font-bold">Rp {(catalog.base_price as number).toLocaleString('id-ID')}</span>
                        <br />
-                       <Button size="sm" variant="secondary" className="mt-2 h-7" onClick={(e) => { e.stopPropagation(); handleSelect(catalog); }}>
+                       <Button size="sm" variant="secondary" className="mt-2 h-7" onClick={(e) => { e.stopPropagation(); handleSelect(catalogItem); }}>
                          Pilih
                        </Button>
                      </div>
                    </CardContent>
                  </Card>
-               ))}
+                 )
+               })}
              </div>
            ) : (
              <div className="h-full flex items-center justify-center text-muted-foreground text-sm py-12">

@@ -1,4 +1,3 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { logger } from '@/lib/logger'
 
 export type RequestLog = {
@@ -19,7 +18,7 @@ export function logRequest(
   method: string,
   path: string,
   userId?: string,
-  details?: Record<string, any>,
+  details?: Record<string, unknown>,
 ) {
   const log: RequestLog = {
     timestamp: new Date().toISOString(),
@@ -62,7 +61,7 @@ export async function createAuditLog(
   action: string,
   resource: string,
   resourceId: string,
-  changes?: Record<string, any>,
+  changes?: Record<string, unknown>,
 ) {
   const auditLog = {
     timestamp: new Date().toISOString(),

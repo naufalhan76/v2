@@ -54,11 +54,11 @@ export async function getLocations(filters?: {
         totalPages: Math.ceil((count || 0) / limit),
       },
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching locations:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch locations',
+      error: error instanceof Error ? error.message : 'Failed to fetch locations',
       data: [],
       pagination: { total: 0, page: 1, limit: 20, totalPages: 0 },
     }
@@ -97,11 +97,11 @@ export async function getLocationById(locationId: string) {
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching location:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch location',
+      error: error instanceof Error ? error.message : 'Failed to fetch location',
     }
   }
 }
@@ -133,11 +133,11 @@ export async function updateLocation(locationId: string, locationData: Partial<{
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error updating location:', error)
     return {
       success: false,
-      error: error.message || 'Failed to update location',
+      error: error instanceof Error ? error.message : 'Failed to update location',
     }
   }
 }
@@ -172,11 +172,11 @@ export async function deleteLocation(locationId: string) {
     return {
       success: true,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error deleting location:', error)
     return {
       success: false,
-      error: error.message || 'Failed to delete location',
+      error: error instanceof Error ? error.message : 'Failed to delete location',
     }
   }
 }

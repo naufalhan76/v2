@@ -82,11 +82,14 @@ export async function getServiceRecords(filters?: {
     let filteredData = data || []
     if (filters?.search) {
       const searchLower = filters.search.toLowerCase()
-      filteredData = filteredData.filter((record: any) => {
-        const customerName = record.ac_units?.locations?.customers?.customer_name?.toLowerCase() || ''
-        const brand = record.ac_units?.brand?.toLowerCase() || ''
-        const model = record.ac_units?.model_number?.toLowerCase() || ''
-        const orderId = record.order_id?.toLowerCase() || ''
+      filteredData = filteredData.filter((record: Record<string, unknown>) => {
+        const acUnits = record.ac_units as Record<string, unknown> | null
+        const locations = acUnits?.locations as Record<string, unknown> | null
+        const customers = locations?.customers as Record<string, unknown> | null
+        const customerName = (customers?.customer_name as string | undefined)?.toLowerCase() || ''
+        const brand = (acUnits?.brand as string | undefined)?.toLowerCase() || ''
+        const model = (acUnits?.model_number as string | undefined)?.toLowerCase() || ''
+        const orderId = (record.order_id as string | undefined)?.toLowerCase() || ''
         
         return customerName.includes(searchLower) || 
                brand.includes(searchLower) || 
@@ -105,11 +108,11 @@ export async function getServiceRecords(filters?: {
         totalPages: Math.ceil((count || 0) / limit),
       },
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching service records:', error)
     return {
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Failed to fetch service records',
       data: [],
       pagination: { total: 0, page: 1, limit: 20, totalPages: 0 },
     }
@@ -169,11 +172,11 @@ export async function getServiceRecordById(serviceId: string) {
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching service record:', error)
     return {
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Failed to fetch service record',
       data: null,
     }
   }
@@ -204,11 +207,11 @@ export async function updateServiceRecord(
       data,
       message: 'Service record updated successfully',
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error updating service record:', error)
     return {
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Failed to update service record',
       data: null,
     }
   }
@@ -234,11 +237,11 @@ export async function trackReminder(serviceId: string, orderId: string, phoneNum
       success: true,
       message: 'Reminder logged successfully'
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error tracking reminder:', error)
     return {
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Failed to track reminder',
     }
   }
 }
@@ -264,13 +267,13 @@ export async function getReminderStats(serviceId: string) {
       count,
       lastSentAt
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching reminder stats:', error)
     return {
       success: false,
       count: 0,
       lastSentAt: null,
-      error: error.message
+      error: error instanceof Error ? error.message : 'Failed to fetch reminder stats',
     }
   }
 }

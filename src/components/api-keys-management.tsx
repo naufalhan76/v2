@@ -39,7 +39,6 @@ import {
   getUserApiKeys,
   createApiKey,
   regenerateApiKey,
-  updateApiKey,
   deleteApiKey,
   type ApiKeyInfo,
   type ApiKeyWithSecret,
@@ -53,7 +52,7 @@ export function ApiKeysManagement() {
   const [showNewKeyDialog, setShowNewKeyDialog] = useState(false)
   const [showRegenerateDialog, setShowRegenerateDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [showCopiedNotification, setShowCopiedNotification] = useState(false)
+  const [_showCopiedNotification, setShowCopiedNotification] = useState(false)
   const [newKeyData, setNewKeyData] = useState<ApiKeyWithSecret | null>(null)
   const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null)
   const [newKeyName, setNewKeyName] = useState('')
@@ -65,6 +64,7 @@ export function ApiKeysManagement() {
   // Load API keys on mount
   useEffect(() => {
     loadKeys()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadKeys() {

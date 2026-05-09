@@ -43,8 +43,8 @@ export default function InvoiceConfigPage() {
     handleSubmit,
     formState: { errors },
     reset,
-    setValue,
-    watch,
+    _setValue,
+    _watch,
   } = useForm<InvoiceConfigFormData>({
     resolver: zodResolver(invoiceConfigSchema),
     defaultValues: {
@@ -64,6 +64,7 @@ export default function InvoiceConfigPage() {
 
   useEffect(() => {
     loadConfig()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadConfig = async () => {
@@ -76,14 +77,17 @@ export default function InvoiceConfigPage() {
         if (config.bank_accounts) {
           try {
             const banks = JSON.parse(config.bank_accounts)
-            accounts = banks.map((bank: any, index: number) => ({
-              id: bank.id || `${index}`,
-              account_label: bank.account_label || `Payment Account ${index + 1}`,
-              bank: bank.bank || '',
-              account_number: bank.account_number || '',
-              account_name: bank.account_name || '',
-              tax_percentage: bank.tax_percentage || 11,
-            }))
+            accounts = banks.map((bank: unknown, index: number) => {
+              const b = bank as { id?: string; account_label?: string; bank?: string; account_number?: string; account_name?: string; tax_percentage?: number }
+              return {
+                id: b.id || `${index}`,
+                account_label: b.account_label || `Payment Account ${index + 1}`,
+                bank: b.bank || '',
+                account_number: b.account_number || '',
+                account_name: b.account_name || '',
+                tax_percentage: b.tax_percentage || 11,
+              }
+            })
           } catch (e) {
             logger.error('Error parsing bank_accounts:', e)
           }
@@ -104,7 +108,7 @@ export default function InvoiceConfigPage() {
           termsConditions: config.terms_conditions_template || '',
         })
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -145,7 +149,7 @@ export default function InvoiceConfigPage() {
         title: 'Berhasil',
         description: 'Konfigurasi invoice berhasil disimpan',
       })
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Error',

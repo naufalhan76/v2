@@ -319,7 +319,7 @@ export function ResourceHints({ domains, fonts = [] }: ResourceHintsProps) {
       try {
         const links = document.querySelectorAll('link[rel="dns-prefetch"], link[rel="preconnect"], link[rel="preload"][as="font"]')
         links.forEach(link => link.remove())
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors
       }
     }

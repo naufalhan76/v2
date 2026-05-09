@@ -205,7 +205,7 @@ const HTTP_STATUS_CODES = [
 
 export default function ApiDocsPage() {
   const { toast } = useToast()
-  const [copiedCode, setCopiedCode] = useState<string>('')
+  const [_copiedCode, setCopiedCode] = useState<string>('')
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text)
@@ -334,14 +334,14 @@ export default function ApiDocsPage() {
 
                       <CardContent className="space-y-4">
                         {/* Query Parameters */}
-                        {(endpoint as any).params && (
+                        {(endpoint as unknown as { params?: string[] }).params && (
                           <div>
                             <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
                               <Filter className="h-4 w-4" />
                               Query Parameters
                             </h4>
                             <div className="bg-gray-50 p-3 rounded text-sm space-y-1">
-                              {(endpoint as any).params.map((param: string) => (
+                              {(endpoint as unknown as { params: string[] }).params.map((param: string) => (
                                 <div key={param} className="font-mono text-xs">
                                   {param}
                                 </div>
@@ -366,11 +366,11 @@ export default function ApiDocsPage() {
                         )}
 
                         {/* Example */}
-                        {(endpoint as any).example && (
+                        {(endpoint as unknown as { example?: string }).example && (
                           <div>
                             <h4 className="text-sm font-semibold mb-2">Example</h4>
                             <div className="bg-gray-900 text-gray-100 p-3 rounded text-xs font-mono">
-                              <div>GET {(endpoint as any).example}</div>
+                              <div>GET {(endpoint as unknown as { example: string }).example}</div>
                               <div className="text-gray-500 mt-1">Authorization: Bearer YOUR_TOKEN</div>
                             </div>
                           </div>

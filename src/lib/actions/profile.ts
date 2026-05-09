@@ -92,9 +92,9 @@ export async function getUserProfile() {
         role: data.role,
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error in getUserProfile:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to get user profile' }
   }
 }
 
@@ -172,9 +172,9 @@ export async function updateUserProfile(data: UpdateProfileData) {
 
     revalidatePath('/dashboard/profile')
     return { success: true, message: 'Profile updated successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error in updateUserProfile:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to update user profile' }
   }
 }
 
@@ -213,9 +213,9 @@ export async function updateUserPassword(currentPassword: string, newPassword: s
     }
 
     return { success: true, message: 'Password updated successfully' }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error in updateUserPassword:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to update password' }
   }
 }
 
@@ -280,8 +280,8 @@ export async function updateProfilePhoto(formData: FormData) {
 
     revalidatePath('/dashboard/profile')
     return { success: true, data: { photo_url: photoUrl } }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error in updateProfilePhoto:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to update profile photo' }
   }
 }

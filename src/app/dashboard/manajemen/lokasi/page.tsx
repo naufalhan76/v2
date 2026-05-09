@@ -79,6 +79,7 @@ export default function LocationsPage() {
 
   useEffect(() => {
     fetchLocations()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery])
 
   const fetchLocations = async () => {

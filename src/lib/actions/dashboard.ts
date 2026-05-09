@@ -101,7 +101,7 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
     }
     
     // Calculate total revenue
-    const totalRevenue = paymentsResult.data?.reduce((sum: number, payment: any) => {
+    const totalRevenue = paymentsResult.data?.reduce((sum: number, payment: { amount_paid?: number }) => {
       const paymentAmount = payment.amount_paid || 0
       return sum + paymentAmount
     }, 0) || 0
@@ -122,11 +122,11 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
       success: true,
       data: result,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching dashboard KPIs:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch dashboard data',
+      error: error instanceof Error ? error.message : 'Failed to fetch dashboard data',
     }
   }
 }
@@ -156,11 +156,11 @@ export async function getRecentOrders(limit: number = 5) {
       success: true,
       data: data || []
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching recent orders:', error)
     return {
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : 'Failed to fetch recent orders',
     }
   }
 }
@@ -244,11 +244,11 @@ export async function getChartData(startDate?: string, endDate?: string) {
       success: true,
       data: chartData
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('❌ Error fetching chart data:', error)
     return {
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Failed to fetch chart data',
       data: []
     }
   }

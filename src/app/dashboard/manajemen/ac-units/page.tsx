@@ -100,10 +100,10 @@ export default function AcUnitsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Master data for dropdowns
-  const [unitTypes, setUnitTypes] = useState<any[]>([])
-  const [capacityRanges, setCapacityRanges] = useState<any[]>([])
-  const [filteredCapacities, setFilteredCapacities] = useState<any[]>([])
-  const [masterBrands, setMasterBrands] = useState<any[]>([])
+  const [unitTypes, setUnitTypes] = useState<{ unit_type_id: string; name: string }[]>([])
+  const [capacityRanges, setCapacityRanges] = useState<{ capacity_id: string; unit_type_id: string; capacity_label: string }[]>([])
+  const [filteredCapacities, setFilteredCapacities] = useState<{ capacity_id: string; unit_type_id: string; capacity_label: string }[]>([])
+  const [masterBrands, setMasterBrands] = useState<{ brand_id: string; name: string }[]>([])
 
   // Filter by search query (client-side for customer name)
   const filteredAcUnits = acUnitsBase.filter(unit => {
@@ -146,6 +146,7 @@ export default function AcUnitsPage() {
   useEffect(() => {
     fetchAcUnits()
     fetchMasterData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // When unit_type_id changes in the form, filter capacities
@@ -160,6 +161,7 @@ export default function AcUnitsPage() {
     } else {
       setFilteredCapacities(capacityRanges)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.unit_type_id, capacityRanges])
 
   const fetchMasterData = async () => {
@@ -242,8 +244,8 @@ export default function AcUnitsPage() {
           variant: 'destructive',
         })
       }
-    } catch (error) {
-      logger.error('Error deleting AC unit:', error)
+    } catch (_error) {
+      logger.error('Error deleting AC unit:', _error)
       toast({
         title: 'Error',
         description: 'Failed to delete AC unit',
@@ -289,8 +291,8 @@ export default function AcUnitsPage() {
           variant: 'destructive',
         })
       }
-    } catch (error) {
-      logger.error('Error updating AC unit:', error)
+    } catch (_error) {
+      logger.error('Error updating AC unit:', _error)
       toast({
         title: 'Error',
         description: 'Failed to update AC unit',
@@ -483,7 +485,7 @@ export default function AcUnitsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">— Tidak diisi —</SelectItem>
-                  {unitTypes.map((ut: any) => (
+                  {unitTypes.map((ut: { unit_type_id: string; name: string }) => (
                     <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>
                       {ut.name}
                     </SelectItem>
@@ -504,7 +506,7 @@ export default function AcUnitsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">— Tidak diisi —</SelectItem>
-                  {filteredCapacities.map((cap: any) => (
+                  {filteredCapacities.map((cap: { capacity_id: string; capacity_label: string }) => (
                     <SelectItem key={cap.capacity_id} value={cap.capacity_id}>
                       {cap.capacity_label}
                     </SelectItem>
@@ -524,7 +526,7 @@ export default function AcUnitsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">— Tidak diisi —</SelectItem>
-                  {masterBrands.map((b: any) => (
+                  {masterBrands.map((b: { brand_id: string; name: string }) => (
                     <SelectItem key={b.brand_id} value={b.brand_id}>
                       {b.name}
                     </SelectItem>

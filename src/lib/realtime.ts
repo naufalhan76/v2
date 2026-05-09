@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { QueryClient } from '@tanstack/react-query'
 
 export const realtimeClient = () =>
@@ -9,7 +10,7 @@ export const realtimeClient = () =>
 
 export function subscribeOrders(
   queryClient: QueryClient,
-  callback: (payload: any) => void
+  callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
 ) {
   const supa = realtimeClient()
   const channel = supa
@@ -37,7 +38,7 @@ export function subscribeOrders(
 
 export function subscribePayments(
   queryClient: QueryClient,
-  callback: (payload: any) => void
+  callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
 ) {
   const supa = realtimeClient()
   const channel = supa
@@ -65,7 +66,7 @@ export function subscribePayments(
 
 export function subscribeServiceRecords(
   queryClient: QueryClient,
-  callback: (payload: any) => void
+  callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
 ) {
   const supa = realtimeClient()
   const channel = supa
@@ -93,7 +94,7 @@ export function subscribeServiceRecords(
 
 export function subscribeServicePricing(
   queryClient: QueryClient,
-  callback: (payload: any) => void
+  callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
 ) {
   const supa = realtimeClient()
   const channel = supa
@@ -119,7 +120,7 @@ export function subscribeServicePricing(
 
 export function subscribeServiceSla(
   queryClient: QueryClient,
-  callback: (payload: any) => void
+  callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
 ) {
   const supa = realtimeClient()
   const channel = supa

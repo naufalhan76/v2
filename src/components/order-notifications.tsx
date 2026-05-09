@@ -82,7 +82,13 @@ export function OrderNotifications() {
       const storageKey = `readNotifications_${userId}`
       const readNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]')
 
-      const formattedNotifications: OrderNotification[] = (orders || []).map((order: any) => ({
+      const formattedNotifications: OrderNotification[] = (orders || []).map((order: {
+        order_id: string
+        status: 'CANCELLED' | 'RESCHEDULE'
+        updated_at: string
+        scheduled_visit_date?: string
+        customers?: { customer_name?: string } | null
+      }) => ({
         order_id: order.order_id,
         customer_name: order.customers?.customer_name || 'Unknown Customer',
         status: order.status,
@@ -109,9 +115,9 @@ export function OrderNotifications() {
 
   // Expose refresh function via window untuk dipanggil dari komponen lain
   useEffect(() => {
-    (window as any).refreshNotifications = fetchNotifications
+    (window as unknown as { refreshNotifications: typeof fetchNotifications }).refreshNotifications = fetchNotifications
     return () => {
-      delete (window as any).refreshNotifications
+      delete (window as unknown as { refreshNotifications?: typeof fetchNotifications }).refreshNotifications
     }
   }, [fetchNotifications])
 

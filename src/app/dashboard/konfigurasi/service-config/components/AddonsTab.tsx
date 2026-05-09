@@ -44,7 +44,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -126,6 +126,7 @@ export function AddonsTab() {
   useEffect(() => {
     loadAddons()
     loadLowStockAddons()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryFilter, searchQuery])
 
   const loadAddons = async () => {
@@ -137,7 +138,7 @@ export function AddonsTab() {
         isActive: true,
       })
       setAddons(result.data)
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -224,11 +225,11 @@ export function AddonsTab() {
       handleCloseDialog()
       loadAddons()
       loadLowStockAddons()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'Gagal menyimpan add-on',
+        description: error instanceof Error ? error.message : 'Gagal menyimpan add-on',
       })
     } finally {
       setIsLoading(false)
@@ -249,11 +250,11 @@ export function AddonsTab() {
       setDeletingAddon(null)
       loadAddons()
       loadLowStockAddons()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'Gagal menghapus add-on',
+        description: error instanceof Error ? error.message : 'Gagal menghapus add-on',
       })
     } finally {
       setIsLoading(false)

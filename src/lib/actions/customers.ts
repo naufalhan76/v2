@@ -61,7 +61,7 @@ export async function getCustomers(filters?: {
         if (customerMatch) return true
         
         // Check if any location matches
-        const locationMatch = customer.locations?.some((loc: any) => 
+        const locationMatch = customer.locations?.some((loc: { full_address?: string; city?: string }) =>
           loc.full_address?.toLowerCase().includes(searchLower) ||
           loc.city?.toLowerCase().includes(searchLower)
         )
@@ -80,11 +80,11 @@ export async function getCustomers(filters?: {
         totalPages: Math.ceil((count || 0) / limit),
       },
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching customers:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch customers',
+      error: error instanceof Error ? error.message : 'Failed to fetch customers',
       data: [],
       pagination: { total: 0, page: 1, limit: 20, totalPages: 0 },
     }
@@ -123,11 +123,11 @@ export async function getCustomerById(customerId: string) {
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching customer:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch customer',
+      error: error instanceof Error ? error.message : 'Failed to fetch customer',
     }
   }
 }
@@ -180,11 +180,11 @@ export async function createCustomer(customerData: {
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating customer:', error)
     return {
       success: false,
-      error: error.message || 'Failed to create customer',
+      error: error instanceof Error ? error.message : 'Failed to create customer',
     }
   }
 }
@@ -218,11 +218,11 @@ export async function updateCustomer(customerId: string, customerData: Partial<{
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error updating customer:', error)
     return {
       success: false,
-      error: error.message || 'Failed to update customer',
+      error: error instanceof Error ? error.message : 'Failed to update customer',
     }
   }
 }
@@ -258,11 +258,11 @@ export async function deleteCustomer(customerId: string) {
     return {
       success: true,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error deleting customer:', error)
     return {
       success: false,
-      error: error.message || 'Failed to delete customer',
+      error: error instanceof Error ? error.message : 'Failed to delete customer',
     }
   }
 }

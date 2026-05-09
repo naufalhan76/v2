@@ -21,7 +21,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
 import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import { ChevronLeft, ChevronRight, Eye, MapPin, User } from 'lucide-react'
@@ -74,36 +73,38 @@ export default function AssignOrderPage() {
   })
 
   const orders = ordersData?.data || []
-  const filteredOrdersBase = orders.filter((o: any) => {
-    const matchesServiceType = filterServiceType === 'ALL' || o.order_type === filterServiceType
-    const matchesStatus = filterStatus === 'ALL' || o.status === filterStatus
+  const filteredOrdersBase = orders.filter((o: unknown) => {
+    const order = o as Record<string, unknown>
+    const matchesServiceType = filterServiceType === 'ALL' || order.order_type === filterServiceType
+    const matchesStatus = filterStatus === 'ALL' || order.status === filterStatus
     return matchesServiceType && matchesStatus
   })
 
   // Apply sorting
-  const { sortedData: filteredOrders, sortConfig, requestSort } = useSortableTable(filteredOrdersBase, {
+  const { sortedData: filteredOrders, sortConfig: _sortConfig, requestSort: _requestSort } = useSortableTable(filteredOrdersBase, {
     key: 'order_id',
     direction: 'desc'
   })
 
   const orderCounts = SERVICE_TYPES.reduce((acc, type) => {
-    acc[type.value] = orders.filter((o: any) => o.order_type === type.value).length
+    acc[type.value] = orders.filter((o: unknown) => (o as Record<string, unknown>).order_type === type.value).length
     return acc
   }, {} as Record<string, number>)
-  
+
   // Count orders by status
-  const acceptedCount = orders.filter((o: any) => o.status === 'ACCEPTED').length
-  const rescheduleCount = orders.filter((o: any) => o.status === 'RESCHEDULE').length
+  const acceptedCount = orders.filter((o: unknown) => (o as Record<string, unknown>).status === 'ACCEPTED').length
+  const rescheduleCount = orders.filter((o: unknown) => (o as Record<string, unknown>).status === 'RESCHEDULE').length
 
   // Filter technicians by search
   const technicians = techniciansData?.data || []
-  const filteredTechnicians = technicians.filter((tech: any) => {
+  const filteredTechnicians = technicians.filter((tech: unknown) => {
+    const t = tech as Record<string, unknown>
     if (!technicianSearch) return true
     const searchLower = technicianSearch.toLowerCase()
     return (
-      tech.technician_name?.toLowerCase().includes(searchLower) ||
-      tech.company?.toLowerCase().includes(searchLower) ||
-      tech.contact_number?.toLowerCase().includes(searchLower)
+      (t.technician_name as string)?.toLowerCase().includes(searchLower) ||
+      (t.company as string)?.toLowerCase().includes(searchLower) ||
+      (t.contact_number as string)?.toLowerCase().includes(searchLower)
     )
   })
 
@@ -172,7 +173,7 @@ export default function AssignOrderPage() {
     }
   }
 
-  const selectedTechnicianData = techniciansData?.data?.find((t: any) => t.technician_id === selectedTechnician)
+  const selectedTechnicianData = techniciansData?.data?.find((t: unknown) => (t as Record<string, unknown>).technician_id === selectedTechnician)
 
   return (
     <div className='p-6'>
@@ -229,16 +230,16 @@ export default function AssignOrderPage() {
               <div className='text-xs text-muted-foreground mt-1'>{type.label}</div></CardContent></Card>))}
           </div>
           <div className='grid gap-4'>{ordersLoading ? <p>Loading orders...</p> : filteredOrders.length === 0 ? (<Card><CardContent className='p-8 text-center text-muted-foreground'>No orders found for assignment</CardContent></Card>) : (
-            filteredOrders.map((order: any) => {const serviceType = SERVICE_TYPES.find(t => t.value === order.order_type); const isSelected = selectedOrders.includes(order.order_id)
-            return (<Card key={order.order_id} className={cn('transition-all', isSelected && 'ring-2 ring-primary', order.status === 'RESCHEDULE' && 'bg-amber-50 border-l-4 border-l-amber-500')}><CardContent className='p-4'><div className='flex items-start gap-4'>
-              <Checkbox checked={isSelected} onCheckedChange={(checked) => {if (checked) {setSelectedOrders([...selectedOrders, order.order_id])} else {setSelectedOrders(selectedOrders.filter(id => id !== order.order_id))}}} className='mt-1' />
-              <div className='flex-1 grid grid-cols-2 md:grid-cols-6 gap-4'><div><div className='text-xs text-muted-foreground'>Order ID</div><div className='font-semibold'>{order.order_id}</div></div>
-              <div><div className='text-xs text-muted-foreground'>Customer</div><div className='font-medium'>{order.customers?.customer_name}</div></div>
-              <div><div className='text-xs text-muted-foreground'>Status</div><Badge className={cn('text-white', order.status === 'RESCHEDULE' ? 'bg-amber-500' : 'bg-blue-500')}>{order.status}</Badge></div>
-              <div><div className='text-xs text-muted-foreground'>Order Date</div><div>{order.order_date ? format(new Date(order.order_date), 'dd MMM yyyy') : '-'}</div></div>
-              <div><div className='text-xs text-muted-foreground'>Req. Visit Date</div><div>{order.req_visit_date ? format(new Date(order.req_visit_date), 'dd MMM yyyy') : '-'}</div></div>
-              <div><div className='text-xs text-muted-foreground'>Service Type</div><Badge className={serviceType?.color}>{serviceType?.label || order.order_type}</Badge></div></div>
-              <Button variant='outline' size='sm' onClick={() => setDetailOrderId(order.order_id)}><Eye className='h-4 w-4' /></Button></div></CardContent></Card>)}))}</div>
+            filteredOrders.map((order: unknown) => {const o = order as Record<string, unknown> & { customers?: { customer_name?: string }; order_id: string; order_date?: string; req_visit_date?: string; order_type?: string; status: string }; const serviceType = SERVICE_TYPES.find(t => t.value === o.order_type); const isSelected = selectedOrders.includes(o.order_id)
+            return (<Card key={o.order_id} className={cn('transition-all', isSelected && 'ring-2 ring-primary', o.status === 'RESCHEDULE' && 'bg-amber-50 border-l-4 border-l-amber-500')}><CardContent className='p-4'><div className='flex items-start gap-4'>
+              <Checkbox checked={isSelected} onCheckedChange={(checked) => {if (checked) {setSelectedOrders([...selectedOrders, o.order_id])} else {setSelectedOrders(selectedOrders.filter(id => id !== o.order_id))}}} className='mt-1' />
+              <div className='flex-1 grid grid-cols-2 md:grid-cols-6 gap-4'><div><div className='text-xs text-muted-foreground'>Order ID</div><div className='font-semibold'>{o.order_id}</div></div>
+              <div><div className='text-xs text-muted-foreground'>Customer</div><div className='font-medium'>{o.customers?.customer_name}</div></div>
+              <div><div className='text-xs text-muted-foreground'>Status</div><Badge className={cn('text-white', o.status === 'RESCHEDULE' ? 'bg-amber-500' : 'bg-blue-500')}>{o.status}</Badge></div>
+              <div><div className='text-xs text-muted-foreground'>Order Date</div><div>{o.order_date ? format(new Date(o.order_date), 'dd MMM yyyy') : '-'}</div></div>
+              <div><div className='text-xs text-muted-foreground'>Req. Visit Date</div><div>{o.req_visit_date ? format(new Date(o.req_visit_date), 'dd MMM yyyy') : '-'}</div></div>
+              <div><div className='text-xs text-muted-foreground'>Service Type</div><Badge className={serviceType?.color}>{serviceType?.label || o.order_type}</Badge></div></div>
+              <Button variant='outline' size='sm' onClick={() => setDetailOrderId(o.order_id)}><Eye className='h-4 w-4' /></Button></div></CardContent></Card>)}))}</div>
           <div className='flex justify-between'><Button variant='outline' onClick={() => setCurrentStep(1)}><ChevronLeft className='mr-2 h-4 w-4' /> Back</Button>
           <Button onClick={handleNextStep} disabled={selectedOrders.length === 0}>Next ({selectedOrders.length} selected) <ChevronRight className='ml-2 h-4 w-4' /></Button></div></div>
         )}
@@ -273,34 +274,37 @@ export default function AssignOrderPage() {
                     <h3 className='font-semibold mb-3'>Lead Technician <span className='text-red-500'>*</span></h3>
                     <RadioGroup value={selectedTechnician} onValueChange={setSelectedTechnician}>
                       <div className='grid gap-4 max-h-[300px] overflow-y-auto pr-2'>
-                        {filteredTechnicians.map((technician: any) => (
+                        {filteredTechnicians.map((technician: unknown) => {
+                          const tech = technician as Record<string, unknown> & { technician_id: string; technician_name: string; company?: string; contact_number?: string }
+                          return (
                           <div
-                            key={technician.technician_id}
+                            key={tech.technician_id}
                             className={cn(
                               'flex items-center space-x-4 rounded-lg p-4 cursor-pointer transition-all',
-                              selectedTechnician === technician.technician_id 
-                                ? 'border-2 border-primary bg-muted' 
+                              selectedTechnician === tech.technician_id
+                                ? 'border-2 border-primary bg-muted'
                                 : 'border border-border hover:bg-muted/50'
                             )}
-                            onClick={() => setSelectedTechnician(technician.technician_id)}
+                            onClick={() => setSelectedTechnician(tech.technician_id)}
                           >
-                            <RadioGroupItem value={technician.technician_id} id={technician.technician_id} />
-                            <Label htmlFor={technician.technician_id} className='flex-1 cursor-pointer'>
+                            <RadioGroupItem value={tech.technician_id} id={tech.technician_id} />
+                            <Label htmlFor={tech.technician_id} className='flex-1 cursor-pointer'>
                               <div className='flex items-center justify-between'>
                                 <div>
-                                  <div className='font-semibold'>{technician.technician_name}</div>
-                                  {technician.company && (
-                                    <div className='text-sm text-muted-foreground'>{technician.company}</div>
+                                  <div className='font-semibold'>{tech.technician_name}</div>
+                                  {tech.company && (
+                                    <div className='text-sm text-muted-foreground'>{tech.company}</div>
                                   )}
-                                  {technician.contact_number && (
-                                    <div className='text-sm text-muted-foreground'>{technician.contact_number}</div>
+                                  {tech.contact_number && (
+                                    <div className='text-sm text-muted-foreground'>{tech.contact_number}</div>
                                   )}
                                 </div>
                                 <User className='h-8 w-8 text-muted-foreground' />
                               </div>
                             </Label>
                           </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </RadioGroup>
                   </div>
@@ -313,12 +317,15 @@ export default function AssignOrderPage() {
                       </h3>
                       <MultiSelectDropdown
                         options={filteredTechnicians
-                          .filter((tech: any) => tech.technician_id !== selectedTechnician)
-                          .map((tech: any) => ({
-                            id: tech.technician_id,
-                            label: tech.technician_name,
-                            secondaryLabel: tech.company || tech.contact_number
-                          }))}
+                          .filter((tech: unknown) => (tech as Record<string, unknown>).technician_id !== selectedTechnician)
+                          .map((tech: unknown) => {
+                            const t = tech as Record<string, unknown> & { technician_id: string; technician_name: string; company?: string; contact_number?: string }
+                            return ({
+                              id: t.technician_id,
+                              label: t.technician_name,
+                              secondaryLabel: t.company || t.contact_number
+                            })
+                          })}
                         selected={selectedHelpers}
                         onSelectionChange={setSelectedHelpers}
                         placeholder='Select helper technicians...'
@@ -348,11 +355,12 @@ export default function AssignOrderPage() {
           </DialogHeader>
           {orderDetail?.data && (() => {
             // Group order_items by location
-            const groupedByLocation = (orderDetail.data.order_items || []).reduce((acc: any, item: any) => {
-              const locationId = item.location_id || 'unknown'
+            const groupedByLocation = (orderDetail.data.order_items || []).reduce((acc: Record<string, { location: unknown; items: unknown[] }>, item: unknown) => {
+              const i = item as Record<string, unknown>
+              const locationId = (i.location_id as string) || 'unknown'
               if (!acc[locationId]) {
                 acc[locationId] = {
-                  location: item.locations,
+                  location: i.locations,
                   items: []
                 }
               }
@@ -360,9 +368,10 @@ export default function AssignOrderPage() {
               return acc
             }, {})
 
-            const totalEstimated = (orderDetail.data.order_items || []).reduce((sum: number, item: any) => 
-              sum + (item.estimated_price || 0), 0
-            )
+            const totalEstimated = (orderDetail.data.order_items || []).reduce((sum: number, item: unknown) => {
+              const i = item as Record<string, unknown>
+              return sum + ((i.estimated_price as number) || 0)
+            }, 0)
 
             const SERVICE_TYPES = [
               { value: 'REFILL_FREON', label: 'Refill Freon' },
@@ -450,43 +459,49 @@ export default function AssignOrderPage() {
                     <h3 className='font-semibold text-lg'>Locations & Services ({Object.keys(groupedByLocation).length} locations)</h3>
                   </div>
                   <div className='space-y-3'>
-                    {Object.entries(groupedByLocation).map(([locationId, data]: [string, any]) => (
+                    {Object.entries(groupedByLocation).map(([locationId, data]: [string, unknown]) => {
+                      const d = data as { location: Record<string, unknown>; items: unknown[] }
+                      return (
                       <div key={locationId} className='border rounded-lg p-4 space-y-3'>
                         <div className='flex items-start gap-2'>
                           <div className='flex-1'>
-                            <p className='font-semibold'>{data.location?.building_name || 'Unknown Location'}</p>
+                            <p className='font-semibold'>{(d.location?.building_name as string) || 'Unknown Location'}</p>
                             <p className='text-sm text-muted-foreground'>
-                              Floor {data.location?.floor} - Room {data.location?.room_number}
+                              Floor {d.location?.floor as string} - Room {d.location?.room_number as string}
                             </p>
                           </div>
                         </div>
-                        
+
                         <div className='space-y-2 pl-0'>
                           <p className='text-sm font-semibold text-muted-foreground'>Services:</p>
-                          {data.items.map((item: any, idx: number) => (
+                          {d.items.map((item: unknown, idx: number) => {
+                            const it = item as Record<string, unknown> & { ac_units?: Record<string, unknown> }
+                            return (
                             <div key={idx} className='flex justify-between items-start text-sm p-2 bg-muted/50 rounded'>
                               <div className='space-y-1'>
                                 <div className='flex items-center gap-2'>
                                   <Badge variant='outline' className='text-xs'>
-                                    {SERVICE_TYPES.find(t => t.value === item.service_type)?.label || item.service_type}
+                                    {SERVICE_TYPES.find(t => t.value === it.service_type)?.label || it.service_type as string}
                                   </Badge>
-                                  <span className='text-muted-foreground'>×{item.quantity}</span>
+                                  <span className='text-muted-foreground'>×{it.quantity as number}</span>
                                 </div>
-                                {item.ac_units && (
+                                {it.ac_units && (
                                   <p className='text-xs text-muted-foreground'>
-                                    AC: {item.ac_units.brand} {item.ac_units.model_number}
-                                    {item.ac_units.serial_number && ` (SN: ${item.ac_units.serial_number})`}
+                                    AC: {it.ac_units.brand as string} {it.ac_units.model_number as string}
+                                    {it.ac_units.serial_number && ` (SN: ${it.ac_units.serial_number as string})`}
                                   </p>
                                 )}
                               </div>
                               <div className='font-semibold'>
-                                Rp {item.estimated_price?.toLocaleString('id-ID') || '0'}
+                                Rp {(it.estimated_price as number)?.toLocaleString('id-ID') || '0'}
                               </div>
                             </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                   
                   <div className='flex justify-between items-center pt-3 border-t font-semibold'>
@@ -517,8 +532,8 @@ export default function AssignOrderPage() {
                     <div>
                       <span className='text-sm text-muted-foreground'>Helper Technicians: </span>
                       <div className='mt-1'>
-                        {selectedHelpers.map((helperId, index) => {
-                          const helper = technicians.find((t: any) => t.technician_id === helperId)
+                        {selectedHelpers.map((helperId, _index) => {
+                          const helper = technicians.find((t: unknown) => (t as Record<string, unknown>).technician_id === helperId) as Record<string, unknown> | undefined
                           return (
                             <Badge key={helperId} variant='outline' className='mr-1 mb-1'>
                               {helper?.technician_name}

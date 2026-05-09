@@ -17,7 +17,6 @@ import {
   Trash2,
   DollarSign,
   Clock,
-  ListChecks,
 } from 'lucide-react'
 import {
   Dialog,
@@ -106,6 +105,7 @@ export default function ServicePricingPage() {
 
   useEffect(() => {
     loadServices()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadServices = async () => {
@@ -220,11 +220,11 @@ export default function ServicePricingPage() {
 
       handleCloseDialog()
       loadServices()
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'Gagal menyimpan harga service',
+        description: error instanceof Error ? error.message : 'Gagal menyimpan harga service',
       })
     } finally {
       setIsLoading(false)
@@ -244,7 +244,7 @@ export default function ServicePricingPage() {
       setIsDeleteDialogOpen(false)
       setDeletingService(null)
       loadServices()
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -263,7 +263,7 @@ export default function ServicePricingPage() {
     }).format(amount)
   }
 
-  const getIncludesArray = (includes: any): string[] => {
+  const getIncludesArray = (includes: unknown): string[] => {
     logger.debug('getIncludesArray input:', includes, 'type:', typeof includes, 'isArray:', Array.isArray(includes))
     
     // Always return a NEW array, never the original reference

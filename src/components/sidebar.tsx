@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useTheme } from 'next-themes'
@@ -10,21 +11,13 @@ import {
   LayoutDashboard,
   Settings,
   Users,
-  AirVent,
-  Wrench,
-  MapPin,
   ClipboardList,
-  Monitor,
-  History,
-  CheckCircle,
   User,
   ChevronRight,
   ChevronLeft,
   Moon,
   Sun,
   DollarSign,
-  FileText,
-  Package,
   Code
 } from 'lucide-react'
 
@@ -109,7 +102,7 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
     fetchUserRole()
   }, [])
 
-  const filterMenuItems = (items: any[]) => {
+  const filterMenuItems = (items: { href: string; title: string; requireRole?: string; children?: { href: string; title: string; requireRole?: string }[] }[]) => {
     return items.filter(item => {
       if (item.requireRole && userRole !== item.requireRole) return false
       return true
@@ -117,7 +110,7 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
       if (item.children && item.children.length > 0) {
         return {
           ...item,
-          children: item.children.filter((child: any) => {
+          children: item.children.filter((child: { href: string; title: string; requireRole?: string }) => {
             if (child.requireRole && userRole !== child.requireRole) return false
             return true
           })
@@ -146,7 +139,7 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
       <div className="flex h-14 items-center justify-between border-b border-border/50 px-4 lg:h-[60px] lg:px-6 shrink-0 relative">
         {!isCollapsed && (
           <Link href="/dashboard" className="flex items-center justify-center flex-1">
-            <img src="/logo.png" alt="MSN ERP" className="h-10 w-auto" />
+            <Image src="/logo.png" alt="MSN ERP" className="h-10 w-auto" width={120} height={40} />
           </Link>
         )}
         <button
@@ -261,7 +254,12 @@ function DarkModeToggle() {
 }
 
 function ProfileSection() {
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{
+    email: string
+    full_name: string
+    role: string
+    avatar_url?: string
+  } | null>(null)
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
@@ -313,7 +311,7 @@ function ProfileSection() {
         >
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium text-sm">
             {user.avatar_url ? (
-              <img src={user.avatar_url} alt="Profile" className="w-8 h-8 rounded-full object-cover" />
+              <Image src={user.avatar_url} alt="Profile" className="w-8 h-8 rounded-full object-cover" width={32} height={32} />
             ) : (
               user.full_name?.charAt(0)?.toUpperCase() || 'U'
             )}

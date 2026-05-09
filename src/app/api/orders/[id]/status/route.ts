@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { updateOrderStatus } from '@/lib/actions/orders'
-import { UpdateOrderStatusSchema, OrderStatusTransitionMap } from '@/app/api/schemas'
-import { jsonSuccess, jsonError, handleValidationError, handleApiError, ApiError } from '@/app/api/utils'
+import { UpdateOrderStatusSchema } from '@/app/api/schemas'
+import { jsonSuccess, jsonError, handleValidationError, handleApiError } from '@/app/api/utils'
 import { requireAuth } from '@/app/api/middleware/auth'
 import { logRequest, logResponse, measureDuration, createAuditLog } from '@/app/api/middleware/logging'
 

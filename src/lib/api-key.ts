@@ -130,7 +130,7 @@ export function maskApiKey(apiKey: string): string {
  * Get API key creation date
  * Note: This requires database lookup in production
  */
-export function getApiKeyCreatedDate(apiKey: string): Date | null {
+export function getApiKeyCreatedDate(_apiKey: string): Date | null {
   // Stateless tokens cannot determine creation date without DB
   // In production, store metadata in database
   return null
@@ -140,7 +140,7 @@ export function getApiKeyCreatedDate(apiKey: string): Date | null {
  * Get API key expiration date
  * Note: This requires database lookup in production
  */
-export function getApiKeyExpirationDate(apiKey: string): Date | null {
+export function getApiKeyExpirationDate(_apiKey: string): Date | null {
   // Stateless tokens cannot determine expiration without DB
   // In production, store metadata in database
   return null

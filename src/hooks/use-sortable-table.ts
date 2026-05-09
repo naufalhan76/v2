@@ -80,6 +80,6 @@ export function useSortableTable<T>(data: T[], initialSort?: SortConfig) {
 }
 
 // Helper to get nested object values (e.g., "customers.customer_name")
-function getNestedValue(obj: any, path: string): any {
-  return path.split('.').reduce((current, key) => current?.[key], obj)
+function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+  return path.split('.').reduce((current: unknown, key) => (current as Record<string, unknown>)?.[key], obj)
 }

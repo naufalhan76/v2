@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server'
 import { logger } from '@/lib/logger'
 
 // Simple in-memory cache to reduce database queries (expires after 30 seconds)
-const userCache = new Map<string, { data: any; expiry: number }>()
+const userCache = new Map<string, { data: unknown; expiry: number }>()
 const CACHE_DURATION = 30000 // 30 seconds
 
 function getCachedUser(userId: string) {
@@ -15,7 +15,7 @@ function getCachedUser(userId: string) {
   return null
 }
 
-function setCachedUser(userId: string, data: any) {
+function setCachedUser(userId: string, data: unknown) {
   userCache.set(userId, {
     data,
     expiry: Date.now() + CACHE_DURATION
@@ -56,7 +56,7 @@ export async function middleware(req: NextRequest) {
           return req.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => req.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value, options: _options }) => req.cookies.set(name, value))
           res = NextResponse.next({
             request: req,
           })

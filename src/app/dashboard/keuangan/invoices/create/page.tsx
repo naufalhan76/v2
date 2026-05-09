@@ -82,7 +82,7 @@ export default function CreateInvoicePage() {
   const [addons, setAddons] = useState<Addon[]>([])
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [selectedOrder, setSelectedOrder] = useState<InvoiceOrder | null>(null)
-  const [baseService, setBaseService] = useState<any>(null)
+  const [baseService, setBaseService] = useState<unknown>(null)
   const [lineItems, setLineItems] = useState<LineItem[]>([])
   const [selectedAddon, setSelectedAddon] = useState<string>('')
   const [addonQuantity, setAddonQuantity] = useState<number>(1)
@@ -127,12 +127,14 @@ export default function CreateInvoicePage() {
     loadInitialData()
     loadAddons()
     loadBankAccounts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     if (selectedOrder) {
       loadServicePricing()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedOrder])
 
   const loadCompletedOrders = async (): Promise<InvoiceOrder[]> => {
@@ -167,7 +169,7 @@ export default function CreateInvoicePage() {
       const availableOrders = ordersWithInvoiceStatus.filter(order => !order.hasInvoice)
       setOrders(availableOrders)
       return availableOrders
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -394,8 +396,9 @@ export default function CreateInvoicePage() {
         ? 'Multiple Services' 
         : (baseService?.service_name || baseServiceNames[0] || 'Service')
 
-      // Determine invoice type based on order status
-      const invoiceType = requestedInvoiceType || (selectedOrder.status === 'DONE' ? 'FINAL' : 'PROFORMA')
+      // Determine invoice type strictly from order status — ignore URL param on submit
+      // to prevent a crafted URL from forcing FINAL on a non-DONE order.
+      const invoiceType: InvoiceType = selectedOrder.status === 'DONE' ? 'FINAL' : 'PROFORMA'
 
       // Get selected bank account details
       const selectedBankAccount = bankAccounts.find(acc => acc.id === data.paymentAccountId)
@@ -429,11 +432,11 @@ export default function CreateInvoicePage() {
       })
 
       router.push('/dashboard/keuangan/invoices')
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message || 'Gagal membuat invoice',
+        description: error instanceof Error ? error.message : 'Gagal membuat invoice',
       })
     } finally {
       setIsLoading(false)

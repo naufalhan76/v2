@@ -113,7 +113,7 @@ export async function updateUser(input: UpdateUserInput) {
   try {
     const supabase = await createClient()
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     }
 

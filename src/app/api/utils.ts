@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger'
 // API RESPONSE HELPERS
 // ============================================================================
 
-export type ApiResponse<T = any> = {
+export type ApiResponse<T = unknown> = {
   success: boolean
   data?: T
   error?: string
@@ -58,7 +58,7 @@ export class ApiError extends Error {
   constructor(
     public statusCode: number,
     message: string,
-    public details?: any,
+    public details?: unknown,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -97,9 +97,10 @@ export const handleApiError = (error: unknown) => {
 // VALIDATION ERROR HANDLING
 // ============================================================================
 
-export const handleValidationError = (error: any) => {
-  if (error?.issues) {
-    const issues = error.issues.map((issue: any) => ({
+export const handleValidationError = (error: unknown) => {
+  const err = error as { issues?: Array<{ path: string[]; message: string }> }
+  if (err?.issues) {
+    const issues = err.issues.map((issue) => ({
       field: issue.path.join('.'),
       message: issue.message,
     }))

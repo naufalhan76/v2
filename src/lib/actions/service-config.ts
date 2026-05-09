@@ -18,7 +18,7 @@ export async function getServiceTypes() {
   return { success: true, data }
 }
 
-export async function createServiceType(input: any) {
+export async function createServiceType(input: Record<string, unknown>) {
   const supabase = await createClient()
   const { data, error } = await supabase.from('service_types').insert(input).select().single()
   if (error) return { success: false, error: error.message }
@@ -26,7 +26,7 @@ export async function createServiceType(input: any) {
   return { success: true, data }
 }
 
-export async function updateServiceType(id: string, input: any) {
+export async function updateServiceType(id: string, input: Record<string, unknown>) {
   const supabase = await createClient()
   const { data, error } = await supabase.from('service_types').update(input).eq('service_type_id', id).select().single()
   if (error) return { success: false, error: error.message }
@@ -57,7 +57,7 @@ export async function getUnitTypes() {
   return { success: true, data }
 }
 
-export async function createUnitType(input: any) {
+export async function createUnitType(input: Record<string, unknown>) {
   const supabase = await createClient()
   const { data, error } = await supabase.from('unit_types').insert(input).select().single()
   if (error) return { success: false, error: error.message }
@@ -65,7 +65,7 @@ export async function createUnitType(input: any) {
   return { success: true, data }
 }
 
-export async function updateUnitType(id: string, input: any) {
+export async function updateUnitType(id: string, input: Record<string, unknown>) {
   const supabase = await createClient()
   const { data, error } = await supabase.from('unit_types').update(input).eq('unit_type_id', id).select().single()
   if (error) return { success: false, error: error.message }
@@ -101,7 +101,7 @@ export async function getCapacityRanges(unitTypeId?: string) {
   return { success: true, data }
 }
 
-export async function createCapacityRange(input: any) {
+export async function createCapacityRange(input: Record<string, unknown>) {
   const supabase = await createClient()
   const { data, error } = await supabase.from('capacity_ranges').insert(input).select().single()
   if (error) return { success: false, error: error.message }
@@ -109,7 +109,7 @@ export async function createCapacityRange(input: any) {
   return { success: true, data }
 }
 
-export async function updateCapacityRange(id: string, input: any) {
+export async function updateCapacityRange(id: string, input: Record<string, unknown>) {
   const supabase = await createClient()
   const { data, error } = await supabase.from('capacity_ranges').update(input).eq('capacity_id', id).select().single()
   if (error) return { success: false, error: error.message }
@@ -140,7 +140,7 @@ export async function getAcBrands() {
   return { success: true, data }
 }
 
-export async function createAcBrand(input: any) {
+export async function createAcBrand(input: Record<string, unknown>) {
   const supabase = await createClient()
   const { data, error } = await supabase.from('ac_brands').insert(input).select().single()
   if (error) return { success: false, error: error.message }
@@ -148,7 +148,7 @@ export async function createAcBrand(input: any) {
   return { success: true, data }
 }
 
-export async function updateAcBrand(id: string, input: any) {
+export async function updateAcBrand(id: string, input: Record<string, unknown>) {
   const supabase = await createClient()
   const { data, error } = await supabase.from('ac_brands').update(input).eq('brand_id', id).select().single()
   if (error) return { success: false, error: error.message }
@@ -196,7 +196,7 @@ export async function getServiceCatalog(filters?: {
   return { success: true, data }
 }
 
-export async function createServiceCatalogEntry(input: any) {
+export async function createServiceCatalogEntry(input: Record<string, unknown>) {
   const supabase = await createClient()
   const { data, error } = await supabase.from('service_catalog').insert(input).select().single()
   if (error) return { success: false, error: error.message }
@@ -204,7 +204,7 @@ export async function createServiceCatalogEntry(input: any) {
   return { success: true, data }
 }
 
-export async function updateServiceCatalogEntry(id: string, input: any) {
+export async function updateServiceCatalogEntry(id: string, input: Record<string, unknown>) {
   const supabase = await createClient()
   const { data, error } = await supabase.from('service_catalog').update(input).eq('catalog_id', id).select().single()
   if (error) return { success: false, error: error.message }
@@ -243,7 +243,6 @@ export async function bulkImportServiceCatalog(csvText: string) {
      // Cache to minimize DB calls during import
      const unitTypesMap = new Map();
      const capacityMap = new Map();
-     const serviceTypesMap = new Map();
 
      for (const record of records) {
         if (record.length < 5) continue;
@@ -328,8 +327,8 @@ export async function bulkImportServiceCatalog(csvText: string) {
      revalidatePath('/dashboard/konfigurasi/service-config');
      return { success: true, message: `Successfully imported ${createdCount} items.` };
 
-  } catch (err: any) {
-     return { success: false, error: err.message || "Failed to process import" };
+  } catch (err: unknown) {
+     return { success: false, error: err instanceof Error ? err.message : "Failed to process import" };
   }
 }
 

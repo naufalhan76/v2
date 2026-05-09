@@ -4,10 +4,18 @@ import { createClient } from '@/lib/supabase-server'
 import { logInvoiceCommunication } from '@/lib/actions/invoice-communications'
 import { logger } from '@/lib/logger'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.RESEND_API_KEY) {
+      logger.error('RESEND_API_KEY is not configured')
+      return NextResponse.json(
+        { error: 'Email service is not configured' },
+        { status: 500 }
+      )
+    }
+
+    const resend = new Resend(process.env.RESEND_API_KEY)
+
     const supabase = await createClient()
 
     // Check authentication
@@ -96,7 +104,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse bank accounts
-    let bankAccounts: any[] = []
+    let bankAccounts: unknown[] = []
     if (config?.bank_accounts) {
       try {
         bankAccounts = JSON.parse(config.bank_accounts)
@@ -342,10 +350,10 @@ export async function POST(request: NextRequest) {
       message: 'Email sent successfully',
       emailId: emailData?.id,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Send email error:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

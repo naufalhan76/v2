@@ -7,21 +7,28 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, Plus, Pencil, Trash2, CheckCircle2, XCircle } from 'lucide-react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog'
 import { getUnitTypes, createUnitType, updateUnitType, deleteUnitType, bulkImportUnitTypes } from '@/lib/actions/service-config'
 import { BulkImportDialog } from './BulkImportDialog'
 import { UploadCloud } from 'lucide-react'
 
+interface UnitType {
+  unit_type_id: string
+  name: string
+  description?: string | null
+  is_active: boolean
+}
+
 export function UnitTypeTab() {
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<UnitType[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<any | null>(null)
-  const [deletingItem, setDeletingItem] = useState<any | null>(null)
+  const [editingItem, setEditingItem] = useState<UnitType | null>(null)
+  const [deletingItem, setDeletingItem] = useState<UnitType | null>(null)
   
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -41,7 +48,7 @@ export function UnitTypeTab() {
     setIsFetching(false)
   }
 
-  const handleOpenDialog = (item?: any) => {
+  const handleOpenDialog = (item?: UnitType) => {
     if (item) {
       setEditingItem(item)
       setName(item.name)

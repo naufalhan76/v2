@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Plus, Pencil, Trash2, CheckCircle2, XCircle, Search, UploadCloud } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
+import { Loader2, Plus, Pencil, Trash2, Search, UploadCloud } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog'
 import { 
@@ -21,17 +21,31 @@ import {
   getCapacityRanges,
   getServiceTypes
 } from '@/lib/actions/service-config'
-import { Textarea } from '@/components/ui/textarea'
 import { BulkImportDialog } from './BulkImportDialog'
 
+interface ServiceCatalogItem {
+  catalog_id: string
+  msn_code: string
+  unit_type_id: string
+  capacity_id: string
+  service_type_id: string
+  service_name: string
+  base_price: number
+  description?: string | null
+  is_active: boolean
+  unit_types?: { name: string }
+  capacity_ranges?: { capacity_label: string }
+  service_types?: { name: string }
+}
+
 export function ServiceCatalogTab() {
-  const [items, setItems] = useState<any[]>([])
-  
+  const [items, setItems] = useState<ServiceCatalogItem[]>([])
+
   // Master data
-  const [unitTypes, setUnitTypes] = useState<any[]>([])
-  const [capacityRanges, setCapacityRanges] = useState<any[]>([])
-  const [serviceTypes, setServiceTypes] = useState<any[]>([])
-  
+  const [unitTypes, setUnitTypes] = useState<{ unit_type_id: string; name: string }[]>([])
+  const [capacityRanges, setCapacityRanges] = useState<{ capacity_id: string; unit_type_id: string; capacity_label: string }[]>([])
+  const [serviceTypes, setServiceTypes] = useState<{ service_type_id: string; name: string }[]>([])
+
   // Filters
   const [filterUnitTypeId, setFilterUnitTypeId] = useState<string>('ALL')
   const [filterCapacityId, setFilterCapacityId] = useState<string>('ALL')
@@ -43,8 +57,8 @@ export function ServiceCatalogTab() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<any | null>(null)
-  const [deletingItem, setDeletingItem] = useState<any | null>(null)
+  const [editingItem, setEditingItem] = useState<ServiceCatalogItem | null>(null)
+  const [deletingItem, setDeletingItem] = useState<ServiceCatalogItem | null>(null)
   
   // Form State
   const [msnCode, setMsnCode] = useState('')
@@ -59,7 +73,10 @@ export function ServiceCatalogTab() {
   const { toast } = useToast()
 
   useEffect(() => { loadMasterData() }, [])
-  useEffect(() => { loadData() }, [filterUnitTypeId, filterCapacityId, searchQuery])
+  useEffect(() => {
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterUnitTypeId, filterCapacityId, searchQuery])
 
   const loadMasterData = async () => {
     const [uRes, cRes, sRes] = await Promise.all([
@@ -83,7 +100,7 @@ export function ServiceCatalogTab() {
     setIsFetching(false)
   }
 
-  const handleOpenDialog = (item?: any) => {
+  const handleOpenDialog = (item?: ServiceCatalogItem) => {
     if (item) {
       setEditingItem(item)
       setMsnCode(item.msn_code)
@@ -176,7 +193,7 @@ export function ServiceCatalogTab() {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount)
   }
 
-  const availableCapacities = capacityRanges.filter(c => c.unit_type_id === (editingItem ? unitTypeId : filterUnitTypeId === 'ALL' ? unitTypeId : filterUnitTypeId || unitTypeId));
+  const _availableCapacities = capacityRanges.filter(c => c.unit_type_id === (editingItem ? unitTypeId : filterUnitTypeId === 'ALL' ? unitTypeId : filterUnitTypeId || unitTypeId));
 
   return (
     <div className="space-y-4">

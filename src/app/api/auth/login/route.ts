@@ -21,7 +21,7 @@ const LoginSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 })
 
-type LoginRequest = z.infer<typeof LoginSchema>
+type _LoginRequest = z.infer<typeof LoginSchema>
 
 export async function POST(request: NextRequest) {
   const getDuration = measureDuration()

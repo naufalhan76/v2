@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Label } from '@/components/ui/label'
 import {
   Table,
   TableBody,
@@ -27,21 +26,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
 import { useToast } from '@/hooks/use-toast'
-import { History, Search, CalendarIcon, MessageCircle, AlertCircle, CheckCircle, X, Clock } from 'lucide-react'
-import { format, subDays, differenceInDays, isPast, isFuture } from 'date-fns'
+import { History, Search, CalendarIcon, MessageCircle, AlertCircle, CheckCircle } from 'lucide-react'
+import { format, subDays, differenceInDays, isPast } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { id } from 'date-fns/locale'
 
@@ -86,7 +77,7 @@ export default function MonitoringHistoryPage() {
   
   // Cancel/Reschedule modal states
   const [cancelModalOpen, setCancelModalOpen] = useState(false)
-  const [selectedRecord, setSelectedRecord] = useState<any>(null)
+  const [selectedRecord, setSelectedRecord] = useState<unknown>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null)
   const [editingDate, setEditingDate] = useState<Date | null>(null)
@@ -139,16 +130,19 @@ export default function MonitoringHistoryPage() {
   const serviceRecords = serviceRecordsData?.data || []
 
   // Client-side search filter
-  const filteredRecordsBase = serviceRecords.filter((record: any) => {
+  const filteredRecordsBase = serviceRecords.filter((record: unknown) => {
     if (!searchQuery) return true
+    const r = record as Record<string, unknown>
+    const acUnits = r.ac_units as Record<string, unknown> | undefined
+    const locations = acUnits?.locations as Record<string, unknown> | undefined
+    const customers = locations?.customers as Record<string, unknown> | undefined
     const searchLower = searchQuery.toLowerCase()
-    const customerName = record.ac_units?.locations?.customers?.customer_name?.toLowerCase() || ''
-    const brand = record.ac_units?.brand?.toLowerCase() || ''
-    const model = record.ac_units?.model_number?.toLowerCase() || ''
-    const orderId = record.order_id?.toLowerCase() || ''
-    
-    return customerName.includes(searchLower) || 
-           brand.includes(searchLower) || 
+    const customerName = (customers?.customer_name as string)?.toLowerCase() || ''
+    const brand = (acUnits?.brand as string)?.toLowerCase() || ''
+    const model = (acUnits?.model_number as string)?.toLowerCase() || ''
+    const orderId = (r.order_id as string)?.toLowerCase() || ''
+    return customerName.includes(searchLower) ||
+           brand.includes(searchLower) ||
            model.includes(searchLower) ||
            orderId.includes(searchLower)
   })
@@ -160,20 +154,26 @@ export default function MonitoringHistoryPage() {
   })
 
   // Calculate stats
-  const overdueCount = filteredRecords.filter((r: any) => r.next_service_due && isPast(new Date(r.next_service_due))).length
-  const upcomingCount = filteredRecords.filter((r: any) => {
-    if (!r.next_service_due) return false
-    const daysUntil = differenceInDays(new Date(r.next_service_due), new Date())
+  const overdueCount = filteredRecords.filter((r: unknown) => {
+    const rec = r as Record<string, unknown>
+    return rec.next_service_due && isPast(new Date(rec.next_service_due as string))
+  }).length
+  const upcomingCount = filteredRecords.filter((r: unknown) => {
+    const rec = r as Record<string, unknown>
+    if (!rec.next_service_due) return false
+    const daysUntil = differenceInDays(new Date(rec.next_service_due as string), new Date())
     return daysUntil >= 0 && daysUntil <= 30
   }).length
 
-  const generateWhatsAppMessage = (record: any) => {
-    const customer = record.ac_units?.locations?.customers
-    const acUnit = record.ac_units
-    const customerName = customer?.customer_name || 'Customer'
-    const brand = acUnit?.brand || 'AC'
-    const model = acUnit?.model_number || ''
-    const nextServiceDate = record.next_service_due ? format(new Date(record.next_service_due), 'dd MMMM yyyy') : '-'
+  const generateWhatsAppMessage = (record: unknown) => {
+    const r = record as Record<string, unknown>
+    const acUnits = r.ac_units as Record<string, unknown> | undefined
+    const locations = acUnits?.locations as Record<string, unknown> | undefined
+    const customer = locations?.customers as Record<string, unknown> | undefined
+    const customerName = (customer?.customer_name as string) || 'Customer'
+    const brand = (acUnits?.brand as string) || 'AC'
+    const model = (acUnits?.model_number as string) || ''
+    const nextServiceDate = r.next_service_due ? format(new Date(r.next_service_due as string), 'dd MMMM yyyy') : '-'
     
     const message = `Halo ${customerName},
 
@@ -186,8 +186,12 @@ Terima kasih.`
     return encodeURIComponent(message)
   }
 
-  const sendWhatsAppReminder = async (record: any) => {
-    const phoneNumber = record.ac_units?.locations?.customers?.phone_number
+  const sendWhatsAppReminder = async (record: unknown) => {
+    const r = record as Record<string, unknown>
+    const acUnits = r.ac_units as Record<string, unknown> | undefined
+    const locations = acUnits?.locations as Record<string, unknown> | undefined
+    const customer = locations?.customers as Record<string, unknown> | undefined
+    const phoneNumber = customer?.phone_number as string | undefined
     if (!phoneNumber) {
       toast({
         title: 'Error',
@@ -199,7 +203,7 @@ Terima kasih.`
     
     try {
       // Track the reminder in database
-      const trackResult = await trackReminder(record.service_id, record.order_id, phoneNumber)
+      const trackResult = await trackReminder(r.service_id as string, r.order_id as string, phoneNumber)
       
       if (!trackResult.success) {
         toast({
@@ -471,29 +475,31 @@ Terima kasih.`
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRecords.map((record: any) => {
-                    const customer = record.ac_units?.locations?.customers
-                    const acUnit = record.ac_units
-                    
+                  {filteredRecords.map((record: unknown) => {
+                    const rec = record as Record<string, unknown>
+                    const acUnit = rec.ac_units as Record<string, unknown> | undefined
+                    const locations = acUnit?.locations as Record<string, unknown> | undefined
+                    const customer = locations?.customers as Record<string, unknown> | undefined
+
                     return (
-                      <TableRow key={record.service_id}>
+                      <TableRow key={rec.service_id as string}>
                         <TableCell>
                           <div>
-                            <div className='font-medium'>{customer?.customer_name || '-'}</div>
-                            <div className='text-sm text-muted-foreground'>{customer?.phone_number || '-'}</div>
+                            <div className='font-medium'>{(customer?.customer_name as string) || '-'}</div>
+                            <div className='text-sm text-muted-foreground'>{(customer?.phone_number as string) || '-'}</div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className='font-medium'>{acUnit?.brand || '-'} {acUnit?.model_number || ''}</div>
-                            <div className='text-sm text-muted-foreground'>{acUnit?.ac_type || '-'}</div>
+                            <div className='font-medium'>{(acUnit?.brand as string) || '-'} {(acUnit?.model_number as string) || ''}</div>
+                            <div className='text-sm text-muted-foreground'>{(acUnit?.ac_type as string) || '-'}</div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          {record.service_date ? format(new Date(record.service_date), 'dd MMM yyyy') : '-'}
+                          {rec.service_date ? format(new Date(rec.service_date as string), 'dd MMM yyyy') : '-'}
                         </TableCell>
                         <TableCell>
-                          {editingServiceId === record.service_id ? (
+                          {editingServiceId === rec.service_id ? (
                             <div className='space-y-2'>
                               <input
                                 type='date'
@@ -532,28 +538,28 @@ Terima kasih.`
                           ) : (
                             <div
                               onClick={() => {
-                                setEditingServiceId(record.service_id)
-                                setEditingDate(record.next_service_due ? new Date(record.next_service_due) : new Date())
+                                setEditingServiceId(rec.service_id as string)
+                                setEditingDate(rec.next_service_due ? new Date(rec.next_service_due as string) : new Date())
                               }}
                               className='cursor-pointer hover:bg-accent p-2 rounded transition-colors'
                             >
                               <div className='font-medium'>
-                                {record.next_service_due ? format(new Date(record.next_service_due), 'dd MMM yyyy') : '-'}
+                                {rec.next_service_due ? format(new Date(rec.next_service_due as string), 'dd MMM yyyy') : '-'}
                               </div>
-                              {getServiceStatusBadge(record.next_service_due)}
+                              {getServiceStatusBadge(rec.next_service_due as string | null)}
                               <div className='text-xs text-muted-foreground mt-1'>Click to edit</div>
                             </div>
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge variant='outline'>{record.service_type || '-'}</Badge>
+                          <Badge variant='outline'>{(rec.service_type as string) || '-'}</Badge>
                         </TableCell>
                         <TableCell>
-                          <ReminderStatsCell serviceId={record.service_id} />
+                          <ReminderStatsCell serviceId={rec.service_id as string} />
                         </TableCell>
                         <TableCell>
                           <Badge variant='secondary'>
-                            {record.orders?.status || 'N/A'}
+                            {((rec.orders as Record<string, unknown>)?.status as string) || 'N/A'}
                           </Badge>
                         </TableCell>
                         <TableCell className='text-right'>

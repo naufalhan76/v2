@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { UploadCloud, FileType2 } from 'lucide-react'
+import { UploadCloud } from 'lucide-react'
 
 interface BulkImportDialogProps {
   open: boolean

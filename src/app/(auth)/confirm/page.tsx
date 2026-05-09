@@ -51,9 +51,9 @@ function ConfirmPageContent() {
         setTimeout(() => {
           router.push('/login')
         }, 3000)
-      } catch (error: any) {
+      } catch (error: unknown) {
         setStatus('error')
-        setMessage(error.message || 'An error occurred during email confirmation')
+        setMessage(error instanceof Error ? error.message : 'An error occurred during email confirmation')
       }
     }
 

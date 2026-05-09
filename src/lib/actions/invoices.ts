@@ -153,17 +153,17 @@ export async function getOrderItemsForInvoice(orderId: string): Promise<OrderIte
   const result: OrderItemForInvoice[] = []
 
   for (const item of data) {
-    const catalog = item.service_catalog as any
-    const unitType = item.unit_types as any
-    const capacityRange = item.capacity_ranges as any
+    const catalog = item.service_catalog as Record<string, unknown> | null
+    const unitType = item.unit_types as Record<string, unknown> | null
+    const capacityRange = item.capacity_ranges as Record<string, unknown> | null
 
     if (catalog) {
       // NEW ORDER: Has service_catalog join data
-      const displayName = catalog.service_name || item.service_type
-      const msnCode = catalog.msn_code || item.msn_code
-      const unitTypeName = unitType?.name
-      const capacityLabel = capacityRange?.capacity_label
-      
+      const displayName = (catalog.service_name as string | undefined) || item.service_type
+      const msnCode = (catalog.msn_code as string | undefined) || item.msn_code
+      const unitTypeName = unitType?.name as string | undefined
+      const capacityLabel = capacityRange?.capacity_label as string | undefined
+
       result.push({
         serviceType: item.service_type,
         serviceName: displayName,
@@ -171,7 +171,7 @@ export async function getOrderItemsForInvoice(orderId: string): Promise<OrderIte
         unitTypeName,
         capacityLabel,
         quantity: item.quantity || 1,
-        estimatedPrice: item.estimated_price || catalog.base_price || 0,
+        estimatedPrice: item.estimated_price || (catalog.base_price as number | undefined) || 0,
       })
     } else {
       // OLD ORDER: No catalog join, use service_type text as fallback
@@ -329,7 +329,7 @@ export async function getInvoiceById(invoiceId: string): Promise<{
   invoice: Invoice
   items: InvoiceItem[]
   payments: PaymentRecord[]
-  orderItemsDetailed?: any[]
+  orderItemsDetailed?: Record<string, unknown>[]
 } | null> {
   const supabase = await createClient()
 

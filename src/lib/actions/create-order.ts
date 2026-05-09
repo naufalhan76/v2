@@ -27,8 +27,8 @@ export async function searchCustomers(query: string): Promise<{
       .limit(7)
     if (error) throw error
     return { success: true, data: data || [] }
-  } catch (error: any) {
-    return { success: false, error: error.message }
+  } catch (error: unknown) {
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to search customers' }
   }
 }
 
@@ -203,7 +203,7 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
       
       // Find the most common service type
       const sortedTypes = Object.entries(serviceTypeCounts).sort((a, b) => b[1] - a[1])
-      orderType = (sortedTypes[0]?.[0] as any) || 'INSPECTION' // Most common (or first if tied)
+      orderType = (sortedTypes[0]?.[0] as string) || 'INSPECTION' // Most common (or first if tied)
     }
     
     // 1. Create order
@@ -513,7 +513,7 @@ export async function getOrderConfigMasterData() {
         serviceCatalog: serviceCatalog.data || []
       }
     }
-  } catch (error: any) {
-    return { success: false, error: error.message }
+  } catch (error: unknown) {
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch master data' }
   }
 }

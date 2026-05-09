@@ -10,7 +10,7 @@ export interface PDFExportOptions {
   items: InvoiceItem[]
   payments: PaymentRecord[]
   invoiceConfig: InvoiceConfig | null
-  orderItemsDetailed?: any[]
+  orderItemsDetailed?: Record<string, unknown>[]
 }
 
 export function exportInvoiceToPDF({
@@ -83,7 +83,7 @@ export function exportInvoiceToPDF({
   // Wrap address if too long
   const maxAddressWidth = pageWidth * 0.5 // Use only 50% of page width
   const addressLines = pdf.splitTextToSize(companyAddress, maxAddressWidth)
-  addressLines.forEach((line: string, index: number) => {
+  addressLines.forEach((line: string, _index: number) => {
     pdf.text(line, margin, yPos)
     yPos += 3.5 // Spacing antar baris alamat
   })
@@ -236,11 +236,12 @@ export function exportInvoiceToPDF({
 
   if (orderItemsDetailed && orderItemsDetailed.length > 0) {
     // Group by location
-    const groupedByLocation = orderItemsDetailed.reduce((acc: any, item: any) => {
-      const locId = item.location_id || 'unknown'
+    const groupedByLocation = orderItemsDetailed.reduce((acc: Record<string, { location: unknown; items: unknown[] }>, item: unknown) => {
+      const i = item as Record<string, unknown>
+      const locId = (i.location_id as string) || 'unknown'
       if (!acc[locId]) {
         acc[locId] = {
-          location: item.locations,
+          location: i.locations,
           items: []
         }
       }
@@ -249,7 +250,8 @@ export function exportInvoiceToPDF({
     }, {})
     
     let itemIndex = 0
-    Object.values(groupedByLocation).forEach((group: any) => {
+    Object.values(groupedByLocation).forEach((group: unknown) => {
+      const g = group as { location: Record<string, unknown>; items: unknown[] }
       if (yPos > pageHeight - 70) {
         pdf.addPage()
         yPos = margin + 20
@@ -259,18 +261,19 @@ export function exportInvoiceToPDF({
       pdf.setFont('helvetica', 'bold')
       pdf.setFontSize(9)
       pdf.setTextColor(30, 58, 138) // blue-900
-      const locationText = group.location ? 
-        `${group.location.full_address} - House ${group.location.house_number}, ${group.location.city}` :
+      const locationText = g.location ?
+        `${g.location.full_address as string} - House ${g.location.house_number as string}, ${g.location.city as string}` :
         'Unknown Location'
       pdf.text(locationText, margin + 3, yPos)
       yPos += 6
-      
+
       pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(8)
       pdf.setTextColor(15, 23, 42)
-      
+
       // Items for this location
-      group.items.forEach((item: any) => {
+      g.items.forEach((item: unknown) => {
+        const it = item as Record<string, unknown> & { ac_units?: Record<string, unknown> }
         if (yPos > pageHeight - 70) {
           pdf.addPage()
           yPos = margin + 20
@@ -283,15 +286,15 @@ export function exportInvoiceToPDF({
         }
         
         // AC Unit description
-        const acDesc = item.ac_units ? 
-          `${item.ac_units.brand} ${item.ac_units.model_number} - ${item.service_type}` :
-          `New AC Unit (${item.quantity}x) - ${item.service_type}`
-        
+        const acDesc = it.ac_units ?
+          `${it.ac_units.brand as string} ${it.ac_units.model_number as string} - ${it.service_type as string}` :
+          `New AC Unit (${it.quantity as number}x) - ${it.service_type as string}`
+
         const descLines = pdf.splitTextToSize(acDesc, 85)
         pdf.text(descLines, margin + 5, yPos)
-        
-        const qty = item.quantity || 1
-        const price = item.estimated_price || item.actual_price || 0
+
+        const qty = (it.quantity as number) || 1
+        const price = (it.estimated_price as number) || (it.actual_price as number) || 0
         const total = qty * price
         
         pdf.text(qty.toString(), pageWidth - 90, yPos, { align: 'center' })

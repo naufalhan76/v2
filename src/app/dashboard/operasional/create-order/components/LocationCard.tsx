@@ -2,14 +2,13 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import { ServiceSelectionModal, MasterData } from './ServiceSelectionModal'
-import { Package, ChevronDown, ChevronRight, Trash2, Plus, PenSquare } from 'lucide-react'
+import { Package, ChevronDown, ChevronRight, Trash2, Plus } from 'lucide-react'
 import type { LocationFormData } from '@/types/create-order'
 import { normalizeOrderServiceType } from '@/lib/service-types'
 
@@ -43,29 +42,30 @@ export function LocationCard({
     setModalOpen(true)
   }
 
-  const handleAddService = (catalogEntry: any) => {
+  const handleAddService = (catalogEntry: unknown) => {
     const updated = { ...location }
+    const entry = catalogEntry as Record<string, unknown>
     const newService = {
-      catalog_id: catalogEntry.catalog_id,
-      msn_code: catalogEntry.msn_code,
-      service_type: normalizeOrderServiceType(catalogEntry.service_types?.code),
-      service_type_id: catalogEntry.service_type_id,
-      price: catalogEntry.base_price,
-      unit_type_id: catalogEntry.unit_type_id,
-      capacity_id: catalogEntry.capacity_id,
-      service_name: catalogEntry.service_name // for UI only
+      catalog_id: entry.catalog_id,
+      msn_code: entry.msn_code,
+      service_type: normalizeOrderServiceType((entry.service_types as Record<string, unknown>)?.code as string),
+      service_type_id: entry.service_type_id,
+      price: entry.base_price,
+      unit_type_id: entry.unit_type_id,
+      capacity_id: entry.capacity_id,
+      service_name: entry.service_name // for UI only
     }
 
     if (activeAcType === 'existing' && activeAcIndex >= 0) {
       if (!updated.existing_acs[activeAcIndex].selected_services) updated.existing_acs[activeAcIndex].selected_services = []
       // Don't add duplicate
-      if (!updated.existing_acs[activeAcIndex].selected_services.find(s => s.catalog_id === newService.catalog_id)) {
-        updated.existing_acs[activeAcIndex].selected_services.push(newService as any)
+      if (!updated.existing_acs[activeAcIndex].selected_services.find((s: unknown) => (s as Record<string, unknown>).catalog_id === newService.catalog_id)) {
+        updated.existing_acs[activeAcIndex].selected_services.push(newService as unknown)
       }
     } else if (activeAcType === 'new' && activeAcIndex >= 0) {
       if (!updated.new_ac_units[activeAcIndex].selected_services) updated.new_ac_units[activeAcIndex].selected_services = []
-      if (!updated.new_ac_units[activeAcIndex].selected_services.find(s => s.catalog_id === newService.catalog_id)) {
-        updated.new_ac_units[activeAcIndex].selected_services.push(newService as any)
+      if (!updated.new_ac_units[activeAcIndex].selected_services.find((s: unknown) => (s as Record<string, unknown>).catalog_id === newService.catalog_id)) {
+        updated.new_ac_units[activeAcIndex].selected_services.push(newService as unknown)
       }
     }
     onChange(updated)
@@ -95,9 +95,9 @@ export function LocationCard({
   // Compute already selected catalog IDs for the active AC to prevent duplicates
   let alreadySelectedCatalogIds: string[] = []
   if (activeAcType === 'new' && activeAcIndex >= 0 && location.new_ac_units[activeAcIndex]) {
-    alreadySelectedCatalogIds = (location.new_ac_units[activeAcIndex].selected_services || []).map((s: any) => s.catalog_id)
+    alreadySelectedCatalogIds = (location.new_ac_units[activeAcIndex].selected_services || []).map((s: unknown) => (s as Record<string, unknown>).catalog_id as string)
   } else if (activeAcType === 'existing' && activeAcIndex >= 0 && location.existing_acs[activeAcIndex]) {
-    alreadySelectedCatalogIds = (location.existing_acs[activeAcIndex].selected_services || []).map((s: any) => s.catalog_id)
+    alreadySelectedCatalogIds = (location.existing_acs[activeAcIndex].selected_services || []).map((s: unknown) => (s as Record<string, unknown>).catalog_id as string)
   }
 
   return (
@@ -180,7 +180,7 @@ export function LocationCard({
                   searchPlaceholder="Cari dari merk, model, atau SN..."
                 />
 
-                {location.existing_acs.filter(ac => ac.is_selected).map((ac, acIndex) => {
+                {location.existing_acs.filter(ac => ac.is_selected).map((ac, _acIndex) => {
                   if (!ac.is_selected) return null
                   const actualIndex = location.existing_acs.findIndex(a => a.ac_unit_id === ac.ac_unit_id)
                   return (
@@ -193,18 +193,21 @@ export function LocationCard({
                       {ac.selected_services && ac.selected_services.length > 0 && (
                         <div className="space-y-2 mt-2">
                           <Label className="text-xs text-muted-foreground">Jasa yang dipilih:</Label>
-                          {ac.selected_services.map((svc: any, sIdx: number) => (
-                            <div key={sIdx} className="flex items-center justify-between bg-muted/50 p-2 rounded text-sm group">
-                              <div>
-                                <span className="font-mono text-xs font-bold text-primary mr-2 bg-primary/10 px-1 py-0.5 rounded">{svc.msn_code}</span>
-                                <span>{svc.service_name}</span>
+                          {ac.selected_services.map((svc: unknown, sIdx: number) => {
+                            const s = svc as Record<string, unknown>
+                            return (
+                              <div key={sIdx} className="flex items-center justify-between bg-muted/50 p-2 rounded text-sm group">
+                                <div>
+                                  <span className="font-mono text-xs font-bold text-primary mr-2 bg-primary/10 px-1 py-0.5 rounded">{s.msn_code as string}</span>
+                                  <span>{s.service_name as string}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span>Rp {(s.price as number).toLocaleString('id-ID')}</span>
+                                  <Button variant="ghost" size="sm" onClick={() => handleRemoveService('existing', actualIndex, sIdx)} className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-3">
-                                <span>Rp {svc.price.toLocaleString('id-ID')}</span>
-                                <Button variant="ghost" size="sm" onClick={() => handleRemoveService('existing', actualIndex, sIdx)} className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"><Trash2 className="h-3 w-3 text-destructive" /></Button>
-                              </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       )}
 
@@ -326,7 +329,7 @@ export function LocationCard({
                           >
                              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger>
                              <SelectContent>
-                                {masterData.capacityRanges.filter((c:any) => c.unit_type_id === unit.unit_type_id).map(c => (
+                                {masterData.capacityRanges.filter((c: unknown) => (c as Record<string, unknown>).unit_type_id === unit.unit_type_id).map(c => (
                                    <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>
                                 ))}
                              </SelectContent>
@@ -339,18 +342,21 @@ export function LocationCard({
                        {unit.selected_services && unit.selected_services.length > 0 && (
                           <div className="space-y-2 mb-3">
                             <Label className="text-xs text-muted-foreground">Jasa yang dipilih:</Label>
-                            {unit.selected_services.map((svc: any, sIdx: number) => (
+                            {unit.selected_services.map((svc: unknown, sIdx: number) => {
+                              const s = svc as Record<string, unknown>
+                              return (
                               <div key={sIdx} className="flex items-center justify-between bg-white dark:bg-slate-900 border p-2 rounded text-sm group">
                                 <div>
-                                  <span className="font-mono text-xs font-bold text-primary mr-2 bg-primary/10 px-1 py-0.5 rounded">{svc.msn_code}</span>
-                                  <span>{svc.service_name}</span>
+                                  <span className="font-mono text-xs font-bold text-primary mr-2 bg-primary/10 px-1 py-0.5 rounded">{s.msn_code as string}</span>
+                                  <span>{s.service_name as string}</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                  <span>Rp {svc.price.toLocaleString('id-ID')}</span>
+                                  <span>Rp {(s.price as number).toLocaleString('id-ID')}</span>
                                   <Button variant="ghost" size="sm" onClick={() => handleRemoveService('new', unitIndex, sIdx)} className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"><Trash2 className="h-3 w-3 text-destructive" /></Button>
                                 </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         )}
 

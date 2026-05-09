@@ -14,14 +14,20 @@ import { getAcBrands, createAcBrand, updateAcBrand, deleteAcBrand, bulkImportAcB
 import { BulkImportDialog } from './BulkImportDialog'
 import { UploadCloud } from 'lucide-react'
 
+interface AcBrand {
+  brand_id: string
+  name: string
+  is_active: boolean
+}
+
 export function BrandTab() {
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<AcBrand[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<any | null>(null)
-  const [deletingItem, setDeletingItem] = useState<any | null>(null)
+  const [editingItem, setEditingItem] = useState<AcBrand | null>(null)
+  const [deletingItem, setDeletingItem] = useState<AcBrand | null>(null)
   
   const [name, setName] = useState('')
   const [isActive, setIsActive] = useState(true)
@@ -40,7 +46,7 @@ export function BrandTab() {
     setIsFetching(false)
   }
 
-  const handleOpenDialog = (item?: any) => {
+  const handleOpenDialog = (item?: AcBrand) => {
     if (item) {
       setEditingItem(item)
       setName(item.name)

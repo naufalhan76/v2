@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getCustomers } from '@/lib/actions/customers'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -208,15 +207,15 @@ export default function CustomerManagementPage() {
     // createMutation.mutate(formData)
   }
 
-  const handleEdit = (customer: any) => {
-    setEditingId(customer.customer_id)
+  const handleEdit = (customer: Record<string, unknown>) => {
+    setEditingId(customer.customer_id as string)
     setFormData({
-      customer_name: customer.customer_name,
-      primary_contact_person: customer.primary_contact_person,
-      phone_number: customer.phone_number,
-      email: customer.email,
-      billing_address: customer.billing_address,
-      notes: customer.notes || ''
+      customer_name: customer.customer_name as string,
+      primary_contact_person: customer.primary_contact_person as string,
+      phone_number: customer.phone_number as string,
+      email: customer.email as string,
+      billing_address: customer.billing_address as string,
+      notes: (customer.notes as string) || ''
     })
     setIsEditOpen(true)
   }
@@ -406,8 +405,8 @@ export default function CustomerManagementPage() {
                   optimisticCustomers.map((customer) => {
                     const locations = customer.locations || []
                     const locationsCount = locations.length
-                    const totalAcUnits = locations.reduce((sum: number, loc: any) => 
-                      sum + (loc.ac_units?.length || 0), 0
+                    const totalAcUnits = locations.reduce((sum: number, loc: Record<string, unknown>) =>
+                      sum + ((loc.ac_units as unknown[])?.length || 0), 0
                     )
                     
                     return (
@@ -450,9 +449,11 @@ export default function CustomerManagementPage() {
                                     </h4>
                                   </div>
                                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                                    {locations.map((loc: any, idx: number) => (
-                                      <div 
-                                        key={loc.location_id} 
+                                    {locations.map((loc: Record<string, unknown>, idx: number) => {
+                                      const locAcUnits = loc.ac_units as unknown[] | undefined
+                                      return (
+                                      <div
+                                        key={loc.location_id as string}
                                         className="p-2 rounded-md bg-muted/50 hover:bg-muted transition-colors"
                                       >
                                         <div className="flex items-start gap-2">
@@ -461,26 +462,27 @@ export default function CustomerManagementPage() {
                                           </div>
                                           <div className="flex-1 min-w-0">
                                             <div className="font-medium text-sm">
-                                              {loc.building_name}
+                                              {loc.building_name as string}
                                             </div>
                                             <div className="text-xs text-muted-foreground">
-                                              Floor {loc.floor}
-                                              {loc.room_number && ` • Room ${loc.room_number}`}
+                                              Floor {loc.floor as number}
+                                              {loc.room_number && ` • Room ${loc.room_number as string}`}
                                             </div>
                                             {loc.description && (
                                               <div className="text-xs text-muted-foreground mt-1">
-                                                {loc.description}
+                                                {loc.description as string}
                                               </div>
                                             )}
-                                            {loc.ac_units && loc.ac_units.length > 0 && (
+                                            {locAcUnits && locAcUnits.length > 0 && (
                                               <Badge variant="outline" className="mt-1 text-xs">
-                                                {loc.ac_units.length} AC unit{loc.ac_units.length > 1 ? 's' : ''}
+                                                {locAcUnits.length} AC unit{locAcUnits.length > 1 ? 's' : ''}
                                               </Badge>
                                             )}
                                           </div>
                                         </div>
                                       </div>
-                                    ))}
+                                      )
+                                    })}
                                   </div>
                                 </div>
                               </PopoverContent>

@@ -29,13 +29,14 @@ import {
   Search,
   DollarSign,
   Clock,
-  CheckCircle,
   AlertCircle,
 } from 'lucide-react'
+
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
 import { useToast } from '@/hooks/use-toast'
 import { getInvoices, getInvoiceStats, type Invoice } from '@/lib/actions/invoices'
+
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
@@ -94,6 +95,7 @@ export default function InvoicesPage() {
   useEffect(() => {
     loadInvoices()
     loadStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, paymentFilter])
 
   const loadInvoices = async () => {
@@ -105,7 +107,7 @@ export default function InvoicesPage() {
         search: searchQuery || undefined,
       })
       setInvoices(result.data)
-    } catch (error) {
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Error',

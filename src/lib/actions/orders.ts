@@ -94,11 +94,11 @@ export async function getOrders(filters?: {
         totalPages: Math.ceil((count || 0) / limit),
       },
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching orders:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch orders',
+      error: error instanceof Error ? error.message : 'Failed to fetch orders',
       data: [],
       pagination: { total: 0, page: 1, limit: 20, totalPages: 0 },
     }
@@ -166,11 +166,11 @@ export async function getOrderById(orderId: string) {
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching order:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch order',
+      error: error instanceof Error ? error.message : 'Failed to fetch order',
     }
   }
 }
@@ -204,11 +204,11 @@ export async function createOrder(orderData: {
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating order:', error)
     return {
       success: false,
-      error: error.message || 'Failed to create order',
+      error: error instanceof Error ? error.message : 'Failed to create order',
     }
   }
 }
@@ -230,7 +230,7 @@ export async function updateOrderStatus(orderId: string, newStatus: string, note
     if (fetchError) throw fetchError
     
     // Prepare update data
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       status: newStatus,
       updated_at: new Date().toISOString()
     }
@@ -280,11 +280,11 @@ export async function updateOrderStatus(orderId: string, newStatus: string, note
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error updating order status:', error)
     return {
       success: false,
-      error: error.message || 'Failed to update order status',
+      error: error instanceof Error ? error.message : 'Failed to update order status',
     }
   }
 }
@@ -361,11 +361,11 @@ export async function assignOrdersToTechnician(data: {
       success: true,
       message: `Successfully assigned ${data.orderIds.length} order(s) to technician`
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error assigning orders:', error)
     return {
       success: false,
-      error: error.message || 'Failed to assign orders',
+      error: error instanceof Error ? error.message : 'Failed to assign orders',
     }
   }
 }
@@ -393,11 +393,11 @@ export async function addHelperTechnician(orderId: string, helperTechnicianId: s
       success: true,
       message: 'Helper technician added successfully'
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error adding helper technician:', error)
     return {
       success: false,
-      error: error.message || 'Failed to add helper technician',
+      error: error instanceof Error ? error.message : 'Failed to add helper technician',
     }
   }
 }
@@ -423,11 +423,11 @@ export async function removeHelperTechnician(orderId: string, helperTechnicianId
       success: true,
       message: 'Helper technician removed successfully'
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error removing helper technician:', error)
     return {
       success: false,
-      error: error.message || 'Failed to remove helper technician',
+      error: error instanceof Error ? error.message : 'Failed to remove helper technician',
     }
   }
 }
@@ -507,11 +507,11 @@ export async function cancelOrder(orderId: string, reason?: string) {
       data,
       message: 'Order cancelled successfully'
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error cancelling order:', error)
     return {
       success: false,
-      error: error.message || 'Failed to cancel order',
+      error: error instanceof Error ? error.message : 'Failed to cancel order',
     }
   }
 }
@@ -533,11 +533,11 @@ export async function deleteOrder(orderId: string) {
     return {
       success: true,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error deleting order:', error)
     return {
       success: false,
-      error: error.message || 'Failed to delete order',
+      error: error instanceof Error ? error.message : 'Failed to delete order',
     }
   }
 }

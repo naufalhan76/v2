@@ -4,7 +4,7 @@ import { useOptimistic, useState } from 'react'
 import { useToast } from './use-toast'
 
 // Generic type untuk optimistic action
-interface OptimisticAction<T, P = any> {
+interface OptimisticAction<T, P = unknown> {
   (params: P): Promise<{ success: boolean; data?: T; error?: string }>
 }
 
@@ -42,7 +42,7 @@ export function useOptimisticToggle<T>(
           description: "Updated successfully"
         })
       }
-    } catch (error) {
+    } catch {
       // Revert on error
       setOptimisticValue(initialValue)
       toast({
@@ -64,17 +64,17 @@ export function useOptimisticArray<T>(
   action: OptimisticAction<T[], { type: 'add' | 'remove' | 'update'; item: T; id?: string }>
 ) {
   const { toast } = useToast()
-  const [optimisticArray, setOptimisticArray] = useOptimistic(
+  const [optimisticArray, _setOptimisticArray] = useOptimistic(
     initialArray,
     (state, action: { type: 'add' | 'remove' | 'update'; item: T; id?: string }) => {
       switch (action.type) {
         case 'add':
           return [...state, action.item]
         case 'remove':
-          return state.filter((item: any) => item.id !== action.id)
+          return state.filter((item: unknown) => (item as { id?: string }).id !== action.id)
         case 'update':
-          return state.map((item: any) => 
-            item.id === action.id ? { ...item, ...action.item } : item
+          return state.map((item: unknown) =>
+            (item as { id?: string }).id === action.id ? { ...(item as object), ...action.item } : item
           )
         default:
           return state
@@ -102,7 +102,7 @@ export function useOptimisticArray<T>(
           description: `Item ${params.type}d successfully`
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Something went wrong",
@@ -151,7 +151,7 @@ export function useOptimisticForm<T>(
         })
         return { success: true, data: result.data }
       }
-    } catch (error) {
+    } catch {
       // Revert on error
       setOptimisticValue(initialValue)
       toast({
@@ -202,7 +202,7 @@ export function useOptimisticLike(
           variant: "destructive"
         })
       }
-    } catch (error) {
+    } catch {
       // Revert on error
       setOptimisticState(optimisticState.liked)
       toast({
@@ -215,11 +215,11 @@ export function useOptimisticLike(
     }
   }
 
-  return { 
-    likes: optimisticState.likes, 
-    liked: optimisticState.liked, 
-    handleLike, 
-    isPending 
+  return {
+    likes: optimisticState.likes,
+    liked: optimisticState.liked,
+    handleLike,
+    isPending
   }
 }
 
@@ -227,12 +227,12 @@ export function useOptimisticLike(
 export function useOptimisticDelete<T>(
   initialArray: T[],
   action: OptimisticAction<boolean, { id: string }>,
-  itemName: string = "item"
+  _itemName: string = "item"
 ) {
   const { toast } = useToast()
   const [optimisticArray, setOptimisticArray] = useOptimistic(
     initialArray,
-    (state, deletedId: string) => state.filter((item: any) => item.id !== deletedId)
+    (state, deletedId: string) => state.filter((item: unknown) => (item as { id?: string }).id !== deletedId)
   )
   const [isPending, setIsPending] = useState(false)
 
@@ -243,10 +243,10 @@ export function useOptimisticDelete<T>(
 
     setIsPending(true)
     setOptimisticArray(id) // Optimistic update
-    
+
     try {
       const result = await action({ id })
-      
+
       if (!result.success) {
         // Revert on error - we'd need the original array for this
         toast({
@@ -260,7 +260,7 @@ export function useOptimisticDelete<T>(
           description: `${itemName || 'Item'} deleted successfully`
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Something went wrong",

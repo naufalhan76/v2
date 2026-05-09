@@ -13,14 +13,22 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { getServiceTypes, createServiceType, updateServiceType, deleteServiceType, bulkImportServiceTypes } from '@/lib/actions/service-config'
 import { BulkImportDialog } from './BulkImportDialog'
 
+interface ServiceType {
+  service_type_id: string
+  code: string
+  name: string
+  description?: string | null
+  is_active: boolean
+}
+
 export function ServiceTypeTab() {
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<ServiceType[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<any | null>(null)
-  const [deletingItem, setDeletingItem] = useState<any | null>(null)
+  const [editingItem, setEditingItem] = useState<ServiceType | null>(null)
+  const [deletingItem, setDeletingItem] = useState<ServiceType | null>(null)
   
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
@@ -41,7 +49,7 @@ export function ServiceTypeTab() {
     setIsFetching(false)
   }
 
-  const handleOpenDialog = (item?: any) => {
+  const handleOpenDialog = (item?: ServiceType) => {
     if (item) {
       setEditingItem(item)
       setCode(item.code)

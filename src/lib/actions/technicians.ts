@@ -45,11 +45,11 @@ export async function getTechnicians(filters?: {
         totalPages: Math.ceil((count || 0) / limit),
       },
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching technicians:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch technicians',
+      error: error instanceof Error ? error.message : 'Failed to fetch technicians',
       data: [],
       pagination: { total: 0, page: 1, limit: 20, totalPages: 0 },
     }
@@ -73,11 +73,11 @@ export async function getTechnicianById(technicianId: string) {
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching technician:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch technician',
+      error: error instanceof Error ? error.message : 'Failed to fetch technician',
       data: null
     }
   }
@@ -110,11 +110,11 @@ export async function createTechnician(technicianData: {
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating technician:', error)
     return {
       success: false,
-      error: error.message || 'Failed to create technician',
+      error: error instanceof Error ? error.message : 'Failed to create technician',
     }
   }
 }
@@ -146,11 +146,11 @@ export async function updateTechnician(technicianId: string, technicianData: Par
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error updating technician:', error)
     return {
       success: false,
-      error: error.message || 'Failed to update technician',
+      error: error instanceof Error ? error.message : 'Failed to update technician',
     }
   }
 }
@@ -186,11 +186,11 @@ export async function deleteTechnician(technicianId: string) {
     return {
       success: true,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error deleting technician:', error)
     return {
       success: false,
-      error: error.message || 'Failed to delete technician',
+      error: error instanceof Error ? error.message : 'Failed to delete technician',
     }
   }
 }
@@ -218,10 +218,11 @@ export async function getTechnicianAvailability(date?: string) {
     if (error) throw error
     
     // Count active services per technician
-    const availability = data?.map((tech: any) => {
-      const activeServices = tech.service_records?.filter((record: any) => {
-        const recordDate = new Date(record.service_date).toISOString().split('T')[0]
-        return recordDate === targetDate && ['SCHEDULED', 'IN_PROGRESS'].includes(record.status)
+    const availability = data?.map((tech: Record<string, unknown>) => {
+      const serviceRecords = tech.service_records as Array<Record<string, unknown>> | undefined
+      const activeServices = serviceRecords?.filter((record: Record<string, unknown>) => {
+        const recordDate = new Date(record.service_date as string).toISOString().split('T')[0]
+        return recordDate === targetDate && ['SCHEDULED', 'IN_PROGRESS'].includes(record.status as string)
       }).length || 0
       
       return {
@@ -238,11 +239,11 @@ export async function getTechnicianAvailability(date?: string) {
       success: true,
       data: availability,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching technician availability:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch technician availability',
+      error: error instanceof Error ? error.message : 'Failed to fetch technician availability',
       data: [],
     }
   }

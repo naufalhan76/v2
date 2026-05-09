@@ -57,6 +57,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetchProfile()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchProfile = async () => {
@@ -74,10 +75,10 @@ export default function ProfilePage() {
           variant: 'destructive',
         })
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: error instanceof Error ? error.message : String(error),
         variant: 'destructive',
       })
     } finally {
@@ -134,10 +135,10 @@ export default function ProfilePage() {
           variant: 'destructive',
         })
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: error instanceof Error ? error.message : String(error),
         variant: 'destructive',
       })
     } finally {
@@ -178,10 +179,10 @@ export default function ProfilePage() {
           variant: 'destructive',
         })
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: error instanceof Error ? error.message : String(error),
         variant: 'destructive',
       })
     } finally {
@@ -243,10 +244,10 @@ export default function ProfilePage() {
           variant: 'destructive',
         })
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: error instanceof Error ? error.message : String(error),
         variant: 'destructive',
       })
     } finally {

@@ -15,17 +15,30 @@ import { getCapacityRanges, createCapacityRange, updateCapacityRange, deleteCapa
 import { BulkImportDialog } from './BulkImportDialog'
 import { UploadCloud } from 'lucide-react'
 
+interface UnitType {
+  unit_type_id: string
+  name: string
+}
+
+interface CapacityRange {
+  capacity_id: string
+  unit_type_id: string
+  capacity_label: string
+  is_active: boolean
+  unit_types?: { name: string }
+}
+
 export function CapacityTab() {
-  const [items, setItems] = useState<any[]>([])
-  const [unitTypes, setUnitTypes] = useState<any[]>([])
+  const [items, setItems] = useState<CapacityRange[]>([])
+  const [unitTypes, setUnitTypes] = useState<UnitType[]>([])
   const [filterUnitTypeId, setFilterUnitTypeId] = useState<string>('ALL')
-  
+
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<any | null>(null)
-  const [deletingItem, setDeletingItem] = useState<any | null>(null)
+  const [editingItem, setEditingItem] = useState<CapacityRange | null>(null)
+  const [deletingItem, setDeletingItem] = useState<CapacityRange | null>(null)
   
   const [unitTypeId, setUnitTypeId] = useState('')
   const [capacityLabel, setCapacityLabel] = useState('')
@@ -37,7 +50,10 @@ export function CapacityTab() {
   const { toast } = useToast()
 
   useEffect(() => { loadUnitTypes() }, [])
-  useEffect(() => { loadData() }, [filterUnitTypeId])
+  useEffect(() => {
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterUnitTypeId])
 
   const loadUnitTypes = async () => {
     const res = await getUnitTypes()
@@ -51,7 +67,7 @@ export function CapacityTab() {
     setIsFetching(false)
   }
 
-  const handleOpenDialog = (item?: any) => {
+  const handleOpenDialog = (item?: CapacityRange) => {
     if (item) {
       setEditingItem(item)
       setUnitTypeId(item.unit_type_id)

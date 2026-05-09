@@ -48,20 +48,21 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar'
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
-import { Activity, Package, FileText, Search, Eye, User, MapPin, Phone, Mail, Building, CalendarIcon, ChevronDown, Plus, X, Loader2 } from 'lucide-react'
+import { Activity, Package, FileText, Search, Eye, User, MapPin, Phone, Mail, Building, CalendarIcon, ChevronDown, Plus, X } from 'lucide-react'
 import { format, subDays } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { id } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
 
 // Helper functions for multi-location orders
-function getLocationsSummary(orderItems: any[]) {
+function getLocationsSummary(orderItems: unknown[]) {
   if (!orderItems || orderItems.length === 0) return { text: 'No locations', count: 0, locations: [] }
-  
+
   const uniqueLocations = new Map()
   orderItems.forEach(item => {
-    if (item.locations) {
-      uniqueLocations.set(item.location_id, item.locations.full_address)
+    const it = item as Record<string, unknown>
+    if (it.locations) {
+      uniqueLocations.set(it.location_id, (it.locations as Record<string, unknown>).full_address)
     }
   })
   
@@ -72,13 +73,13 @@ function getLocationsSummary(orderItems: any[]) {
   return { text: `${locationNames[0]} +${locationNames.length - 1}`, count: locationNames.length, locations: locationNames }
 }
 
-function getServicesGrouped(orderItems: any[]) {
+function getServicesGrouped(orderItems: unknown[]) {
   if (!orderItems || orderItems.length === 0) return { count: 0, types: {} }
-  
+
   const serviceTypes: Record<string, number> = {}
   orderItems.forEach(item => {
-    // Use msn_code as key if available, else service_type
-    const key = item.msn_code || item.service_type
+    const it = item as Record<string, unknown>
+    const key = (it.msn_code as string) || (it.service_type as string)
     if (key) {
       serviceTypes[key] = (serviceTypes[key] || 0) + 1
     }
@@ -88,20 +89,23 @@ function getServicesGrouped(orderItems: any[]) {
 }
 
 // Helper: get rich service label from an order item
-function getServiceLabel(item: any): string {
-  if (item.msn_code) {
-    const parts = [item.msn_code]
-    if (item.unit_types?.name) parts.push(item.unit_types.name)
-    if (item.capacity_ranges?.capacity_label) parts.push(item.capacity_ranges.capacity_label)
+function getServiceLabel(item: unknown): string {
+  const it = item as Record<string, unknown>
+  if (it.msn_code) {
+    const parts = [it.msn_code as string]
+    const unitTypes = it.unit_types as Record<string, unknown> | undefined
+    const capacityRanges = it.capacity_ranges as Record<string, unknown> | undefined
+    if (unitTypes?.name) parts.push(unitTypes.name as string)
+    if (capacityRanges?.capacity_label) parts.push(capacityRanges.capacity_label as string)
     return parts.join(' • ')
   }
-  return item.service_type || '-'
+  return (it.service_type as string) || '-'
 }
 
 // Helper function to get unique service display info for badges
-function getUniqueServiceLabels(orderItems: any[]): string[] {
+function getUniqueServiceLabels(orderItems: unknown[]): string[] {
   if (!orderItems || orderItems.length === 0) return []
-  
+
   const seen = new Set<string>()
   const labels: string[] = []
   orderItems.forEach(item => {
@@ -111,23 +115,10 @@ function getUniqueServiceLabels(orderItems: any[]): string[] {
       labels.push(label)
     }
   })
-  
+
   return labels
 }
 
-// Legacy: get unique service types (for old orders without msn_code)
-function getUniqueServiceTypes(orderItems: any[]) {
-  if (!orderItems || orderItems.length === 0) return []
-  
-  const uniqueTypes = new Set<string>()
-  orderItems.forEach(item => {
-    if (item.service_type) {
-      uniqueTypes.add(item.service_type)
-    }
-  })
-  
-  return Array.from(uniqueTypes)
-}
 
 const STATUS_GROUPS = {
   NON_ASSIGNED: ['NEW', 'ACCEPTED'],
@@ -281,37 +272,39 @@ function MonitoringOngoingContent() {
   const technicians = techniciansData?.data || []
 
   // Filter orders to only show ongoing (exclude PAID and CLOSED)
-  const ongoingOrders = (ordersData?.data || []).filter((order: any) => 
-    ALL_ONGOING_STATUSES.includes(order.status)
+  const ongoingOrders = (ordersData?.data || []).filter((order: unknown) =>
+    ALL_ONGOING_STATUSES.includes((order as Record<string, unknown>).status as string)
   )
 
   // Apply filters
-  const filteredOrdersBase = ongoingOrders.filter((order: any) => {
+  const filteredOrdersBase = ongoingOrders.filter((order: unknown) => {
+    const o = order as Record<string, unknown>
+    const customers = o.customers as Record<string, unknown> | undefined
     // Search filter
     if (searchQuery) {
       const searchLower = searchQuery.toLowerCase()
-      const matchesOrderId = order.order_id?.toLowerCase().includes(searchLower)
-      const matchesCustomer = order.customers?.customer_name?.toLowerCase().includes(searchLower)
+      const matchesOrderId = (o.order_id as string)?.toLowerCase().includes(searchLower)
+      const matchesCustomer = (customers?.customer_name as string)?.toLowerCase().includes(searchLower)
       if (!matchesOrderId && !matchesCustomer) return false
     }
 
     // Status group filter (from cards)
-    if (statusGroupFilter === 'NON_ASSIGNED' && !STATUS_GROUPS.NON_ASSIGNED.includes(order.status)) return false
-    if (statusGroupFilter === 'ASSIGNED' && !STATUS_GROUPS.ASSIGNED.includes(order.status)) return false
-    if (statusGroupFilter === 'INVOICED' && !STATUS_GROUPS.INVOICED.includes(order.status)) return false
+    if (statusGroupFilter === 'NON_ASSIGNED' && !STATUS_GROUPS.NON_ASSIGNED.includes(o.status as string)) return false
+    if (statusGroupFilter === 'ASSIGNED' && !STATUS_GROUPS.ASSIGNED.includes(o.status as string)) return false
+    if (statusGroupFilter === 'INVOICED' && !STATUS_GROUPS.INVOICED.includes(o.status as string)) return false
 
     // Status filter (specific status)
-    if (statusFilter !== 'ALL' && order.status !== statusFilter) return false
+    if (statusFilter !== 'ALL' && o.status !== statusFilter) return false
 
     // Order type filter
-    if (orderTypeFilter !== 'ALL' && order.order_type !== orderTypeFilter) return false
+    if (orderTypeFilter !== 'ALL' && o.order_type !== orderTypeFilter) return false
 
-    // Payment status filter (assuming orders have payment_status field)
-    if (paymentStatusFilter !== 'ALL' && order.payment_status !== paymentStatusFilter) return false
+    // Payment status filter
+    if (paymentStatusFilter !== 'ALL' && o.payment_status !== paymentStatusFilter) return false
 
     // Multi-location filter
     if (multiLocationFilter !== 'ALL') {
-      const locationsSummary = getLocationsSummary(order.order_items || [])
+      const locationsSummary = getLocationsSummary((o.order_items as unknown[]) || [])
       if (multiLocationFilter === 'SINGLE' && locationsSummary.count !== 1) return false
       if (multiLocationFilter === 'MULTI' && locationsSummary.count <= 1) return false
     }
@@ -326,9 +319,9 @@ function MonitoringOngoingContent() {
   })
 
   // Calculate stats
-  const nonAssignedCount = ongoingOrders.filter((o: any) => STATUS_GROUPS.NON_ASSIGNED.includes(o.status)).length
-  const assignedCount = ongoingOrders.filter((o: any) => STATUS_GROUPS.ASSIGNED.includes(o.status)).length
-  const invoicedCount = ongoingOrders.filter((o: any) => STATUS_GROUPS.INVOICED.includes(o.status)).length
+  const nonAssignedCount = ongoingOrders.filter((o: unknown) => STATUS_GROUPS.NON_ASSIGNED.includes((o as Record<string, unknown>).status as string)).length
+  const assignedCount = ongoingOrders.filter((o: unknown) => STATUS_GROUPS.ASSIGNED.includes((o as Record<string, unknown>).status as string)).length
+  const invoicedCount = ongoingOrders.filter((o: unknown) => STATUS_GROUPS.INVOICED.includes((o as Record<string, unknown>).status as string)).length
 
   // Helper management functions
   const handleOpenAddHelper = () => {
@@ -381,21 +374,21 @@ function MonitoringOngoingContent() {
       
       setShowAddHelperConfirm(false)
       setSelectedHelpers([])
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } catch (error: unknown) {
+      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' })
     } finally {
       setIsProcessing(false)
     }
   }
 
   const toggleHelperSelection = (helperId: string) => {
-    setSelectedHelpers(prev => 
-      prev.includes(helperId) 
+    setSelectedHelpers(prev =>
+      prev.includes(helperId)
         ? prev.filter(id => id !== helperId)
         : [...prev, helperId]
     )
   }
-  
+
   const handleRemoveHelper = async () => {
     if (!detailOrderId || !helperToRemove) return
     
@@ -412,24 +405,25 @@ function MonitoringOngoingContent() {
       } else {
         toast({ title: 'Error', description: result.error, variant: 'destructive' })
       }
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    } catch (error: unknown) {
+      toast({ title: 'Error', description: (error as Error).message, variant: 'destructive' })
     } finally {
       setIsProcessing(false)
     }
   }
-  
+
   // Get available technicians (exclude lead and already assigned helpers)
   const getAvailableTechnicians = () => {
     if (!orderDetail?.data) return []
     
-    const leadTechId = orderDetail.data.order_technicians?.find((t: any) => t.role === 'lead')?.technician_id
-    const helperIds = orderDetail.data.order_technicians?.filter((t: any) => t.role === 'helper').map((t: any) => t.technician_id) || []
-    
-    return technicians.filter((tech: any) => 
-      tech.technician_id !== leadTechId && 
-      !helperIds.includes(tech.technician_id)
-    )
+    const leadTech = orderDetail.data.order_technicians?.find((t: unknown) => (t as Record<string, unknown>).role === 'lead')
+    const leadTechId = leadTech ? (leadTech as Record<string, unknown>).technician_id : undefined
+    const helperIds = orderDetail.data.order_technicians?.filter((t: unknown) => (t as Record<string, unknown>).role === 'helper').map((t: unknown) => (t as Record<string, unknown>).technician_id) || []
+
+    return technicians.filter((tech: unknown) => {
+      const t = tech as Record<string, unknown>
+      return t.technician_id !== leadTechId && !helperIds.includes(t.technician_id)
+    })
   }
 
   const handleCancelOrder = async () => {
@@ -450,9 +444,9 @@ function MonitoringOngoingContent() {
         queryClient.invalidateQueries({ queryKey: ['orders'] })
         
         // Force refresh notifications
-        if (typeof window !== 'undefined' && (window as any).refreshNotifications) {
+        if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).refreshNotifications) {
           setTimeout(() => {
-            (window as any).refreshNotifications()
+            ((window as unknown as Record<string, unknown>).refreshNotifications as () => void)()
           }, 500)
         }
       } else {
@@ -518,9 +512,9 @@ function MonitoringOngoingContent() {
       queryClient.invalidateQueries({ queryKey: ['order', detailOrderId] })
       
       // Force refresh notifications
-      if (typeof window !== 'undefined' && (window as any).refreshNotifications) {
+      if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).refreshNotifications) {
         setTimeout(() => {
-          (window as any).refreshNotifications()
+          ((window as unknown as Record<string, unknown>).refreshNotifications as () => void)()
         }, 500)
       }
     } catch (error) {
@@ -783,21 +777,22 @@ function MonitoringOngoingContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredOrders.map((order: any) => {
-                    const locationsSummary = getLocationsSummary(order.order_items || [])
-                    const servicesInfo = getServicesGrouped(order.order_items || [])
+                  {filteredOrders.map((order: unknown) => {
+                    const o = order as Record<string, unknown>
+                    const locationsSummary = getLocationsSummary((o.order_items as unknown[]) || [])
+                    const servicesInfo = getServicesGrouped((o.order_items as unknown[]) || [])
                     
                     return (
-                      <TableRow 
-                        key={order.order_id}
+                      <TableRow
+                        key={o.order_id as string}
                         className={cn(
-                          order.status === 'RESCHEDULE' && 'bg-amber-50 border-l-4 border-l-amber-500 hover:bg-amber-100'
+                          o.status === 'RESCHEDULE' && 'bg-amber-50 border-l-4 border-l-amber-500 hover:bg-amber-100'
                         )}
                       >
-                        <TableCell className='font-mono text-sm'>{order.order_id}</TableCell>
-                        <TableCell className='font-medium'>{order.customers?.customer_name || '-'}</TableCell>
+                        <TableCell className='font-mono text-sm'>{o.order_id as string}</TableCell>
+                        <TableCell className='font-medium'>{(o.customers as Record<string, unknown>)?.customer_name as string || '-'}</TableCell>
                         <TableCell>
-                          {order.req_visit_date ? format(new Date(order.req_visit_date), 'dd MMM yyyy') : '-'}
+                          {o.req_visit_date ? format(new Date(o.req_visit_date as string), 'dd MMM yyyy') : '-'}
                         </TableCell>
                         <TableCell>
                           <Popover>
@@ -855,44 +850,44 @@ function MonitoringOngoingContent() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {getUniqueServiceLabels(order.order_items || []).map((label) => (
+                            {getUniqueServiceLabels((o.order_items as unknown[]) || []).map((label) => (
                               <Badge key={label} variant='outline' className="text-xs font-mono">
                                 {label}
                               </Badge>
                             ))}
-                            {getUniqueServiceLabels(order.order_items || []).length === 0 && (
+                            {getUniqueServiceLabels((o.order_items as unknown[]) || []).length === 0 && (
                               <Badge variant='outline'>
-                                {order.order_type || '-'}
+                                {(o.order_type as string) || '-'}
                               </Badge>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={cn('text-white', STATUS_COLORS[order.status] || 'bg-gray-500')}>
-                            {order.status}
+                          <Badge className={cn('text-white', STATUS_COLORS[o.status as string] || 'bg-gray-500')}>
+                            {o.status as string}
                           </Badge>
                         </TableCell>
                         <TableCell className='text-sm'>
-                          {order.order_technicians && order.order_technicians.length > 0 ? (
+                          {o.order_technicians && (o.order_technicians as unknown[]).length > 0 ? (
                             <div className='space-y-1'>
                               <div className='font-medium'>
-                                {order.order_technicians.find((t: any) => t.role === 'lead')?.technicians?.technician_name || order.assigned_technician_id || '-'}
+                                {((o.order_technicians as unknown[]).find((t: unknown) => (t as Record<string, unknown>).role === 'lead') as Record<string, unknown> | undefined)?.technicians ? ((((o.order_technicians as unknown[]).find((t: unknown) => (t as Record<string, unknown>).role === 'lead') as Record<string, unknown>).technicians) as Record<string, unknown>).technician_name as string : (o.assigned_technician_id as string) || '-'}
                               </div>
-                              {order.order_technicians.filter((t: any) => t.role === 'helper').length > 0 && (
+                              {(o.order_technicians as unknown[]).filter((t: unknown) => (t as Record<string, unknown>).role === 'helper').length > 0 && (
                                 <div className='text-xs text-muted-foreground'>
-                                  + {order.order_technicians.filter((t: any) => t.role === 'helper').map((t: any) => t.technicians?.technician_name).join(', ')}
+                                  + {(o.order_technicians as unknown[]).filter((t: unknown) => (t as Record<string, unknown>).role === 'helper').map((t: unknown) => ((t as Record<string, unknown>).technicians as Record<string, unknown>)?.technician_name as string).join(', ')}
                                 </div>
                               )}
                             </div>
                           ) : (
-                            order.assigned_technician_id || '-'
+                            (o.assigned_technician_id as string) || '-'
                           )}
                         </TableCell>
                         <TableCell className='text-right'>
                           <Button
                             variant='ghost'
                             size='sm'
-                            onClick={() => setDetailOrderId(order.order_id)}
+                            onClick={() => setDetailOrderId(o.order_id as string)}
                           >
                             <Eye className='w-4 h-4' />
                           </Button>
@@ -922,22 +917,24 @@ function MonitoringOngoingContent() {
           </DialogHeader>
           {orderDetail?.data && (() => {
             // Group order_items by location
-            const groupedByLocation = (orderDetail.data.order_items || []).reduce((acc: any, item: any) => {
-              const locId = item.location_id || 'unknown'
+            const groupedByLocation = (orderDetail.data.order_items || []).reduce((acc: Record<string, unknown>, item: unknown) => {
+              const it = item as Record<string, unknown>
+              const locId = (it.location_id as string) || 'unknown'
               if (!acc[locId]) {
                 acc[locId] = {
-                  location: item.locations,
+                  location: it.locations,
                   items: []
                 }
               }
-              acc[locId].items.push(item)
+              ;(acc[locId] as Record<string, unknown[]>).items.push(item)
               return acc
             }, {})
             
             const locationGroups = Object.values(groupedByLocation)
-            const totalEstimated = (orderDetail.data.order_items || []).reduce((sum: number, item: any) => 
-              sum + (item.estimated_price || 0) * (item.quantity || 1), 0
-            )
+            const totalEstimated = (orderDetail.data.order_items || []).reduce((sum: number, item: unknown) => {
+              const it = item as Record<string, unknown>
+              return sum + ((it.estimated_price as number) || 0) * ((it.quantity as number) || 1)
+            }, 0)
             
             return (
               <div className='space-y-4'>
@@ -1053,28 +1050,35 @@ function MonitoringOngoingContent() {
                     </div>
                     <div className='bg-muted/50 rounded-lg p-4 space-y-3'>
                       {/* Lead Technician */}
-                      {orderDetail.data.order_technicians.filter((t: any) => t.role === 'lead').map((tech: any) => (
-                        <div key={tech.id} className='flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20'>
+                      {orderDetail.data.order_technicians.filter((t: unknown) => (t as Record<string, unknown>).role === 'lead').map((tech: unknown) => {
+                        const tc = tech as Record<string, unknown>
+                        const technicians = tc.technicians as Record<string, unknown> | undefined
+                        return (
+                        <div key={tc.id as string} className='flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20'>
                           <div>
-                            <div className='font-semibold'>{tech.technicians?.technician_name || 'Unknown'}</div>
+                            <div className='font-semibold'>{(technicians?.technician_name as string) || 'Unknown'}</div>
                             <div className='text-xs text-muted-foreground'>Lead Technician</div>
                           </div>
                           <Badge className='bg-primary'>LEAD</Badge>
                         </div>
-                      ))}
+                        )
+                      })}
                       
                       {/* Helper Technicians */}
-                      {orderDetail.data.order_technicians.filter((t: any) => t.role === 'helper').length > 0 && (
+                      {orderDetail.data.order_technicians.filter((t: unknown) => (t as Record<string, unknown>).role === 'helper').length > 0 && (
                         <div className='space-y-2'>
                           <div className='text-sm font-medium text-muted-foreground'>Helpers:</div>
-                          {orderDetail.data.order_technicians.filter((t: any) => t.role === 'helper').map((tech: any) => (
-                            <div key={tech.id} className='flex items-center justify-between p-2 bg-white rounded border'>
+                          {orderDetail.data.order_technicians.filter((t: unknown) => (t as Record<string, unknown>).role === 'helper').map((tech: unknown) => {
+                            const tc = tech as Record<string, unknown>
+                            const technicians = tc.technicians as Record<string, unknown> | undefined
+                            return (
+                            <div key={tc.id as string} className='flex items-center justify-between p-2 bg-white rounded border'>
                               <div className='flex-1'>
-                                <div className='font-medium text-sm'>{tech.technicians?.technician_name || 'Unknown'}</div>
-                                {tech.technicians?.contact_number && (
+                                <div className='font-medium text-sm'>{(technicians?.technician_name as string) || 'Unknown'}</div>
+                                {technicians?.contact_number && (
                                   <div className='text-xs text-muted-foreground flex items-center gap-1'>
                                     <Phone className='w-3 h-3' />
-                                    {tech.technicians.contact_number}
+                                    {technicians.contact_number as string}
                                   </div>
                                 )}
                               </div>
@@ -1084,7 +1088,7 @@ function MonitoringOngoingContent() {
                                 size='sm'
                                 variant='ghost'
                                 onClick={() => {
-                                  setHelperToRemove(tech.technician_id)
+                                  setHelperToRemove(tc.technician_id as string)
                                   setShowRemoveHelperDialog(true)
                                 }}
                                 disabled={isProcessing}
@@ -1093,7 +1097,8 @@ function MonitoringOngoingContent() {
                               </Button>
                               </div>
                             </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       )}
                     </div>
@@ -1113,64 +1118,76 @@ function MonitoringOngoingContent() {
                     </div>
                   ) : (
                     <div className='space-y-3'>
-                      {locationGroups.map((group: any, idx: number) => (
+                      {locationGroups.map((group: unknown, idx: number) => {
+                        const g = group as Record<string, unknown>
+                        const loc = g.location as Record<string, unknown> | undefined
+                        const items = g.items as unknown[]
+                        return (
                         <div key={idx} className='border rounded-lg p-4 space-y-3 bg-card'>
                           {/* Location Header */}
                           <div className='space-y-1'>
                             <div className='flex items-center gap-2 font-semibold text-base'>
                               <Building className='w-4 h-4 text-primary' />
-                              {group.location?.full_address || 'Unknown Location'}
+                              {(loc?.full_address as string) || 'Unknown Location'}
                             </div>
-                            {group.location && (
+                            {loc && (
                               <div className='text-sm text-muted-foreground pl-6'>
-                                House {group.location.house_number}, {group.location.city}
+                                House {loc.house_number as string}, {loc.city as string}
                               </div>
                             )}
                           </div>
-                          
+
                           {/* Services for this location */}
                           <div className='pl-6 space-y-2'>
                             <div className='text-sm font-semibold text-muted-foreground'>
-                              Services ({group.items.length}):
+                              Services ({items.length}):
                             </div>
                             <div className='space-y-2'>
-                              {group.items.map((item: any) => (
-                                <div key={item.order_item_id} className='flex items-center justify-between p-3 bg-muted/30 rounded-lg'>
+                              {items.map((item: unknown) => {
+                                const it = item as Record<string, unknown>
+                                const unitTypes = it.unit_types as Record<string, unknown> | undefined
+                                const capacityRanges = it.capacity_ranges as Record<string, unknown> | undefined
+                                const serviceCatalog = it.service_catalog as Record<string, unknown> | undefined
+                                const acUnits = it.ac_units as Record<string, unknown> | undefined
+                                return (
+                                <div key={it.order_item_id as string} className='flex items-center justify-between p-3 bg-muted/30 rounded-lg'>
                                   <div className='space-y-1'>
                                     <div className='flex items-center gap-2'>
-                                      {item.msn_code ? (
+                                      {it.msn_code ? (
                                         <Badge variant='outline' className='font-mono text-xs font-semibold'>
-                                          {item.msn_code}
+                                          {it.msn_code as string}
                                         </Badge>
                                       ) : (
                                         <Badge variant='outline' className='font-semibold'>
-                                          {item.service_type}
+                                          {it.service_type as string}
                                         </Badge>
                                       )}
-                                      {item.unit_types?.name && (
+                                      {unitTypes?.name && (
                                         <span className='text-xs text-muted-foreground'>
-                                          {item.unit_types.name}{item.capacity_ranges?.capacity_label ? ` · ${item.capacity_ranges.capacity_label}` : ''}
+                                          {unitTypes.name as string}{capacityRanges?.capacity_label ? ` · ${capacityRanges.capacity_label as string}` : ''}
                                         </span>
                                       )}
                                     </div>
-                                    {item.service_catalog?.service_name && (
-                                      <div className='text-xs text-muted-foreground pl-1'>{item.service_catalog.service_name}</div>
+                                    {serviceCatalog?.service_name && (
+                                      <div className='text-xs text-muted-foreground pl-1'>{serviceCatalog.service_name as string}</div>
                                     )}
-                                    {item.ac_units && (
+                                    {acUnits && (
                                       <div className='text-xs text-muted-foreground pl-1'>
-                                        {item.ac_units.brand} {item.ac_units.model_number}
+                                        {acUnits.brand as string} {acUnits.model_number as string}
                                       </div>
                                     )}
                                   </div>
                                   <span className='font-semibold text-sm'>
-                                    Rp {((item.estimated_price || 0) * (item.quantity || 1)).toLocaleString('id-ID')}
+                                    Rp {(((it.estimated_price as number) || 0) * ((it.quantity as number) || 1)).toLocaleString('id-ID')}
                                   </span>
                                 </div>
-                              ))}
+                                )
+                              })}
                             </div>
                           </div>
                         </div>
-                      ))}
+                        )
+                      })}
                       
                       {/* Total */}
                       <div className='flex justify-between items-center p-4 bg-primary/10 rounded-lg font-semibold border-2 border-primary/20'>
@@ -1294,11 +1311,11 @@ function MonitoringOngoingContent() {
                 <div className='bg-muted rounded-lg p-3 max-h-[200px] overflow-y-auto'>
                   <div className='space-y-2'>
                     {selectedHelpers.map((helperId) => {
-                      const helper = technicians.find((t: any) => t.technician_id === helperId)
+                      const helper = technicians.find((t: unknown) => (t as Record<string, unknown>).technician_id === helperId) as Record<string, unknown> | undefined
                       return (
                         <div key={helperId} className='flex items-center justify-between text-sm'>
-                          <span className='font-medium'>{helper?.technician_name}</span>
-                          <span className='text-muted-foreground text-xs'>{helper?.contact_number}</span>
+                          <span className='font-medium'>{helper?.technician_name as string}</span>
+                          <span className='text-muted-foreground text-xs'>{helper?.contact_number as string}</span>
                         </div>
                       )
                     })}

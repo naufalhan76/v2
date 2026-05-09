@@ -24,7 +24,7 @@ const API_KEY_STORAGE_KEY = 'webpanel_api_key'
 export function ApiKeyDisplay() {
   const { toast } = useToast()
   const [isVisible, setIsVisible] = useState(false)
-  const [isCopied, setIsCopied] = useState(false)
+  const [_isCopied, setIsCopied] = useState(false)
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [apiKey, setApiKey] = useState<string | null>(null)
@@ -83,7 +83,7 @@ export function ApiKeyDisplay() {
           variant: 'destructive',
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to reset API key',
@@ -116,7 +116,7 @@ export function ApiKeyDisplay() {
           variant: 'destructive',
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to generate API key',

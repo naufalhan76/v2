@@ -76,11 +76,11 @@ export async function getAcUnits(filters?: {
         totalPages: Math.ceil((count || 0) / limit),
       },
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching AC units:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch AC units',
+      error: error instanceof Error ? error.message : 'Failed to fetch AC units',
       data: [],
       pagination: { total: 0, page: 1, limit: 20, totalPages: 0 },
     }
@@ -133,11 +133,11 @@ export async function getAcUnitById(acUnitId: string) {
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error fetching AC unit:', error)
     return {
       success: false,
-      error: error.message || 'Failed to fetch AC unit',
+      error: error instanceof Error ? error.message : 'Failed to fetch AC unit',
     }
   }
 }
@@ -173,11 +173,11 @@ export async function createAcUnit(acUnitData: {
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error creating AC unit:', error)
     return {
       success: false,
-      error: error.message || 'Failed to create AC unit',
+      error: error instanceof Error ? error.message : 'Failed to create AC unit',
     }
   }
 }
@@ -216,11 +216,11 @@ export async function updateAcUnit(acUnitId: string, acUnitData: Partial<{
       success: true,
       data,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error updating AC unit:', error)
     return {
       success: false,
-      error: error.message || 'Failed to update AC unit',
+      error: error instanceof Error ? error.message : 'Failed to update AC unit',
     }
   }
 }
@@ -255,11 +255,11 @@ export async function deleteAcUnit(acUnitId: string) {
     return {
       success: true,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error deleting AC unit:', error)
     return {
       success: false,
-      error: error.message || 'Failed to delete AC unit',
+      error: error instanceof Error ? error.message : 'Failed to delete AC unit',
     }
   }
 }
