@@ -721,7 +721,7 @@ export default function CreateOrderPage() {
                 <Label>Customer Name or Phone Number *</Label>
                 <Input
                   type="text"
-                  placeholder="Search name, company, or phone number"
+                  placeholder="Search name or phone number"
                   value={phoneInput}
                   onChange={(e) => {
                     setPhoneInput(e.target.value)
@@ -1616,34 +1616,24 @@ function SuccessModal({
           
           <Separator />
           
-          <div className="space-y-3 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <span className="shrink-0 text-muted-foreground">Customer:</span>
-              <span className="min-w-0 text-right font-medium truncate">{isNewCustomer ? newCustomerName : (customer as Record<string, unknown>)?.customer_name as string}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="shrink-0 text-muted-foreground">Phone:</span>
-              <span className="min-w-0 text-right font-medium">{formatPhone(phoneInput)}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="shrink-0 text-muted-foreground">Visit Date:</span>
-              <span className="min-w-0 text-right font-medium">{scheduledDate ? format(scheduledDate, 'dd MMM yyyy') : '-'}</span>
-            </div>
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-3 text-sm">
+            <span className="text-muted-foreground">Customer:</span>
+            <span className="text-right font-medium truncate">{isNewCustomer ? newCustomerName : (customer as Record<string, unknown>)?.customer_name as string}</span>
+            <span className="text-muted-foreground">Phone:</span>
+            <span className="text-right font-medium truncate">{formatPhone(phoneInput)}</span>
+            <span className="text-muted-foreground">Visit Date:</span>
+            <span className="text-right font-medium truncate">{scheduledDate ? format(scheduledDate, 'dd MMM yyyy') : '-'}</span>
             {selectedTech && (
-              <div className="flex items-center justify-between gap-3">
-                <span className="shrink-0 text-muted-foreground">Technician:</span>
-                <span className="min-w-0 text-right font-medium truncate">{selectedTech.full_name as string}</span>
-              </div>
+              <>
+                <span className="text-muted-foreground">Technician:</span>
+                <span className="text-right font-medium truncate">{selectedTech.full_name as string}</span>
+              </>
             )}
-            <div className="flex items-center justify-between gap-3">
-              <span className="shrink-0 text-muted-foreground">Services:</span>
-              <span className="min-w-0 text-right font-medium">{serviceCount} service(s)</span>
-            </div>
-            <Separator />
-            <div className="flex justify-between text-base font-bold">
-              <span>Estimated Total:</span>
-              <span className="text-green-600">Rp {totalPrice.toLocaleString('id-ID')}</span>
-            </div>
+            <span className="text-muted-foreground">Services:</span>
+            <span className="text-right font-medium truncate">{serviceCount} service(s)</span>
+            <div className="col-span-2"><Separator /></div>
+            <span className="text-base font-bold">Estimated Total:</span>
+            <span className="text-right text-base font-bold text-green-600">Rp {totalPrice.toLocaleString('id-ID')}</span>
           </div>
 
           {/* Proforma status */}
