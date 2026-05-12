@@ -1594,7 +1594,7 @@ function SuccessModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
             <CheckCircle2 className="w-10 h-10 text-green-600" />
