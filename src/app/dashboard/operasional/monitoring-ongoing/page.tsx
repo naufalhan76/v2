@@ -717,7 +717,7 @@ function MonitoringOngoingContent() {
           {/* Active Filters Summary */}
           {(searchQuery || statusFilter !== 'ALL' || statusGroupFilter !== 'ALL' || orderTypeFilter !== 'ALL' || paymentStatusFilter !== 'ALL' || multiLocationFilter !== 'ALL') && (
             <div className='mt-4 flex items-center gap-2 text-sm text-muted-foreground'>
-              <span>Showing {filteredOrders.length} of {ongoingOrders.length} orders (from {format(dateFrom, 'dd MMM yyyy')} to {format(dateTo, 'dd MMM yyyy')})</span>
+              <span>Showing {filteredOrders.length} of {ongoingOrders.length} orders (tanggal order {format(dateFrom, 'dd MMM yyyy')} - {format(dateTo, 'dd MMM yyyy')})</span>
               <Button
                 variant='ghost'
                 size='sm'

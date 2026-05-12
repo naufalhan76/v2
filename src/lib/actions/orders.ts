@@ -73,11 +73,15 @@ export async function getOrders(filters?: {
     }
     
     if (filters?.dateFrom) {
-      query = query.gte('created_at', filters.dateFrom)
+      query = query.gte('created_at', `${filters.dateFrom}T00:00:00.000Z`)
     }
     
     if (filters?.dateTo) {
-      query = query.lte('created_at', filters.dateTo)
+      query = query.lte('created_at', `${filters.dateTo}T23:59:59.999Z`)
+    }
+    
+    if (filters?.dateTo) {
+      query = query.lte('created_at', `${filters.dateTo}T23:59:59.999Z`)
     }
     
     const { data, error, count } = await query
