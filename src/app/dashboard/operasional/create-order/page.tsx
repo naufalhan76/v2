@@ -1594,101 +1594,102 @@ function SuccessModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-xl">
-        <DialogHeader>
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle2 className="w-10 h-10 text-green-600" />
+      <DialogContent className="max-w-md">
+        <DialogHeader className="space-y-2">
+          <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+            <CheckCircle2 className="w-7 h-7 text-green-600" />
           </div>
-          <DialogTitle className="text-2xl text-center">
+          <DialogTitle className="text-lg text-center">
             Order Created Successfully!
           </DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogDescription className="text-center text-xs">
             Your service order has been created and {technicianId ? 'assigned' : 'is waiting for technician assignment'}
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-4">
-          <div className="bg-muted rounded-lg p-4 space-y-2">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">Order ID</p>
-              <p className="text-xl font-bold font-mono text-blue-600">{orderId}</p>
-            </div>
+
+        <div className="space-y-3">
+          <div className="bg-muted rounded-lg px-3 py-2 text-center">
+            <p className="text-xs text-muted-foreground">Order ID</p>
+            <p className="text-base font-bold font-mono text-blue-600">{orderId}</p>
           </div>
-          
-          <Separator />
-          
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-3 text-sm">
-            <span className="text-muted-foreground">Customer:</span>
+
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs">
+            <span className="text-muted-foreground">Customer</span>
             <span className="text-right font-medium truncate">{isNewCustomer ? newCustomerName : (customer as Record<string, unknown>)?.customer_name as string}</span>
-            <span className="text-muted-foreground">Phone:</span>
+            <span className="text-muted-foreground">Phone</span>
             <span className="text-right font-medium truncate">{formatPhone(phoneInput)}</span>
-            <span className="text-muted-foreground">Visit Date:</span>
+            <span className="text-muted-foreground">Visit Date</span>
             <span className="text-right font-medium truncate">{scheduledDate ? format(scheduledDate, 'dd MMM yyyy') : '-'}</span>
             {selectedTech && (
               <>
-                <span className="text-muted-foreground">Technician:</span>
+                <span className="text-muted-foreground">Technician</span>
                 <span className="text-right font-medium truncate">{selectedTech.full_name as string}</span>
               </>
             )}
-            <span className="text-muted-foreground">Services:</span>
+            <span className="text-muted-foreground">Services</span>
             <span className="text-right font-medium truncate">{serviceCount} service(s)</span>
-            <div className="col-span-2"><Separator /></div>
-            <span className="text-base font-bold">Estimated Total:</span>
-            <span className="text-right text-base font-bold text-green-600">Rp {totalPrice.toLocaleString('id-ID')}</span>
+            <div className="col-span-2 border-t" />
+            <span className="text-sm font-bold">Estimated Total</span>
+            <span className="text-right text-sm font-bold text-green-600">Rp {totalPrice.toLocaleString('id-ID')}</span>
           </div>
 
           {/* Proforma status */}
           {invoiceId && (
-            <Alert className="bg-blue-50 border-blue-200">
-              <FileText className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-900">
-                Proforma invoice created. Download the PDF below.
-              </AlertDescription>
-            </Alert>
+            <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+              <FileText className="h-3.5 w-3.5 shrink-0 text-blue-600" />
+              <span>Proforma invoice created. Download the PDF below.</span>
+            </div>
           )}
           {proformaError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Order created, but proforma failed: {proformaError}
-              </AlertDescription>
-            </Alert>
+            <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+              <span>Order created, but proforma failed: {proformaError}</span>
+            </div>
           )}
         </div>
 
-        <DialogFooter className="sm:justify-center gap-2">
-          <Button variant="outline" onClick={onClose}>
-            Create Another Order
+        <DialogFooter className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <Button variant="outline" size="sm" onClick={onClose} className="col-span-2 sm:col-span-1">
+            Create Another
           </Button>
           {invoiceId && (
             <Button
               onClick={handleDownloadProforma}
               disabled={isDownloading}
               variant="outline"
+              size="sm"
               className="border-blue-600 text-blue-700 hover:bg-blue-50"
             >
               {isDownloading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
               ) : (
-                <FileText className="w-4 h-4 mr-2" />
+                <FileText className="w-3.5 h-3.5 mr-1.5" />
               )}
-              Download Proforma PDF
+              Download PDF
             </Button>
           )}
           {/* Manual create invoice link — only when no proforma was auto-created and tech assigned */}
           {!invoiceId && technicianId && (
-            <Button onClick={() => {
-              onClose()
-              window.location.href = `/dashboard/keuangan/invoices/create?order_id=${orderId}&type=PROFORMA`
-            }} variant="outline">
-              <FileText className="w-4 h-4 mr-2" />
-              Create Invoice Proforma
+            <Button
+              onClick={() => {
+                onClose()
+                window.location.href = `/dashboard/keuangan/invoices/create?order_id=${orderId}&type=PROFORMA`
+              }}
+              variant="outline"
+              size="sm"
+            >
+              <FileText className="w-3.5 h-3.5 mr-1.5" />
+              Create Proforma
             </Button>
           )}
-          <Button onClick={() => {
-            onClose()
-            window.location.href = '/dashboard/operasional/monitoring-ongoing'
-          }} className="bg-blue-600 hover:bg-blue-700">
+          <Button
+            size="sm"
+            onClick={() => {
+              onClose()
+              window.location.href = '/dashboard/operasional/monitoring-ongoing'
+            }}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
             View Orders
           </Button>
         </DialogFooter>
