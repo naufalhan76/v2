@@ -716,126 +716,127 @@ export default function CreateOrderPage() {
             <CardDescription>Search existing customer or create new</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Label>Customer Name or Phone Number *</Label>
-                <Input
-                  type="text"
-                  placeholder="Search name or phone number"
-                  value={phoneInput}
-                  onChange={(e) => {
-                    setPhoneInput(e.target.value)
-                    setShowCustomerSuggestions(true)
-                  }}
-                  onFocus={() => setShowCustomerSuggestions(customerSuggestions.length > 0)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape') {
-                      setShowCustomerSuggestions(false)
-                      setHighlightedSuggestionIndex(-1)
-                    } else if (event.key === 'ArrowDown') {
-                      if (!showCustomerSuggestions || customerSuggestions.length === 0) return
-                      event.preventDefault()
-                      setHighlightedSuggestionIndex(prev =>
-                        prev < customerSuggestions.length - 1 ? prev + 1 : 0
-                      )
-                    } else if (event.key === 'ArrowUp') {
-                      if (!showCustomerSuggestions || customerSuggestions.length === 0) return
-                      event.preventDefault()
-                      setHighlightedSuggestionIndex(prev =>
-                        prev > 0 ? prev - 1 : customerSuggestions.length - 1
-                      )
-                    } else if (event.key === 'Enter') {
-                      if (showCustomerSuggestions && highlightedSuggestionIndex >= 0 && customerSuggestions[highlightedSuggestionIndex]) {
-                        event.preventDefault()
-                        handleSelectCustomerSuggestion(customerSuggestions[highlightedSuggestionIndex])
+            <div className="space-y-2">
+              <Label htmlFor="customer-search-input">Customer Name or Phone Number *</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="customer-search-input"
+                    type="text"
+                    placeholder="Search name or phone number"
+                    value={phoneInput}
+                    onChange={(e) => {
+                      setPhoneInput(e.target.value)
+                      setShowCustomerSuggestions(true)
+                    }}
+                    onFocus={() => setShowCustomerSuggestions(customerSuggestions.length > 0)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        setShowCustomerSuggestions(false)
                         setHighlightedSuggestionIndex(-1)
+                      } else if (event.key === 'ArrowDown') {
+                        if (!showCustomerSuggestions || customerSuggestions.length === 0) return
+                        event.preventDefault()
+                        setHighlightedSuggestionIndex(prev =>
+                          prev < customerSuggestions.length - 1 ? prev + 1 : 0
+                        )
+                      } else if (event.key === 'ArrowUp') {
+                        if (!showCustomerSuggestions || customerSuggestions.length === 0) return
+                        event.preventDefault()
+                        setHighlightedSuggestionIndex(prev =>
+                          prev > 0 ? prev - 1 : customerSuggestions.length - 1
+                        )
+                      } else if (event.key === 'Enter') {
+                        if (showCustomerSuggestions && highlightedSuggestionIndex >= 0 && customerSuggestions[highlightedSuggestionIndex]) {
+                          event.preventDefault()
+                          handleSelectCustomerSuggestion(customerSuggestions[highlightedSuggestionIndex])
+                          setHighlightedSuggestionIndex(-1)
+                        }
                       }
-                    }
-                  }}
-                  disabled={isPhoneVerified}
-                  className={isPhoneVerified ? 'bg-muted' : ''}
-                />
-                {!isPhoneVerified && (showCustomerSuggestions || isLoadingCustomerSuggestions) && (
-                  <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md">
-                    {isLoadingCustomerSuggestions ? (
-                      <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Searching customers...
-                      </div>
-                    ) : customerSuggestions.length > 0 ? (
-                      <div className="max-h-72 overflow-y-auto p-1">
-                        {customerSuggestions.map((suggestion, index) => (
-                          <button
-                            key={suggestion.customer_id}
-                            type="button"
-                            data-testid="customer-suggestion-item"
-                            onMouseDown={(event) => event.preventDefault()}
-                            onClick={() => handleSelectCustomerSuggestion(suggestion)}
-                            onMouseEnter={() => setHighlightedSuggestionIndex(index)}
-                            onMouseLeave={() => setHighlightedSuggestionIndex(-1)}
-                            className={cn(
-                              "flex w-full items-start gap-3 rounded-sm px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                              highlightedSuggestionIndex === index && "bg-accent text-accent-foreground"
-                            )}
-                          >
-                            <User className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate font-medium">{suggestion.customer_name}</span>
-                              <span className="block truncate text-xs text-muted-foreground">
-                                {formatPhone(suggestion.phone_number)}{suggestion.email ? ` • ${suggestion.email}` : ''}
+                    }}
+                    disabled={isPhoneVerified}
+                    className={isPhoneVerified ? 'bg-muted' : ''}
+                  />
+                  {!isPhoneVerified && (showCustomerSuggestions || isLoadingCustomerSuggestions) && (
+                    <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md">
+                      {isLoadingCustomerSuggestions ? (
+                        <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Searching customers...
+                        </div>
+                      ) : customerSuggestions.length > 0 ? (
+                        <div className="max-h-72 overflow-y-auto p-1">
+                          {customerSuggestions.map((suggestion, index) => (
+                            <button
+                              key={suggestion.customer_id}
+                              type="button"
+                              data-testid="customer-suggestion-item"
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => handleSelectCustomerSuggestion(suggestion)}
+                              onMouseEnter={() => setHighlightedSuggestionIndex(index)}
+                              onMouseLeave={() => setHighlightedSuggestionIndex(-1)}
+                              className={cn(
+                                "flex w-full items-start gap-3 rounded-sm px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                                highlightedSuggestionIndex === index && "bg-accent text-accent-foreground"
+                              )}
+                            >
+                              <User className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate font-medium">{suggestion.customer_name}</span>
+                                <span className="block truncate text-xs text-muted-foreground">
+                                  {formatPhone(suggestion.phone_number)}{suggestion.email ? ` • ${suggestion.email}` : ''}
+                                </span>
                               </span>
-                            </span>
-                          </button>
-                        ))}
-                      </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">No matching customers found.</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {!isPhoneVerified ? (
+                  <Button
+                    onClick={handleSearchCustomer}
+                    disabled={isSearchingCustomer}
+                  >
+                    {isSearchingCustomer ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <div className="px-3 py-2 text-sm text-muted-foreground">No matching customers found.</div>
+                      <Search className="h-4 w-4" />
                     )}
-                  </div>
-                )}
-                {!isPhoneVerified && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Pick an existing customer from suggestions or enter a new phone number and press Search.
-                  </p>
+                    Search
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setPhoneInput('')
+                      setIsPhoneVerified(false)
+                      setCustomer(null)
+                      setIsNewCustomer(false)
+                      setNewCustomerName('')
+                      setNewCustomerEmail('')
+                      setNewCustomerBillingAddress('')
+                      setUseSameAsFirstLocation(true)
+                      setLocations([])
+                      setScheduledDate(undefined)
+                      setTechnicianId('')
+                      setNotes('')
+                      setCustomerSuggestions([])
+                      setShowCustomerSuggestions(false)
+                    }}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Reset
+                  </Button>
                 )}
               </div>
-              {!isPhoneVerified ? (
-                <Button 
-                  onClick={handleSearchCustomer}
-                  disabled={isSearchingCustomer}
-                  className="mt-auto"
-                >
-                  {isSearchingCustomer ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="h-4 w-4" />
-                  )}
-                  Search
-                </Button>
-              ) : (
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    setPhoneInput('')
-                    setIsPhoneVerified(false)
-                    setCustomer(null)
-                    setIsNewCustomer(false)
-                    setNewCustomerName('')
-                    setNewCustomerEmail('')
-                    setNewCustomerBillingAddress('')
-                    setUseSameAsFirstLocation(true)
-                    setLocations([])
-                    setScheduledDate(undefined)
-                    setTechnicianId('')
-                    setNotes('')
-                    setCustomerSuggestions([])
-                    setShowCustomerSuggestions(false)
-                  }}
-                  className="mt-auto"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Reset
-                </Button>
+              {!isPhoneVerified && (
+                <p className="text-xs text-muted-foreground">
+                  Pick an existing customer from suggestions or enter a new phone number and press Search.
+                </p>
               )}
             </div>
 
