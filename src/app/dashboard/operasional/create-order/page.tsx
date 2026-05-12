@@ -1593,7 +1593,7 @@ function SuccessModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
             <CheckCircle2 className="w-10 h-10 text-green-600" />
@@ -1617,27 +1617,27 @@ function SuccessModal({
           <Separator />
           
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Customer:</span>
-              <span className="font-medium">{isNewCustomer ? newCustomerName : (customer as Record<string, unknown>)?.customer_name as string}</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="shrink-0 text-muted-foreground">Customer:</span>
+              <span className="min-w-0 text-right font-medium truncate">{isNewCustomer ? newCustomerName : (customer as Record<string, unknown>)?.customer_name as string}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Phone:</span>
-              <span className="font-medium">{phoneInput}</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="shrink-0 text-muted-foreground">Phone:</span>
+              <span className="min-w-0 text-right font-medium">{formatPhone(phoneInput)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Visit Date:</span>
-              <span className="font-medium">{scheduledDate ? format(scheduledDate, 'dd MMM yyyy') : '-'}</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="shrink-0 text-muted-foreground">Visit Date:</span>
+              <span className="min-w-0 text-right font-medium">{scheduledDate ? format(scheduledDate, 'dd MMM yyyy') : '-'}</span>
             </div>
             {selectedTech && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Technician:</span>
-                <span className="font-medium">{selectedTech.full_name as string}</span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="shrink-0 text-muted-foreground">Technician:</span>
+                <span className="min-w-0 text-right font-medium truncate">{selectedTech.full_name as string}</span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Services:</span>
-              <span className="font-medium">{serviceCount} service(s)</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="shrink-0 text-muted-foreground">Services:</span>
+              <span className="min-w-0 text-right font-medium">{serviceCount} service(s)</span>
             </div>
             <Separator />
             <div className="flex justify-between text-base font-bold">
