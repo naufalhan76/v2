@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import type { BankAccount } from '@/lib/bank-accounts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,14 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Trash2, Edit2, Check, X } from 'lucide-react'
 
-export interface BankAccount {
-  id: string
-  account_label: string  // e.g., "Payment Account 1", "Payment Account 2"
-  bank: string
-  account_number: string
-  account_name: string
-  tax_percentage: number  // PPN per account (e.g., 11, 12, 0)
-}
+export type { BankAccount } from '@/lib/bank-accounts'
 
 interface BankAccountsSectionProps {
   accounts: BankAccount[]

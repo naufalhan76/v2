@@ -3,12 +3,8 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
-
-export interface BankAccount {
-  bank: string
-  account_number: string
-  account_name: string
-}
+import type { BankAccount } from '@/lib/bank-accounts'
+export type { BankAccount } from '@/lib/bank-accounts'
 
 export interface InvoiceConfig {
   config_id: string
@@ -39,7 +35,7 @@ export interface UpdateInvoiceConfigInput {
   company_website?: string
   npwp?: string
   tax_id?: string
-  bank_accounts?: BankAccount[] // Will be stringified
+  bank_accounts?: Array<Pick<BankAccount, 'bank' | 'account_number' | 'account_name'>> // Will be stringified
   default_due_days?: number
   default_tax_percentage?: number
   invoice_prefix?: string

@@ -367,8 +367,9 @@ export function LocationCard({
                           type="button" 
                           variant="secondary" 
                           size="sm" 
-                          disabled={!unit.unit_type_id || !unit.capacity_id}
+                        disabled={!unit.unit_type_id || !unit.capacity_id}
                           className="w-full border border-dashed border-green-500/50 text-green-700 dark:text-green-400 bg-white dark:bg-slate-900"
+                          data-testid="add-service-button"
                           onClick={() => handleOpenServiceModal('new', unitIndex)}
                         >
                           <Plus className="h-3 w-3 mr-1" /> Tambah Service untuk AC Baru

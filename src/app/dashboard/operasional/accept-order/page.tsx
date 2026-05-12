@@ -36,7 +36,7 @@ import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
 import { CheckCircle, Search, Eye, Check, X, User, MapPin, Phone, Mail, Building } from 'lucide-react'
 import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
+import { cn, formatPhone } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase-browser'
 import { logger } from '@/lib/logger'
@@ -383,7 +383,7 @@ export default function AcceptOrderPage() {
                       {orderDetail.data.customers?.phone_number && (
                         <div className='flex items-center gap-1'>
                           <Phone className='w-3 h-3 text-muted-foreground' />
-                          {orderDetail.data.customers.phone_number}
+                          {formatPhone(orderDetail.data.customers.phone_number)}
                         </div>
                       )}
                       {orderDetail.data.customers?.email && (

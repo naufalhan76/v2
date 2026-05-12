@@ -40,6 +40,8 @@ import { getInvoices, getInvoiceStats, type Invoice } from '@/lib/actions/invoic
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
+import { formatPhone } from '@/lib/utils'
+import { getInvoiceStatusLabel } from '@/lib/invoice-status'
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: 'bg-gray-500',
@@ -48,18 +50,6 @@ const STATUS_COLORS: Record<string, string> = {
   PAID: 'bg-green-500',
   OVERDUE: 'bg-red-500',
   CANCELLED: 'bg-gray-400',
-}
-
-const getStatusLabel = (status: string): string => {
-  const labels: Record<string, string> = {
-    DRAFT: 'Draft',
-    SENT: 'Sent',
-    PARTIAL_PAID: 'Partial Paid',
-    PAID: 'Paid',
-    OVERDUE: 'Overdue',
-    CANCELLED: 'Cancelled',
-  }
-  return labels[status] || status
 }
 
 const PAYMENT_STATUS_COLORS: Record<string, string> = {
@@ -76,6 +66,7 @@ export default function InvoicesPage() {
     total: 0,
     draft: 0,
     sent: 0,
+    partialPaid: 0,
     paid: 0,
     overdue: 0,
     totalRevenue: 0,
@@ -103,11 +94,14 @@ export default function InvoicesPage() {
     try {
       setIsLoading(true)
       const result = await getInvoices({
-        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+        status: statusFilter !== 'ALL' && statusFilter !== 'OVERDUE' ? statusFilter : undefined,
         paymentStatus: paymentFilter !== 'ALL' ? paymentFilter : undefined,
         search: searchQuery || undefined,
       })
-      setInvoices(result.data)
+      const filteredInvoices = statusFilter === 'OVERDUE'
+        ? result.data.filter(invoice => (invoice.computed_status ?? invoice.status) === 'OVERDUE')
+        : result.data
+      setInvoices(filteredInvoices)
     } catch (_error) {
       toast({
         variant: 'destructive',
@@ -166,7 +160,7 @@ export default function InvoicesPage() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.draft} draft, {stats.sent} terkirim
+              {stats.draft} draft, <span data-testid="stats-terkirim">{stats.sent + stats.paid + stats.partialPaid + stats.overdue}</span> terkirim
             </p>
           </CardContent>
         </Card>
@@ -199,7 +193,7 @@ export default function InvoicesPage() {
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
+            <div className="text-2xl font-bold text-red-600" data-testid="stats-overdue">{stats.overdue}</div>
             <p className="text-xs text-muted-foreground">Invoice jatuh tempo</p>
           </CardContent>
         </Card>
@@ -296,7 +290,7 @@ export default function InvoicesPage() {
                     <SortableTableHead sortKey="total_amount" currentSort={sortConfig} onSort={requestSort}>
                       Total
                     </SortableTableHead>
-                    <SortableTableHead sortKey="status" currentSort={sortConfig} onSort={requestSort}>
+                    <SortableTableHead sortKey="computed_status" currentSort={sortConfig} onSort={requestSort}>
                       Status
                     </SortableTableHead>
                     <SortableTableHead sortKey="payment_status" currentSort={sortConfig} onSort={requestSort}>
@@ -306,7 +300,10 @@ export default function InvoicesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.map((invoice) => (
+                  {invoices.map((invoice) => {
+                    const displayStatus = invoice.computed_status ?? invoice.status
+
+                    return (
                     <TableRow key={invoice.invoice_id}>
                       <TableCell className="font-mono font-semibold">
                         {invoice.invoice_number}
@@ -322,7 +319,7 @@ export default function InvoicesPage() {
                             {invoice.customers?.customer_name}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {invoice.customers?.phone_number}
+                            {formatPhone(invoice.customers?.phone_number)}
                           </div>
                         </div>
                       </TableCell>
@@ -340,8 +337,8 @@ export default function InvoicesPage() {
                         {formatCurrency(invoice.total_amount)}
                       </TableCell>
                       <TableCell>
-                        <Badge className={STATUS_COLORS[invoice.status]}>
-                          {getStatusLabel(invoice.status)}
+                        <Badge className={STATUS_COLORS[displayStatus]} data-testid="invoice-status-badge">
+                          {getInvoiceStatusLabel(displayStatus)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -361,7 +358,7 @@ export default function InvoicesPage() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )})}
                 </TableBody>
               </Table>
             </div>

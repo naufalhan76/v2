@@ -12,6 +12,7 @@ import { CheckCircle2, ArrowLeft, Calendar, User, MapPin, Phone, Mail, Building 
 import { format } from 'date-fns'
 import { Separator } from '@/components/ui/separator'
 import { logger } from '@/lib/logger'
+import { formatPhone } from '@/lib/utils'
 
 function AssignmentSuccessContent() {
   const router = useRouter()
@@ -152,7 +153,7 @@ function AssignmentSuccessContent() {
               {!!customers?.phone_number && (
                 <span className='flex items-center gap-1'>
                   <Phone className='w-3 h-3' />
-                  {String(customers.phone_number)}
+                  {formatPhone(customers.phone_number as string | number | null | undefined)}
                 </span>
               )}
               {!!customers?.email && (
@@ -273,7 +274,7 @@ function AssignmentSuccessContent() {
                 {technicianData.data.contact_number && (
                   <div className='flex items-center gap-2'>
                     <Phone className='w-4 h-4 text-muted-foreground' />
-                    <span className='text-sm'>{technicianData.data.contact_number}</span>
+                    <span className='text-sm'>{formatPhone(technicianData.data.contact_number as string | number | null | undefined)}</span>
                   </div>
                 )}
                 {technicianData.data.email && (
@@ -301,7 +302,7 @@ function AssignmentSuccessContent() {
                           {!!h.contact_number && (
                             <div className='flex items-center gap-2 text-xs text-muted-foreground mt-0.5'>
                               <Phone className='w-3 h-3' />
-                              {String(h.contact_number)}
+                              {formatPhone(h.contact_number as string | number | null | undefined)}
                             </div>
                           )}
                         </div>

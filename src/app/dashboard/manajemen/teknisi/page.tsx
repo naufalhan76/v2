@@ -36,6 +36,7 @@ import { useSortableTable } from '@/hooks/use-sortable-table'
 import { Edit, Trash2, Search, Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
+import { formatPhone } from '@/lib/utils'
 
 interface Technician {
   technician_id: string
@@ -289,7 +290,7 @@ export default function TechniciansPage() {
                     technicians.map((technician) => (
                       <TableRow key={technician.technician_id}>
                         <TableCell className="font-medium">{technician.technician_name}</TableCell>
-                        <TableCell>{technician.contact_number}</TableCell>
+                        <TableCell data-testid="phone-cell">{formatPhone(technician.contact_number)}</TableCell>
                         <TableCell>{technician.email || '-'}</TableCell>
                         <TableCell>{technician.company || '-'}</TableCell>
                         <TableCell className="text-right w-[180px]">

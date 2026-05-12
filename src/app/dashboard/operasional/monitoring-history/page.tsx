@@ -33,7 +33,7 @@ import { useSortableTable } from '@/hooks/use-sortable-table'
 import { useToast } from '@/hooks/use-toast'
 import { History, Search, CalendarIcon, MessageCircle, AlertCircle, CheckCircle } from 'lucide-react'
 import { format, subDays, differenceInDays, isPast } from 'date-fns'
-import { cn } from '@/lib/utils'
+import { cn, formatPhone } from '@/lib/utils'
 import { id } from 'date-fns/locale'
 
 // Component to display reminder statistics
@@ -489,7 +489,7 @@ Terima kasih.`
                         <TableCell>
                           <div>
                             <div className='font-medium'>{(customer?.customer_name as string) || '-'}</div>
-                            <div className='text-sm text-muted-foreground'>{(customer?.phone_number as string) || '-'}</div>
+                            <div className='text-sm text-muted-foreground'>{formatPhone(customer?.phone_number as string | number | null | undefined) || '-'}</div>
                           </div>
                         </TableCell>
                         <TableCell>

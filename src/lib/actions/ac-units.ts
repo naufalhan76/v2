@@ -95,6 +95,10 @@ export async function getAcUnitById(acUnitId: string) {
       .from('ac_units')
       .select(`
         *,
+        ac_brands (
+          brand_id,
+          name
+        ),
         locations (
           location_id,
           full_address,

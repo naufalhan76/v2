@@ -3,7 +3,9 @@ import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { Invoice, InvoiceItem, PaymentRecord } from './actions/invoices'
 import { InvoiceConfig, BankAccount } from './actions/invoice-config'
-import { logger } from '@/lib/logger'
+import { parseBankAccounts } from './bank-accounts'
+import { formatPhone } from '@/lib/utils'
+import { getInvoiceStatusLabel } from '@/lib/invoice-status'
 
 export interface PDFExportOptions {
   invoice: Invoice
@@ -32,6 +34,8 @@ export function exportInvoiceToPDF({
   const totalAmount = invoice.total_amount
   const amountPaid = payments.reduce((sum, payment) => sum + payment.amount, 0)
   const balanceDue = totalAmount - amountPaid
+  const displayStatus = invoice.computed_status ?? invoice.status
+  const displayStatusLabel = getInvoiceStatusLabel(displayStatus)
 
   // Get company data from config or use defaults
   const companyName = invoiceConfig?.company_name || 'AC Service Dashboard'
@@ -43,15 +47,7 @@ export function exportInvoiceToPDF({
   const taxPercentage = invoiceConfig?.default_tax_percentage || 11
   const termsTemplate = invoiceConfig?.terms_conditions_template || null
 
-  // Parse bank accounts from JSON string
-  let bankAccounts: BankAccount[] = []
-  if (invoiceConfig?.bank_accounts) {
-    try {
-      bankAccounts = JSON.parse(invoiceConfig.bank_accounts)
-    } catch (e) {
-      logger.error('Failed to parse bank accounts:', e)
-    }
-  }
+  const bankAccounts: BankAccount[] = parseBankAccounts(invoiceConfig?.bank_accounts)
 
   // Helper function
   const formatCurrency = (amount: number) => {
@@ -145,7 +141,7 @@ export function exportInvoiceToPDF({
   pdf.setTextColor(71, 85, 105)
   yPos += 4
   if (invoice.customers?.phone_number) {
-    pdf.text(`Tel: ${invoice.customers.phone_number}`, margin, yPos)
+    pdf.text(`Tel: ${formatPhone(invoice.customers.phone_number)}`, margin, yPos)
     yPos += 4
   }
   if (invoice.customers?.email) {
@@ -196,14 +192,14 @@ export function exportInvoiceToPDF({
 
   // Status badge
   let statusColor: [number, number, number] = [71, 85, 105]
-  if (invoice.status === 'PAID') statusColor = [22, 163, 74]
-  else if (invoice.status === 'OVERDUE') statusColor = [220, 38, 38]
-  else if (invoice.status === 'SENT') statusColor = [59, 130, 246]
+  if (displayStatus === 'PAID') statusColor = [22, 163, 74]
+  else if (displayStatus === 'OVERDUE') statusColor = [220, 38, 38]
+  else if (displayStatus === 'SENT') statusColor = [59, 130, 246]
 
   pdf.setFontSize(9)
   pdf.setFont('helvetica', 'bold')
   pdf.setTextColor(...statusColor)
-  pdf.text(invoice.status, pageWidth - margin - 2, rightY, { align: 'right' })
+  pdf.text(displayStatusLabel, pageWidth - margin - 2, rightY, { align: 'right' })
 
   // ========================================
   // ITEMS TABLE

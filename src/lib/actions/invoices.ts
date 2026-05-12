@@ -3,6 +3,9 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { isOverdue, type InvoiceStatus } from '@/lib/invoice-status'
+
+export type { InvoiceStatus }
 
 export interface Invoice {
   invoice_id: string
@@ -24,7 +27,8 @@ export interface Invoice {
   tax_percentage: number
   tax_amount: number
   total_amount: number
-  status: 'DRAFT' | 'SENT' | 'PARTIAL_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED'
+  status: InvoiceStatus
+  computed_status?: InvoiceStatus
   payment_status: string
   paid_amount: number
   notes: string | null
@@ -266,7 +270,7 @@ export async function getInvoices(filters?: {
 
   // Note: Computed overdue status handled in post-processing
 
-  if (filters?.status) {
+  if (filters?.status && filters.status !== 'OVERDUE') {
     query = query.eq('status', filters.status)
   }
 
@@ -299,20 +303,18 @@ export async function getInvoices(filters?: {
     throw new Error('Gagal memuat data invoice')
   }
 
-  // Compute overdue status for display
-  const today = new Date().toISOString().split('T')[0]
-  const invoicesWithOverdue = (data || []).map(invoice => {
-    // Auto-compute OVERDUE: due_date passed AND not paid/cancelled
-    if (
-      invoice.due_date < today &&
-      invoice.status !== 'PAID' &&
-      invoice.status !== 'CANCELLED' &&
-      invoice.payment_status !== 'PAID'
-    ) {
+  let invoicesWithOverdue = (data || []).map(invoice => {
+    if (isOverdue(invoice)) {
       return { ...invoice, computed_status: 'OVERDUE' }
     }
     return { ...invoice, computed_status: invoice.status }
   })
+
+  if (filters?.status === 'OVERDUE') {
+    invoicesWithOverdue = invoicesWithOverdue.filter(
+      invoice => invoice.computed_status === 'OVERDUE'
+    )
+  }
 
   return {
     data: invoicesWithOverdue,
@@ -377,15 +379,8 @@ export async function getInvoiceById(invoiceId: string): Promise<{
     logger.error('Error fetching invoice details:', itemsError || paymentsError)
   }
 
-  // Compute overdue status for display
-  const today = new Date().toISOString().split('T')[0]
   let invoiceWithOverdue = invoice
-  if (
-    invoice.due_date < today &&
-    invoice.status !== 'PAID' &&
-    invoice.status !== 'CANCELLED' &&
-    invoice.payment_status !== 'PAID'
-  ) {
+  if (isOverdue(invoice)) {
     invoiceWithOverdue = { ...invoice, computed_status: 'OVERDUE' }
   } else {
     invoiceWithOverdue = { ...invoice, computed_status: invoice.status }
@@ -816,7 +811,7 @@ export async function getInvoiceStats(): Promise<{
 }> {
   const supabase = await createClient()
 
-  const [totalResult, draftResult, sentResult, partialPaidResult, paidResult, overdueResult, revenueResult] =
+  const [totalResult, draftResult, sentResult, partialPaidResult, paidResult, overdueRowsResult, revenueResult] =
     await Promise.all([
       supabase.from('invoices').select('invoice_id', { count: 'exact', head: true }),
       supabase
@@ -837,10 +832,13 @@ export async function getInvoiceStats(): Promise<{
         .eq('status', 'PAID'),
       supabase
         .from('invoices')
-        .select('invoice_id', { count: 'exact', head: true })
-        .eq('status', 'OVERDUE'),
+        .select('due_date, status, payment_status')
+        .neq('status', 'PAID')
+        .neq('status', 'CANCELLED'),
       supabase.from('invoices').select('total_amount, paid_amount, payment_status'),
     ])
+
+  const overdueCount = overdueRowsResult.data?.filter(isOverdue).length || 0
 
   const totalRevenue =
     revenueResult.data?.reduce(
@@ -861,7 +859,7 @@ export async function getInvoiceStats(): Promise<{
     sent: sentResult.count || 0,
     partialPaid: partialPaidResult.count || 0,
     paid: paidResult.count || 0,
-    overdue: overdueResult.count || 0,
+    overdue: overdueCount,
     totalRevenue,
     unpaidAmount,
   }

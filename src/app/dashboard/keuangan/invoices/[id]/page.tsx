@@ -53,6 +53,7 @@ import {
   type PaymentRecord,
 } from '@/lib/actions/invoices'
 import { getInvoiceConfig, type InvoiceConfig } from '@/lib/actions/invoice-config'
+import { parseBankAccounts } from '@/lib/bank-accounts'
 import { 
   logInvoiceCommunication, 
   getInvoiceCommunicationStats 
@@ -61,6 +62,8 @@ import { exportInvoiceToPDF } from '@/lib/pdf-export'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
+import { formatPhone } from '@/lib/utils'
+import { getInvoiceStatusLabel } from '@/lib/invoice-status'
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: 'bg-gray-500',
@@ -71,16 +74,8 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: 'bg-gray-400',
 }
 
-const getStatusLabel = (status: string): string => {
-  const labels: Record<string, string> = {
-    DRAFT: 'Draft',
-    SENT: 'Sent',
-    PARTIAL_PAID: 'Partial Paid',
-    PAID: 'Paid',
-    OVERDUE: 'Overdue',
-    CANCELLED: 'Cancelled',
-  }
-  return labels[status] || status
+const formatBankAccountLine = (account: { account_label: string; bank: string; account_number: string; account_name: string }) => {
+  return `${account.account_label} — ${account.bank} / ${account.account_number} / a/n ${account.account_name}`
 }
 
 export default function InvoiceDetailPage() {
@@ -300,23 +295,14 @@ export default function InvoiceDetailPage() {
     }
 
     // Bank accounts
-    if (invoiceConfig.bank_accounts) {
-      try {
-        const bankAccounts = JSON.parse(invoiceConfig.bank_accounts)
-        if (bankAccounts.length > 0) {
+    const bankAccounts = parseBankAccounts(invoiceConfig.bank_accounts)
+    if (bankAccounts.length > 0) {
           message += `\n💳 *PEMBAYARAN*\n`
           message += `Silakan transfer ke salah satu rekening:\n\n`
-          bankAccounts.forEach((account: unknown, index: number) => {
-            const acc = account as { bank: string; account_number: string; account_name: string }
-            message += `${index + 1}. *${acc.bank}*\n`
-            message += `   ${acc.account_number}\n`
-            message += `   a/n ${acc.account_name}\n\n`
+          bankAccounts.forEach((account, index: number) => {
+            message += `${index + 1}. *${formatBankAccountLine(account)}*\n\n`
           })
           message += `_Mohon cantumkan No. Invoice (${invoiceNumber}) dalam keterangan transfer._\n`
-        }
-      } catch (e) {
-        logger.error('Failed to parse bank accounts:', e)
-      }
     }
 
     message += `\n---\n`
@@ -418,24 +404,15 @@ export default function InvoiceDetailPage() {
     }
 
     // Bank accounts
-    if (invoiceConfig.bank_accounts) {
-      try {
-        const bankAccounts = JSON.parse(invoiceConfig.bank_accounts)
-        if (bankAccounts.length > 0) {
+    const bankAccounts = parseBankAccounts(invoiceConfig.bank_accounts)
+    if (bankAccounts.length > 0) {
           body += `\n\nINFORMASI PEMBAYARAN\n`
           body += `═══════════════════════════════\n`
           body += `Silakan transfer ke salah satu rekening berikut:\n\n`
-          bankAccounts.forEach((account: unknown, index: number) => {
-            const acc = account as { bank: string; account_number: string; account_name: string }
-            body += `${index + 1}. ${acc.bank}\n`
-            body += `   No. Rekening: ${acc.account_number}\n`
-            body += `   Atas Nama: ${acc.account_name}\n\n`
+          bankAccounts.forEach((account, index: number) => {
+            body += `${index + 1}. ${formatBankAccountLine(account)}\n\n`
           })
           body += `Mohon cantumkan No. Invoice (${invoiceNumber}) dalam keterangan transfer.\n`
-        }
-      } catch (e) {
-        logger.error('Failed to parse bank accounts:', e)
-      }
     }
 
     if (invoiceConfig.terms_conditions_template) {
@@ -538,6 +515,7 @@ export default function InvoiceDetailPage() {
   }
 
   const remainingAmount = invoice.total_amount - invoice.paid_amount
+  const displayStatus = invoice.computed_status ?? invoice.status
 
   return (
     <div className="space-y-6">
@@ -664,7 +642,9 @@ export default function InvoiceDetailPage() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Badge className={STATUS_COLORS[invoice.status]}>{getStatusLabel(invoice.status)}</Badge>
+                  <Badge className={STATUS_COLORS[displayStatus]} data-testid="invoice-status-badge">
+                    {getInvoiceStatusLabel(displayStatus)}
+                  </Badge>
                   <Badge
                     className={
                       invoice.payment_status === 'PAID'
@@ -685,7 +665,7 @@ export default function InvoiceDetailPage() {
                   <Label className="text-muted-foreground">Customer</Label>
                   <p className="font-semibold">{invoice.customers?.customer_name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {invoice.customers?.phone_number}
+                    {formatPhone(invoice.customers?.phone_number)}
                   </p>
                 </div>
                 <div>

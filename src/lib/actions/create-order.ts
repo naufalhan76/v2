@@ -109,6 +109,76 @@ export async function searchCustomerByPhone(phone: string): Promise<{
 }
 
 /**
+ * Get customer by ID with locations and AC units
+ * Used by customer suggestion selection to avoid phone lookups
+ */
+export async function getCustomerWithLocationsById(customerId: string): Promise<{
+  success: boolean;
+  data?: CustomerSearchResult;
+  error?: string;
+}> {
+  try {
+    const supabase = await createClient()
+
+    const { data: customer, error: customerError } = await supabase
+      .from('customers')
+      .select(`
+        customer_id,
+        customer_name,
+        phone_number,
+        primary_contact_person,
+        email,
+        billing_address
+      `)
+      .eq('customer_id', customerId)
+      .single()
+
+    if (customerError) {
+      if (customerError.code === 'PGRST116') {
+        return { success: true, data: undefined }
+      }
+      throw customerError
+    }
+
+    const { data: locations, error: locationsError } = await supabase
+      .from('locations')
+      .select(`
+        location_id,
+        full_address,
+        house_number,
+        city,
+        landmarks,
+        ac_units (
+          ac_unit_id,
+          brand,
+          model_number,
+          serial_number,
+          ac_type,
+          capacity_btu,
+          status
+        )
+      `)
+      .eq('customer_id', customer.customer_id)
+
+    if (locationsError) throw locationsError
+
+    return {
+      success: true,
+      data: {
+        ...customer,
+        locations: locations || []
+      }
+    }
+  } catch (error) {
+    logger.error('[getCustomerWithLocationsById] Error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to load customer'
+    }
+  }
+}
+
+/**
  * Create new customer
  * Validates phone uniqueness before inserting
  */

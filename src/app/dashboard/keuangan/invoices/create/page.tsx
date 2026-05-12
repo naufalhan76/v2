@@ -33,8 +33,9 @@ import { getOrders } from '@/lib/actions/orders'
 import { getServicePricingByType } from '@/lib/actions/service-pricing'
 import { getActiveAddons, type Addon } from '@/lib/actions/addons'
 import { createInvoice, getOrderItemsForInvoice } from '@/lib/actions/invoices'
-import { type BankAccount } from '@/app/dashboard/konfigurasi/invoice-config/bank-accounts-section'
+import { parseBankAccounts, type BankAccount } from '@/lib/bank-accounts'
 import { logger } from '@/lib/logger'
+import { formatPhone } from '@/lib/utils'
 
 const invoiceSchema = z.object({
   orderId: z.string().min(1, 'Order wajib dipilih'),
@@ -215,12 +216,7 @@ export default function CreateInvoicePage() {
       
       if (error) throw error
       
-      if (data?.bank_accounts) {
-        const accounts = typeof data.bank_accounts === 'string' 
-          ? JSON.parse(data.bank_accounts) 
-          : data.bank_accounts
-        setBankAccounts(accounts || [])
-      }
+      setBankAccounts(parseBankAccounts(data?.bank_accounts))
     } catch (error) {
       logger.error('Error loading bank accounts:', error)
       toast({
@@ -346,7 +342,7 @@ export default function CreateInvoicePage() {
     // Get tax from selected payment account
     const selectedAccountId = watch('paymentAccountId')
     const selectedAccount = bankAccounts.find(acc => acc.id === selectedAccountId)
-    const taxPercentage = selectedAccount?.tax_percentage || 11
+    const taxPercentage = typeof selectedAccount?.tax_percentage === 'number' ? selectedAccount.tax_percentage : 11
     
     const taxAmount = ((subtotal - discountTotal) * taxPercentage) / 100
     const total = subtotal - discountTotal + taxAmount
@@ -549,7 +545,7 @@ export default function CreateInvoicePage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Phone:</span>
-                    <span className="text-sm">{selectedOrder.customers?.phone_number}</span>
+                    <span className="text-sm">{formatPhone(selectedOrder.customers?.phone_number)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Service Type:</span>

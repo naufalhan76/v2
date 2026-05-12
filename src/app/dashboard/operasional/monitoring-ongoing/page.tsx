@@ -50,7 +50,7 @@ import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
 import { Activity, Package, FileText, Search, Eye, User, MapPin, Phone, Mail, Building, CalendarIcon, ChevronDown, Plus, X } from 'lucide-react'
 import { format, subDays } from 'date-fns'
-import { cn } from '@/lib/utils'
+import { cn, formatPhone } from '@/lib/utils'
 import { id } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
 
@@ -1017,7 +1017,7 @@ function MonitoringOngoingContent() {
                       {orderDetail.data.customers?.phone_number && (
                         <div className='flex items-center gap-1'>
                           <Phone className='w-3 h-3 text-muted-foreground' />
-                          {orderDetail.data.customers.phone_number}
+                          {formatPhone(orderDetail.data.customers.phone_number)}
                         </div>
                       )}
                       {orderDetail.data.customers?.email && (
@@ -1078,7 +1078,7 @@ function MonitoringOngoingContent() {
                                 {!!technicians?.contact_number && (
                                   <div className='text-xs text-muted-foreground flex items-center gap-1'>
                                     <Phone className='w-3 h-3' />
-                                    {String(technicians.contact_number)}
+                                    {formatPhone(technicians.contact_number as string | number | null | undefined)}
                                   </div>
                                 )}
                               </div>
@@ -1265,7 +1265,7 @@ function MonitoringOngoingContent() {
                       />
                       <div className='flex-1'>
                         <div className='font-medium'>{tech.technician_name}</div>
-                        <div className='text-sm text-muted-foreground'>{tech.contact_number}</div>
+                        <div className='text-sm text-muted-foreground'>{formatPhone(tech.contact_number as string | number | null | undefined)}</div>
                       </div>
                     </div>
                   ))}
@@ -1315,7 +1315,7 @@ function MonitoringOngoingContent() {
                       return (
                         <div key={helperId} className='flex items-center justify-between text-sm'>
                           <span className='font-medium'>{helper?.technician_name as string}</span>
-                          <span className='text-muted-foreground text-xs'>{helper?.contact_number as string}</span>
+                          <span className='text-muted-foreground text-xs'>{formatPhone(helper?.contact_number as string | number | null | undefined)}</span>
                         </div>
                       )
                     })}

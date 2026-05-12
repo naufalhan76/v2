@@ -13,8 +13,8 @@ import { useToast } from '@/hooks/use-toast'
 import { Loader2, Save, Building2, Banknote, FileText } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getInvoiceConfig, updateInvoiceConfig } from '@/lib/actions/invoice-config'
+import { parseBankAccounts } from '@/lib/bank-accounts'
 import { BankAccountsSection, type BankAccount } from './bank-accounts-section'
-import { logger } from '@/lib/logger'
 
 const invoiceConfigSchema = z.object({
   companyName: z.string().min(1, 'Nama perusahaan wajib diisi'),
@@ -72,27 +72,7 @@ export default function InvoiceConfigPage() {
       setIsFetching(true)
       const config = await getInvoiceConfig()
       if (config) {
-        // Parse bank_accounts JSON
-        let accounts: BankAccount[] = []
-        if (config.bank_accounts) {
-          try {
-            const banks = JSON.parse(config.bank_accounts)
-            accounts = banks.map((bank: unknown, index: number) => {
-              const b = bank as { id?: string; account_label?: string; bank?: string; account_number?: string; account_name?: string; tax_percentage?: number }
-              return {
-                id: b.id || `${index}`,
-                account_label: b.account_label || `Payment Account ${index + 1}`,
-                bank: b.bank || '',
-                account_number: b.account_number || '',
-                account_name: b.account_name || '',
-                tax_percentage: b.tax_percentage || 11,
-              }
-            })
-          } catch (e) {
-            logger.error('Error parsing bank_accounts:', e)
-          }
-        }
-        setBankAccounts(accounts)
+        setBankAccounts(parseBankAccounts(config.bank_accounts))
 
         reset({
           companyName: config.company_name,

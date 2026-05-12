@@ -45,6 +45,7 @@ import { useSortableTable } from '@/hooks/use-sortable-table'
 import { Edit, Trash2, Search } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
+import { formatPhone } from '@/lib/utils'
 
 interface AcUnit {
   ac_unit_id: string
@@ -376,7 +377,7 @@ export default function AcUnitsPage() {
                   ) : (
                     acUnits.map((acUnit) => (
                       <TableRow key={acUnit.ac_unit_id}>
-                        <TableCell className="font-medium">{acUnit.brand}</TableCell>
+                        <TableCell className="font-medium" data-testid="brand-cell">{acUnit.ac_brands?.name || acUnit.brand}</TableCell>
                         <TableCell>{acUnit.model_number}</TableCell>
                         <TableCell>{acUnit.serial_number}</TableCell>
                         <TableCell>
@@ -415,7 +416,7 @@ export default function AcUnitsPage() {
                           {acUnit.locations?.customers ? (
                             <div className="text-sm">
                               <div className="font-medium">{acUnit.locations.customers.customer_name}</div>
-                              <div className="text-muted-foreground">{acUnit.locations.customers.phone_number}</div>
+                              <div className="text-muted-foreground" data-testid="phone-cell">{formatPhone(acUnit.locations.customers.phone_number)}</div>
                               {acUnit.locations.customers.primary_contact_person && (
                                 <div className="text-xs text-muted-foreground">PIC: {acUnit.locations.customers.primary_contact_person}</div>
                               )}

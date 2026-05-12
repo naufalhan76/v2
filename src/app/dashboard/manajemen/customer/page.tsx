@@ -46,6 +46,7 @@ import { LoadingState, LoadingOverlay } from '@/components/ui/loading-state'
 import { useOptimisticArray } from '@/hooks/use-optimistic'
 import { ResourceHints } from '@/components/ui/priority-components'
 import { logger } from '@/lib/logger'
+import { formatPhone } from '@/lib/utils'
 
 interface CustomerFormData {
   customer_name: string
@@ -419,7 +420,7 @@ export default function CustomerManagementPage() {
                           {c.customer_name as string}
                         </TableCell>
                         <TableCell>{c.primary_contact_person as string}</TableCell>
-                        <TableCell>{c.phone_number as string}</TableCell>
+                        <TableCell data-testid="phone-cell">{formatPhone(c.phone_number as string | number | null | undefined)}</TableCell>
                         <TableCell>{c.email as string}</TableCell>
                         <TableCell>{c.billing_address as string}</TableCell>
                         <TableCell>

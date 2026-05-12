@@ -3,17 +3,34 @@
 import { createClient } from '@/lib/supabase-server'
 import { logger } from '@/lib/logger'
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
+function getDateWindow(startDate?: string, endDate?: string) {
+  const defaultEndDate = new Date().toISOString().split('T')[0]
+  const defaultStartDate = new Date(Date.now() - 30 * DAY_MS).toISOString().split('T')[0]
+
+  const currentStart = startDate || defaultStartDate
+  const currentEnd = endDate || defaultEndDate
+  const currentStartTime = new Date(`${currentStart}T00:00:00.000Z`).getTime()
+  const currentEndTime = new Date(`${currentEnd}T00:00:00.000Z`).getTime()
+  const windowDays = Math.max(1, Math.floor((currentEndTime - currentStartTime) / DAY_MS) + 1)
+  const previousEndDate = new Date(currentStartTime - DAY_MS)
+  const previousStartDate = new Date(previousEndDate.getTime() - (windowDays - 1) * DAY_MS)
+
+  return {
+    currentStart,
+    currentEnd,
+    previousStart: previousStartDate.toISOString().split('T')[0],
+    previousEnd: previousEndDate.toISOString().split('T')[0],
+    windowDays,
+  }
+}
+
 
 export async function getDashboardKpis(startDate?: string, endDate?: string) {
   try {
     const supabase = await createClient()
-    
-    // Set default date range if not provided (30 days ago to today)
-    const defaultEndDate = new Date().toISOString().split('T')[0]
-    const defaultStartDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    
-    const dateStart = startDate || defaultStartDate
-    const dateEnd = endDate || defaultEndDate
+    const { currentStart, currentEnd, previousStart, previousEnd, windowDays } = getDateWindow(startDate, endDate)
 
     const [
       totalOrdersResult,
@@ -23,38 +40,44 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
       customersResult,
       techniciansResult,
       paymentsResult,
-      unpaidResult
+      unpaidResult,
+      previousTotalOrdersResult,
+      previousPendingOrdersResult,
+      previousCompletedOrdersResult,
+      previousCancelledOrdersResult,
+      previousPaymentsResult,
+      previousUnpaidResult,
     ] = await Promise.all([
       // Total orders count (with date range)
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
-        .gte('order_date', dateStart)
-        .lte('order_date', dateEnd),
+        .gte('order_date', currentStart)
+        .lte('order_date', currentEnd),
       
       // Pending orders count
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .in('status', ['NEW', 'ACCEPTED', 'ASSIGNED', 'EN ROUTE', 'ARRIVED', 'IN_PROGRESS'])
-        .gte('order_date', dateStart)
-        .lte('order_date', dateEnd),
+        .gte('order_date', currentStart)
+        .lte('order_date', currentEnd),
       
       // Completed orders count
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .in('status', ['PAID', 'CLOSED'])
-        .gte('order_date', dateStart)
-        .lte('order_date', dateEnd),
+        .gte('order_date', currentStart)
+        .lte('order_date', currentEnd),
       
       // Cancelled orders count
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'CANCELLED')
-        .gte('order_date', dateStart)
-        .lte('order_date', dateEnd),
+        .gte('order_date', currentStart)
+        .lte('order_date', currentEnd),
       
       // Total customers
       supabase
@@ -71,16 +94,57 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
         .from('payments')
         .select('amount_paid')
         .eq('status', 'PAID')
-        .gte('payment_date', dateStart)
-        .lte('payment_date', dateEnd),
+        .gte('payment_date', currentStart)
+        .lte('payment_date', currentEnd),
       
       // Unpaid transactions count
       supabase
         .from('payments')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'UNPAID')
-        .gte('payment_date', dateStart)
-        .lte('payment_date', dateEnd)
+        .gte('payment_date', currentStart)
+        .lte('payment_date', currentEnd),
+
+      supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .gte('order_date', previousStart)
+        .lte('order_date', previousEnd),
+
+      supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['NEW', 'ACCEPTED', 'ASSIGNED', 'EN ROUTE', 'ARRIVED', 'IN_PROGRESS'])
+        .gte('order_date', previousStart)
+        .lte('order_date', previousEnd),
+
+      supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['PAID', 'CLOSED'])
+        .gte('order_date', previousStart)
+        .lte('order_date', previousEnd),
+
+      supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'CANCELLED')
+        .gte('order_date', previousStart)
+        .lte('order_date', previousEnd),
+
+      supabase
+        .from('payments')
+        .select('amount_paid')
+        .eq('status', 'PAID')
+        .gte('payment_date', previousStart)
+        .lte('payment_date', previousEnd),
+
+      supabase
+        .from('payments')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'UNPAID')
+        .gte('payment_date', previousStart)
+        .lte('payment_date', previousEnd),
     ])
     
     
@@ -89,6 +153,10 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
     if (pendingOrdersResult.error) throw pendingOrdersResult.error
     if (completedOrdersResult.error) throw completedOrdersResult.error
     if (cancelledOrdersResult.error) throw cancelledOrdersResult.error
+    if (previousTotalOrdersResult.error) throw previousTotalOrdersResult.error
+    if (previousPendingOrdersResult.error) throw previousPendingOrdersResult.error
+    if (previousCompletedOrdersResult.error) throw previousCompletedOrdersResult.error
+    if (previousCancelledOrdersResult.error) throw previousCancelledOrdersResult.error
     if (customersResult.error) throw customersResult.error
     if (techniciansResult.error) throw techniciansResult.error
     
@@ -99,12 +167,34 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
     if (unpaidResult.error) {
       logger.error('Unpaid query error:', unpaidResult.error)
     }
+    if (previousPaymentsResult.error) {
+      logger.error('Previous payments query error:', previousPaymentsResult.error)
+    }
+    if (previousUnpaidResult.error) {
+      logger.error('Previous unpaid query error:', previousUnpaidResult.error)
+    }
     
     // Calculate total revenue
     const totalRevenue = paymentsResult.data?.reduce((sum: number, payment: { amount_paid?: number }) => {
       const paymentAmount = payment.amount_paid || 0
       return sum + paymentAmount
     }, 0) || 0
+
+    const previousTotalRevenue = previousPaymentsResult.data?.reduce((sum: number, payment: { amount_paid?: number }) => {
+      const paymentAmount = payment.amount_paid || 0
+      return sum + paymentAmount
+    }, 0) || 0
+
+    const previous = {
+      totalOrders: previousTotalOrdersResult.count || 0,
+      pendingOrders: previousPendingOrdersResult.count || 0,
+      completedOrders: previousCompletedOrdersResult.count || 0,
+      cancelledOrders: previousCancelledOrdersResult.count || 0,
+      totalCustomers: customersResult.count || 0,
+      totalTechnicians: techniciansResult.count || 0,
+      totalRevenue: previousTotalRevenue,
+      unpaidTransactions: previousUnpaidResult.count || 0,
+    }
     
     const result = {
       totalOrders: totalOrdersResult.count || 0,
@@ -115,6 +205,8 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
       totalTechnicians: techniciansResult.count || 0,
       totalRevenue,
       unpaidTransactions: unpaidResult.count || 0,
+      previous,
+      windowDays,
     }
     
     

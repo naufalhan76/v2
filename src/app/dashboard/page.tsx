@@ -35,6 +35,8 @@ interface KpiData {
   totalTechnicians: number
   totalRevenue: number
   unpaidTransactions: number
+  previous?: Omit<KpiData, 'previous' | 'windowDays'>
+  windowDays?: number
 }
 
 interface ChartDataPoint {
@@ -133,6 +135,8 @@ export default function DashboardPage() {
     {
       title: 'Total Orders',
       value: kpiData.totalOrders,
+      currentValue: kpiData.totalOrders,
+      previousValue: kpiData.previous?.totalOrders ?? 0,
       icon: ClipboardList,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50 dark:bg-blue-950/30',
@@ -141,6 +145,8 @@ export default function DashboardPage() {
     {
       title: 'Completed',
       value: kpiData.completedOrders,
+      currentValue: kpiData.completedOrders,
+      previousValue: kpiData.previous?.completedOrders ?? 0,
       icon: CheckCircle,
       color: 'text-green-600',
       bgColor: 'bg-green-50 dark:bg-green-950/30',
@@ -149,6 +155,8 @@ export default function DashboardPage() {
     {
       title: 'Total Revenue',
       value: `Rp ${(kpiData.totalRevenue / 1000000).toFixed(1)}M`,
+      currentValue: kpiData.totalRevenue,
+      previousValue: kpiData.previous?.totalRevenue ?? 0,
       icon: Banknote,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
@@ -157,6 +165,8 @@ export default function DashboardPage() {
     {
       title: 'Pending',
       value: kpiData.pendingOrders,
+      currentValue: kpiData.pendingOrders,
+      previousValue: kpiData.previous?.pendingOrders ?? 0,
       icon: AlertCircle,
       color: 'text-amber-600',
       bgColor: 'bg-amber-50 dark:bg-amber-950/30',
@@ -231,25 +241,23 @@ export default function DashboardPage() {
           {kpiCards.map((kpi) => {
             const Icon = kpi.icon
             const sparkVals = sparklineData.map(d => ({ v: d[kpi.sparkKey] }))
-            const first = sparkVals[0]?.v ?? 0
-            const last = sparkVals[sparkVals.length - 1]?.v ?? 0
-            const pct = first > 0 ? Math.round(((last - first) / first) * 100) : 0
+            const pct = kpi.previousValue > 0 ? Math.round(((kpi.currentValue - kpi.previousValue) / kpi.previousValue) * 100) : 0
             const up = pct >= 0
             return (
               <div key={kpi.title} className="kpi-card">
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="text-sm text-muted-foreground">{kpi.title}</p>
-                    <p className="text-2xl font-bold mt-1">{kpi.value}</p>
+                    <p className="text-2xl font-bold mt-1" data-testid="kpi-current">{kpi.value}</p>
                   </div>
                   <div className={cn('p-2 rounded-lg', kpi.bgColor)}>
                     <Icon className={cn('h-5 w-5', kpi.color)} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className={cn('flex items-center gap-1 text-xs font-medium', up ? 'text-green-600' : 'text-red-500')}>
+                  <span data-testid="kpi-delta" className={cn('flex items-center gap-1 text-xs font-medium', up ? 'text-green-600' : 'text-red-500')}>
                     {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                    {Math.abs(pct)}% vs 7d ago
+                    {Math.abs(pct)}% vs prev {kpiData.windowDays ?? 1}d
                   </span>
                   {sparkVals.length > 1 && (
                     <ResponsiveContainer width={60} height={30}>

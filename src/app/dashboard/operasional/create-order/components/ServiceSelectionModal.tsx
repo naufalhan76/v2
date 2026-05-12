@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -29,6 +29,7 @@ interface ServiceSelectionModalProps {
 
 export function ServiceSelectionModal({ open, onClose, onAddService, masterData, defaultUnitTypeId, defaultCapacityId, alreadySelectedCatalogIds = [] }: ServiceSelectionModalProps) {
   const [mode, setMode] = useState<'cascade' | 'search'>('cascade')
+  const prevOpen = useRef(false)
   
   // Whether the parent already locked in unit type & capacity
   const isLocked = !!(defaultUnitTypeId && defaultCapacityId)
@@ -41,16 +42,16 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Reset when opened
-  if (!open) {
-    setTimeout(() => {
+  useEffect(() => {
+    if (open && !prevOpen.current) {
       setUnitTypeId(defaultUnitTypeId || '')
       setCapacityId(defaultCapacityId || '')
       setServiceTypeId('')
       setSearchQuery('')
       setMode('cascade')
-    }, 200)
-  }
+    }
+    prevOpen.current = open
+  }, [open, defaultUnitTypeId, defaultCapacityId])
 
   // Derived state
   const capacities = useMemo(() => {
@@ -116,13 +117,13 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
               <div className="flex gap-4">
                 <div className="flex-1 space-y-1">
                   <Label className="text-xs text-muted-foreground">Unit Type</Label>
-                  <div className="text-sm font-medium bg-muted px-3 py-2 rounded-md">
+                  <div data-testid="unit-type-value" className="text-sm font-medium bg-muted px-3 py-2 rounded-md">
                     {masterData?.unitTypes.find((u: unknown) => (u as Record<string, unknown>).unit_type_id === unitTypeId) ? (masterData.unitTypes.find((u: unknown) => (u as Record<string, unknown>).unit_type_id === unitTypeId) as Record<string, unknown>).name as string : '-'}
                   </div>
                 </div>
                 <div className="flex-1 space-y-1">
                   <Label className="text-xs text-muted-foreground">Capacity</Label>
-                  <div className="text-sm font-medium bg-muted px-3 py-2 rounded-md">
+                  <div data-testid="capacity-value" className="text-sm font-medium bg-muted px-3 py-2 rounded-md">
                     {masterData?.capacityRanges.find((c: unknown) => (c as Record<string, unknown>).capacity_id === capacityId) ? (masterData.capacityRanges.find((c: unknown) => (c as Record<string, unknown>).capacity_id === capacityId) as Record<string, unknown>).capacity_label as string : '-'}
                   </div>
                 </div>

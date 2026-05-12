@@ -25,7 +25,7 @@ import { useSortableTable } from '@/hooks/use-sortable-table'
 import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import { ChevronLeft, ChevronRight, Eye, MapPin, User } from 'lucide-react'
 import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
+import { cn, formatPhone } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -192,7 +192,7 @@ export default function AssignOrderPage() {
       <div className='max-w-5xl mx-auto'>
         {currentStep === 1 && (
           <Card><CardHeader><CardTitle>Step 1: Select Visit Date</CardTitle><CardDescription>Choose the scheduled visit date for the orders</CardDescription></CardHeader>
-          <CardContent className='flex justify-center'><Calendar mode='single' selected={selectedDate} onSelect={setSelectedDate} disabled={(date) => date < new Date()} className='rounded-md border' /></CardContent>
+          <CardContent className='flex justify-center'><div data-testid='schedule-date-picker'><Calendar mode='single' selected={selectedDate} onSelect={setSelectedDate} disabled={(date) => { const today = new Date(); today.setHours(0, 0, 0, 0); return date < today }} className='rounded-md border' /></div></CardContent>
           <div className='p-6 pt-0'>{selectedDate && <p className='text-center text-sm text-muted-foreground mb-4'>Selected: {format(selectedDate, 'PPP')}</p>}
           <div className='flex justify-end'><Button onClick={handleNextStep} disabled={!selectedDate}>Next <ChevronRight className='ml-2 h-4 w-4' /></Button></div></div></Card>
         )}
@@ -296,7 +296,7 @@ export default function AssignOrderPage() {
                                     <div className='text-sm text-muted-foreground'>{tech.company}</div>
                                   )}
                                   {tech.contact_number && (
-                                    <div className='text-sm text-muted-foreground'>{tech.contact_number}</div>
+                                    <div className='text-sm text-muted-foreground'>{formatPhone(tech.contact_number as string | number | null | undefined)}</div>
                                   )}
                                 </div>
                                 <User className='h-8 w-8 text-muted-foreground' />
@@ -323,7 +323,7 @@ export default function AssignOrderPage() {
                             return ({
                               id: t.technician_id,
                               label: t.technician_name,
-                              secondaryLabel: t.company || t.contact_number
+                              secondaryLabel: t.company || formatPhone(t.contact_number)
                             })
                           })}
                         selected={selectedHelpers}
@@ -439,7 +439,7 @@ export default function AssignOrderPage() {
                       {orderDetail.data.customers?.phone_number && (
                         <div className='flex items-center gap-1'>
                           <span className='text-muted-foreground'>Phone:</span>
-                          {orderDetail.data.customers.phone_number}
+                          {formatPhone(orderDetail.data.customers.phone_number)}
                         </div>
                       )}
                       {orderDetail.data.customers?.email && (

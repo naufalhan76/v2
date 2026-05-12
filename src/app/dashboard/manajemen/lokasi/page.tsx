@@ -36,6 +36,7 @@ import { useSortableTable } from '@/hooks/use-sortable-table'
 import { Edit, Trash2, Search } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
+import { formatPhone } from '@/lib/utils'
 
 interface Location {
   location_id: string
@@ -270,7 +271,7 @@ export default function LocationsPage() {
                         <TableCell className="text-sm">{location.landmarks || '-'}</TableCell>
                         <TableCell>
                           {location.customers?.phone_number ? (
-                            <div className="text-sm font-mono">{location.customers.phone_number}</div>
+                            <div className="text-sm font-mono">{formatPhone(location.customers.phone_number)}</div>
                           ) : (
                             <div className="text-muted-foreground text-sm">-</div>
                           )}
