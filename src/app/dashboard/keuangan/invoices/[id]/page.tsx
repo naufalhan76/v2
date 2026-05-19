@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -42,18 +43,24 @@ import {
   Send,
   Mail,
   MapPin,
+  Pencil,
+  Plus,
+  Save,
+  X,
 } from 'lucide-react'
 import {
   getInvoiceById,
   updateInvoiceStatus,
   recordPayment,
   deleteInvoice,
+  reviseInvoice,
   type Invoice,
   type InvoiceItem,
   type PaymentRecord,
+  type ReviseInvoiceItemInput,
 } from '@/lib/actions/invoices'
 import { getInvoiceConfig, type InvoiceConfig } from '@/lib/actions/invoice-config'
-import { parseBankAccounts } from '@/lib/bank-accounts'
+import { parseBankAccounts, type BankAccount } from '@/lib/bank-accounts'
 import { 
   logInvoiceCommunication, 
   getInvoiceCommunicationStats 
@@ -64,6 +71,7 @@ import { id as localeId } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
 import { formatPhone } from '@/lib/utils'
 import { getInvoiceStatusLabel } from '@/lib/invoice-status'
+import { canReviseInvoice } from '@/lib/invoice-utils'
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: 'bg-gray-500',
@@ -92,6 +100,7 @@ export default function InvoiceDetailPage() {
   const [payments, setPayments] = useState<PaymentRecord[]>([])
   const [orderItemsDetailed, setOrderItemsDetailed] = useState<Record<string, unknown>[]>([])
   const [invoiceConfig, setInvoiceConfig] = useState<InvoiceConfig | null>(null)
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [communicationStats, setCommunicationStats] = useState({
     totalSent: 0,
     emailSent: 0,
@@ -110,6 +119,32 @@ export default function InvoiceDetailPage() {
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentReference, setPaymentReference] = useState('')
   const [paymentNotes, setPaymentNotes] = useState('')
+
+  // Revision mode state
+  type RevisionItemDraft = {
+    item_id?: string
+    item_type: 'BASE_SERVICE' | 'ADDON'
+    description: string
+    quantity: number
+    unit_price: number
+    line_order: number
+  }
+  type RevisionDraft = {
+    customer_name: string
+    customer_phone: string
+    customer_email: string
+    customer_address: string
+    due_date: string
+    notes: string
+    terms_conditions: string
+    discount_amount: number
+    tax_percentage: number
+    payment_account_id: string
+    items: RevisionItemDraft[]
+  }
+  const [isRevisionMode, setIsRevisionMode] = useState(false)
+  const [isSavingRevision, setIsSavingRevision] = useState(false)
+  const [revisionDraft, setRevisionDraft] = useState<RevisionDraft | null>(null)
 
   useEffect(() => {
     if (invoiceId) {
@@ -135,6 +170,7 @@ export default function InvoiceDetailPage() {
         setOrderItemsDetailed(data.orderItemsDetailed || [])
       }
       setInvoiceConfig(config)
+      setBankAccounts(parseBankAccounts(config?.bank_accounts))
       setCommunicationStats(stats)
     } catch {
       toast({
@@ -263,6 +299,205 @@ export default function InvoiceDetailPage() {
     setPaymentAmount('')
     setPaymentReference('')
     setPaymentNotes('')
+  }
+
+  const buildRevisionDraft = (): RevisionDraft | null => {
+    if (!invoice) return null
+    return {
+      customer_name:
+        invoice.customer_name_override ?? invoice.customers?.customer_name ?? '',
+      customer_phone:
+        invoice.customer_phone_override ?? invoice.customers?.phone_number ?? '',
+      customer_email:
+        invoice.customer_email_override ?? invoice.customers?.email ?? '',
+      customer_address:
+        invoice.customer_address_override ?? invoice.customers?.billing_address ?? '',
+      due_date: invoice.due_date ? invoice.due_date.slice(0, 10) : '',
+      notes: invoice.notes ?? '',
+      terms_conditions: invoice.terms_conditions ?? '',
+      discount_amount: invoice.discount_amount ?? 0,
+      tax_percentage: invoice.tax_percentage ?? 0,
+      payment_account_id:
+        (invoice as Invoice & { payment_account_id?: string | null }).payment_account_id ?? '',
+      items: items.map((it, idx) => ({
+        item_id: it.item_id,
+        item_type: (it.item_type === 'ADDON' ? 'ADDON' : 'BASE_SERVICE') as 'BASE_SERVICE' | 'ADDON',
+        description: it.description,
+        quantity: it.quantity,
+        unit_price: it.unit_price,
+        line_order: it.line_order ?? idx,
+      })),
+    }
+  }
+
+  const handleEnterRevisionMode = () => {
+    if (!invoice) return
+    if (!canReviseInvoice(invoice.status)) {
+      toast({
+        variant: 'destructive',
+        title: 'Tidak dapat direvisi',
+        description: 'Invoice hanya dapat direvisi saat berstatus DRAFT atau SENT',
+      })
+      return
+    }
+    const draft = buildRevisionDraft()
+    if (!draft) return
+    setRevisionDraft(draft)
+    setIsRevisionMode(true)
+  }
+
+  const handleCancelRevision = () => {
+    setIsRevisionMode(false)
+    setRevisionDraft(null)
+  }
+
+  const updateRevisionField = <K extends keyof RevisionDraft>(field: K, value: RevisionDraft[K]) => {
+    setRevisionDraft((prev) => (prev ? { ...prev, [field]: value } : prev))
+  }
+
+  const updateRevisionItem = (
+    index: number,
+    patch: Partial<RevisionItemDraft>
+  ) => {
+    setRevisionDraft((prev) => {
+      if (!prev) return prev
+      const next = [...prev.items]
+      next[index] = { ...next[index], ...patch }
+      return { ...prev, items: next }
+    })
+  }
+
+  const addRevisionItem = () => {
+    setRevisionDraft((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        items: [
+          ...prev.items,
+          {
+            item_type: 'BASE_SERVICE',
+            description: '',
+            quantity: 1,
+            unit_price: 0,
+            line_order: prev.items.length,
+          },
+        ],
+      }
+    })
+  }
+
+  const removeRevisionItem = (index: number) => {
+    setRevisionDraft((prev) => {
+      if (!prev) return prev
+      const next = prev.items.filter((_, i) => i !== index)
+      return { ...prev, items: next.map((it, i) => ({ ...it, line_order: i })) }
+    })
+  }
+
+  const handleSaveRevision = async () => {
+    if (!invoice || !revisionDraft) return
+
+    if (revisionDraft.items.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Item kosong',
+        description: 'Minimal satu item invoice harus diisi',
+      })
+      return
+    }
+
+    for (const item of revisionDraft.items) {
+      if (!item.description.trim()) {
+        toast({
+          variant: 'destructive',
+          title: 'Deskripsi item kosong',
+          description: 'Setiap item harus memiliki deskripsi',
+        })
+        return
+      }
+      if (!(item.quantity > 0)) {
+        toast({
+          variant: 'destructive',
+          title: 'Kuantitas tidak valid',
+          description: 'Kuantitas item harus lebih dari 0',
+        })
+        return
+      }
+      if (item.unit_price < 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Harga tidak valid',
+          description: 'Harga satuan tidak boleh negatif',
+        })
+        return
+      }
+    }
+
+    const isLinkedCustomer = Boolean(invoice.customer_id)
+    const headerUpdates: Record<string, unknown> = {
+      due_date: revisionDraft.due_date,
+      notes: revisionDraft.notes || null,
+      terms_conditions: revisionDraft.terms_conditions || null,
+      discount_amount: Number(revisionDraft.discount_amount) || 0,
+      tax_percentage: Number(revisionDraft.tax_percentage) || 0,
+    }
+
+    if (!isLinkedCustomer) {
+      headerUpdates.customer_name_override = revisionDraft.customer_name.trim() || null
+      headerUpdates.customer_phone_override = revisionDraft.customer_phone.trim() || null
+      headerUpdates.customer_email_override = revisionDraft.customer_email.trim() || null
+      headerUpdates.customer_address_override = revisionDraft.customer_address.trim() || null
+    }
+
+    if (revisionDraft.payment_account_id) {
+      const selected = bankAccounts.find((acc) => acc.id === revisionDraft.payment_account_id)
+      if (selected) {
+        headerUpdates.payment_account_id = selected.id
+        headerUpdates.payment_account_label = selected.account_label
+        headerUpdates.payment_bank_name = selected.bank
+        headerUpdates.payment_account_number = selected.account_number
+        headerUpdates.payment_account_name = selected.account_name
+        if (typeof selected.tax_percentage === 'number') {
+          headerUpdates.tax_percentage = selected.tax_percentage
+        }
+      }
+    } else {
+      headerUpdates.payment_account_id = null
+      headerUpdates.payment_account_label = null
+      headerUpdates.payment_bank_name = null
+      headerUpdates.payment_account_number = null
+      headerUpdates.payment_account_name = null
+    }
+
+    const itemsPayload: ReviseInvoiceItemInput[] = revisionDraft.items.map((it, idx) => ({
+      item_id: it.item_id,
+      item_type: it.item_type,
+      description: it.description.trim(),
+      quantity: Number(it.quantity),
+      unit_price: Number(it.unit_price),
+      line_order: idx,
+    }))
+
+    try {
+      setIsSavingRevision(true)
+      await reviseInvoice(invoice.invoice_id, headerUpdates, itemsPayload)
+      toast({
+        title: 'Revisi tersimpan',
+        description: 'Invoice berhasil diperbarui',
+      })
+      setIsRevisionMode(false)
+      setRevisionDraft(null)
+      await loadInvoice()
+    } catch (error: unknown) {
+      logger.error('Save revision error:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Gagal menyimpan revisi',
+        description: error instanceof Error ? error.message : 'Terjadi kesalahan',
+      })
+    } finally {
+      setIsSavingRevision(false)
+    }
   }
 
   const generateWhatsAppMessage = () => {
@@ -575,8 +810,51 @@ export default function InvoiceDetailPage() {
             <Download className="mr-2 h-4 w-4" />
             Export PDF
           </Button>
+          {/* Edit / Revisi — only for DRAFT/SENT */}
+          {!isRevisionMode && canReviseInvoice(invoice.status) && (
+            <Button
+              variant="outline"
+              onClick={handleEnterRevisionMode}
+              disabled={isProcessing}
+              className="border-amber-200 text-amber-700 hover:bg-amber-50"
+              data-testid="invoice-edit-revisi-button"
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit / Revisi
+            </Button>
+          )}
+          {isRevisionMode && (
+            <>
+              <Button
+                onClick={handleSaveRevision}
+                disabled={isSavingRevision}
+                data-testid="invoice-save-revision"
+              >
+                {isSavingRevision ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Simpan Revisi
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCancelRevision}
+                disabled={isSavingRevision}
+                data-testid="invoice-cancel-revision"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Batal
+              </Button>
+            </>
+          )}
           {/* Only show delete button for DRAFT invoices */}
-          {invoice.status === 'DRAFT' && (
+          {!isRevisionMode && invoice.status === 'DRAFT' && (
             <Button 
               variant="destructive" 
               onClick={() => setIsDeleteDialogOpen(true)} 
@@ -587,7 +865,7 @@ export default function InvoiceDetailPage() {
             </Button>
           )}
           {/* Show cancel button for non-DRAFT invoices */}
-          {invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED' && (
+          {!isRevisionMode && invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED' && (
             <Button 
               variant="outline" 
               onClick={() => handleStatusChange('CANCELLED')} 
@@ -638,6 +916,25 @@ export default function InvoiceDetailPage() {
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2 space-y-6">
+          {/* Mode Revisi banner */}
+          {isRevisionMode && (
+            <Card className="border-amber-300 bg-amber-50">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <Pencil className="h-5 w-5 text-amber-700 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-amber-900">Mode Revisi Aktif</p>
+                    <p className="text-sm text-amber-800">
+                      Anda sedang mengedit invoice <span className="font-mono font-semibold">{invoice.invoice_number}</span>.
+                      Nomor invoice dan status tidak dapat diubah. Klik <strong>Simpan Revisi</strong> untuk menerapkan perubahan
+                      atau <strong>Batal</strong> untuk membatalkan.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Invoice Header */}
           <Card>
             <CardHeader>
@@ -667,43 +964,181 @@ export default function InvoiceDetailPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Customer</Label>
-                  <p className="font-semibold">{invoice.customers?.customer_name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatPhone(invoice.customers?.phone_number)}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Order ID</Label>
-                  <p className="font-mono font-semibold">{invoice.order_id}</p>
-                </div>
-              </div>
+              {isRevisionMode && revisionDraft ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="rev-customer-name">Nama Customer</Label>
+                      <Input
+                        id="rev-customer-name"
+                        value={revisionDraft.customer_name}
+                        onChange={(e) => updateRevisionField('customer_name', e.target.value)}
+                        disabled={Boolean(invoice.customer_id)}
+                        placeholder="Nama customer"
+                      />
+                      {invoice.customer_id && (
+                        <p className="text-xs text-muted-foreground">
+                          Customer terhubung — kelola di halaman customer.
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="rev-customer-phone">No. Telepon</Label>
+                      <Input
+                        id="rev-customer-phone"
+                        value={revisionDraft.customer_phone}
+                        onChange={(e) => updateRevisionField('customer_phone', e.target.value)}
+                        disabled={Boolean(invoice.customer_id)}
+                        placeholder="08xxxxxxxxxx"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="rev-customer-email">Email</Label>
+                      <Input
+                        id="rev-customer-email"
+                        type="email"
+                        value={revisionDraft.customer_email}
+                        onChange={(e) => updateRevisionField('customer_email', e.target.value)}
+                        disabled={Boolean(invoice.customer_id)}
+                        placeholder="customer@example.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="rev-customer-address">Alamat</Label>
+                      <Input
+                        id="rev-customer-address"
+                        value={revisionDraft.customer_address}
+                        onChange={(e) => updateRevisionField('customer_address', e.target.value)}
+                        disabled={Boolean(invoice.customer_id)}
+                        placeholder="Alamat penagihan"
+                      />
+                    </div>
+                  </div>
 
-              <Separator />
+                  <Separator />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Invoice Date</Label>
-                  <p>{format(new Date(invoice.invoice_date), 'dd MMM yyyy', { locale: localeId })}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Due Date</Label>
-                  <p>{format(new Date(invoice.due_date), 'dd MMM yyyy', { locale: localeId })}</p>
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">Invoice Date</Label>
+                      <p>{format(new Date(invoice.invoice_date), 'dd MMM yyyy', { locale: localeId })}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="rev-due-date">Due Date</Label>
+                      <Input
+                        id="rev-due-date"
+                        type="date"
+                        value={revisionDraft.due_date}
+                        onChange={(e) => updateRevisionField('due_date', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">Customer</Label>
+                      <p className="font-semibold">{invoice.customers?.customer_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatPhone(invoice.customers?.phone_number)}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Order ID</Label>
+                      <p className="font-mono font-semibold">{invoice.order_id}</p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">Invoice Date</Label>
+                      <p>{format(new Date(invoice.invoice_date), 'dd MMM yyyy', { locale: localeId })}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Due Date</Label>
+                      <p>{format(new Date(invoice.due_date), 'dd MMM yyyy', { locale: localeId })}</p>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
           {/* Invoice Items - Detailed Per AC */}
           <Card>
             <CardHeader>
-              <CardTitle>Service Details (Per AC Unit)</CardTitle>
-              <CardDescription>Breakdown by AC unit and location</CardDescription>
+              <CardTitle>{isRevisionMode ? 'Items Invoice' : 'Service Details (Per AC Unit)'}</CardTitle>
+              <CardDescription>
+                {isRevisionMode
+                  ? 'Edit, tambah, atau hapus item invoice. Subtotal dihitung otomatis di server.'
+                  : 'Breakdown by AC unit and location'}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {orderItemsDetailed.length > 0 ? (
+              {isRevisionMode && revisionDraft ? (
+                <div className="space-y-3" data-testid="invoice-revision-items">
+                  {revisionDraft.items.map((item, idx) => (
+                    <div key={item.item_id ?? `new-${idx}`} className="rounded-lg border p-3 space-y-3">
+                      <div className="grid gap-3 md:grid-cols-12">
+                        <div className="space-y-1 md:col-span-6">
+                          <Label htmlFor={`rev-item-desc-${idx}`}>Deskripsi</Label>
+                          <Input
+                            id={`rev-item-desc-${idx}`}
+                            value={item.description}
+                            onChange={(e) => updateRevisionItem(idx, { description: e.target.value })}
+                            placeholder="Deskripsi item"
+                          />
+                        </div>
+                        <div className="space-y-1 md:col-span-2">
+                          <Label htmlFor={`rev-item-qty-${idx}`}>Qty</Label>
+                          <Input
+                            id={`rev-item-qty-${idx}`}
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              updateRevisionItem(idx, { quantity: parseInt(e.target.value, 10) || 0 })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1 md:col-span-3">
+                          <Label htmlFor={`rev-item-price-${idx}`}>Harga Satuan</Label>
+                          <Input
+                            id={`rev-item-price-${idx}`}
+                            type="number"
+                            min="0"
+                            value={item.unit_price}
+                            onChange={(e) =>
+                              updateRevisionItem(idx, { unit_price: parseFloat(e.target.value) || 0 })
+                            }
+                          />
+                        </div>
+                        <div className="md:col-span-1 flex items-end">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeRevisionItem(idx)}
+                            disabled={revisionDraft.items.length <= 1}
+                            aria-label="Hapus item"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-right text-sm text-muted-foreground">
+                        Subtotal item: {formatCurrency((Number(item.quantity) || 0) * (Number(item.unit_price) || 0))}
+                      </div>
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" onClick={addRevisionItem} className="w-full">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Tambah Item
+                  </Button>
+                </div>
+              ) : orderItemsDetailed.length > 0 ? (
                 // Group by location
                 (() => {
                   type LocationGroup = { location: Record<string, unknown>; items: Record<string, unknown>[] }
@@ -830,47 +1265,145 @@ export default function InvoiceDetailPage() {
 
               <Separator className="my-4" />
 
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span className="font-semibold">{formatCurrency(invoice.subtotal)}</span>
+              {isRevisionMode && revisionDraft ? (
+                <div className="space-y-4">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="rev-discount">Diskon (Rp)</Label>
+                      <Input
+                        id="rev-discount"
+                        type="number"
+                        min="0"
+                        value={revisionDraft.discount_amount}
+                        onChange={(e) =>
+                          updateRevisionField('discount_amount', parseFloat(e.target.value) || 0)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="rev-tax">Pajak (%)</Label>
+                      <Input
+                        id="rev-tax"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={revisionDraft.tax_percentage}
+                        onChange={(e) =>
+                          updateRevisionField('tax_percentage', parseFloat(e.target.value) || 0)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {bankAccounts.length > 0 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="rev-payment-account">Rekening Pembayaran</Label>
+                      <Select
+                        value={revisionDraft.payment_account_id || '__none__'}
+                        onValueChange={(value) =>
+                          updateRevisionField('payment_account_id', value === '__none__' ? '' : value)
+                        }
+                      >
+                        <SelectTrigger id="rev-payment-account">
+                          <SelectValue placeholder="Pilih rekening" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Tidak ada</SelectItem>
+                          {bankAccounts.map((acc) => (
+                            <SelectItem key={acc.id} value={acc.id}>
+                              {acc.account_label} — {acc.bank} / {acc.account_number}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Memilih rekening akan otomatis menerapkan pajak default rekening tersebut.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="rev-notes">Catatan</Label>
+                    <Textarea
+                      id="rev-notes"
+                      value={revisionDraft.notes}
+                      onChange={(e) => updateRevisionField('notes', e.target.value)}
+                      placeholder="Catatan tambahan untuk customer"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="rev-terms">Syarat &amp; Ketentuan</Label>
+                    <Textarea
+                      id="rev-terms"
+                      value={revisionDraft.terms_conditions}
+                      onChange={(e) => updateRevisionField('terms_conditions', e.target.value)}
+                      placeholder="Syarat dan ketentuan invoice"
+                      rows={4}
+                    />
+                  </div>
+
+                  <div className="rounded-md bg-muted/40 p-3 text-sm">
+                    <div className="flex justify-between">
+                      <span>Estimasi Subtotal:</span>
+                      <span className="font-semibold">
+                        {formatCurrency(
+                          revisionDraft.items.reduce(
+                            (sum, it) => sum + (Number(it.quantity) || 0) * (Number(it.unit_price) || 0),
+                            0
+                          )
+                        )}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Total final akan dihitung ulang server setelah disimpan.
+                    </p>
+                  </div>
                 </div>
-                {invoice.discount_amount > 0 && (
+              ) : (
+                <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Discount:</span>
-                    <span className="font-semibold text-red-600">
-                      - {formatCurrency(invoice.discount_amount)}
+                    <span>Subtotal:</span>
+                    <span className="font-semibold">{formatCurrency(invoice.subtotal)}</span>
+                  </div>
+                  {invoice.discount_amount > 0 && (
+                    <div className="flex justify-between">
+                      <span>Discount:</span>
+                      <span className="font-semibold text-red-600">
+                        - {formatCurrency(invoice.discount_amount)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>Tax ({invoice.tax_percentage}%):</span>
+                    <span className="font-semibold">{formatCurrency(invoice.tax_amount)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between text-lg">
+                    <span className="font-bold">Total:</span>
+                    <span className="font-bold text-primary">
+                      {formatCurrency(invoice.total_amount)}
                     </span>
                   </div>
-                )}
-                <div className="flex justify-between">
-                  <span>Tax ({invoice.tax_percentage}%):</span>
-                  <span className="font-semibold">{formatCurrency(invoice.tax_amount)}</span>
+                  {invoice.paid_amount > 0 && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-green-600">Paid:</span>
+                        <span className="font-semibold text-green-600">
+                          - {formatCurrency(invoice.paid_amount)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-lg">
+                        <span className="font-bold">Remaining:</span>
+                        <span className="font-bold text-red-600">
+                          {formatCurrency(remainingAmount)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <Separator />
-                <div className="flex justify-between text-lg">
-                  <span className="font-bold">Total:</span>
-                  <span className="font-bold text-primary">
-                    {formatCurrency(invoice.total_amount)}
-                  </span>
-                </div>
-                {invoice.paid_amount > 0 && (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-green-600">Paid:</span>
-                      <span className="font-semibold text-green-600">
-                        - {formatCurrency(invoice.paid_amount)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-lg">
-                      <span className="font-bold">Remaining:</span>
-                      <span className="font-bold text-red-600">
-                        {formatCurrency(remainingAmount)}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
+              )}
             </CardContent>
           </Card>
 

@@ -277,8 +277,44 @@ export const CreateBlankInvoiceSchema = z.object({
   payment_account_name: z.string().optional(),
 })
 
+export const ReviseInvoiceHeaderSchema = z.object({
+  customer_id: z.string().uuid().nullable().optional(),
+  customer_name_override: z.string().trim().min(1).max(255).nullable().optional(),
+  customer_phone_override: z.string().trim().max(50).nullable().optional(),
+  customer_email_override: z.string().trim().email('Format email tidak valid').nullable().optional()
+    .or(z.literal('').transform(() => null)),
+  customer_address_override: z.string().trim().max(2000).nullable().optional(),
+  due_date: z.string().min(1, 'Tanggal jatuh tempo wajib diisi').optional(),
+  notes: z.string().max(5000).nullable().optional(),
+  terms_conditions: z.string().max(10000).nullable().optional(),
+  discount_amount: z.coerce.number().nonnegative().optional(),
+  discount_percentage: z.coerce.number().min(0).max(100).optional(),
+  tax_percentage: z.coerce.number().min(0).max(100).optional(),
+  payment_account_id: z.string().nullable().optional(),
+  payment_account_label: z.string().nullable().optional(),
+  payment_bank_name: z.string().nullable().optional(),
+  payment_account_number: z.string().nullable().optional(),
+  payment_account_name: z.string().nullable().optional(),
+}).strict()
+
+export const ReviseInvoiceLineItemSchema = BlankInvoiceLineItemSchema.extend({
+  item_id: z.string().uuid().optional(),
+  service_type: z.string().nullable().optional(),
+  addon_id: z.string().nullable().optional(),
+  order_addon_id: z.string().nullable().optional(),
+  line_order: z.coerce.number().int().nonnegative().optional(),
+})
+
+export const ReviseInvoiceSchema = z.object({
+  header: ReviseInvoiceHeaderSchema.default({}),
+  items: z.array(ReviseInvoiceLineItemSchema).min(1, 'Minimal satu item invoice'),
+})
+
 export type CreateBlankInvoiceInput = z.infer<typeof CreateBlankInvoiceSchema>
 export type BlankInvoiceLineItem = z.infer<typeof BlankInvoiceLineItemSchema>
+export type ReviseInvoiceHeader = z.infer<typeof ReviseInvoiceHeaderSchema>
+export type ReviseInvoiceLineItem = z.infer<typeof ReviseInvoiceLineItemSchema>
+export type ReviseInvoiceInput = z.infer<typeof ReviseInvoiceSchema>
 
 // ============================================================================
 // TECHNICIAN SCHEMAS

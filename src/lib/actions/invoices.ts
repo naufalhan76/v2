@@ -5,6 +5,11 @@ import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
 import { isOverdue, type InvoiceStatus } from '@/lib/invoice-status'
 import { canReviseInvoice, getInvoiceSource, type InvoiceSource, REVISABLE_STATUSES } from '@/lib/invoice-utils'
+import { getInvoiceConfig } from '@/lib/actions/invoice-config'
+import {
+  CreateBlankInvoiceSchema,
+  type CreateBlankInvoiceInput,
+} from '@/app/api/schemas'
 
 export type { InvoiceStatus }
 export type { InvoiceSource }
@@ -15,15 +20,19 @@ export interface Invoice {
   invoice_number: string
   invoice_type: 'PROFORMA' | 'FINAL'
   source?: InvoiceSource
-  order_id: string
-  customer_id: string
+  order_id: string | null
+  customer_id: string | null
+  customer_name_override?: string | null
+  customer_phone_override?: string | null
+  customer_email_override?: string | null
+  customer_address_override?: string | null
   invoice_date: string
   due_date: string
-  service_type: string
-  service_name: string
+  service_type: string | null
+  service_name: string | null
   base_service_quantity: number
-  base_service_price: number
-  base_service_total: number
+  base_service_price: number | null
+  base_service_total: number | null
   addons_subtotal: number
   subtotal: number
   discount_amount: number
@@ -45,6 +54,7 @@ export interface Invoice {
     customer_name: string
     phone_number: string
     email: string
+    billing_address?: string | null
   }
   orders?: {
     order_id: string
@@ -106,6 +116,156 @@ export interface CreateInvoiceInput {
   payment_account_number?: string
   payment_account_name?: string
   tax_percentage?: number  // Tax from selected payment account
+}
+
+function withBlankInvoiceCustomer<T extends Invoice>(invoice: T): T {
+  if (invoice.customers || invoice.source !== 'BLANK') {
+    return invoice
+  }
+
+  return {
+    ...invoice,
+    customers: {
+      customer_id: invoice.customer_id || '',
+      customer_name: invoice.customer_name_override || 'Customer',
+      phone_number: invoice.customer_phone_override || '',
+      email: invoice.customer_email_override || '',
+      billing_address: invoice.customer_address_override || null,
+    },
+  } as T
+}
+
+export const ALLOWED_REVISION_FIELDS = [
+  'customer_id',
+  'customer_name_override',
+  'customer_phone_override',
+  'customer_email_override',
+  'customer_address_override',
+  'due_date',
+  'notes',
+  'terms_conditions',
+  'discount_amount',
+  'discount_percentage',
+  'tax_percentage',
+  'payment_account_id',
+  'payment_account_label',
+  'payment_bank_name',
+  'payment_account_number',
+  'payment_account_name',
+] as const
+
+type AllowedRevisionField = (typeof ALLOWED_REVISION_FIELDS)[number]
+
+export type RevisionHeaderUpdates = Partial<Record<AllowedRevisionField, string | number | null>> &
+  Record<string, unknown>
+
+export interface ReviseInvoiceItemInput {
+  item_id?: string
+  item_type?: 'BASE_SERVICE' | 'ADDON'
+  description: string
+  quantity: number
+  unit_price: number
+  service_type?: string | null
+  addon_id?: string | null
+  order_addon_id?: string | null
+  line_order?: number
+}
+
+type InvoiceTotals = {
+  subtotal: number
+  addons_subtotal: number
+  tax_amount: number
+  total_amount: number
+}
+
+type InvoiceAdjustments = {
+  discount_amount: number | null
+  discount_percentage: number | null
+  tax_percentage: number | null
+}
+
+const allowedRevisionFieldSet = new Set<string>(ALLOWED_REVISION_FIELDS)
+
+function pickAllowedRevisionUpdates(updates: RevisionHeaderUpdates): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(updates).filter(([key]) => allowedRevisionFieldSet.has(key))
+  )
+}
+
+function calculateInvoiceTotals(
+  subtotal: number,
+  adjustments: InvoiceAdjustments
+): InvoiceTotals {
+  const discountAmount = adjustments.discount_amount || 0
+  const taxPercentage = adjustments.tax_percentage ?? 0
+  const taxableBase = Math.max(0, subtotal - discountAmount)
+  const taxAmount = (taxableBase * taxPercentage) / 100
+
+  return {
+    subtotal,
+    addons_subtotal: subtotal,
+    tax_amount: taxAmount,
+    total_amount: taxableBase + taxAmount,
+  }
+}
+
+async function calculateTotalsFromInvoiceItems(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  invoiceId: string,
+  adjustments: InvoiceAdjustments
+): Promise<InvoiceTotals> {
+  const { data: items, error } = await supabase
+    .from('invoice_items')
+    .select('quantity, unit_price, total_price')
+    .eq('invoice_id', invoiceId)
+
+  if (error) {
+    logger.error('Error fetching invoice items for totals:', error)
+    throw new Error('Gagal menghitung ulang total invoice')
+  }
+
+  const subtotal = (items || []).reduce((sum, item) => {
+    const totalPrice = item.total_price ?? item.quantity * item.unit_price
+    return sum + totalPrice
+  }, 0)
+
+  return calculateInvoiceTotals(subtotal, adjustments)
+}
+
+function normalizeRevisionItems(
+  invoiceId: string,
+  items: ReviseInvoiceItemInput[]
+): Array<Omit<InvoiceItem, 'item_id' | 'created_at'>> {
+  if (items.length === 0) {
+    throw new Error('Minimal satu item invoice')
+  }
+
+  return items.map((item, index) => {
+    const description = item.description?.trim()
+
+    if (!description) {
+      throw new Error('Deskripsi item wajib diisi')
+    }
+    if (!(item.quantity > 0)) {
+      throw new Error('Kuantitas item harus lebih dari 0')
+    }
+    if (item.unit_price < 0) {
+      throw new Error('Harga satuan tidak boleh negatif')
+    }
+
+    return {
+      invoice_id: invoiceId,
+      item_type: item.item_type || 'BASE_SERVICE',
+      description,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      total_price: item.quantity * item.unit_price,
+      service_type: item.service_type || null,
+      addon_id: item.addon_id || null,
+      order_addon_id: item.order_addon_id || null,
+      line_order: item.line_order ?? index,
+    }
+  })
 }
 
 export interface OrderItemForInvoice {
@@ -307,11 +467,16 @@ export async function getInvoices(filters?: {
     throw new Error('Gagal memuat data invoice')
   }
 
-  let invoicesWithOverdue = (data || []).map(invoice => {
-    if (isOverdue(invoice)) {
-      return { ...invoice, source: getInvoiceSource(invoice), computed_status: 'OVERDUE' }
+  let invoicesWithOverdue: Invoice[] = (data || []).map((invoice): Invoice => {
+    const invoiceWithCustomer = withBlankInvoiceCustomer({
+      ...invoice,
+      source: getInvoiceSource(invoice),
+    } as Invoice)
+
+    if (isOverdue(invoiceWithCustomer)) {
+      return { ...invoiceWithCustomer, computed_status: 'OVERDUE' as InvoiceStatus }
     }
-    return { ...invoice, source: getInvoiceSource(invoice), computed_status: invoice.status }
+    return { ...invoiceWithCustomer, computed_status: invoiceWithCustomer.status as InvoiceStatus }
   })
 
   if (filters?.status === 'OVERDUE') {
@@ -383,11 +548,14 @@ export async function getInvoiceById(invoiceId: string): Promise<{
     logger.error('Error fetching invoice details:', itemsError || paymentsError)
   }
 
-  let invoiceWithOverdue = invoice
-  if (isOverdue(invoice)) {
-    invoiceWithOverdue = { ...invoice, source: getInvoiceSource(invoice), computed_status: 'OVERDUE' }
+  let invoiceWithOverdue = withBlankInvoiceCustomer({
+    ...invoice,
+    source: getInvoiceSource(invoice),
+  } as Invoice)
+  if (isOverdue(invoiceWithOverdue)) {
+    invoiceWithOverdue = { ...invoiceWithOverdue, computed_status: 'OVERDUE' }
   } else {
-    invoiceWithOverdue = { ...invoice, source: getInvoiceSource(invoice), computed_status: invoice.status }
+    invoiceWithOverdue = { ...invoiceWithOverdue, computed_status: invoiceWithOverdue.status }
   }
 
   // Fetch detailed order items with AC unit information
@@ -560,50 +728,6 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
 }
 
 /**
- * Input for creating a blank (manual / standalone) invoice that is not tied to
- * an order. Mirrors the shape of `CreateBlankInvoiceSchema` in
- * `src/app/api/schemas/index.ts` — keep the two in sync.
- */
-export interface CreateBlankInvoiceInput {
-  invoice_type?: 'PROFORMA' | 'FINAL'
-
-  // Customer — link or manual snapshot. customer_name is always required.
-  customer_id?: string
-  customer_name: string
-  customer_phone?: string
-  customer_email?: string
-  customer_address?: string
-
-  // Dates
-  invoice_date?: string // YYYY-MM-DD; defaults to today
-  due_date: string     // YYYY-MM-DD; required
-
-  // Line items
-  items: Array<{
-    item_type?: 'BASE_SERVICE' | 'ADDON'
-    description: string
-    quantity: number
-    unit_price: number
-  }>
-
-  // Adjustments
-  discount_amount?: number
-  discount_percentage?: number
-  tax_percentage?: number
-
-  // Notes / terms (terms default to invoice-config template if omitted)
-  notes?: string
-  terms_conditions?: string
-
-  // Payment account snapshot (same fields as createInvoice)
-  payment_account_id?: string
-  payment_account_label?: string
-  payment_bank_name?: string
-  payment_account_number?: string
-  payment_account_name?: string
-}
-
-/**
  * Create a blank invoice — an invoice that is NOT linked to an order.
  *
  * Reuses the same numbering function (`generate_invoice_number` RPC), the same
@@ -623,6 +747,7 @@ export interface CreateBlankInvoiceInput {
 export async function createBlankInvoice(
   input: CreateBlankInvoiceInput
 ): Promise<Invoice> {
+  const parsedInput = CreateBlankInvoiceSchema.parse(input)
   const supabase = await createClient()
 
   // Auth
@@ -633,73 +758,46 @@ export async function createBlankInvoice(
     throw new Error('Unauthorized')
   }
 
-  // Validate basics that the Zod schema would also enforce.
-  // Server action may be called directly (typed input), so re-check here.
-  const trimmedName = (input.customer_name || '').trim()
-  if (!trimmedName) {
-    throw new Error('Nama pelanggan wajib diisi')
-  }
-  if (!input.due_date) {
-    throw new Error('Tanggal jatuh tempo wajib diisi')
-  }
-  if (!input.items || input.items.length === 0) {
-    throw new Error('Minimal satu item invoice')
-  }
-  for (const item of input.items) {
-    if (!item.description || !item.description.trim()) {
-      throw new Error('Deskripsi item wajib diisi')
-    }
-    if (!(item.quantity > 0)) {
-      throw new Error('Kuantitas item harus lebih dari 0')
-    }
-    if (item.unit_price < 0) {
-      throw new Error('Harga satuan tidak boleh negatif')
-    }
-  }
-
   // Numbering — reuse existing RPC. No order_id needed.
   const invoiceNumber = await generateInvoiceNumber()
 
   // Pull config for defaults (terms template, due-days fallback, tax fallback)
-  const { data: config } = await supabase
-    .from('invoice_configuration')
-    .select('terms_conditions_template, default_due_days, default_tax_percentage')
-    .eq('is_active', true)
-    .single()
+  const config = await getInvoiceConfig()
 
   // Resolve dates
   const todayISO = new Date().toISOString().split('T')[0]
-  const invoiceDate = input.invoice_date || todayISO
-  // due_date is required by validation above; trust the caller's value.
-  const dueDate = input.due_date
+  const invoiceDate = parsedInput.invoice_date || todayISO
+  const dueDate = parsedInput.due_date
 
   // Totals — blank invoices have no separate base service; everything is items.
-  const subtotal = input.items.reduce(
+  const subtotal = parsedInput.items.reduce(
     (sum, item) => sum + item.quantity * item.unit_price,
     0
   )
-  const discountAmount = input.discount_amount || 0
-  const discountPercentage = input.discount_percentage || 0
+  const discountPercentage = parsedInput.discount_percentage || 0
+  const discountAmount = parsedInput.discount_amount ?? (subtotal * discountPercentage) / 100
   const taxPercentage =
-    input.tax_percentage ?? config?.default_tax_percentage ?? 11
+    parsedInput.tax_percentage ?? config?.default_tax_percentage ?? 11
   const taxableBase = Math.max(0, subtotal - discountAmount)
   const taxAmount = (taxableBase * taxPercentage) / 100
   const totalAmount = taxableBase + taxAmount
+  const hasLinkedCustomer = Boolean(parsedInput.customer_id)
 
   // Build insert payload. Leaves order_id / customer_id / base_service_* NULL
   // when appropriate; relies on migration 012 having loosened NOT NULLs.
   const insertPayload: Record<string, unknown> = {
     invoice_number: invoiceNumber,
-    invoice_type: input.invoice_type || 'FINAL',
+    invoice_type: parsedInput.invoice_type,
     source: 'BLANK',
     order_id: null,
-    customer_id: input.customer_id || null,
+    customer_id: parsedInput.customer_id || null,
 
-    // Manual customer snapshot
-    customer_name_override: trimmedName,
-    customer_phone_override: input.customer_phone?.trim() || null,
-    customer_email_override: input.customer_email?.trim() || null,
-    customer_address_override: input.customer_address?.trim() || null,
+    // Manual customer snapshot. When linking an existing customer, keep the
+    // customer FK as the source of truth and do not duplicate overrides.
+    customer_name_override: hasLinkedCustomer ? null : parsedInput.customer_name,
+    customer_phone_override: hasLinkedCustomer ? null : parsedInput.customer_phone || null,
+    customer_email_override: hasLinkedCustomer ? null : parsedInput.customer_email || null,
+    customer_address_override: hasLinkedCustomer ? null : parsedInput.customer_address || null,
 
     invoice_date: invoiceDate,
     due_date: dueDate,
@@ -708,8 +806,8 @@ export async function createBlankInvoice(
     service_type: null,
     service_name: null,
     base_service_quantity: 0,
-    base_service_price: 0,
-    base_service_total: 0,
+    base_service_price: null,
+    base_service_total: null,
 
     addons_subtotal: subtotal,
     subtotal,
@@ -723,15 +821,15 @@ export async function createBlankInvoice(
     payment_status: 'UNPAID',
     paid_amount: 0,
 
-    notes: input.notes?.trim() || null,
+    notes: parsedInput.notes?.trim() || null,
     terms_conditions:
-      input.terms_conditions?.trim() || config?.terms_conditions_template || null,
+      parsedInput.terms_conditions?.trim() || config?.terms_conditions_template || null,
 
-    payment_account_id: input.payment_account_id || null,
-    payment_account_label: input.payment_account_label || null,
-    payment_bank_name: input.payment_bank_name || null,
-    payment_account_number: input.payment_account_number || null,
-    payment_account_name: input.payment_account_name || null,
+    payment_account_id: parsedInput.payment_account_id || null,
+    payment_account_label: parsedInput.payment_account_label || null,
+    payment_bank_name: parsedInput.payment_bank_name || null,
+    payment_account_number: parsedInput.payment_account_number || null,
+    payment_account_name: parsedInput.payment_account_name || null,
 
     created_by: user.id,
   }
@@ -748,7 +846,7 @@ export async function createBlankInvoice(
   }
 
   // Insert line items
-  const itemsToInsert = input.items.map((item, index) => ({
+  const itemsToInsert = parsedInput.items.map((item, index) => ({
     invoice_id: invoice.invoice_id,
     item_type: item.item_type || 'BASE_SERVICE',
     description: item.description.trim(),
@@ -773,25 +871,23 @@ export async function createBlankInvoice(
   }
 
   revalidatePath('/dashboard/keuangan/invoices')
-  return { ...invoice, source: getInvoiceSource(invoice) }
+  return { ...invoice, source: 'BLANK' }
 }
 
 /**
- * Update invoice
+ * Update invoice header through the revision-safe field allowlist only.
+ * Client-provided immutable/accounting fields (status, payment_status,
+ * paid_amount, invoice_number, order_id, source, totals, etc.) are ignored.
  */
 export async function updateInvoice(
   invoiceId: string,
-  updates: Partial<CreateInvoiceInput> & {
-    status?: string
-    notes?: string
-    terms_conditions?: string
-  }
+  updates: RevisionHeaderUpdates
 ): Promise<Invoice> {
   const supabase = await createClient()
 
   const { data: currentInvoice, error: fetchError } = await supabase
     .from('invoices')
-    .select('status, order_id')
+    .select('status, order_id, discount_amount, discount_percentage, tax_percentage')
     .eq('invoice_id', invoiceId)
     .single()
 
@@ -803,8 +899,44 @@ export async function updateInvoice(
     throw new Error('Invoice hanya dapat direvisi saat berstatus DRAFT atau SENT')
   }
 
-  const { invoice_number: _ignoredInvoiceNumber, ...safeUpdates } = updates as Partial<CreateInvoiceInput> & {
-    invoice_number?: string
+  const { invoice_number: _ignoredInvoiceNumber } = updates
+  void _ignoredInvoiceNumber
+
+  const safeUpdates = pickAllowedRevisionUpdates(updates)
+  const shouldRecomputeTotals =
+    'discount_amount' in safeUpdates ||
+    'discount_percentage' in safeUpdates ||
+    'tax_percentage' in safeUpdates
+
+  if (shouldRecomputeTotals) {
+    Object.assign(
+      safeUpdates,
+      await calculateTotalsFromInvoiceItems(supabase, invoiceId, {
+        discount_amount:
+          (safeUpdates.discount_amount as number | null | undefined) ??
+          currentInvoice.discount_amount,
+        discount_percentage:
+          (safeUpdates.discount_percentage as number | null | undefined) ??
+          currentInvoice.discount_percentage,
+        tax_percentage:
+          (safeUpdates.tax_percentage as number | null | undefined) ??
+          currentInvoice.tax_percentage,
+      })
+    )
+  }
+
+  if (Object.keys(safeUpdates).length === 0) {
+    const { data: unchangedInvoice, error: unchangedError } = await supabase
+      .from('invoices')
+      .select('*')
+      .eq('invoice_id', invoiceId)
+      .single()
+
+    if (unchangedError || !unchangedInvoice) {
+      throw new Error('Invoice tidak ditemukan')
+    }
+
+    return { ...unchangedInvoice, source: getInvoiceSource(unchangedInvoice) }
   }
 
   const { data, error } = await supabase
@@ -814,6 +946,7 @@ export async function updateInvoice(
       updated_at: new Date().toISOString(),
     })
     .eq('invoice_id', invoiceId)
+    .in('status', [...REVISABLE_STATUSES])
     .select()
     .single()
 
@@ -825,6 +958,117 @@ export async function updateInvoice(
   revalidatePath('/dashboard/keuangan/invoices')
   revalidatePath(`/dashboard/keuangan/invoices/${invoiceId}`)
   return { ...data, source: getInvoiceSource(data) }
+}
+
+/**
+ * Replace revision-safe invoice line items and recompute invoice totals from DB data.
+ * Uses compensating restore because supabase-js does not expose multi-statement
+ * Postgres transactions directly; for full atomicity this should be moved into an RPC.
+ */
+export async function reviseInvoiceItems(
+  invoiceId: string,
+  items: ReviseInvoiceItemInput[]
+): Promise<Invoice> {
+  const supabase = await createClient()
+
+  const { data: currentInvoice, error: fetchError } = await supabase
+    .from('invoices')
+    .select('status, discount_amount, discount_percentage, tax_percentage, subtotal, addons_subtotal, tax_amount, total_amount')
+    .eq('invoice_id', invoiceId)
+    .single()
+
+  if (fetchError || !currentInvoice) {
+    throw new Error('Invoice tidak ditemukan')
+  }
+
+  if (!canReviseInvoice(currentInvoice.status)) {
+    throw new Error('Invoice hanya dapat direvisi saat berstatus DRAFT atau SENT')
+  }
+
+  const replacementItems = normalizeRevisionItems(invoiceId, items)
+
+  const { data: existingItems, error: existingItemsError } = await supabase
+    .from('invoice_items')
+    .select('*')
+    .eq('invoice_id', invoiceId)
+    .order('line_order', { ascending: true })
+
+  if (existingItemsError) {
+    logger.error('Error fetching current invoice items:', existingItemsError)
+    throw new Error('Gagal memuat item invoice')
+  }
+
+  const restoreItems = (existingItems || []).map(({ item_id: _itemId, created_at: _createdAt, ...item }) => item)
+  const previousTotals = {
+    subtotal: currentInvoice.subtotal,
+    addons_subtotal: currentInvoice.addons_subtotal,
+    tax_amount: currentInvoice.tax_amount,
+    total_amount: currentInvoice.total_amount,
+  }
+
+  const { error: deleteError } = await supabase
+    .from('invoice_items')
+    .delete()
+    .eq('invoice_id', invoiceId)
+
+  if (deleteError) {
+    logger.error('Error deleting invoice items for revision:', deleteError)
+    throw new Error('Gagal merevisi item invoice')
+  }
+
+  const { error: insertError } = await supabase
+    .from('invoice_items')
+    .insert(replacementItems)
+
+  if (insertError) {
+    logger.error('Error inserting revised invoice items:', insertError)
+    if (restoreItems.length > 0) {
+      await supabase.from('invoice_items').insert(restoreItems)
+    }
+    throw new Error('Gagal menyimpan item invoice')
+  }
+
+  const totals = calculateInvoiceTotals(
+    replacementItems.reduce((sum, item) => sum + item.total_price, 0),
+    currentInvoice
+  )
+
+  const { data: updatedInvoice, error: updateError } = await supabase
+    .from('invoices')
+    .update({
+      ...totals,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('invoice_id', invoiceId)
+    .in('status', [...REVISABLE_STATUSES])
+    .select()
+    .single()
+
+  if (updateError || !updatedInvoice) {
+    logger.error('Error updating invoice totals after item revision:', updateError)
+    await supabase.from('invoice_items').delete().eq('invoice_id', invoiceId)
+    if (restoreItems.length > 0) {
+      await supabase.from('invoice_items').insert(restoreItems)
+    }
+    await supabase
+      .from('invoices')
+      .update({ ...previousTotals, updated_at: new Date().toISOString() })
+      .eq('invoice_id', invoiceId)
+    throw new Error('Gagal menghitung ulang total invoice')
+  }
+
+  revalidatePath('/dashboard/keuangan/invoices')
+  revalidatePath(`/dashboard/keuangan/invoices/${invoiceId}`)
+  return { ...updatedInvoice, source: getInvoiceSource(updatedInvoice) }
+}
+
+export async function reviseInvoice(
+  invoiceId: string,
+  headerUpdates: RevisionHeaderUpdates,
+  items: ReviseInvoiceItemInput[]
+): Promise<Invoice> {
+  await updateInvoice(invoiceId, headerUpdates)
+  return reviseInvoiceItems(invoiceId, items)
 }
 
 /**

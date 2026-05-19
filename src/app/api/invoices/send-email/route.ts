@@ -77,7 +77,11 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true)
       .single()
 
-    if (!invoice.customers?.email) {
+    const customerName = invoice.customers?.customer_name || invoice.customer_name_override || 'Customer'
+    const customerPhone = invoice.customers?.phone_number || invoice.customer_phone_override || ''
+    const customerEmail = invoice.customers?.email || invoice.customer_email_override || ''
+
+    if (!customerEmail) {
       return NextResponse.json(
         { error: 'Customer email not found' },
         { status: 400 }
@@ -158,9 +162,9 @@ export async function POST(request: NextRequest) {
                 <tr>
                   <td style="width: 50%; vertical-align: top;">
                     <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; font-weight: bold;">Tagihan Kepada</p>
-                    <p style="margin: 0 0 5px 0; color: #111827; font-size: 18px; font-weight: bold;">${invoice.customers.customer_name}</p>
-                    ${invoice.customers.phone_number ? `<p style="margin: 0 0 5px 0; color: #6b7280; font-size: 14px;">${formatPhone(invoice.customers.phone_number)}</p>` : ''}
-                    <p style="margin: 0; color: #6b7280; font-size: 14px;">${invoice.customers.email}</p>
+                    <p style="margin: 0 0 5px 0; color: #111827; font-size: 18px; font-weight: bold;">${customerName}</p>
+                    ${customerPhone ? `<p style="margin: 0 0 5px 0; color: #6b7280; font-size: 14px;">${formatPhone(customerPhone)}</p>` : ''}
+                    <p style="margin: 0; color: #6b7280; font-size: 14px;">${customerEmail}</p>
                   </td>
                   <td style="width: 50%; vertical-align: top; text-align: right;">
                     <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 6px; padding: 15px;">
@@ -317,7 +321,7 @@ export async function POST(request: NextRequest) {
     // Send email
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: `${companyName} <${companyEmail}>`,
-      to: invoice.customers.email,
+      to: customerEmail,
       subject: `Invoice ${invoice.invoice_number} - ${companyName}`,
       html: htmlEmail,
     })
@@ -335,7 +339,7 @@ export async function POST(request: NextRequest) {
       await logInvoiceCommunication({
         invoiceId,
         type: 'EMAIL',
-        recipient: invoice.customers.email,
+        recipient: customerEmail,
         externalId: emailData?.id,
         status: 'sent',
       })

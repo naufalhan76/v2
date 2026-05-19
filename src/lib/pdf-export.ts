@@ -36,6 +36,9 @@ export function exportInvoiceToPDF({
   const balanceDue = totalAmount - amountPaid
   const displayStatus = invoice.computed_status ?? invoice.status
   const displayStatusLabel = getInvoiceStatusLabel(displayStatus)
+  const customerName = invoice.customers?.customer_name || invoice.customer_name_override || 'N/A'
+  const customerPhone = invoice.customers?.phone_number || invoice.customer_phone_override || ''
+  const customerEmail = invoice.customers?.email || invoice.customer_email_override || ''
 
   // Get company data from config or use defaults
   const companyName = invoiceConfig?.company_name || 'AC Service Dashboard'
@@ -44,7 +47,7 @@ export function exportInvoiceToPDF({
   const companyEmail = invoiceConfig?.company_email || 'info@acservice.com'
   const companyWebsite = invoiceConfig?.company_website || null
   const npwp = invoiceConfig?.npwp || null
-  const taxPercentage = invoiceConfig?.default_tax_percentage || 11
+  const taxPercentage = invoice.tax_percentage ?? invoiceConfig?.default_tax_percentage ?? 11
   const termsTemplate = invoiceConfig?.terms_conditions_template || null
 
   const bankAccounts: BankAccount[] = parseBankAccounts(invoiceConfig?.bank_accounts)
@@ -134,18 +137,18 @@ export function exportInvoiceToPDF({
   pdf.setTextColor(15, 23, 42) // slate-900
   pdf.setFontSize(11)
   yPos += 5
-  pdf.text(invoice.customers?.customer_name || 'N/A', margin, yPos)
+  pdf.text(customerName, margin, yPos)
 
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(8)
   pdf.setTextColor(71, 85, 105)
   yPos += 4
-  if (invoice.customers?.phone_number) {
-    pdf.text(`Tel: ${formatPhone(invoice.customers.phone_number)}`, margin, yPos)
+  if (customerPhone) {
+    pdf.text(`Tel: ${formatPhone(customerPhone)}`, margin, yPos)
     yPos += 4
   }
-  if (invoice.customers?.email) {
-    pdf.text(`Email: ${invoice.customers.email}`, margin, yPos)
+  if (customerEmail) {
+    pdf.text(`Email: ${customerEmail}`, margin, yPos)
   }
 
   // Right side - Invoice Details Box
