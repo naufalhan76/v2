@@ -755,6 +755,28 @@ export default function InvoiceDetailPage() {
 
   const remainingAmount = invoice.total_amount - invoice.paid_amount
   const displayStatus = invoice.computed_status ?? invoice.status
+  const isBlankInvoice = invoice.source === 'BLANK'
+  const customerDisplayName = isBlankInvoice
+    ? invoice.customer_name_override ?? invoice.customers?.customer_name ?? '—'
+    : invoice.customers?.customer_name ?? invoice.customer_name_override ?? '—'
+  const customerDisplayPhone = isBlankInvoice
+    ? invoice.customer_phone_override ?? invoice.customers?.phone_number ?? ''
+    : invoice.customers?.phone_number ?? invoice.customer_phone_override ?? ''
+  const customerDisplayEmail = isBlankInvoice
+    ? invoice.customer_email_override ?? invoice.customers?.email ?? ''
+    : invoice.customers?.email ?? invoice.customer_email_override ?? ''
+  const customerDisplayAddress = isBlankInvoice
+    ? invoice.customer_address_override ?? invoice.customers?.billing_address ?? ''
+    : invoice.customers?.billing_address ?? invoice.customer_address_override ?? ''
+  const displayOrderId = invoice.order_id ?? '—'
+  const revisionHelpMessage =
+    invoice.status === 'PAID'
+      ? 'Invoice telah dibayar — tidak dapat direvisi'
+      : invoice.status === 'OVERDUE'
+      ? 'Invoice melewati jatuh tempo — tidak dapat direvisi'
+      : invoice.status === 'CANCELLED'
+      ? 'Invoice dibatalkan — tidak dapat direvisi'
+      : ''
 
   return (
     <div className="space-y-6">
@@ -822,6 +844,11 @@ export default function InvoiceDetailPage() {
               <Pencil className="mr-2 h-4 w-4" />
               Edit / Revisi
             </Button>
+          )}
+          {!isRevisionMode && revisionHelpMessage && (
+            <p className="max-w-[18rem] text-xs leading-relaxed text-muted-foreground">
+              {revisionHelpMessage}
+            </p>
           )}
           {isRevisionMode && (
             <>
@@ -1038,14 +1065,20 @@ export default function InvoiceDetailPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground">Customer</Label>
-                      <p className="font-semibold">{invoice.customers?.customer_name}</p>
+                      <p className="font-semibold">{customerDisplayName}</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatPhone(invoice.customers?.phone_number)}
+                        {customerDisplayPhone ? formatPhone(customerDisplayPhone) : '—'}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {customerDisplayEmail || '—'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {customerDisplayAddress || '—'}
                       </p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Order ID</Label>
-                      <p className="font-mono font-semibold">{invoice.order_id}</p>
+                      <p className="font-mono font-semibold">{displayOrderId}</p>
                     </div>
                   </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -87,9 +87,36 @@ export default function InvoicesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [paymentFilter, setPaymentFilter] = useState('ALL')
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'ORDER_LINKED' | 'BLANK'>('all')
+
+  const handleStatusFilterChange = (value: string) => setStatusFilter(value)
+  const handlePaymentFilterChange = (value: string) => setPaymentFilter(value)
+  const handleSourceFilterChange = (value: string) => {
+    if (value === 'all' || value === 'ORDER_LINKED' || value === 'BLANK') {
+      setSourceFilter(value)
+    }
+  }
+
+  const invoicesFiltered = useMemo(() => {
+    if (sourceFilter === 'all') {
+      return invoicesBase
+    }
+
+    return invoicesBase.filter((invoice) => {
+      if (sourceFilter === 'BLANK') {
+        return invoice.source === 'BLANK'
+      }
+
+      if (sourceFilter === 'ORDER_LINKED') {
+        return invoice.source !== 'BLANK'
+      }
+
+      return true
+    })
+  }, [invoicesBase, sourceFilter])
 
   // Apply sorting
-  const { sortedData: invoicesSorted, sortConfig, requestSort } = useSortableTable(invoicesBase as unknown as Record<string, unknown>[], {
+  const { sortedData: invoicesSorted, sortConfig, requestSort } = useSortableTable(invoicesFiltered as unknown as Record<string, unknown>[], {
     key: 'invoice_number',
     direction: 'desc'
   })
@@ -238,7 +265,7 @@ export default function InvoicesPage() {
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -252,7 +279,7 @@ export default function InvoicesPage() {
                 <SelectItem value="CANCELLED">Dibatalkan</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+            <Select value={paymentFilter} onValueChange={handlePaymentFilterChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Pembayaran" />
               </SelectTrigger>
@@ -261,6 +288,16 @@ export default function InvoicesPage() {
                 <SelectItem value="UNPAID">Belum Dibayar</SelectItem>
                 <SelectItem value="PARTIAL">Dibayar Sebagian</SelectItem>
                 <SelectItem value="PAID">Lunas</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sourceFilter} onValueChange={handleSourceFilterChange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sumber" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Sumber</SelectItem>
+                <SelectItem value="ORDER_LINKED">Transaksi</SelectItem>
+                <SelectItem value="BLANK">Kosong</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={handleSearch}>Cari</Button>
@@ -347,11 +384,13 @@ export default function InvoicesPage() {
                       <TableCell>
                         <div>
                           <div className="font-medium">
-                            {invoice.customers?.customer_name}
+                            {invoice.customers?.customer_name ?? invoice.customer_name_override ?? '—'}
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {formatPhone(invoice.customers?.phone_number)}
-                          </div>
+                          {(invoice.customers?.phone_number ?? invoice.customer_phone_override) ? (
+                            <div className="text-sm text-muted-foreground">
+                              {formatPhone(invoice.customers?.phone_number ?? invoice.customer_phone_override)}
+                            </div>
+                          ) : null}
                         </div>
                       </TableCell>
                       <TableCell>

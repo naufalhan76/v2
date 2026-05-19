@@ -13,7 +13,6 @@ import {
 
 export type { InvoiceStatus }
 export type { InvoiceSource }
-export { REVISABLE_STATUSES, canReviseInvoice }
 
 export interface Invoice {
   invoice_id: string
@@ -135,7 +134,7 @@ function withBlankInvoiceCustomer<T extends Invoice>(invoice: T): T {
   } as T
 }
 
-export const ALLOWED_REVISION_FIELDS = [
+const ALLOWED_REVISION_FIELDS = [
   'customer_id',
   'customer_name_override',
   'customer_phone_override',
