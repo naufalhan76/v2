@@ -195,7 +195,9 @@ function calculateInvoiceTotals(
   subtotal: number,
   adjustments: InvoiceAdjustments
 ): InvoiceTotals {
-  const discountAmount = adjustments.discount_amount || 0
+  const discountPercentage = adjustments.discount_percentage ?? 0
+  const discountAmount =
+    adjustments.discount_amount ?? (subtotal * discountPercentage) / 100
   const taxPercentage = adjustments.tax_percentage ?? 0
   const taxableBase = Math.max(0, subtotal - discountAmount)
   const taxAmount = (taxableBase * taxPercentage) / 100
