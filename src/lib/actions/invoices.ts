@@ -4,13 +4,17 @@ import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
 import { isOverdue, type InvoiceStatus } from '@/lib/invoice-status'
+import { canReviseInvoice, getInvoiceSource, type InvoiceSource, REVISABLE_STATUSES } from '@/lib/invoice-utils'
 
 export type { InvoiceStatus }
+export type { InvoiceSource }
+export { REVISABLE_STATUSES, canReviseInvoice }
 
 export interface Invoice {
   invoice_id: string
   invoice_number: string
   invoice_type: 'PROFORMA' | 'FINAL'
+  source?: InvoiceSource
   order_id: string
   customer_id: string
   invoice_date: string
@@ -305,9 +309,9 @@ export async function getInvoices(filters?: {
 
   let invoicesWithOverdue = (data || []).map(invoice => {
     if (isOverdue(invoice)) {
-      return { ...invoice, computed_status: 'OVERDUE' }
+      return { ...invoice, source: getInvoiceSource(invoice), computed_status: 'OVERDUE' }
     }
-    return { ...invoice, computed_status: invoice.status }
+    return { ...invoice, source: getInvoiceSource(invoice), computed_status: invoice.status }
   })
 
   if (filters?.status === 'OVERDUE') {
@@ -381,9 +385,9 @@ export async function getInvoiceById(invoiceId: string): Promise<{
 
   let invoiceWithOverdue = invoice
   if (isOverdue(invoice)) {
-    invoiceWithOverdue = { ...invoice, computed_status: 'OVERDUE' }
+    invoiceWithOverdue = { ...invoice, source: getInvoiceSource(invoice), computed_status: 'OVERDUE' }
   } else {
-    invoiceWithOverdue = { ...invoice, computed_status: invoice.status }
+    invoiceWithOverdue = { ...invoice, source: getInvoiceSource(invoice), computed_status: invoice.status }
   }
 
   // Fetch detailed order items with AC unit information
@@ -552,7 +556,224 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
   }
 
   revalidatePath('/dashboard/keuangan/invoices')
-  return invoice
+  return { ...invoice, source: getInvoiceSource(invoice) }
+}
+
+/**
+ * Input for creating a blank (manual / standalone) invoice that is not tied to
+ * an order. Mirrors the shape of `CreateBlankInvoiceSchema` in
+ * `src/app/api/schemas/index.ts` — keep the two in sync.
+ */
+export interface CreateBlankInvoiceInput {
+  invoice_type?: 'PROFORMA' | 'FINAL'
+
+  // Customer — link or manual snapshot. customer_name is always required.
+  customer_id?: string
+  customer_name: string
+  customer_phone?: string
+  customer_email?: string
+  customer_address?: string
+
+  // Dates
+  invoice_date?: string // YYYY-MM-DD; defaults to today
+  due_date: string     // YYYY-MM-DD; required
+
+  // Line items
+  items: Array<{
+    item_type?: 'BASE_SERVICE' | 'ADDON'
+    description: string
+    quantity: number
+    unit_price: number
+  }>
+
+  // Adjustments
+  discount_amount?: number
+  discount_percentage?: number
+  tax_percentage?: number
+
+  // Notes / terms (terms default to invoice-config template if omitted)
+  notes?: string
+  terms_conditions?: string
+
+  // Payment account snapshot (same fields as createInvoice)
+  payment_account_id?: string
+  payment_account_label?: string
+  payment_bank_name?: string
+  payment_account_number?: string
+  payment_account_name?: string
+}
+
+/**
+ * Create a blank invoice — an invoice that is NOT linked to an order.
+ *
+ * Reuses the same numbering function (`generate_invoice_number` RPC), the same
+ * invoice-config defaults (terms template, due-day fallback, tax fallback) and
+ * the same status defaults (`DRAFT` / `UNPAID`) so the rest of the invoice
+ * lifecycle (send, export, payments, status transitions) works unchanged.
+ *
+ * Differences from createInvoice():
+ *   - `order_id` is NULL on the row (and `source = 'BLANK'`).
+ *   - Customer info is captured via `customer_*_override` columns when no
+ *     `customer_id` is provided.
+ *   - `service_type` / `service_name` / `base_service_*` are NULL — blank
+ *     invoices have no single "base service"; only line items.
+ *
+ * Returns the created Invoice (with `source` populated).
+ */
+export async function createBlankInvoice(
+  input: CreateBlankInvoiceInput
+): Promise<Invoice> {
+  const supabase = await createClient()
+
+  // Auth
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    throw new Error('Unauthorized')
+  }
+
+  // Validate basics that the Zod schema would also enforce.
+  // Server action may be called directly (typed input), so re-check here.
+  const trimmedName = (input.customer_name || '').trim()
+  if (!trimmedName) {
+    throw new Error('Nama pelanggan wajib diisi')
+  }
+  if (!input.due_date) {
+    throw new Error('Tanggal jatuh tempo wajib diisi')
+  }
+  if (!input.items || input.items.length === 0) {
+    throw new Error('Minimal satu item invoice')
+  }
+  for (const item of input.items) {
+    if (!item.description || !item.description.trim()) {
+      throw new Error('Deskripsi item wajib diisi')
+    }
+    if (!(item.quantity > 0)) {
+      throw new Error('Kuantitas item harus lebih dari 0')
+    }
+    if (item.unit_price < 0) {
+      throw new Error('Harga satuan tidak boleh negatif')
+    }
+  }
+
+  // Numbering — reuse existing RPC. No order_id needed.
+  const invoiceNumber = await generateInvoiceNumber()
+
+  // Pull config for defaults (terms template, due-days fallback, tax fallback)
+  const { data: config } = await supabase
+    .from('invoice_configuration')
+    .select('terms_conditions_template, default_due_days, default_tax_percentage')
+    .eq('is_active', true)
+    .single()
+
+  // Resolve dates
+  const todayISO = new Date().toISOString().split('T')[0]
+  const invoiceDate = input.invoice_date || todayISO
+  // due_date is required by validation above; trust the caller's value.
+  const dueDate = input.due_date
+
+  // Totals — blank invoices have no separate base service; everything is items.
+  const subtotal = input.items.reduce(
+    (sum, item) => sum + item.quantity * item.unit_price,
+    0
+  )
+  const discountAmount = input.discount_amount || 0
+  const discountPercentage = input.discount_percentage || 0
+  const taxPercentage =
+    input.tax_percentage ?? config?.default_tax_percentage ?? 11
+  const taxableBase = Math.max(0, subtotal - discountAmount)
+  const taxAmount = (taxableBase * taxPercentage) / 100
+  const totalAmount = taxableBase + taxAmount
+
+  // Build insert payload. Leaves order_id / customer_id / base_service_* NULL
+  // when appropriate; relies on migration 012 having loosened NOT NULLs.
+  const insertPayload: Record<string, unknown> = {
+    invoice_number: invoiceNumber,
+    invoice_type: input.invoice_type || 'FINAL',
+    source: 'BLANK',
+    order_id: null,
+    customer_id: input.customer_id || null,
+
+    // Manual customer snapshot
+    customer_name_override: trimmedName,
+    customer_phone_override: input.customer_phone?.trim() || null,
+    customer_email_override: input.customer_email?.trim() || null,
+    customer_address_override: input.customer_address?.trim() || null,
+
+    invoice_date: invoiceDate,
+    due_date: dueDate,
+
+    // No base service for blank invoices
+    service_type: null,
+    service_name: null,
+    base_service_quantity: 0,
+    base_service_price: 0,
+    base_service_total: 0,
+
+    addons_subtotal: subtotal,
+    subtotal,
+    discount_amount: discountAmount,
+    discount_percentage: discountPercentage,
+    tax_percentage: taxPercentage,
+    tax_amount: taxAmount,
+    total_amount: totalAmount,
+
+    status: 'DRAFT',
+    payment_status: 'UNPAID',
+    paid_amount: 0,
+
+    notes: input.notes?.trim() || null,
+    terms_conditions:
+      input.terms_conditions?.trim() || config?.terms_conditions_template || null,
+
+    payment_account_id: input.payment_account_id || null,
+    payment_account_label: input.payment_account_label || null,
+    payment_bank_name: input.payment_bank_name || null,
+    payment_account_number: input.payment_account_number || null,
+    payment_account_name: input.payment_account_name || null,
+
+    created_by: user.id,
+  }
+
+  const { data: invoice, error: invoiceError } = await supabase
+    .from('invoices')
+    .insert(insertPayload)
+    .select()
+    .single()
+
+  if (invoiceError || !invoice) {
+    logger.error('Error creating blank invoice:', invoiceError)
+    throw new Error('Gagal membuat invoice')
+  }
+
+  // Insert line items
+  const itemsToInsert = input.items.map((item, index) => ({
+    invoice_id: invoice.invoice_id,
+    item_type: item.item_type || 'BASE_SERVICE',
+    description: item.description.trim(),
+    quantity: item.quantity,
+    unit_price: item.unit_price,
+    total_price: item.quantity * item.unit_price,
+    service_type: null,
+    addon_id: null,
+    order_addon_id: null,
+    line_order: index,
+  }))
+
+  const { error: itemsError } = await supabase
+    .from('invoice_items')
+    .insert(itemsToInsert)
+
+  if (itemsError) {
+    logger.error('Error creating blank invoice items:', itemsError)
+    // Rollback the invoice header so we don't leave an empty invoice behind.
+    await supabase.from('invoices').delete().eq('invoice_id', invoice.invoice_id)
+    throw new Error('Gagal membuat invoice items')
+  }
+
+  revalidatePath('/dashboard/keuangan/invoices')
+  return { ...invoice, source: getInvoiceSource(invoice) }
 }
 
 /**
@@ -568,10 +789,28 @@ export async function updateInvoice(
 ): Promise<Invoice> {
   const supabase = await createClient()
 
+  const { data: currentInvoice, error: fetchError } = await supabase
+    .from('invoices')
+    .select('status, order_id')
+    .eq('invoice_id', invoiceId)
+    .single()
+
+  if (fetchError || !currentInvoice) {
+    throw new Error('Invoice tidak ditemukan')
+  }
+
+  if (!canReviseInvoice(currentInvoice.status)) {
+    throw new Error('Invoice hanya dapat direvisi saat berstatus DRAFT atau SENT')
+  }
+
+  const { invoice_number: _ignoredInvoiceNumber, ...safeUpdates } = updates as Partial<CreateInvoiceInput> & {
+    invoice_number?: string
+  }
+
   const { data, error } = await supabase
     .from('invoices')
     .update({
-      ...updates,
+      ...safeUpdates,
       updated_at: new Date().toISOString(),
     })
     .eq('invoice_id', invoiceId)
@@ -585,7 +824,7 @@ export async function updateInvoice(
 
   revalidatePath('/dashboard/keuangan/invoices')
   revalidatePath(`/dashboard/keuangan/invoices/${invoiceId}`)
-  return data
+  return { ...data, source: getInvoiceSource(data) }
 }
 
 /**
@@ -793,7 +1032,7 @@ export async function updateInvoiceStatus(
 
   revalidatePath('/dashboard/keuangan/invoices')
   revalidatePath(`/dashboard/keuangan/invoices/${invoiceId}`)
-  return data
+  return { ...data, source: getInvoiceSource(data) }
 }
 
 /**

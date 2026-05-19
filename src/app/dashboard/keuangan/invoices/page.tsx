@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -24,6 +30,7 @@ import {
 import {
   Loader2,
   Plus,
+  ChevronDown,
   Eye,
   FileText,
   Search,
@@ -57,6 +64,10 @@ const PAYMENT_STATUS_COLORS: Record<string, string> = {
   PARTIAL: 'bg-amber-500',
   PAID: 'bg-green-500',
 }
+
+const getInvoiceSourceLabel = (source?: Invoice['source']) => (source === 'BLANK' ? 'Kosong' : 'Transaksi')
+
+const getInvoiceSourceVariant = (source?: Invoice['source']) => (source === 'BLANK' ? 'secondary' : 'default')
 
 export default function InvoicesPage() {
   const router = useRouter()
@@ -134,6 +145,10 @@ export default function InvoicesPage() {
     }).format(amount)
   }
 
+  const handleCreateInvoice = (path: '/dashboard/keuangan/invoices/create' | '/dashboard/keuangan/invoices/create-blank') => {
+    router.push(path)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -141,13 +156,23 @@ export default function InvoicesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Invoice</h1>
           <p className="text-muted-foreground">Kelola dan monitor invoice pelanggan</p>
         </div>
-        <Button
-          onClick={() => router.push('/dashboard/keuangan/invoices/create')}
-          className="gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Buat Invoice
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Buat Invoice
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuItem onClick={() => handleCreateInvoice('/dashboard/keuangan/invoices/create')}>
+              Buat Invoice (Transaksi)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleCreateInvoice('/dashboard/keuangan/invoices/create-blank')}>
+              Buat Invoice Kosong
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Stats Cards */}
@@ -262,11 +287,11 @@ export default function InvoicesPage() {
                 Mulai dengan membuat invoice pertama
               </p>
               <Button
-                onClick={() => router.push('/dashboard/keuangan/invoices/create')}
+                onClick={() => handleCreateInvoice('/dashboard/keuangan/invoices/create')}
                 className="mt-4"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Buat Invoice
+                Buat Invoice (Transaksi)
               </Button>
             </div>
           ) : (
@@ -277,7 +302,8 @@ export default function InvoicesPage() {
                     <SortableTableHead sortKey="invoice_number" currentSort={sortConfig} onSort={requestSort}>
                       Invoice Number
                     </SortableTableHead>
-                    <TableHead>Type</TableHead>
+                    <TableHead>Sumber</TableHead>
+                    <TableHead>Tipe</TableHead>
                     <SortableTableHead sortKey="customers.customer_name" currentSort={sortConfig} onSort={requestSort}>
                       Customer
                     </SortableTableHead>
@@ -307,6 +333,11 @@ export default function InvoicesPage() {
                     <TableRow key={invoice.invoice_id}>
                       <TableCell className="font-mono font-semibold">
                         {invoice.invoice_number}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getInvoiceSourceVariant(invoice.source)}>
+                          {getInvoiceSourceLabel(invoice.source)}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={invoice.invoice_type === 'FINAL' ? 'default' : 'secondary'}>

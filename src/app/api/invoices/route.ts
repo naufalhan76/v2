@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
 import { logger } from '@/lib/logger'
+import { getInvoiceSource } from '@/lib/invoice-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     if (orderId) {
       const { data, error } = await supabase
         .from('invoices')
-        .select('invoice_id, invoice_number, invoice_type, status')
+        .select('invoice_id, invoice_number, invoice_type, status, order_id')
         .eq('order_id', orderId)
         .order('created_at', { ascending: false })
 
@@ -20,7 +21,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
 
-      return NextResponse.json({ data })
+      return NextResponse.json({
+        data: data?.map(invoice => ({ ...invoice, source: getInvoiceSource(invoice) })) || [],
+      })
     }
 
     // Default: return all invoices
@@ -33,7 +36,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ data })
+    return NextResponse.json({
+      data: data?.map(invoice => ({ ...invoice, source: getInvoiceSource(invoice) })) || [],
+    })
   } catch (error) {
     logger.error('Error fetching invoices:', error)
     return NextResponse.json(

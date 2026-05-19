@@ -65,7 +65,9 @@ const sidebarItems = [
     href: '/dashboard/keuangan',
     icon: DollarSign,
     children: [
-      { title: 'Invoices', href: '/dashboard/keuangan/invoices' },
+      { title: 'Daftar Invoice', href: '/dashboard/keuangan/invoices' },
+      { title: 'Buat Invoice (Transaksi)', href: '/dashboard/keuangan/invoices/create' },
+      { title: 'Buat Invoice Kosong', href: '/dashboard/keuangan/invoices/create-blank' },
     ],
   },
   {

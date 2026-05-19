@@ -74,6 +74,10 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: 'bg-gray-400',
 }
 
+const getInvoiceSourceLabel = (source?: Invoice['source']) => (source === 'BLANK' ? 'Kosong' : 'Transaksi')
+
+const getInvoiceSourceVariant = (source?: Invoice['source']) => (source === 'BLANK' ? 'secondary' : 'default')
+
 const formatBankAccountLine = (account: { account_label: string; bank: string; account_number: string; account_name: string }) => {
   return `${account.account_label} — ${account.bank} / ${account.account_number} / a/n ${account.account_name}`
 }
@@ -527,6 +531,9 @@ export default function InvoiceDetailPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight">{invoice.invoice_number}</h1>
+              <Badge variant={getInvoiceSourceVariant(invoice.source)}>
+                {getInvoiceSourceLabel(invoice.source)}
+              </Badge>
               <Badge variant={invoice.invoice_type === 'FINAL' ? 'default' : 'secondary'}>
                 {invoice.invoice_type}
               </Badge>

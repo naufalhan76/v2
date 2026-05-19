@@ -157,17 +157,14 @@ export default function CreateInvoicePage() {
         ...(inProgressResult.data || []),
         ...(doneResult.data || [])
       ]
-      
-      // Filter out orders that already have an invoice
-      const ordersWithInvoiceStatus = await Promise.all(
-        combinedOrders.map(async (order) => {
-          const hasInvoice = await checkOrderHasInvoice(order.order_id)
-          return { ...order, hasInvoice }
-        })
+
+      // Batch-check invoiced order_ids in a single query (avoids N+1 HTTP fetches)
+      const invoicedSet = await getInvoicedOrderIds(
+        combinedOrders.map((o) => o.order_id)
       )
-      
-      // Only show orders without invoice
-      const availableOrders = ordersWithInvoiceStatus.filter(order => !order.hasInvoice)
+      const availableOrders = combinedOrders.filter(
+        (order) => !invoicedSet.has(order.order_id)
+      )
       setOrders(availableOrders)
       return availableOrders
     } catch (_error) {
@@ -180,18 +177,26 @@ export default function CreateInvoicePage() {
     }
   }
 
-  // Check if order already has invoice
-  const checkOrderHasInvoice = async (orderId: string): Promise<boolean> => {
+  // Batch-check invoiced order ids using a single Supabase query.
+  // Replaces previous N+1 fetch loop (one HTTP roundtrip per order).
+  const getInvoicedOrderIds = async (orderIds: string[]): Promise<Set<string>> => {
+    if (orderIds.length === 0) return new Set<string>()
     try {
-      const response = await fetch(`/api/invoices?orderId=${orderId}`)
-      if (response.ok) {
-        const data = await response.json()
-        return data.data && data.data.length > 0
-      }
-      return false
+      const { createClient } = await import('@/lib/supabase-browser')
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('order_id')
+        .in('order_id', orderIds)
+      if (error) throw error
+      return new Set(
+        (data || [])
+          .map((row) => row.order_id as string | null)
+          .filter((id): id is string => Boolean(id))
+      )
     } catch (error) {
-      logger.error('Error checking invoice:', error)
-      return false
+      logger.error('Error checking invoiced order ids:', error)
+      return new Set<string>()
     }
   }
 
@@ -233,7 +238,7 @@ export default function CreateInvoicePage() {
     try {
       // Try to fetch order_items first (for new multi-service orders)
       const orderItems = await getOrderItemsForInvoice(selectedOrder.order_id)
-      
+
       if (orderItems.length > 0) {
         // NEW ORDERS: Create line items from order_items with MSN code + unit info
         const newLineItems = orderItems.map(item => {
@@ -254,14 +259,22 @@ export default function CreateInvoicePage() {
             total: item.quantity * item.estimatedPrice
           }
         })
+        // Render line items immediately so the user sees all base-service rows
+        // without waiting for the (Step 2 header-only) baseService lookup.
         setLineItems(newLineItems)
-        
-        // Set baseService to first service (for reference)
-        if (orderItems[0].serviceType) {
-          const firstPricing = await getServicePricingByType(orderItems[0].serviceType).catch(() => null)
-          if (firstPricing) setBaseService(firstPricing)
+
+        // Fire-and-forget: load reference pricing for Step 2 header without
+        // blocking dependent sections from rendering.
+        if (orderItems[0]?.serviceType) {
+          getServicePricingByType(orderItems[0].serviceType)
+            .then((firstPricing) => {
+              if (firstPricing) setBaseService(firstPricing)
+            })
+            .catch(() => {
+              /* header is best-effort; line items already rendered */
+            })
         }
-        
+
       } else {
         // OLD ORDERS: Fallback to order_type (backward compatibility)
         const pricing = await getServicePricingByType(selectedOrder.order_type)
@@ -575,45 +588,76 @@ export default function CreateInvoicePage() {
               <CardDescription>Konfirmasi harga base service</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {(baseService as Record<string, unknown> | null) && (() => {
-                const bs = baseService as Record<string, unknown>
+              {(() => {
+                const bs = baseService as Record<string, unknown> | null
+                const baseServiceItems = lineItems
+                  .map((item, index) => ({ item, index }))
+                  .filter(({ item }) => item.type === 'BASE_SERVICE')
+
+                if (!bs && baseServiceItems.length === 0) {
+                  return (
+                    <div className="text-sm text-muted-foreground italic">
+                      Memuat base service...
+                    </div>
+                  )
+                }
+
                 return (
                 <div className="space-y-4">
-                  <div className="rounded-lg border p-4 space-y-2">
-                    <h3 className="font-semibold">{bs.service_type as string} Service</h3>
-                    <p className="text-sm text-muted-foreground">{bs.description as string}</p>
-                    <Separator className="my-2" />
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Harga Base Service:</span>
-                      <span className="text-lg font-bold">
-                        {formatCurrency(bs.base_price as number)}
-                      </span>
+                  {bs && (
+                    <div className="rounded-lg border p-4 space-y-2">
+                      <h3 className="font-semibold">{bs.service_type as string} Service</h3>
+                      <p className="text-sm text-muted-foreground">{bs.description as string}</p>
+                      <Separator className="my-2" />
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">Harga Base Service:</span>
+                        <span className="text-lg font-bold">
+                          {formatCurrency(bs.base_price as number)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <Label>Quantity</Label>
-                      <Input
-                        type="number"
-                        value={lineItems[0]?.quantity || 1}
-                        onChange={(e) => handleUpdateQuantity(0, parseInt(e.target.value))}
-                        min="1"
-                      />
+                  {baseServiceItems.length === 0 ? (
+                    <div className="text-sm text-muted-foreground italic">
+                      Tidak ada base service item.
                     </div>
-                    <div className="flex-1">
-                      <Label>Harga Satuan (Edit jika perlu)</Label>
-                      <Input
-                        type="number"
-                        value={lineItems[0]?.unitPrice || 0}
-                        onChange={(e) => handleUpdatePrice(0, parseFloat(e.target.value))}
-                      />
+                  ) : (
+                    <div className="space-y-3">
+                      {baseServiceItems.map(({ item, index }) => (
+                        <div key={index} className="rounded-lg border p-3 space-y-2">
+                          <div className="text-sm font-medium">{item.description}</div>
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                              <Label>Quantity</Label>
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) =>
+                                  handleUpdateQuantity(index, parseInt(e.target.value) || 1)
+                                }
+                                min="1"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <Label>Harga Satuan (Edit jika perlu)</Label>
+                              <Input
+                                type="number"
+                                value={item.unitPrice}
+                                onChange={(e) =>
+                                  handleUpdatePrice(index, parseFloat(e.target.value) || 0)
+                                }
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <Label>Total</Label>
+                              <Input value={formatCurrency(item.total)} disabled />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex-1">
-                      <Label>Total</Label>
-                      <Input value={formatCurrency(lineItems[0]?.total || 0)} disabled />
-                    </div>
-                  </div>
+                  )}
                 </div>
                 )
               })()}
