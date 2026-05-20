@@ -260,7 +260,8 @@ export const CreateBlankInvoiceSchema = z.object({
   invoice_type: z.enum(['PROFORMA', 'FINAL']).default('FINAL'),
 
   // Customer — either link to an existing record OR provide a manual name.
-  customer_id: z.string().uuid().optional(),
+  customer_id: z.string().trim().min(1).optional()
+    .or(z.literal('').transform(() => undefined)),
   customer_name: z.string().trim().min(1, 'Nama pelanggan wajib diisi').max(255),
   customer_phone: z.string().trim().max(50).optional(),
   customer_email: z.string().trim().email('Format email tidak valid').optional()
@@ -292,7 +293,8 @@ export const CreateBlankInvoiceSchema = z.object({
 })
 
 export const ReviseInvoiceHeaderSchema = z.object({
-  customer_id: z.string().uuid().nullable().optional(),
+  customer_id: z.string().trim().min(1).nullable().optional()
+    .or(z.literal('').transform(() => null)),
   customer_name_override: z.string().trim().min(1).max(255).nullable().optional(),
   customer_phone_override: z.string().trim().max(50).nullable().optional(),
   customer_email_override: z.string().trim().email('Format email tidak valid').nullable().optional()

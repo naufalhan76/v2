@@ -142,10 +142,10 @@ export default function CreateInvoicePage() {
   const loadCompletedOrders = async (): Promise<InvoiceOrder[]> => {
     try {
       // Single roundtrip via statusIn (replaces 5 parallel getOrders).
-      // PROFORMA: ASSIGNED / OTW / ARRIVED / IN_PROGRESS
+      // PROFORMA: ASSIGNED / EN ROUTE / ARRIVED / IN_PROGRESS
       // FINAL: DONE
       const result = await getOrders({
-        statusIn: 'ASSIGNED,OTW,ARRIVED,IN_PROGRESS,DONE',
+        statusIn: 'ASSIGNED,EN ROUTE,ARRIVED,IN_PROGRESS,DONE',
         limit: 200,
       })
 

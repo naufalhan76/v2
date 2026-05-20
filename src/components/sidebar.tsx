@@ -245,7 +245,7 @@ function DarkModeToggle() {
 
   useEffect(() => { setMounted(true) }, [])
 
-  if (!mounted) return <Switch disabled />
+  if (!mounted) return <Switch checked={false} disabled />
 
   return (
     <Switch
