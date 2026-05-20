@@ -44,6 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { useToast } from '@/hooks/use-toast'
 import { 
   getUsers, 
@@ -314,21 +315,19 @@ export default function ManajemenUserPage() {
 
                 <div className="grid gap-2">
                   <Label htmlFor="role">Role</Label>
-                  <Select
+                  <SearchableSelect
+                    options={[
+                      { id: 'SUPERADMIN', label: 'Super Admin' },
+                      { id: 'ADMIN', label: 'Admin' },
+                      { id: 'TECHNICIAN', label: 'Technician' },
+                      { id: 'FINANCE', label: 'Finance' },
+                      { id: 'DISPATCHER', label: 'Dispatcher' },
+                    ]}
                     value={formData.role}
                     onValueChange={(value) => setFormData({ ...formData, role: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="SUPERADMIN">Super Admin</SelectItem>
-                      <SelectItem value="ADMIN">Admin</SelectItem>
-                      <SelectItem value="TECHNICIAN">Technician</SelectItem>
-                      <SelectItem value="FINANCE">Finance</SelectItem>
-                      <SelectItem value="DISPATCHER">Dispatcher</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    placeholder="Pilih role"
+                    searchPlaceholder="Cari role..."
+                  />
                 </div>
               </div>
 

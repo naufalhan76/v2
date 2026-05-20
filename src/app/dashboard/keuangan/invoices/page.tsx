@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import {
   Loader2,
   Plus,
@@ -265,31 +266,35 @@ export default function InvoicesPage() {
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Semua Status</SelectItem>
-                <SelectItem value="DRAFT">Draft</SelectItem>
-                <SelectItem value="SENT">Terkirim</SelectItem>
-                <SelectItem value="PARTIAL_PAID">Partial Paid</SelectItem>
-                <SelectItem value="PAID">Dibayar</SelectItem>
-                <SelectItem value="OVERDUE">Overdue</SelectItem>
-                <SelectItem value="CANCELLED">Dibatalkan</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={paymentFilter} onValueChange={handlePaymentFilterChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Pembayaran" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Semua Pembayaran</SelectItem>
-                <SelectItem value="UNPAID">Belum Dibayar</SelectItem>
-                <SelectItem value="PARTIAL">Dibayar Sebagian</SelectItem>
-                <SelectItem value="PAID">Lunas</SelectItem>
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={[
+                { id: 'ALL', label: 'Semua Status' },
+                { id: 'DRAFT', label: 'Draft' },
+                { id: 'SENT', label: 'Terkirim' },
+                { id: 'PARTIAL_PAID', label: 'Partial Paid' },
+                { id: 'PAID', label: 'Dibayar' },
+                { id: 'OVERDUE', label: 'Overdue' },
+                { id: 'CANCELLED', label: 'Dibatalkan' },
+              ]}
+              value={statusFilter}
+              onValueChange={handleStatusFilterChange}
+              placeholder="Status"
+              searchPlaceholder="Cari status..."
+              className="w-[180px]"
+            />
+            <SearchableSelect
+              options={[
+                { id: 'ALL', label: 'Semua Pembayaran' },
+                { id: 'UNPAID', label: 'Belum Dibayar' },
+                { id: 'PARTIAL', label: 'Dibayar Sebagian' },
+                { id: 'PAID', label: 'Lunas' },
+              ]}
+              value={paymentFilter}
+              onValueChange={handlePaymentFilterChange}
+              placeholder="Pembayaran"
+              searchPlaceholder="Cari pembayaran..."
+              className="w-[180px]"
+            />
             <Select value={sourceFilter} onValueChange={handleSourceFilterChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Sumber" />

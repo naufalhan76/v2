@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -306,21 +307,13 @@ export function AddonsTab() {
                   <Label htmlFor="category" className="text-sm font-medium text-foreground">
                     Kategori <span className="text-destructive">*</span>
                   </Label>
-                  <Select
+                  <SearchableSelect
+                    options={CATEGORIES.map(cat => ({ id: cat.value, label: cat.label }))}
                     value={selectedCategory}
                     onValueChange={(value) => setValue('category', value)}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Pilih kategori" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Pilih kategori"
+                    searchPlaceholder="Cari kategori..."
+                  />
                   {errors.category && (
                     <p className="text-sm text-destructive">{errors.category.message}</p>
                   )}
@@ -367,21 +360,13 @@ export function AddonsTab() {
                   <Label htmlFor="unitOfMeasure" className="text-sm font-medium text-foreground">
                     Satuan <span className="text-destructive">*</span>
                   </Label>
-                  <Select
-                    value={watch('unitOfMeasure')}
+                  <SearchableSelect
+                    options={UNIT_OF_MEASURES.map(unit => ({ id: unit, label: unit }))}
+                    value={watch('unitOfMeasure') || ''}
                     onValueChange={(value) => setValue('unitOfMeasure', value)}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Pilih satuan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {UNIT_OF_MEASURES.map((unit) => (
-                        <SelectItem key={unit} value={unit}>
-                          {unit}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Pilih satuan"
+                    searchPlaceholder="Cari satuan..."
+                  />
                   {errors.unitOfMeasure && (
                     <p className="text-sm text-destructive">
                       {errors.unitOfMeasure.message}

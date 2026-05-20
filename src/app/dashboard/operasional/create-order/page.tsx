@@ -1138,35 +1138,48 @@ export default function CreateOrderPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label className="text-xs">Payment Account *</Label>
-                        <Select
-                          value={proformaPaymentAccountId}
-                          onValueChange={setProformaPaymentAccountId}
-                        >
-                          <SelectTrigger data-testid="payment-account-select">
-                            <SelectValue placeholder="Pick payment account" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {bankAccounts.length === 0 ? (
-                              <div className="px-3 py-2 text-xs text-muted-foreground">
-                                No payment accounts configured
-                              </div>
-                            ) : (
-                              bankAccounts.map((acc, index) => {
-                                const paymentAccountLabel = formatPaymentAccountLabel(acc, index)
+                        {bankAccounts.length > 3 ? (
+                          <SearchableSelect
+                            options={bankAccounts.map((acc, index) => ({
+                              id: acc.id,
+                              label: formatPaymentAccountLabel(acc, index),
+                            }))}
+                            value={proformaPaymentAccountId}
+                            onValueChange={setProformaPaymentAccountId}
+                            placeholder="Pick payment account"
+                            searchPlaceholder="Cari rekening..."
+                          />
+                        ) : (
+                          <Select
+                            value={proformaPaymentAccountId}
+                            onValueChange={setProformaPaymentAccountId}
+                          >
+                            <SelectTrigger data-testid="payment-account-select">
+                              <SelectValue placeholder="Pick payment account" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {bankAccounts.length === 0 ? (
+                                <div className="px-3 py-2 text-xs text-muted-foreground">
+                                  No payment accounts configured
+                                </div>
+                              ) : (
+                                bankAccounts.map((acc, index) => {
+                                  const paymentAccountLabel = formatPaymentAccountLabel(acc, index)
 
-                                return (
-                                <SelectItem
-                                  key={acc.id}
-                                  value={acc.id}
-                                  data-testid="payment-account-option"
-                                >
-                                  {paymentAccountLabel}
-                                </SelectItem>
-                                )
-                              })
-                            )}
-                          </SelectContent>
-                        </Select>
+                                  return (
+                                  <SelectItem
+                                    key={acc.id}
+                                    value={acc.id}
+                                    data-testid="payment-account-option"
+                                  >
+                                    {paymentAccountLabel}
+                                  </SelectItem>
+                                  )
+                                })
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
                       </div>
                       <div>
                         <Label className="text-xs">Due Date *</Label>

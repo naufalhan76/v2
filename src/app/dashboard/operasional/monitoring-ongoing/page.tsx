@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import {
   Dialog,
   DialogContent,
@@ -663,30 +664,28 @@ function MonitoringOngoingContent() {
             </div>
 
             {/* Status Filter */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder='All Status' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='ALL'>All Status</SelectItem>
-                {ALL_ONGOING_STATUSES.map(status => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={[
+                { id: 'ALL', label: 'All Status' },
+                ...ALL_ONGOING_STATUSES.map(status => ({ id: status, label: status })),
+              ]}
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+              placeholder="All Status"
+              searchPlaceholder="Cari status..."
+            />
 
             {/* Order Type Filter */}
-            <Select value={orderTypeFilter} onValueChange={setOrderTypeFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder='All Order Types' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='ALL'>All Order Types</SelectItem>
-                {SERVICE_TYPES.map(type => (
-                  <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={[
+                { id: 'ALL', label: 'All Order Types' },
+                ...SERVICE_TYPES.map(type => ({ id: type.value, label: type.label })),
+              ]}
+              value={orderTypeFilter}
+              onValueChange={setOrderTypeFilter}
+              placeholder="All Order Types"
+              searchPlaceholder="Cari tipe..."
+            />
 
             {/* Multi-Location Filter */}
             <Select value={multiLocationFilter} onValueChange={setMultiLocationFilter}>
@@ -701,17 +700,16 @@ function MonitoringOngoingContent() {
             </Select>
 
             {/* Payment Status Filter */}
-            <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder='All Payment Status' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='ALL'>All Payment Status</SelectItem>
-                {PAYMENT_STATUSES.map(status => (
-                  <SelectItem key={status.value} value={status.value}>{status.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={[
+                { id: 'ALL', label: 'All Payment Status' },
+                ...PAYMENT_STATUSES.map(status => ({ id: status.value, label: status.label })),
+              ]}
+              value={paymentStatusFilter}
+              onValueChange={setPaymentStatusFilter}
+              placeholder="All Payment Status"
+              searchPlaceholder="Cari status pembayaran..."
+            />
           </div>
 
           {/* Active Filters Summary */}

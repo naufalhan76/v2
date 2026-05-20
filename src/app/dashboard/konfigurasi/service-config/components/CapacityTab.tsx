@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, Plus, Pencil, Trash2, CheckCircle2, XCircle } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -161,17 +162,30 @@ export function CapacityTab() {
           <div className="mb-6 flex gap-4 items-end">
             <div className="w-[300px] space-y-2">
               <Label className="text-sm font-medium text-foreground">Filter berdasarkan Unit Type</Label>
-              <Select value={filterUnitTypeId} onValueChange={setFilterUnitTypeId}>
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Pilih unit type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Semua Unit Type</SelectItem>
-                  {unitTypes.map(ut => (
-                    <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>{ut.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {unitTypes.length > 3 ? (
+                <SearchableSelect
+                  options={[
+                    { id: 'ALL', label: 'Semua Unit Type' },
+                    ...unitTypes.map(ut => ({ id: ut.unit_type_id, label: ut.name })),
+                  ]}
+                  value={filterUnitTypeId}
+                  onValueChange={setFilterUnitTypeId}
+                  placeholder="Pilih unit type"
+                  searchPlaceholder="Cari unit type..."
+                />
+              ) : (
+                <Select value={filterUnitTypeId} onValueChange={setFilterUnitTypeId}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Pilih unit type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Semua Unit Type</SelectItem>
+                    {unitTypes.map(ut => (
+                      <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>{ut.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
@@ -222,16 +236,26 @@ export function CapacityTab() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-foreground">Unit Type *</Label>
-                  <Select value={unitTypeId} onValueChange={setUnitTypeId}>
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Pilih unit type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {unitTypes.map(ut => (
-                        <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>{ut.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {unitTypes.length > 3 ? (
+                    <SearchableSelect
+                      options={unitTypes.map(ut => ({ id: ut.unit_type_id, label: ut.name }))}
+                      value={unitTypeId}
+                      onValueChange={setUnitTypeId}
+                      placeholder="Pilih unit type"
+                      searchPlaceholder="Cari unit type..."
+                    />
+                  ) : (
+                    <Select value={unitTypeId} onValueChange={setUnitTypeId}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Pilih unit type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {unitTypes.map(ut => (
+                          <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>{ut.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-foreground">Capacity Label *</Label>

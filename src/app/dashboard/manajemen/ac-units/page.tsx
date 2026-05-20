@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
@@ -478,63 +479,112 @@ export default function AcUnitsPage() {
 
             <div className="space-y-2">
               <Label htmlFor="unit_type_id">Unit Type</Label>
-              <Select
-                value={formData.unit_type_id || ''}
-                onValueChange={(value) => setFormData({ ...formData, unit_type_id: value, capacity_id: '' })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Unit Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">— Tidak diisi —</SelectItem>
-                  {unitTypes.map((ut: { unit_type_id: string; name: string }) => (
-                    <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>
-                      {ut.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {unitTypes.length > 3 ? (
+                <SearchableSelect
+                  options={[
+                    { id: '', label: '— Tidak diisi —' },
+                    ...unitTypes.map((ut: { unit_type_id: string; name: string }) => ({
+                      id: ut.unit_type_id,
+                      label: ut.name,
+                    })),
+                  ]}
+                  value={formData.unit_type_id || ''}
+                  onValueChange={(value) => setFormData({ ...formData, unit_type_id: value, capacity_id: '' })}
+                  placeholder="Pilih Unit Type"
+                  searchPlaceholder="Cari unit type..."
+                />
+              ) : (
+                <Select
+                  value={formData.unit_type_id || ''}
+                  onValueChange={(value) => setFormData({ ...formData, unit_type_id: value, capacity_id: '' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Unit Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">— Tidak diisi —</SelectItem>
+                    {unitTypes.map((ut: { unit_type_id: string; name: string }) => (
+                      <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>
+                        {ut.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="capacity_id">Capacity</Label>
-              <Select
-                value={formData.capacity_id || ''}
-                onValueChange={(value) => setFormData({ ...formData, capacity_id: value })}
-                disabled={!formData.unit_type_id}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={formData.unit_type_id ? 'Pilih Capacity' : 'Pilih Unit Type dulu'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">— Tidak diisi —</SelectItem>
-                  {filteredCapacities.map((cap: { capacity_id: string; capacity_label: string }) => (
-                    <SelectItem key={cap.capacity_id} value={cap.capacity_id}>
-                      {cap.capacity_label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {filteredCapacities.length > 3 ? (
+                <SearchableSelect
+                  options={[
+                    { id: '', label: '— Tidak diisi —' },
+                    ...filteredCapacities.map((cap: { capacity_id: string; capacity_label: string }) => ({
+                      id: cap.capacity_id,
+                      label: cap.capacity_label,
+                    })),
+                  ]}
+                  value={formData.capacity_id || ''}
+                  onValueChange={(value) => setFormData({ ...formData, capacity_id: value })}
+                  placeholder={formData.unit_type_id ? 'Pilih Capacity' : 'Pilih Unit Type dulu'}
+                  searchPlaceholder="Cari capacity..."
+                  className={!formData.unit_type_id ? 'pointer-events-none opacity-50' : ''}
+                />
+              ) : (
+                <Select
+                  value={formData.capacity_id || ''}
+                  onValueChange={(value) => setFormData({ ...formData, capacity_id: value })}
+                  disabled={!formData.unit_type_id}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={formData.unit_type_id ? 'Pilih Capacity' : 'Pilih Unit Type dulu'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">— Tidak diisi —</SelectItem>
+                    {filteredCapacities.map((cap: { capacity_id: string; capacity_label: string }) => (
+                      <SelectItem key={cap.capacity_id} value={cap.capacity_id}>
+                        {cap.capacity_label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="brand_id">Merk AC (dari master)</Label>
-              <Select
-                value={formData.brand_id || ''}
-                onValueChange={(value) => setFormData({ ...formData, brand_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih Merk (opsional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">— Tidak diisi —</SelectItem>
-                  {masterBrands.map((b: { brand_id: string; name: string }) => (
-                    <SelectItem key={b.brand_id} value={b.brand_id}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {masterBrands.length > 3 ? (
+                <SearchableSelect
+                  options={[
+                    { id: '', label: '— Tidak diisi —' },
+                    ...masterBrands.map((b: { brand_id: string; name: string }) => ({
+                      id: b.brand_id,
+                      label: b.name,
+                    })),
+                  ]}
+                  value={formData.brand_id || ''}
+                  onValueChange={(value) => setFormData({ ...formData, brand_id: value })}
+                  placeholder="Pilih Merk (opsional)"
+                  searchPlaceholder="Cari merk..."
+                />
+              ) : (
+                <Select
+                  value={formData.brand_id || ''}
+                  onValueChange={(value) => setFormData({ ...formData, brand_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Merk (opsional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">— Tidak diisi —</SelectItem>
+                    {masterBrands.map((b: { brand_id: string; name: string }) => (
+                      <SelectItem key={b.brand_id} value={b.brand_id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-1 pt-2">
@@ -588,20 +638,18 @@ export default function AcUnitsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status *</Label>
-              <Select
+              <SearchableSelect
+                options={[
+                  { id: 'ACTIVE', label: 'Active' },
+                  { id: 'MAINTENANCE', label: 'Maintenance' },
+                  { id: 'WORKSHOP', label: 'Workshop' },
+                  { id: 'INACTIVE', label: 'Inactive' },
+                ]}
                 value={formData.status}
                 onValueChange={(value) => setFormData({ ...formData, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                  <SelectItem value="WORKSHOP">Workshop</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+                placeholder="Pilih status"
+                searchPlaceholder="Cari status..."
+              />
             </div>
             <div className="flex gap-2 pt-4">
               <Button

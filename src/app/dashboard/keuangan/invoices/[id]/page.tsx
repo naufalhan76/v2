@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { useToast } from '@/hooks/use-toast'
 import {
   Loader2,
@@ -1409,19 +1410,20 @@ export default function InvoiceDetailPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={invoice.status} onValueChange={handleStatusChange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="DRAFT">Draft</SelectItem>
-                    <SelectItem value="SENT">Sent</SelectItem>
-                    <SelectItem value="PARTIAL_PAID">Partial Paid</SelectItem>
-                    <SelectItem value="PAID">Paid</SelectItem>
-                    <SelectItem value="OVERDUE">Overdue</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  options={[
+                    { id: 'DRAFT', label: 'Draft' },
+                    { id: 'SENT', label: 'Sent' },
+                    { id: 'PARTIAL_PAID', label: 'Partial Paid' },
+                    { id: 'PAID', label: 'Paid' },
+                    { id: 'OVERDUE', label: 'Overdue' },
+                    { id: 'CANCELLED', label: 'Cancelled' },
+                  ]}
+                  value={invoice.status}
+                  onValueChange={handleStatusChange}
+                  placeholder="Pilih status"
+                  searchPlaceholder="Cari status..."
+                />
               </div>
 
               <Separator />
@@ -1486,19 +1488,20 @@ export default function InvoiceDetailPage() {
             </div>
             <div className="space-y-2">
               <Label>Payment Method</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CASH">Cash</SelectItem>
-                  <SelectItem value="TRANSFER">Transfer</SelectItem>
-                  <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
-                  <SelectItem value="DEBIT_CARD">Debit Card</SelectItem>
-                  <SelectItem value="QRIS">QRIS</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={[
+                  { id: 'CASH', label: 'Cash' },
+                  { id: 'TRANSFER', label: 'Transfer' },
+                  { id: 'CREDIT_CARD', label: 'Credit Card' },
+                  { id: 'DEBIT_CARD', label: 'Debit Card' },
+                  { id: 'QRIS', label: 'QRIS' },
+                  { id: 'OTHER', label: 'Other' },
+                ]}
+                value={paymentMethod}
+                onValueChange={setPaymentMethod}
+                placeholder="Pilih metode"
+                searchPlaceholder="Cari metode..."
+              />
             </div>
             <div className="space-y-2">
               <Label>Amount</Label>

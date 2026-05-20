@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import { ServiceSelectionModal, MasterData } from './ServiceSelectionModal'
@@ -279,64 +280,114 @@ export function LocationCard({
                     <div className="grid grid-cols-2 gap-3 pt-2">
                        <div className="space-y-1">
                           <Label className="text-xs">Merk AC *</Label>
-                          <Select 
-                            value={unit.brand_id} 
-                            onValueChange={(val) => {
+                          {(() => {
+                            const brandOptions = masterData.acBrands.map((b: unknown) => {
+                              const brand = b as Record<string, unknown>
+                              return { id: brand.brand_id as string, label: brand.name as string }
+                            })
+                            const onChangeBrand = (val: string) => {
                               const updated = { ...location }
                               updated.new_ac_units[unitIndex].brand_id = val
                               onChange(updated)
-                            }}
-                          >
-                             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger>
-                             <SelectContent>
-                                {masterData.acBrands.map((b: unknown) => {
-                                   const brand = b as Record<string, unknown>
-                                   return <SelectItem key={brand.brand_id as string} value={brand.brand_id as string}>{brand.name as string}</SelectItem>
-                                })}
-                             </SelectContent>
-                          </Select>
+                            }
+                            if (brandOptions.length > 3) {
+                              return (
+                                <SearchableSelect
+                                  options={brandOptions}
+                                  value={unit.brand_id}
+                                  onValueChange={onChangeBrand}
+                                  placeholder="Pilih..."
+                                  searchPlaceholder="Cari merk..."
+                                />
+                              )
+                            }
+                            return (
+                              <Select value={unit.brand_id} onValueChange={onChangeBrand}>
+                                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                                <SelectContent>
+                                  {brandOptions.map(opt => (
+                                    <SelectItem key={opt.id} value={opt.id}>{opt.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )
+                          })()}
                        </div>
                        <div className="space-y-1">
                           <Label className="text-xs">Tipe Unit *</Label>
-                          <Select 
-                            value={unit.unit_type_id} 
-                            onValueChange={(val) => {
+                          {(() => {
+                            const unitTypeOptions = masterData.unitTypes.map((u: unknown) => {
+                              const ut = u as Record<string, unknown>
+                              return { id: ut.unit_type_id as string, label: ut.name as string }
+                            })
+                            const onChangeUnitType = (val: string) => {
                               const updated = { ...location }
                               updated.new_ac_units[unitIndex].unit_type_id = val
-                              updated.new_ac_units[unitIndex].capacity_id = '' // reset capacity
-                              updated.new_ac_units[unitIndex].selected_services = [] // reset services
+                              updated.new_ac_units[unitIndex].capacity_id = ''
+                              updated.new_ac_units[unitIndex].selected_services = []
                               onChange(updated)
-                            }}
-                          >
-                             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger>
-                             <SelectContent>
-                                {masterData.unitTypes.map((u: unknown) => {
-                                   const ut = u as Record<string, unknown>
-                                   return <SelectItem key={ut.unit_type_id as string} value={ut.unit_type_id as string}>{ut.name as string}</SelectItem>
-                                })}
-                             </SelectContent>
-                          </Select>
+                            }
+                            if (unitTypeOptions.length > 3) {
+                              return (
+                                <SearchableSelect
+                                  options={unitTypeOptions}
+                                  value={unit.unit_type_id}
+                                  onValueChange={onChangeUnitType}
+                                  placeholder="Pilih..."
+                                  searchPlaceholder="Cari tipe unit..."
+                                />
+                              )
+                            }
+                            return (
+                              <Select value={unit.unit_type_id} onValueChange={onChangeUnitType}>
+                                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                                <SelectContent>
+                                  {unitTypeOptions.map(opt => (
+                                    <SelectItem key={opt.id} value={opt.id}>{opt.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )
+                          })()}
                        </div>
                        <div className="space-y-1">
                          <Label className="text-xs">Kapasitas (HP/Btu) *</Label>
-                         <Select 
-                            value={unit.capacity_id} 
-                            disabled={!unit.unit_type_id}
-                            onValueChange={(val) => {
-                              const updated = { ...location }
-                              updated.new_ac_units[unitIndex].capacity_id = val
-                              updated.new_ac_units[unitIndex].selected_services = [] // reset services on capacity change
-                              onChange(updated)
-                            }}
-                          >
-                             <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger>
-                             <SelectContent>
-                                {masterData.capacityRanges.filter((c: unknown) => (c as Record<string, unknown>).unit_type_id === unit.unit_type_id).map((c: unknown) => {
-                                   const cap = c as Record<string, unknown>
-                                   return <SelectItem key={cap.capacity_id as string} value={cap.capacity_id as string}>{cap.capacity_label as string}</SelectItem>
-                                })}
-                             </SelectContent>
-                          </Select>
+                         {(() => {
+                           const capacityOptions = masterData.capacityRanges
+                             .filter((c: unknown) => (c as Record<string, unknown>).unit_type_id === unit.unit_type_id)
+                             .map((c: unknown) => {
+                               const cap = c as Record<string, unknown>
+                               return { id: cap.capacity_id as string, label: cap.capacity_label as string }
+                             })
+                           const onChangeCapacity = (val: string) => {
+                             const updated = { ...location }
+                             updated.new_ac_units[unitIndex].capacity_id = val
+                             updated.new_ac_units[unitIndex].selected_services = []
+                             onChange(updated)
+                           }
+                           if (capacityOptions.length > 3) {
+                             return (
+                               <SearchableSelect
+                                 options={capacityOptions}
+                                 value={unit.capacity_id}
+                                 onValueChange={onChangeCapacity}
+                                 placeholder="Pilih..."
+                                 searchPlaceholder="Cari kapasitas..."
+                                 className={!unit.unit_type_id ? 'pointer-events-none opacity-50' : ''}
+                               />
+                             )
+                           }
+                           return (
+                             <Select value={unit.capacity_id} disabled={!unit.unit_type_id} onValueChange={onChangeCapacity}>
+                               <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                               <SelectContent>
+                                 {capacityOptions.map(opt => (
+                                   <SelectItem key={opt.id} value={opt.id}>{opt.label}</SelectItem>
+                                 ))}
+                               </SelectContent>
+                             </Select>
+                           )
+                         })()}
                        </div>
                     </div>
 

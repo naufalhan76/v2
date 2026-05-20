@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -132,41 +133,92 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Unit Type (Tipe AC)</Label>
-                  <Select value={unitTypeId} onValueChange={(val) => { setUnitTypeId(val); setCapacityId(''); setServiceTypeId(''); }}>
-                    <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
-                    <SelectContent>
-                      {masterData?.unitTypes.map((u: unknown) => {
-                        const ut = u as Record<string, unknown>
-                        return <SelectItem key={ut.unit_type_id as string} value={ut.unit_type_id as string}>{ut.name as string}</SelectItem>
-                      })}
-                    </SelectContent>
-                  </Select>
+                  {(() => {
+                    const opts = (masterData?.unitTypes ?? []).map((u: unknown) => {
+                      const ut = u as Record<string, unknown>
+                      return { id: ut.unit_type_id as string, label: ut.name as string }
+                    })
+                    const onChangeUT = (val: string) => { setUnitTypeId(val); setCapacityId(''); setServiceTypeId('') }
+                    if (opts.length > 3) {
+                      return (
+                        <SearchableSelect
+                          options={opts}
+                          value={unitTypeId}
+                          onValueChange={onChangeUT}
+                          placeholder="Pilih..."
+                          searchPlaceholder="Cari tipe unit..."
+                        />
+                      )
+                    }
+                    return (
+                      <Select value={unitTypeId} onValueChange={onChangeUT}>
+                        <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                        <SelectContent>
+                          {opts.map(o => <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )
+                  })()}
                 </div>
                 <div className="space-y-2">
                   <Label>Capacity (Kapasitas)</Label>
-                  <Select value={capacityId} onValueChange={setCapacityId} disabled={!unitTypeId}>
-                    <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
-                    <SelectContent>
-                      {capacities.map((c: unknown) => {
-                        const cap = c as Record<string, unknown>
-                        return <SelectItem key={cap.capacity_id as string} value={cap.capacity_id as string}>{cap.capacity_label as string}</SelectItem>
-                      })}
-                    </SelectContent>
-                  </Select>
+                  {(() => {
+                    const opts = capacities.map((c: unknown) => {
+                      const cap = c as Record<string, unknown>
+                      return { id: cap.capacity_id as string, label: cap.capacity_label as string }
+                    })
+                    if (opts.length > 3) {
+                      return (
+                        <SearchableSelect
+                          options={opts}
+                          value={capacityId}
+                          onValueChange={setCapacityId}
+                          placeholder="Pilih..."
+                          searchPlaceholder="Cari kapasitas..."
+                          className={!unitTypeId ? 'pointer-events-none opacity-50' : ''}
+                        />
+                      )
+                    }
+                    return (
+                      <Select value={capacityId} onValueChange={setCapacityId} disabled={!unitTypeId}>
+                        <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                        <SelectContent>
+                          {opts.map(o => <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )
+                  })()}
                 </div>
               </div>
             )}
             <div className="space-y-2">
               <Label>Master Service Type</Label>
-              <Select value={serviceTypeId} onValueChange={setServiceTypeId} disabled={!capacityId}>
-                <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
-                <SelectContent>
-                  {masterData?.serviceTypes.map((s: unknown) => {
-                    const st = s as Record<string, unknown>
-                    return <SelectItem key={st.service_type_id as string} value={st.service_type_id as string}>{st.name as string}</SelectItem>
-                  })}
-                </SelectContent>
-              </Select>
+              {(() => {
+                const opts = (masterData?.serviceTypes ?? []).map((s: unknown) => {
+                  const st = s as Record<string, unknown>
+                  return { id: st.service_type_id as string, label: st.name as string }
+                })
+                if (opts.length > 3) {
+                  return (
+                    <SearchableSelect
+                      options={opts}
+                      value={serviceTypeId}
+                      onValueChange={setServiceTypeId}
+                      placeholder="Pilih..."
+                      searchPlaceholder="Cari service type..."
+                      className={!capacityId ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  )
+                }
+                return (
+                  <Select value={serviceTypeId} onValueChange={setServiceTypeId} disabled={!capacityId}>
+                    <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                    <SelectContent>
+                      {opts.map(o => <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )
+              })()}
             </div>
           </div>
         ) : (

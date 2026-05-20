@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
@@ -217,6 +218,35 @@ export default function CreateBlankInvoicePage() {
       minimumFractionDigits: 0,
     }).format(amount)
 
+  const onInvalid = (formErrors: typeof errors) => {
+    logger.warn('Blank invoice form validation failed:', formErrors)
+
+    // Surface the first concrete error to the user. RHF tracks errors per
+    // field path; flatten nested objects (items[i].description, etc.) and
+    // pick the first message.
+    const firstMessage = (() => {
+      const visit = (node: unknown): string | null => {
+        if (!node || typeof node !== 'object') return null
+        const obj = node as Record<string, unknown>
+        if (typeof obj.message === 'string' && obj.message.length > 0) {
+          return obj.message
+        }
+        for (const key of Object.keys(obj)) {
+          const found = visit(obj[key])
+          if (found) return found
+        }
+        return null
+      }
+      return visit(formErrors) ?? 'Periksa kembali isian form'
+    })()
+
+    toast({
+      variant: 'destructive',
+      title: 'Form belum valid',
+      description: firstMessage,
+    })
+  }
+
   const onSubmit = async (data: CreateBlankInvoiceInput) => {
     setIsSubmitting(true)
     try {
@@ -264,7 +294,7 @@ export default function CreateBlankInvoicePage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6 pb-6">
         {/* Customer */}
         <Card>
           <CardHeader>
@@ -276,27 +306,24 @@ export default function CreateBlankInvoicePage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Pelanggan Terdaftar (Opsional)</Label>
-              <Select
+              <SearchableSelect
+                options={[
+                  { id: 'none', label: '— Tanpa Pelanggan Terdaftar —' },
+                  ...customers.map((c) => ({
+                    id: c.customer_id,
+                    label: c.customer_name,
+                    secondaryLabel: c.phone_number || undefined,
+                  })),
+                ]}
                 value={watchedCustomerId || 'none'}
                 onValueChange={(value) =>
                   setValue('customer_id', value === 'none' ? undefined : value, {
                     shouldValidate: true,
                   })
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih pelanggan terdaftar (opsional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">— Tanpa Pelanggan Terdaftar —</SelectItem>
-                  {customers.map((c) => (
-                    <SelectItem key={c.customer_id} value={c.customer_id}>
-                      {c.customer_name}
-                      {c.phone_number ? ` · ${c.phone_number}` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Pilih pelanggan terdaftar (opsional)"
+                searchPlaceholder="Cari pelanggan..."
+              />
               <p className="text-xs text-muted-foreground">
                 Memilih pelanggan akan mengisi otomatis kolom di bawah. Jika tidak dipilih,
                 isi manual.
@@ -588,28 +615,51 @@ export default function CreateBlankInvoicePage() {
 
             <div className="space-y-2">
               <Label>Rekening Pembayaran (Opsional)</Label>
-              <Select
-                value={watchedPaymentAccountId || 'none'}
-                onValueChange={(value) =>
-                  setValue(
-                    'payment_account_id',
-                    value === 'none' ? undefined : value,
-                    { shouldValidate: true }
-                  )
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih rekening (opsional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">— Tanpa Rekening —</SelectItem>
-                  {bankAccounts.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>
-                      {acc.account_label} · {acc.bank} {acc.account_number}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {bankAccounts.length > 3 ? (
+                <SearchableSelect
+                  options={[
+                    { id: 'none', label: '— Tanpa Rekening —' },
+                    ...bankAccounts.map((acc) => ({
+                      id: acc.id,
+                      label: acc.account_label,
+                      secondaryLabel: `${acc.bank} ${acc.account_number}`,
+                    })),
+                  ]}
+                  value={watchedPaymentAccountId || 'none'}
+                  onValueChange={(value) =>
+                    setValue(
+                      'payment_account_id',
+                      value === 'none' ? undefined : value,
+                      { shouldValidate: true }
+                    )
+                  }
+                  placeholder="Pilih rekening (opsional)"
+                  searchPlaceholder="Cari rekening..."
+                />
+              ) : (
+                <Select
+                  value={watchedPaymentAccountId || 'none'}
+                  onValueChange={(value) =>
+                    setValue(
+                      'payment_account_id',
+                      value === 'none' ? undefined : value,
+                      { shouldValidate: true }
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih rekening (opsional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Tanpa Rekening —</SelectItem>
+                    {bankAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.account_label} · {acc.bank} {acc.account_number}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <Separator />

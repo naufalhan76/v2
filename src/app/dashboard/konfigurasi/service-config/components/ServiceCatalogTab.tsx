@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, Plus, Pencil, Trash2, Search, UploadCloud } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
@@ -202,25 +203,59 @@ export function ServiceCatalogTab() {
           <div className="flex gap-4 items-end flex-wrap">
             <div className="w-[200px] space-y-2">
               <Label className="text-sm font-medium text-foreground">Filter Type AC</Label>
-              <Select value={filterUnitTypeId} onValueChange={setFilterUnitTypeId}>
-                <SelectTrigger className="h-10"><SelectValue placeholder="Semua Type" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Semua Type AC</SelectItem>
-                  {unitTypes.map(ut => <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>{ut.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {unitTypes.length > 3 ? (
+                <SearchableSelect
+                  options={[
+                    { id: 'ALL', label: 'Semua Type AC' },
+                    ...unitTypes.map(ut => ({ id: ut.unit_type_id, label: ut.name })),
+                  ]}
+                  value={filterUnitTypeId}
+                  onValueChange={setFilterUnitTypeId}
+                  placeholder="Semua Type"
+                  searchPlaceholder="Cari type AC..."
+                />
+              ) : (
+                <Select value={filterUnitTypeId} onValueChange={setFilterUnitTypeId}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Semua Type" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Semua Type AC</SelectItem>
+                    {unitTypes.map(ut => <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>{ut.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="w-[200px] space-y-2">
               <Label className="text-sm font-medium text-foreground">Filter Capacity</Label>
-              <Select value={filterCapacityId} onValueChange={setFilterCapacityId} disabled={filterUnitTypeId === 'ALL'}>
-                <SelectTrigger className="h-10"><SelectValue placeholder="Semua Capacity" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Semua Capacity</SelectItem>
-                  {capacityRanges.filter(c => c.unit_type_id === filterUnitTypeId).map(c => 
-                    <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              {(() => {
+                const filtered = capacityRanges.filter(c => c.unit_type_id === filterUnitTypeId)
+                const disabled = filterUnitTypeId === 'ALL'
+                if (filtered.length > 3) {
+                  return (
+                    <SearchableSelect
+                      options={[
+                        { id: 'ALL', label: 'Semua Capacity' },
+                        ...filtered.map(c => ({ id: c.capacity_id, label: c.capacity_label })),
+                      ]}
+                      value={filterCapacityId}
+                      onValueChange={setFilterCapacityId}
+                      placeholder="Semua Capacity"
+                      searchPlaceholder="Cari capacity..."
+                      className={disabled ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  )
+                }
+                return (
+                  <Select value={filterCapacityId} onValueChange={setFilterCapacityId} disabled={disabled}>
+                    <SelectTrigger className="h-10"><SelectValue placeholder="Semua Capacity" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">Semua Capacity</SelectItem>
+                      {filtered.map(c =>
+                        <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                )
+              })()}
             </div>
             <div className="flex-1 space-y-2">
               <Label className="text-sm font-medium text-foreground">Cari (MSN / Nama)</Label>
@@ -311,33 +346,70 @@ export function ServiceCatalogTab() {
                  <div className="grid grid-cols-3 gap-4">
                    <div className="space-y-2">
                      <Label className="text-sm font-medium text-foreground">Type AC *</Label>
-                     <Select value={unitTypeId} onValueChange={setUnitTypeId}>
-                       <SelectTrigger className="h-10"><SelectValue placeholder="Pilih type AC" /></SelectTrigger>
-                      <SelectContent>
-                        {unitTypes.map(ut => <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>{ut.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                     {unitTypes.length > 3 ? (
+                       <SearchableSelect
+                         options={unitTypes.map(ut => ({ id: ut.unit_type_id, label: ut.name }))}
+                         value={unitTypeId}
+                         onValueChange={setUnitTypeId}
+                         placeholder="Pilih type AC"
+                         searchPlaceholder="Cari type AC..."
+                       />
+                     ) : (
+                       <Select value={unitTypeId} onValueChange={setUnitTypeId}>
+                         <SelectTrigger className="h-10"><SelectValue placeholder="Pilih type AC" /></SelectTrigger>
+                         <SelectContent>
+                           {unitTypes.map(ut => <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>{ut.name}</SelectItem>)}
+                         </SelectContent>
+                       </Select>
+                     )}
                    </div>
                    <div className="space-y-2">
                      <Label className="text-sm font-medium text-foreground">Capacity *</Label>
-                     <Select value={capacityId} onValueChange={setCapacityId} disabled={!unitTypeId}>
-                       <SelectTrigger className="h-10"><SelectValue placeholder="Pilih capacity" /></SelectTrigger>
-                      <SelectContent>
-                        {capacityRanges.filter(c => c.unit_type_id === unitTypeId).map(c => 
-                          <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
+                     {(() => {
+                       const filtered = capacityRanges.filter(c => c.unit_type_id === unitTypeId)
+                       if (filtered.length > 3) {
+                         return (
+                           <SearchableSelect
+                             options={filtered.map(c => ({ id: c.capacity_id, label: c.capacity_label }))}
+                             value={capacityId}
+                             onValueChange={setCapacityId}
+                             placeholder="Pilih capacity"
+                             searchPlaceholder="Cari capacity..."
+                             className={!unitTypeId ? 'pointer-events-none opacity-50' : ''}
+                           />
+                         )
+                       }
+                       return (
+                         <Select value={capacityId} onValueChange={setCapacityId} disabled={!unitTypeId}>
+                           <SelectTrigger className="h-10"><SelectValue placeholder="Pilih capacity" /></SelectTrigger>
+                           <SelectContent>
+                             {filtered.map(c =>
+                               <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>
+                             )}
+                           </SelectContent>
+                         </Select>
+                       )
+                     })()}
                    </div>
                    <div className="space-y-2">
                      <Label className="text-sm font-medium text-foreground">Master Service Type *</Label>
-                     <Select value={serviceTypeId} onValueChange={setServiceTypeId}>
-                       <SelectTrigger className="h-10"><SelectValue placeholder="Pilih service type" /></SelectTrigger>
-                      <SelectContent>
-                        {serviceTypes.map(st => <SelectItem key={st.service_type_id} value={st.service_type_id}>{st.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                     {serviceTypes.length > 3 ? (
+                       <SearchableSelect
+                         options={serviceTypes.map(st => ({ id: st.service_type_id, label: st.name }))}
+                         value={serviceTypeId}
+                         onValueChange={setServiceTypeId}
+                         placeholder="Pilih service type"
+                         searchPlaceholder="Cari service type..."
+                       />
+                     ) : (
+                       <Select value={serviceTypeId} onValueChange={setServiceTypeId}>
+                         <SelectTrigger className="h-10"><SelectValue placeholder="Pilih service type" /></SelectTrigger>
+                         <SelectContent>
+                           {serviceTypes.map(st => <SelectItem key={st.service_type_id} value={st.service_type_id}>{st.name}</SelectItem>)}
+                         </SelectContent>
+                       </Select>
+                     )}
+                   </div>
                 </div>
 
                 <div className="space-y-2">

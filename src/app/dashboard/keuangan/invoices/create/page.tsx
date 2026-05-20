@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import {
   Table,
   TableBody,
@@ -140,23 +141,19 @@ export default function CreateInvoicePage() {
 
   const loadCompletedOrders = async (): Promise<InvoiceOrder[]> => {
     try {
-      // Load orders for proforma/final invoice (Option C: Maximum flexibility)
-      // PROFORMA: Any order that has been assigned (ASSIGNED, OTW, ARRIVED, IN_PROGRESS)
-      // FINAL: Orders that are DONE
-      const [assignedResult, otwResult, arrivedResult, inProgressResult, doneResult] = await Promise.all([
-        getOrders({ status: 'ASSIGNED', limit: 100 }),
-        getOrders({ status: 'OTW', limit: 100 }),
-        getOrders({ status: 'ARRIVED', limit: 100 }),
-        getOrders({ status: 'IN_PROGRESS', limit: 100 }),
-        getOrders({ status: 'DONE', limit: 100 })
-      ])
-      const combinedOrders = [
-        ...(assignedResult.data || []),
-        ...(otwResult.data || []),
-        ...(arrivedResult.data || []),
-        ...(inProgressResult.data || []),
-        ...(doneResult.data || [])
-      ]
+      // Single roundtrip via statusIn (replaces 5 parallel getOrders).
+      // PROFORMA: ASSIGNED / OTW / ARRIVED / IN_PROGRESS
+      // FINAL: DONE
+      const result = await getOrders({
+        statusIn: 'ASSIGNED,OTW,ARRIVED,IN_PROGRESS,DONE',
+        limit: 200,
+      })
+
+      if (!result.success) {
+        throw new Error(result.error || 'Gagal memuat data order')
+      }
+
+      const combinedOrders = (result.data || []) as InvoiceOrder[]
 
       // Batch-check invoiced order_ids in a single query (avoids N+1 HTTP fetches)
       const invoicedSet = await getInvoicedOrderIds(
@@ -167,7 +164,8 @@ export default function CreateInvoicePage() {
       )
       setOrders(availableOrders)
       return availableOrders
-    } catch (_error) {
+    } catch (error) {
+      logger.error('Error loading completed orders:', error)
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -522,21 +520,35 @@ export default function CreateInvoicePage() {
                 <>
                   <div className="space-y-2">
                     <Label>Order</Label>
-                    <Select value={watch('orderId')} onValueChange={handleOrderSelect}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih order" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {orders.map((order) => (
-                          <SelectItem key={order.order_id} value={order.order_id}>
-                            {order.order_id} - {order.customers?.customer_name} ({order.order_type}) - 
-                            <Badge className="ml-2" variant={order.status === 'DONE' ? 'default' : 'secondary'}>
-                              {order.status}
-                            </Badge>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {orders.length > 3 ? (
+                      <SearchableSelect
+                        options={orders.map((order) => ({
+                          id: order.order_id,
+                          label: `${order.order_id} — ${order.customers?.customer_name ?? '-'}`,
+                          secondaryLabel: `${order.order_type} · ${order.status}`,
+                        }))}
+                        value={watch('orderId') || ''}
+                        onValueChange={handleOrderSelect}
+                        placeholder="Pilih order"
+                        searchPlaceholder="Cari order / customer..."
+                      />
+                    ) : (
+                      <Select value={watch('orderId')} onValueChange={handleOrderSelect}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih order" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {orders.map((order) => (
+                            <SelectItem key={order.order_id} value={order.order_id}>
+                              {order.order_id} - {order.customers?.customer_name} ({order.order_type}) - 
+                              <Badge className="ml-2" variant={order.status === 'DONE' ? 'default' : 'secondary'}>
+                                {order.status}
+                              </Badge>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                     {errors.orderId && (
                       <p className="text-sm text-destructive">{errors.orderId.message}</p>
                     )}
@@ -685,18 +697,32 @@ export default function CreateInvoicePage() {
               <div className="flex gap-4">
                 <div className="flex-1">
                   <Label>Add-on</Label>
-                  <Select value={selectedAddon} onValueChange={setSelectedAddon}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih add-on" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {addons.map((addon) => (
-                        <SelectItem key={addon.addon_id} value={addon.addon_id}>
-                          {addon.item_name} - {formatCurrency(addon.unit_price)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {addons.length > 3 ? (
+                    <SearchableSelect
+                      options={addons.map((addon) => ({
+                        id: addon.addon_id,
+                        label: addon.item_name,
+                        secondaryLabel: formatCurrency(addon.unit_price),
+                      }))}
+                      value={selectedAddon}
+                      onValueChange={setSelectedAddon}
+                      placeholder="Pilih add-on"
+                      searchPlaceholder="Cari add-on..."
+                    />
+                  ) : (
+                    <Select value={selectedAddon} onValueChange={setSelectedAddon}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih add-on" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {addons.map((addon) => (
+                          <SelectItem key={addon.addon_id} value={addon.addon_id}>
+                            {addon.item_name} - {formatCurrency(addon.unit_price)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
                 <div className="w-32">
                   <Label>Quantity</Label>
@@ -781,26 +807,40 @@ export default function CreateInvoicePage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Payment Account *</Label>
-                  <Select
-                    value={watch('paymentAccountId')}
-                    onValueChange={(value) => setValue('paymentAccountId', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih payment account" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {bankAccounts.map((account) => (
-                        <SelectItem key={account.id} value={account.id}>
-                          <div className="flex flex-col">
-                            <span className="font-semibold">{account.account_label}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {account.bank} - {account.account_number} (PPN {account.tax_percentage}%)
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {bankAccounts.length > 3 ? (
+                    <SearchableSelect
+                      options={bankAccounts.map((account) => ({
+                        id: account.id,
+                        label: account.account_label,
+                        secondaryLabel: `${account.bank} - ${account.account_number} (PPN ${account.tax_percentage}%)`,
+                      }))}
+                      value={watch('paymentAccountId') || ''}
+                      onValueChange={(value) => setValue('paymentAccountId', value)}
+                      placeholder="Pilih payment account"
+                      searchPlaceholder="Cari rekening..."
+                    />
+                  ) : (
+                    <Select
+                      value={watch('paymentAccountId')}
+                      onValueChange={(value) => setValue('paymentAccountId', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih payment account" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bankAccounts.map((account) => (
+                          <SelectItem key={account.id} value={account.id}>
+                            <div className="flex flex-col">
+                              <span className="font-semibold">{account.account_label}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {account.bank} - {account.account_number} (PPN {account.tax_percentage}%)
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                   {errors.paymentAccountId && (
                     <p className="text-sm text-destructive">{errors.paymentAccountId.message}</p>
                   )}
