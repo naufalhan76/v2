@@ -226,6 +226,10 @@ async function getAccessScopedUser(
   }
 }
 
+export type CreateBlankInvoiceResult =
+  | { success: true; data: Invoice }
+  | { success: false; error: string }
+
 async function assertCustomerIsVisibleOrThrow(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
@@ -834,7 +838,50 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
  *
  * Returns the created Invoice (with `source` populated).
  */
+function getBlankInvoiceErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : 'Gagal membuat invoice'
+
+  if (message.includes('Unauthorized')) {
+    return 'Anda tidak punya akses untuk membuat invoice'
+  }
+
+  if (message.includes('Customer')) {
+    return message
+  }
+
+  if (
+    message.includes('source') ||
+    message.includes('customer_name_override') ||
+    message.includes('order_id') ||
+    message.includes('service_type') ||
+    message.includes('base_service_price') ||
+    message.includes('chk_invoices_source_integrity') ||
+    message.includes('violates not-null constraint') ||
+    message.includes('violates check constraint')
+  ) {
+    return 'Database belum siap untuk blank invoice. Jalankan migration 012_add_blank_invoice_support.sql di production.'
+  }
+
+  if (message.startsWith('Gagal') || message.includes('wajib') || message.includes('valid')) {
+    return message
+  }
+
+  return 'Gagal membuat invoice. Cek server log untuk detail error.'
+}
+
 export async function createBlankInvoice(
+  input: CreateBlankInvoiceInput
+): Promise<CreateBlankInvoiceResult> {
+  try {
+    const invoice = await createBlankInvoiceOrThrow(input)
+    return { success: true, data: invoice }
+  } catch (error) {
+    logger.error('createBlankInvoice failed:', error)
+    return { success: false, error: getBlankInvoiceErrorMessage(error) }
+  }
+}
+
+async function createBlankInvoiceOrThrow(
   input: CreateBlankInvoiceInput
 ): Promise<Invoice> {
   const supabase = await createClient()
@@ -940,7 +987,7 @@ export async function createBlankInvoice(
 
   if (invoiceError || !invoice) {
     logger.error('Error creating blank invoice:', invoiceError)
-    throw new Error('Gagal membuat invoice')
+    throw new Error(invoiceError?.message || 'Gagal membuat invoice')
   }
 
   // Insert line items
@@ -965,7 +1012,7 @@ export async function createBlankInvoice(
     logger.error('Error creating blank invoice items:', itemsError)
     // Rollback the invoice header so we don't leave an empty invoice behind.
     await supabase.from('invoices').delete().eq('invoice_id', invoice.invoice_id)
-    throw new Error('Gagal membuat invoice items')
+    throw new Error(itemsError.message || 'Gagal membuat invoice items')
   }
 
   revalidatePath('/dashboard/keuangan/invoices')

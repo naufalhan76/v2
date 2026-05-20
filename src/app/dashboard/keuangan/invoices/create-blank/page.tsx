@@ -261,7 +261,12 @@ export default function CreateBlankInvoicePage() {
         terms_conditions: data.terms_conditions?.trim() || undefined,
       }
 
-      const created = await createBlankInvoice(cleaned)
+      const result = await createBlankInvoice(cleaned)
+      if (!result.success) {
+        throw new Error(result.error)
+      }
+
+      const created = result.data
       toast({
         title: 'Berhasil',
         description: `Invoice ${created.invoice_number} berhasil dibuat`,
