@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { canAccessCustomer, requireFinanceRole, type UserRole } from '@/lib/rbac'
 import { isOverdue, type InvoiceStatus } from '@/lib/invoice-status'
 import { canReviseInvoice, getInvoiceSource, type InvoiceSource, REVISABLE_STATUSES } from '@/lib/invoice-utils'
 import { getInvoiceConfig } from '@/lib/actions/invoice-config'
@@ -10,6 +11,7 @@ import {
   CreateBlankInvoiceSchema,
   type CreateBlankInvoiceInput,
 } from '@/app/api/schemas'
+import { calculateDiscount, calculateTax } from '@/lib/utils/money'
 
 export type { InvoiceStatus }
 export type { InvoiceSource }
@@ -122,11 +124,13 @@ function withBlankInvoiceCustomer<T extends Invoice>(invoice: T): T {
     return invoice
   }
 
+  const normalizedCustomerName = invoice.customer_name_override?.trim()
+
   return {
     ...invoice,
     customers: {
       customer_id: invoice.customer_id || '',
-      customer_name: invoice.customer_name_override || 'Customer',
+      customer_name: normalizedCustomerName || 'Customer',
       phone_number: invoice.customer_phone_override || '',
       email: invoice.customer_email_override || '',
       billing_address: invoice.customer_address_override || null,
@@ -153,9 +157,27 @@ const ALLOWED_REVISION_FIELDS = [
   'payment_account_name',
 ] as const
 
-type AllowedRevisionField = (typeof ALLOWED_REVISION_FIELDS)[number]
+type InvoiceRevisionHeaderFieldValueMap = {
+  customer_id: string | null
+  customer_name_override: string | null
+  customer_phone_override: string | null
+  customer_email_override: string | null
+  customer_address_override: string | null
+  due_date: string | null
+  notes: string | null
+  terms_conditions: string | null
+  discount_amount: number | null
+  discount_percentage: number | null
+  tax_percentage: number | null
+  payment_account_id: string | null
+  payment_account_label: string | null
+  payment_bank_name: string | null
+  payment_account_number: string | null
+  payment_account_name: string | null
+}
 
-export type RevisionHeaderUpdates = Partial<Record<AllowedRevisionField, string | number | null>> &
+export type InvoiceRevisionHeaderUpdates =
+  Partial<InvoiceRevisionHeaderFieldValueMap> &
   Record<string, unknown>
 
 export interface ReviseInvoiceItemInput {
@@ -185,7 +207,51 @@ type InvoiceAdjustments = {
 
 const allowedRevisionFieldSet = new Set<string>(ALLOWED_REVISION_FIELDS)
 
-function pickAllowedRevisionUpdates(updates: RevisionHeaderUpdates): Record<string, unknown> {
+type AccessScopedUser = {
+  role: UserRole | null
+}
+
+async function getAccessScopedUser(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string
+): Promise<AccessScopedUser> {
+  const { data: roleRow } = await supabase
+    .from('user_management')
+    .select('role')
+    .eq('auth_user_id', userId)
+    .maybeSingle()
+
+  return {
+    role: (roleRow?.role as UserRole | null | undefined) ?? null,
+  }
+}
+
+async function assertCustomerIsVisibleOrThrow(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  customerId: string | null | undefined
+): Promise<void> {
+  if (!customerId) {
+    return
+  }
+
+  const { data: customer, error } = await supabase
+    .from('customers')
+    .select('customer_id, created_by')
+    .eq('customer_id', customerId)
+    .maybeSingle()
+
+  if (error || !customer) {
+    throw new Error('Customer tidak valid atau tidak dapat diakses')
+  }
+
+  const accessUser = await getAccessScopedUser(supabase, userId)
+  if (!canAccessCustomer(accessUser, customer)) {
+    throw new Error('Customer tidak valid atau tidak dapat diakses')
+  }
+}
+
+function pickAllowedRevisionUpdates(updates: InvoiceRevisionHeaderUpdates): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(updates).filter(([key]) => allowedRevisionFieldSet.has(key))
   )
@@ -195,16 +261,22 @@ function calculateInvoiceTotals(
   subtotal: number,
   adjustments: InvoiceAdjustments
 ): InvoiceTotals {
+  const safeSubtotal = Math.max(0, subtotal)
+  const discountAmountInput = adjustments.discount_amount ?? 0
   const discountPercentage = adjustments.discount_percentage ?? 0
-  const discountAmount =
-    adjustments.discount_amount ?? (subtotal * discountPercentage) / 100
+  const hasFixedDiscount = discountAmountInput > 0
+  const discountAmount = calculateDiscount(
+    safeSubtotal,
+    hasFixedDiscount ? 'FIXED' : 'PERCENTAGE',
+    hasFixedDiscount ? discountAmountInput : discountPercentage
+  )
   const taxPercentage = adjustments.tax_percentage ?? 0
-  const taxableBase = Math.max(0, subtotal - discountAmount)
-  const taxAmount = (taxableBase * taxPercentage) / 100
+  const taxableBase = Math.max(0, safeSubtotal - discountAmount)
+  const taxAmount = calculateTax(taxableBase, taxPercentage)
 
   return {
-    subtotal,
-    addons_subtotal: subtotal,
+    subtotal: safeSubtotal,
+    addons_subtotal: safeSubtotal,
     tax_amount: taxAmount,
     total_amount: taxableBase + taxAmount,
   }
@@ -607,10 +679,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  if (!user) {
-    throw new Error('Unauthorized')
-  }
+  await requireFinanceRole(user)
 
   // Generate invoice number
   const invoiceNumber = await generateInvoiceNumber()
@@ -640,6 +709,26 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     input.due_date ||
       new Date(invoiceDate.setDate(invoiceDate.getDate() + (config?.default_due_days || 30)))
   )
+
+  await assertCustomerIsVisibleOrThrow(supabase, user!.id, input.customer_id)
+
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('order_id, customer_id, status')
+    .eq('order_id', input.order_id)
+    .maybeSingle()
+
+  if (orderError || !order) {
+    throw new Error('Order tidak valid atau tidak ditemukan')
+  }
+
+  if (order.customer_id !== input.customer_id) {
+    throw new Error('Order tidak sesuai dengan customer yang dipilih')
+  }
+
+  if (order.status !== 'DONE') {
+    throw new Error('Order belum memenuhi syarat untuk pembuatan invoice')
+  }
 
   // Create invoice
   const { data: invoice, error: invoiceError } = await supabase
@@ -673,7 +762,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
       payment_bank_name: input.payment_bank_name || null,
       payment_account_number: input.payment_account_number || null,
       payment_account_name: input.payment_account_name || null,
-      created_by: user.id,
+      created_by: user!.id,
     })
     .select()
     .single()
@@ -748,16 +837,14 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
 export async function createBlankInvoice(
   input: CreateBlankInvoiceInput
 ): Promise<Invoice> {
-  const parsedInput = CreateBlankInvoiceSchema.parse(input)
   const supabase = await createClient()
-
-  // Auth
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) {
-    throw new Error('Unauthorized')
-  }
+  await requireFinanceRole(user)
+
+  const parsedInput = CreateBlankInvoiceSchema.parse(input)
+  await assertCustomerIsVisibleOrThrow(supabase, user!.id, parsedInput.customer_id)
 
   // Numbering — reuse existing RPC. No order_id needed.
   const invoiceNumber = await generateInvoiceNumber()
@@ -775,14 +862,21 @@ export async function createBlankInvoice(
     (sum, item) => sum + item.quantity * item.unit_price,
     0
   )
+  const discountAmountInput = parsedInput.discount_amount ?? 0
   const discountPercentage = parsedInput.discount_percentage || 0
-  const discountAmount = parsedInput.discount_amount ?? (subtotal * discountPercentage) / 100
+  const hasFixedDiscount = discountAmountInput > 0
+  const discountAmount = calculateDiscount(
+    subtotal,
+    hasFixedDiscount ? 'FIXED' : 'PERCENTAGE',
+    hasFixedDiscount ? discountAmountInput : discountPercentage
+  )
   const taxPercentage =
     parsedInput.tax_percentage ?? config?.default_tax_percentage ?? 11
   const taxableBase = Math.max(0, subtotal - discountAmount)
-  const taxAmount = (taxableBase * taxPercentage) / 100
+  const taxAmount = calculateTax(taxableBase, taxPercentage)
   const totalAmount = taxableBase + taxAmount
   const hasLinkedCustomer = Boolean(parsedInput.customer_id)
+  const customerNameOverride = parsedInput.customer_name
 
   // Build insert payload. Leaves order_id / customer_id / base_service_* NULL
   // when appropriate; relies on migration 012 having loosened NOT NULLs.
@@ -793,9 +887,12 @@ export async function createBlankInvoice(
     order_id: null,
     customer_id: parsedInput.customer_id || null,
 
-    // Manual customer snapshot. When linking an existing customer, keep the
-    // customer FK as the source of truth and do not duplicate overrides.
-    customer_name_override: hasLinkedCustomer ? null : parsedInput.customer_name,
+    // Migration constraint compatibility:
+    // BLANK invoices must always carry a non-empty customer_name_override,
+    // including when customer_id is linked.
+    customer_name_override: customerNameOverride,
+    // For linked customers, keep non-name overrides nullable and treat the
+    // customer FK as source of truth for contact details.
     customer_phone_override: hasLinkedCustomer ? null : parsedInput.customer_phone || null,
     customer_email_override: hasLinkedCustomer ? null : parsedInput.customer_email || null,
     customer_address_override: hasLinkedCustomer ? null : parsedInput.customer_address || null,
@@ -832,7 +929,7 @@ export async function createBlankInvoice(
     payment_account_number: parsedInput.payment_account_number || null,
     payment_account_name: parsedInput.payment_account_name || null,
 
-    created_by: user.id,
+    created_by: user!.id,
   }
 
   const { data: invoice, error: invoiceError } = await supabase
@@ -882,9 +979,13 @@ export async function createBlankInvoice(
  */
 export async function updateInvoice(
   invoiceId: string,
-  updates: RevisionHeaderUpdates
+  updates: InvoiceRevisionHeaderUpdates
 ): Promise<Invoice> {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  await requireFinanceRole(user)
 
   const { data: currentInvoice, error: fetchError } = await supabase
     .from('invoices')
@@ -900,10 +1001,12 @@ export async function updateInvoice(
     throw new Error('Invoice hanya dapat direvisi saat berstatus DRAFT atau SENT')
   }
 
-  const { invoice_number: _ignoredInvoiceNumber } = updates
-  void _ignoredInvoiceNumber
-
   const safeUpdates = pickAllowedRevisionUpdates(updates)
+  await assertCustomerIsVisibleOrThrow(
+    supabase,
+    user!.id,
+    (safeUpdates.customer_id as string | null | undefined) ?? null
+  )
   const shouldRecomputeTotals =
     'discount_amount' in safeUpdates ||
     'discount_percentage' in safeUpdates ||
@@ -971,6 +1074,10 @@ export async function reviseInvoiceItems(
   items: ReviseInvoiceItemInput[]
 ): Promise<Invoice> {
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  await requireFinanceRole(user)
 
   const { data: currentInvoice, error: fetchError } = await supabase
     .from('invoices')
@@ -1007,6 +1114,37 @@ export async function reviseInvoiceItems(
     total_amount: currentInvoice.total_amount,
   }
 
+  const restoreOriginalItems = async (context: string) => {
+    const { error: clearError } = await supabase
+      .from('invoice_items')
+      .delete()
+      .eq('invoice_id', invoiceId)
+
+    if (clearError) {
+      logger.error('Failed to clear revised invoice items during restore:', {
+        context,
+        invoiceId,
+        error: clearError,
+      })
+    }
+
+    if (restoreItems.length === 0) {
+      return
+    }
+
+    const { error: restoreError } = await supabase
+      .from('invoice_items')
+      .insert(restoreItems)
+
+    if (restoreError) {
+      logger.error('Failed to restore original invoice items:', {
+        context,
+        invoiceId,
+        error: restoreError,
+      })
+    }
+  }
+
   const { error: deleteError } = await supabase
     .from('invoice_items')
     .delete()
@@ -1023,9 +1161,7 @@ export async function reviseInvoiceItems(
 
   if (insertError) {
     logger.error('Error inserting revised invoice items:', insertError)
-    if (restoreItems.length > 0) {
-      await supabase.from('invoice_items').insert(restoreItems)
-    }
+    await restoreOriginalItems('insert_revised_items_failed')
     throw new Error('Gagal menyimpan item invoice')
   }
 
@@ -1047,10 +1183,7 @@ export async function reviseInvoiceItems(
 
   if (updateError || !updatedInvoice) {
     logger.error('Error updating invoice totals after item revision:', updateError)
-    await supabase.from('invoice_items').delete().eq('invoice_id', invoiceId)
-    if (restoreItems.length > 0) {
-      await supabase.from('invoice_items').insert(restoreItems)
-    }
+    await restoreOriginalItems('update_invoice_totals_failed')
     await supabase
       .from('invoices')
       .update({ ...previousTotals, updated_at: new Date().toISOString() })
@@ -1065,9 +1198,15 @@ export async function reviseInvoiceItems(
 
 export async function reviseInvoice(
   invoiceId: string,
-  headerUpdates: RevisionHeaderUpdates,
+  headerUpdates: InvoiceRevisionHeaderUpdates,
   items: ReviseInvoiceItemInput[]
 ): Promise<Invoice> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  await requireFinanceRole(user)
+
   await updateInvoice(invoiceId, headerUpdates)
   return reviseInvoiceItems(invoiceId, items)
 }
@@ -1078,10 +1217,15 @@ export async function reviseInvoice(
 export async function deleteInvoice(invoiceId: string): Promise<void> {
   const supabase = await createClient()
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  await requireFinanceRole(user)
+
   // Get invoice details first
   const { data: invoice, error: fetchError } = await supabase
     .from('invoices')
-    .select('status, payment_status, paid_amount, invoice_number')
+    .select('status, order_id, invoice_type')
     .eq('invoice_id', invoiceId)
     .single()
 
@@ -1122,13 +1266,6 @@ export async function deleteInvoice(invoiceId: string): Promise<void> {
     )
   }
 
-  // Get invoice details for order sync
-  const { data: invoiceDetails } = await supabase
-    .from('invoices')
-    .select('order_id, invoice_type')
-    .eq('invoice_id', invoiceId)
-    .single()
-
   const { error } = await supabase.from('invoices').delete().eq('invoice_id', invoiceId)
 
   if (error) {
@@ -1137,11 +1274,11 @@ export async function deleteInvoice(invoiceId: string): Promise<void> {
   }
 
   // Revert order status: INVOICED → DONE
-  if (invoiceDetails?.order_id && invoiceDetails?.invoice_type === 'FINAL') {
+  if (invoice.order_id && invoice.invoice_type === 'FINAL') {
     await supabase
       .from('orders')
       .update({ status: 'DONE', updated_at: new Date().toISOString() })
-      .eq('order_id', invoiceDetails.order_id)
+      .eq('order_id', invoice.order_id)
   }
 
   revalidatePath('/dashboard/keuangan/invoices')
@@ -1166,10 +1303,7 @@ export async function recordPayment(
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  if (!user) {
-    throw new Error('Unauthorized')
-  }
+  await requireFinanceRole(user)
 
   // Get current invoice
   const { data: invoice, error: fetchError } = await supabase
@@ -1207,7 +1341,7 @@ export async function recordPayment(
       amount: payment.amount,
       reference_number: payment.reference_number || null,
       notes: payment.notes || null,
-      recorded_by: user.id,
+      recorded_by: user!.id,
     })
     .select()
     .single()
@@ -1251,6 +1385,11 @@ export async function updateInvoiceStatus(
   status: 'DRAFT' | 'SENT' | 'PARTIAL_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED'
 ): Promise<Invoice> {
   const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  await requireFinanceRole(user)
 
   const { data, error } = await supabase
     .from('invoices')

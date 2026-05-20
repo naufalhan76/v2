@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { requireFinanceRole } from '@/lib/rbac'
 import type { BankAccount } from '@/lib/bank-accounts'
 export type { BankAccount } from '@/lib/bank-accounts'
 
@@ -81,9 +82,7 @@ export async function updateInvoiceConfig(
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    throw new Error('Unauthorized')
-  }
+  await requireFinanceRole(user)
 
   // Check if config exists
   const existingConfig = await getInvoiceConfig()
@@ -115,7 +114,7 @@ export async function updateInvoiceConfig(
       .from('invoice_configuration')
       .update({
         ...configData,
-        updated_by: user.id,
+        updated_by: user!.id,
       })
       .eq('config_id', existingConfig.config_id)
       .select()
@@ -129,7 +128,7 @@ export async function updateInvoiceConfig(
       .from('invoice_configuration')
       .insert({
         ...configData,
-        updated_by: user.id,
+        updated_by: user!.id,
       })
       .select()
       .single()

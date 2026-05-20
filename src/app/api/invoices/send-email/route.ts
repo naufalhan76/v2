@@ -6,9 +6,14 @@ import { parseBankAccounts } from '@/lib/bank-accounts'
 import { logger } from '@/lib/logger'
 import { formatPhone } from '@/lib/utils'
 import { getInvoiceStatusLabel, isOverdue } from '@/lib/invoice-status'
+import { requireFinanceRoleAPI } from '@/app/api/middleware/auth'
+import { escapeHtml } from '@/lib/utils/html'
 
 export async function POST(request: NextRequest) {
   try {
+    const financeGuard = await requireFinanceRoleAPI(request)
+    if (financeGuard) return financeGuard
+
     if (!process.env.RESEND_API_KEY) {
       logger.error('RESEND_API_KEY is not configured')
       return NextResponse.json(
@@ -78,6 +83,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     const customerName = invoice.customers?.customer_name || invoice.customer_name_override || 'Customer'
+    const customerAddress = invoice.customer_address_override || ''
     const customerPhone = invoice.customers?.phone_number || invoice.customer_phone_override || ''
     const customerEmail = invoice.customers?.email || invoice.customer_email_override || ''
 
@@ -94,6 +100,7 @@ export async function POST(request: NextRequest) {
 
     // Get company info
     const companyName = config?.company_name || 'AC Service Dashboard'
+    const companyAddress = config?.company_address || ''
     const companyPhone = config?.company_phone || ''
     const companyWebsite = config?.company_website || ''
     
@@ -113,6 +120,18 @@ export async function POST(request: NextRequest) {
     const bankAccounts = parseBankAccounts(config?.bank_accounts)
     const displayStatus = isOverdue(invoice) ? 'OVERDUE' : invoice.status
     const displayStatusLabel = getInvoiceStatusLabel(displayStatus)
+
+    const safeInvoiceNumber = escapeHtml(invoice.invoice_number)
+    const safeCustomerName = escapeHtml(customerName)
+    const safeCustomerAddress = escapeHtml(customerAddress)
+    const safeCustomerEmail = escapeHtml(customerEmail)
+    const safeCompanyName = escapeHtml(companyName)
+    const safeCompanyAddress = escapeHtml(companyAddress)
+    const safeCompanyPhone = escapeHtml(companyPhone)
+    const safeCompanyEmail = escapeHtml(companyEmail)
+    const safeCompanyWebsite = escapeHtml(companyWebsite)
+    const safeDisplayStatusLabel = escapeHtml(displayStatusLabel)
+    const safeTermsConditions = escapeHtml(config?.terms_conditions_template).replace(/\n/g, '<br>')
 
     // Format currency
     const formatCurrency = (amount: number) => {
@@ -139,7 +158,7 @@ export async function POST(request: NextRequest) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Invoice ${invoice.invoice_number}</title>
+  <title>Invoice ${safeInvoiceNumber}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px;">
@@ -151,7 +170,7 @@ export async function POST(request: NextRequest) {
           <tr>
             <td style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 40px 30px; text-align: center;">
               <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">INVOICE</h1>
-              <p style="margin: 10px 0 0 0; color: #e0e7ff; font-size: 18px;">${companyName}</p>
+              <p style="margin: 10px 0 0 0; color: #e0e7ff; font-size: 18px;">${safeCompanyName}</p>
             </td>
           </tr>
 
@@ -162,15 +181,16 @@ export async function POST(request: NextRequest) {
                 <tr>
                   <td style="width: 50%; vertical-align: top;">
                     <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; font-weight: bold;">Tagihan Kepada</p>
-                    <p style="margin: 0 0 5px 0; color: #111827; font-size: 18px; font-weight: bold;">${customerName}</p>
-                    ${customerPhone ? `<p style="margin: 0 0 5px 0; color: #6b7280; font-size: 14px;">${formatPhone(customerPhone)}</p>` : ''}
-                    <p style="margin: 0; color: #6b7280; font-size: 14px;">${customerEmail}</p>
+                    <p style="margin: 0 0 5px 0; color: #111827; font-size: 18px; font-weight: bold;">${safeCustomerName}</p>
+                    ${safeCustomerAddress ? `<p style="margin: 0 0 5px 0; color: #6b7280; font-size: 14px;">${safeCustomerAddress}</p>` : ''}
+                    ${customerPhone ? `<p style="margin: 0 0 5px 0; color: #6b7280; font-size: 14px;">${escapeHtml(formatPhone(customerPhone))}</p>` : ''}
+                    <p style="margin: 0; color: #6b7280; font-size: 14px;">${safeCustomerEmail}</p>
                   </td>
                   <td style="width: 50%; vertical-align: top; text-align: right;">
                     <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 6px; padding: 15px;">
                       <tr>
                         <td style="padding: 3px 0; color: #6b7280; font-size: 12px;">No. Invoice:</td>
-                        <td style="padding: 3px 0; color: #111827; font-size: 14px; font-weight: bold; text-align: right;">${invoice.invoice_number}</td>
+                        <td style="padding: 3px 0; color: #111827; font-size: 14px; font-weight: bold; text-align: right;">${safeInvoiceNumber}</td>
                       </tr>
                       <tr>
                         <td style="padding: 3px 0; color: #6b7280; font-size: 12px;">Tanggal:</td>
@@ -187,7 +207,7 @@ export async function POST(request: NextRequest) {
                             ${displayStatus === 'PAID' ? 'background-color: #dcfce7; color: #16a34a;' : 
                               displayStatus === 'SENT' ? 'background-color: #dbeafe; color: #2563eb;' : 
                               displayStatus === 'OVERDUE' ? 'background-color: #fee2e2; color: #dc2626;' : 
-                              'background-color: #f3f4f6; color: #6b7280;'}">${displayStatusLabel}</span>
+                              'background-color: #f3f4f6; color: #6b7280;'}">${safeDisplayStatusLabel}</span>
                         </td>
                       </tr>
                     </table>
@@ -213,7 +233,7 @@ export async function POST(request: NextRequest) {
                 <tbody>
                   ${items?.map((item, index) => `
                     <tr style="background-color: ${index % 2 === 0 ? '#f9fafb' : '#ffffff'}; border-bottom: 1px solid #e5e7eb;">
-                      <td style="padding: 12px; color: #374151; font-size: 14px;">${item.description}</td>
+                      <td style="padding: 12px; color: #374151; font-size: 14px;">${escapeHtml(item.description)}</td>
                       <td style="padding: 12px; text-align: center; color: #374151; font-size: 14px;">${item.quantity}</td>
                       <td style="padding: 12px; text-align: right; color: #374151; font-size: 14px;">${formatCurrency(item.unit_price)}</td>
                       <td style="padding: 12px; text-align: right; color: #111827; font-size: 14px; font-weight: bold;">${formatCurrency(item.total_price)}</td>
@@ -265,13 +285,13 @@ export async function POST(request: NextRequest) {
             <td style="padding: 0 30px 30px 30px;">
               <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 20px; border-radius: 6px;">
                 <h3 style="margin: 0 0 15px 0; color: #1e3a8a; font-size: 16px; font-weight: bold;">💳 Informasi Pembayaran</h3>
-                <p style="margin: 0 0 15px 0; color: #475569; font-size: 13px; font-style: italic;">Silakan transfer ke salah satu rekening berikut dan cantumkan No. Invoice (${invoice.invoice_number}) dalam keterangan transfer.</p>
+                <p style="margin: 0 0 15px 0; color: #475569; font-size: 13px; font-style: italic;">Silakan transfer ke salah satu rekening berikut dan cantumkan No. Invoice (${safeInvoiceNumber}) dalam keterangan transfer.</p>
                 ${bankAccounts.map((account, index) => { return `
                   <div style="margin-bottom: 15px; padding: 12px; background-color: #ffffff; border-radius: 6px;">
-                    <p style="margin: 0 0 5px 0; color: #1e3a8a; font-size: 15px; font-weight: bold;">${index + 1}. ${account.account_label}</p>
-                    <p style="margin: 0 0 3px 0; color: #475569; font-size: 14px;">Bank: <strong>${account.bank}</strong></p>
-                    <p style="margin: 0 0 3px 0; color: #475569; font-size: 14px;">No. Rekening: <strong>${account.account_number}</strong></p>
-                    <p style="margin: 0; color: #475569; font-size: 14px;">Atas Nama: <strong>${account.account_name}</strong></p>
+                    <p style="margin: 0 0 5px 0; color: #1e3a8a; font-size: 15px; font-weight: bold;">${index + 1}. ${escapeHtml(account.account_label)}</p>
+                    <p style="margin: 0 0 3px 0; color: #475569; font-size: 14px;">Bank: <strong>${escapeHtml(account.bank)}</strong></p>
+                    <p style="margin: 0 0 3px 0; color: #475569; font-size: 14px;">No. Rekening: <strong>${escapeHtml(account.account_number)}</strong></p>
+                    <p style="margin: 0; color: #475569; font-size: 14px;">Atas Nama: <strong>${escapeHtml(account.account_name)}</strong></p>
                     <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 12px;">PPN ${account.tax_percentage}%</p>
                   </div>
                 `}).join('')}
@@ -280,12 +300,12 @@ export async function POST(request: NextRequest) {
           </tr>
           ` : ''}
 
-          ${config?.terms_conditions_template ? `
+          ${safeTermsConditions ? `
           <!-- Terms & Conditions -->
           <tr>
             <td style="padding: 0 30px 30px 30px;">
               <h3 style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px; font-weight: bold; text-transform: uppercase;">Syarat dan Ketentuan</h3>
-              <p style="margin: 0; color: #6b7280; font-size: 13px; line-height: 1.6;">${config.terms_conditions_template.replace(/\n/g, '<br>')}</p>
+              <p style="margin: 0; color: #6b7280; font-size: 13px; line-height: 1.6;">${safeTermsConditions}</p>
             </td>
           </tr>
           ` : ''}
@@ -294,9 +314,10 @@ export async function POST(request: NextRequest) {
           <tr>
             <td style="background-color: #f9fafb; padding: 20px 30px; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0 0 10px 0; color: #374151; font-size: 13px;">Jika ada pertanyaan, silakan hubungi kami:</p>
-              ${companyPhone ? `<p style="margin: 0 0 5px 0; color: #6b7280; font-size: 13px;">📞 ${companyPhone}</p>` : ''}
-              ${companyEmail ? `<p style="margin: 0 0 5px 0; color: #6b7280; font-size: 13px;">📧 ${companyEmail}</p>` : ''}
-              ${companyWebsite ? `<p style="margin: 0 0 15px 0; color: #3b82f6; font-size: 13px;">🌐 ${companyWebsite}</p>` : ''}
+              ${safeCompanyAddress ? `<p style="margin: 0 0 5px 0; color: #6b7280; font-size: 13px;">📍 ${safeCompanyAddress}</p>` : ''}
+              ${safeCompanyPhone ? `<p style="margin: 0 0 5px 0; color: #6b7280; font-size: 13px;">📞 ${safeCompanyPhone}</p>` : ''}
+              ${safeCompanyEmail ? `<p style="margin: 0 0 5px 0; color: #6b7280; font-size: 13px;">📧 ${safeCompanyEmail}</p>` : ''}
+              ${safeCompanyWebsite ? `<p style="margin: 0 0 15px 0; color: #3b82f6; font-size: 13px;">🌐 ${safeCompanyWebsite}</p>` : ''}
               <p style="margin: 0; color: #9ca3af; font-size: 12px; font-style: italic;">Terima kasih atas kepercayaan Anda! 🙏</p>
             </td>
           </tr>
@@ -307,7 +328,7 @@ export async function POST(request: NextRequest) {
         <table width="600" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
           <tr>
             <td style="text-align: center; color: #9ca3af; font-size: 12px;">
-              <p style="margin: 0;">Invoice ini digenerate otomatis oleh sistem ${companyName}</p>
+              <p style="margin: 0;">Invoice ini digenerate otomatis oleh sistem ${safeCompanyName}</p>
             </td>
           </tr>
         </table>

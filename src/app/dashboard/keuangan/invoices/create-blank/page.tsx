@@ -29,6 +29,7 @@ import {
 import { createBlankInvoice } from '@/lib/actions/invoices'
 import { getCustomers } from '@/lib/actions/customers'
 import { parseBankAccounts, type BankAccount } from '@/lib/bank-accounts'
+import { calculateDiscount, calculateTax } from '@/lib/utils/money'
 
 interface CustomerOption {
   customer_id: string
@@ -190,10 +191,15 @@ export default function CreateBlankInvoicePage() {
     }, 0)
     const discountAmount = Number(watchedDiscountAmount) || 0
     const discountPercentage = Number(watchedDiscountPercentage) || 0
-    const totalDiscount = discountAmount + (subtotal * discountPercentage) / 100
+    const hasFixedDiscount = discountAmount > 0
+    const totalDiscount = calculateDiscount(
+      subtotal,
+      hasFixedDiscount ? 'FIXED' : 'PERCENTAGE',
+      hasFixedDiscount ? discountAmount : discountPercentage
+    )
     const taxPercentage = Number(watchedTaxPercentage) || 0
     const taxableBase = Math.max(0, subtotal - totalDiscount)
-    const taxAmount = (taxableBase * taxPercentage) / 100
+    const taxAmount = calculateTax(taxableBase, taxPercentage)
     const total = taxableBase + taxAmount
     return {
       subtotal,

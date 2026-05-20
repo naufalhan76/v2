@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { updateInvoiceStatus } from './invoices'
 import { logger } from '@/lib/logger'
+import { requireFinanceRole } from '@/lib/rbac'
 
 export interface InvoiceCommunication {
   communication_id: string
@@ -31,6 +32,7 @@ export async function logInvoiceCommunication(data: {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+  await requireFinanceRole(user)
 
   const { error } = await supabase.from('invoice_communications').insert({
     invoice_id: data.invoiceId,

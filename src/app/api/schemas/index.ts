@@ -218,6 +218,20 @@ export const GetDashboardKpiQuerySchema = z.object({
 // INVOICE SCHEMAS
 // ============================================================================
 
+const MAX_INVOICE_ITEMS = 100
+const MAX_INVOICE_ITEM_QUANTITY = 10000
+const MAX_INVOICE_ITEM_PRICE = 1_000_000_000
+
+const InvoiceItemQuantitySchema = z.coerce
+  .number()
+  .positive('Kuantitas harus lebih dari 0')
+  .max(MAX_INVOICE_ITEM_QUANTITY, `Kuantitas maksimal ${MAX_INVOICE_ITEM_QUANTITY}`)
+
+const InvoiceItemPriceSchema = z.coerce
+  .number()
+  .nonnegative('Harga satuan tidak boleh negatif')
+  .max(MAX_INVOICE_ITEM_PRICE, `Harga satuan maksimal ${MAX_INVOICE_ITEM_PRICE}`)
+
 /**
  * Blank invoice line item.
  * `item_type` mirrors the existing invoice_items.item_type values used by
@@ -227,8 +241,8 @@ export const GetDashboardKpiQuerySchema = z.object({
 export const BlankInvoiceLineItemSchema = z.object({
   item_type: z.enum(['BASE_SERVICE', 'ADDON']).default('BASE_SERVICE'),
   description: z.string().min(1, 'Deskripsi item wajib diisi'),
-  quantity: z.coerce.number().positive('Kuantitas harus lebih dari 0'),
-  unit_price: z.coerce.number().nonnegative('Harga satuan tidak boleh negatif'),
+  quantity: InvoiceItemQuantitySchema,
+  unit_price: InvoiceItemPriceSchema,
 })
 
 /**
@@ -258,7 +272,7 @@ export const CreateBlankInvoiceSchema = z.object({
   due_date: z.string().min(1, 'Tanggal jatuh tempo wajib diisi'), // YYYY-MM-DD
 
   // Line items — at least one required
-  items: z.array(BlankInvoiceLineItemSchema).min(1, 'Minimal satu item invoice'),
+  items: z.array(BlankInvoiceLineItemSchema).min(1, 'Minimal satu item invoice').max(MAX_INVOICE_ITEMS, `Maksimal ${MAX_INVOICE_ITEMS} item invoice`),
 
   // Optional adjustments
   discount_amount: z.coerce.number().nonnegative().optional(),
@@ -307,7 +321,7 @@ export const ReviseInvoiceLineItemSchema = BlankInvoiceLineItemSchema.extend({
 
 export const ReviseInvoiceSchema = z.object({
   header: ReviseInvoiceHeaderSchema.default({}),
-  items: z.array(ReviseInvoiceLineItemSchema).min(1, 'Minimal satu item invoice'),
+  items: z.array(ReviseInvoiceLineItemSchema).min(1, 'Minimal satu item invoice').max(MAX_INVOICE_ITEMS, `Maksimal ${MAX_INVOICE_ITEMS} item invoice`),
 })
 
 export type CreateBlankInvoiceInput = z.infer<typeof CreateBlankInvoiceSchema>

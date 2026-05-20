@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
-import { unauthorizedResponse } from '@/app/api/utils'
+import { errorResponse, unauthorizedResponse } from '@/app/api/utils'
 import { logger } from '@/lib/logger'
 
 const log = logger.child('auth-middleware')
@@ -100,4 +101,57 @@ export async function checkRole(request: NextRequest, requiredRoles: string[]) {
  */
 export async function requireAuth(request: NextRequest) {
   return getUserFromRequest(request)
+}
+
+/**
+ * Require a finance-capable role (SUPERADMIN, ADMIN, or FINANCE).
+ */
+export async function requireFinanceRoleAPI(request: NextRequest): Promise<NextResponse | null> {
+  const authHeader = request.headers.get('authorization')
+  let user = null
+
+  // Try bearer token first
+  if (authHeader?.startsWith('Bearer ')) {
+    user = await getUserFromRequest(request)
+  } else {
+    // Fall back to cookie session
+    try {
+      const supabase = await createClient()
+      const {
+        data: { user: sessionUser },
+      } = await supabase.auth.getUser()
+      user = sessionUser ?? null
+    } catch (error) {
+      log.error('requireFinanceRoleAPI cookie auth failed', error)
+      user = null
+    }
+  }
+
+  if (!user) {
+    return NextResponse.json(errorResponse('Unauthorized: Finance role required'), {
+      status: 403,
+    })
+  }
+
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('user_management')
+      .select('role')
+      .eq('auth_user_id', user.id)
+      .maybeSingle()
+
+    if (error || !data?.role || !['SUPERADMIN', 'ADMIN', 'FINANCE'].includes(data.role)) {
+      return NextResponse.json(errorResponse('Unauthorized: Finance role required'), {
+        status: 403,
+      })
+    }
+
+    return null
+  } catch (error) {
+    log.error('requireFinanceRoleAPI failed', error)
+    return NextResponse.json(errorResponse('Unauthorized: Finance role required'), {
+      status: 403,
+    })
+  }
 }
