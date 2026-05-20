@@ -16,9 +16,9 @@ export default function DashboardLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
-    <div className="h-screen w-full overflow-hidden">
+    <div className="fixed inset-0 w-full overflow-hidden">
       {/* Mobile Layout */}
-      <div className="md:hidden h-full flex flex-col">
+      <div className="md:hidden h-full min-h-0 flex flex-col">
         {/* Mobile Header with Hamburger */}
         <header className="flex-none flex h-14 items-center gap-4 border-b bg-background px-4">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -34,24 +34,24 @@ export default function DashboardLayout({
           </Sheet>
           <Navbar />
         </header>
-        <main className="flex-1 overflow-y-auto p-4">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
           {children}
         </main>
       </div>
 
       {/* Desktop Layout */}
       <div
-        className="hidden md:grid h-full transition-[grid-template-columns] duration-300"
+        className="hidden md:grid h-full min-h-0 transition-[grid-template-columns] duration-300"
         style={{ gridTemplateColumns: `${isSidebarCollapsed ? '4rem' : '16rem'} 1fr` }}
       >
-        <aside className="h-full overflow-hidden">
+        <aside className="h-full min-h-0 overflow-hidden">
           <Sidebar onCollapse={setIsSidebarCollapsed} />
         </aside>
-        <div className="flex flex-col h-full overflow-hidden min-w-0">
+        <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
           <header className="flex-none">
             <Navbar />
           </header>
-          <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 lg:p-6">
             {children}
           </main>
         </div>
