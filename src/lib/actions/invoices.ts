@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase-server'
+import { createAdminClient } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
 import { canAccessCustomer, requireFinanceRole, type UserRole } from '@/lib/rbac'
@@ -252,6 +253,25 @@ async function assertCustomerIsVisibleOrThrow(
   const accessUser = await getAccessScopedUser(supabase, userId)
   if (!canAccessCustomer(accessUser, customer)) {
     throw new Error('Customer tidak valid atau tidak dapat diakses')
+  }
+}
+
+async function assertCustomerExistsForBlankInvoiceOrThrow(
+  customerId: string | null | undefined
+): Promise<void> {
+  if (!customerId) {
+    return
+  }
+
+  const admin = createAdminClient()
+  const { data: customer, error } = await admin
+    .from('customers')
+    .select('customer_id')
+    .eq('customer_id', customerId)
+    .maybeSingle()
+
+  if (error || !customer) {
+    throw new Error('Customer tidak valid atau tidak ditemukan')
   }
 }
 
@@ -845,6 +865,10 @@ function getBlankInvoiceErrorMessage(error: unknown): string {
     return 'Anda tidak punya akses untuk membuat invoice'
   }
 
+  if (message.includes('Missing Supabase URL or Service Role Key')) {
+    return 'Konfigurasi server belum lengkap: SUPABASE_SERVICE_ROLE_KEY belum tersedia.'
+  }
+
   if (message.includes('Customer')) {
     return message
   }
@@ -891,18 +915,8 @@ async function createBlankInvoiceOrThrow(
   await requireFinanceRole(user)
 
   const parsedInput = CreateBlankInvoiceSchema.parse(input)
-  let linkedCustomerId = parsedInput.customer_id?.trim() || null
-  if (linkedCustomerId) {
-    try {
-      await assertCustomerIsVisibleOrThrow(supabase, user!.id, linkedCustomerId)
-    } catch (error) {
-      logger.warn('Blank invoice customer link ignored; using manual customer snapshot:', {
-        customerId: linkedCustomerId,
-        error,
-      })
-      linkedCustomerId = null
-    }
-  }
+  const linkedCustomerId = parsedInput.customer_id?.trim() || null
+  await assertCustomerExistsForBlankInvoiceOrThrow(linkedCustomerId)
 
   // Numbering — reuse existing RPC. No order_id needed.
   const invoiceNumber = await generateInvoiceNumber()
