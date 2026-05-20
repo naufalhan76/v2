@@ -891,7 +891,18 @@ async function createBlankInvoiceOrThrow(
   await requireFinanceRole(user)
 
   const parsedInput = CreateBlankInvoiceSchema.parse(input)
-  await assertCustomerIsVisibleOrThrow(supabase, user!.id, parsedInput.customer_id)
+  let linkedCustomerId = parsedInput.customer_id?.trim() || null
+  if (linkedCustomerId) {
+    try {
+      await assertCustomerIsVisibleOrThrow(supabase, user!.id, linkedCustomerId)
+    } catch (error) {
+      logger.warn('Blank invoice customer link ignored; using manual customer snapshot:', {
+        customerId: linkedCustomerId,
+        error,
+      })
+      linkedCustomerId = null
+    }
+  }
 
   // Numbering — reuse existing RPC. No order_id needed.
   const invoiceNumber = await generateInvoiceNumber()
@@ -922,7 +933,7 @@ async function createBlankInvoiceOrThrow(
   const taxableBase = Math.max(0, subtotal - discountAmount)
   const taxAmount = calculateTax(taxableBase, taxPercentage)
   const totalAmount = taxableBase + taxAmount
-  const hasLinkedCustomer = Boolean(parsedInput.customer_id)
+  const hasLinkedCustomer = Boolean(linkedCustomerId)
   const customerNameOverride = parsedInput.customer_name
 
   // Build insert payload. Leaves order_id / customer_id / base_service_* NULL
@@ -932,7 +943,7 @@ async function createBlankInvoiceOrThrow(
     invoice_type: parsedInput.invoice_type,
     source: 'BLANK',
     order_id: null,
-    customer_id: parsedInput.customer_id || null,
+    customer_id: linkedCustomerId,
 
     // Migration constraint compatibility:
     // BLANK invoices must always carry a non-empty customer_name_override,
