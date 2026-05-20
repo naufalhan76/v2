@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react'
 import { Button } from './button'
@@ -126,6 +126,8 @@ interface LoadingOverlayProps {
   message?: string
   timeout?: number
   className?: string
+  fullscreen?: boolean
+  autoFocus?: boolean
 }
 
 export function LoadingOverlay({
@@ -133,10 +135,13 @@ export function LoadingOverlay({
   children,
   message = 'Loading...',
   timeout = 10000,
-  className = ''
+  className = '',
+  fullscreen = false,
+  autoFocus = false
 }: LoadingOverlayProps) {
   const [showOverlay, setShowOverlay] = useState(false)
   const [hasTimedOut, setHasTimedOut] = useState(false)
+  const overlayRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!isLoading) {
@@ -161,11 +166,27 @@ export function LoadingOverlay({
     }
   }, [isLoading, timeout])
 
+  useEffect(() => {
+    if (showOverlay && autoFocus) {
+      overlayRef.current?.focus()
+    }
+  }, [showOverlay, autoFocus])
+
+  const overlayClassName = fullscreen
+    ? 'fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[100]'
+    : 'absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50'
+
   return (
     <div className={`relative ${className}`}>
       {children}
       {showOverlay && (
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+        <div
+          ref={overlayRef}
+          tabIndex={-1}
+          role="status"
+          aria-live="polite"
+          className={overlayClassName}
+        >
           <div className="flex flex-col items-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin" />
             <p className="text-sm text-muted-foreground">

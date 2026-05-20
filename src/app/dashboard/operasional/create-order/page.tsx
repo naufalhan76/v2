@@ -699,7 +699,12 @@ export default function CreateOrderPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <LoadingOverlay isLoading={isSubmitting}>
+      <LoadingOverlay
+        isLoading={isSubmitting}
+        message="Membuat order dan menyiapkan data..."
+        fullscreen
+        autoFocus
+      >
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold mb-2">Create Order</h1>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, Loader2, Plus, Trash2, Check } from 'lucide-react'
+import { ArrowLeft, Loader2, Plus, Trash2, Check, CheckCircle2, ReceiptText } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { SearchableSelect } from '@/components/ui/searchable-select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { LoadingOverlay } from '@/components/ui/loading-state'
 
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
@@ -27,7 +36,7 @@ import {
   CreateBlankInvoiceSchema,
   type CreateBlankInvoiceInput,
 } from '@/app/api/schemas'
-import { createBlankInvoice } from '@/lib/actions/invoices'
+import { createBlankInvoice, type Invoice } from '@/lib/actions/invoices'
 import { getCustomers } from '@/lib/actions/customers'
 import { parseBankAccounts, type BankAccount } from '@/lib/bank-accounts'
 import { calculateDiscount, calculateTax } from '@/lib/utils/money'
@@ -53,6 +62,7 @@ export default function CreateBlankInvoicePage() {
   const { toast } = useToast()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null)
   const [customers, setCustomers] = useState<CustomerOption[]>([])
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
 
@@ -271,7 +281,7 @@ export default function CreateBlankInvoicePage() {
         title: 'Berhasil',
         description: `Invoice ${created.invoice_number} berhasil dibuat`,
       })
-      router.push(`/dashboard/keuangan/invoices/${created.invoice_id}`)
+      setCreatedInvoice(created)
     } catch (error: unknown) {
       logger.error('Error creating blank invoice:', error)
       toast({
@@ -286,6 +296,12 @@ export default function CreateBlankInvoicePage() {
   }
 
   return (
+    <LoadingOverlay
+      isLoading={isSubmitting}
+      message="Membuat blank invoice..."
+      fullscreen
+      autoFocus
+    >
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
@@ -731,6 +747,87 @@ export default function CreateBlankInvoicePage() {
           </Button>
         </div>
       </form>
+
+      <Dialog
+        open={Boolean(createdInvoice)}
+        onOpenChange={(open) => {
+          if (!open) setCreatedInvoice(null)
+        }}
+      >
+        <DialogContent className="max-w-lg border-0 shadow-2xl">
+          {createdInvoice ? (
+            <>
+              <DialogHeader className="space-y-3 text-center sm:text-left">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-700 sm:mx-0">
+                  <CheckCircle2 className="h-7 w-7" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl">Blank invoice berhasil dibuat</DialogTitle>
+                  <DialogDescription>
+                    Ringkasan singkat invoice yang baru dibuat.
+                  </DialogDescription>
+                </div>
+              </DialogHeader>
+
+              <div className="rounded-xl border bg-muted/30 p-4">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <ReceiptText className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="font-mono text-sm font-semibold">
+                      {createdInvoice.invoice_number}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {createdInvoice.invoice_type} • {createdInvoice.status}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Customer</span>
+                    <span className="text-right font-medium">
+                      {createdInvoice.customers?.customer_name ?? createdInvoice.customer_name_override ?? '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Tanggal invoice</span>
+                    <span className="font-medium">
+                      {new Date(createdInvoice.invoice_date).toLocaleDateString('id-ID')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Jatuh tempo</span>
+                    <span className="font-medium">
+                      {new Date(createdInvoice.due_date).toLocaleDateString('id-ID')}
+                    </span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between gap-4 text-base">
+                    <span className="font-semibold">Total</span>
+                    <span className="font-bold text-primary">
+                      {formatCurrency(createdInvoice.total_amount)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button variant="outline" onClick={() => setCreatedInvoice(null)}>
+                  Tetap di form
+                </Button>
+                <Button
+                  onClick={() => router.push(`/dashboard/keuangan/invoices/${createdInvoice.invoice_id}`)}
+                >
+                  Lihat Detail Invoice
+                </Button>
+              </DialogFooter>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
+    </LoadingOverlay>
   )
 }
