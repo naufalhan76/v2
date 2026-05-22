@@ -91,19 +91,18 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
       
       // Payments data (for revenue calculation)
       supabase
-        .from('payments')
-        .select('amount_paid')
-        .eq('status', 'PAID')
+        .from('payment_records')
+        .select('amount')
         .gte('payment_date', currentStart)
         .lte('payment_date', currentEnd),
       
-      // Unpaid transactions count
+      // Unpaid transactions count (invoices flagged unpaid)
       supabase
-        .from('payments')
+        .from('invoices')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'UNPAID')
-        .gte('payment_date', currentStart)
-        .lte('payment_date', currentEnd),
+        .eq('payment_status', 'UNPAID')
+        .gte('invoice_date', currentStart)
+        .lte('invoice_date', currentEnd),
 
       supabase
         .from('orders')
@@ -133,18 +132,17 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
         .lte('order_date', previousEnd),
 
       supabase
-        .from('payments')
-        .select('amount_paid')
-        .eq('status', 'PAID')
+        .from('payment_records')
+        .select('amount')
         .gte('payment_date', previousStart)
         .lte('payment_date', previousEnd),
 
       supabase
-        .from('payments')
+        .from('invoices')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'UNPAID')
-        .gte('payment_date', previousStart)
-        .lte('payment_date', previousEnd),
+        .eq('payment_status', 'UNPAID')
+        .gte('invoice_date', previousStart)
+        .lte('invoice_date', previousEnd),
     ])
     
     
@@ -175,13 +173,13 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
     }
     
     // Calculate total revenue
-    const totalRevenue = paymentsResult.data?.reduce((sum: number, payment: { amount_paid?: number }) => {
-      const paymentAmount = payment.amount_paid || 0
+    const totalRevenue = paymentsResult.data?.reduce((sum: number, payment: { amount?: number }) => {
+      const paymentAmount = Number(payment.amount) || 0
       return sum + paymentAmount
     }, 0) || 0
 
-    const previousTotalRevenue = previousPaymentsResult.data?.reduce((sum: number, payment: { amount_paid?: number }) => {
-      const paymentAmount = payment.amount_paid || 0
+    const previousTotalRevenue = previousPaymentsResult.data?.reduce((sum: number, payment: { amount?: number }) => {
+      const paymentAmount = Number(payment.amount) || 0
       return sum + paymentAmount
     }, 0) || 0
 
@@ -233,10 +231,11 @@ export async function getRecentOrders(limit: number = 5) {
         order_id,
         order_type,
         status,
+        order_date,
         created_at,
         customers (
-          name,
-          phone
+          customer_name,
+          phone_number
         )
       `)
       .order('created_at', { ascending: false })
@@ -281,8 +280,8 @@ export async function getChartData(startDate?: string, endDate?: string) {
     
     // Get daily revenue data
     const { data: paymentsData, error: paymentsError } = await supabase
-      .from('payments')
-      .select('payment_date, amount_paid')
+      .from('payment_records')
+      .select('payment_date, amount')
       .gte('payment_date', dateStart)
       .lte('payment_date', dateEnd)
       .order('payment_date')
@@ -322,7 +321,7 @@ export async function getChartData(startDate?: string, endDate?: string) {
     paymentsData?.forEach(payment => {
       const date = payment.payment_date
       if (dailyData.has(date)) {
-        dailyData.get(date).revenue += parseFloat(payment.amount_paid || 0)
+        dailyData.get(date).revenue += Number(payment.amount) || 0
       }
     })
     

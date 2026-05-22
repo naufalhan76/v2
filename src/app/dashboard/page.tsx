@@ -366,15 +366,20 @@ export default function DashboardPage() {
               </TableHeader>
               <TableBody>
                 {recentOrders.map((order) => {
-                  const o = order as Record<string, unknown>
+                  const o = order as Record<string, unknown> & {
+                    customers?: { customer_name?: string; phone_number?: string }
+                    order_date?: string
+                    created_at?: string
+                  }
+                  const dateStr = o.order_date || o.created_at
                   return (
                   <TableRow key={o.order_id as string} className="border-0 hover:bg-muted/50">
                     <TableCell className="font-mono text-xs text-muted-foreground">{(o.order_id as string)?.slice(0, 8)}…</TableCell>
-                    <TableCell className="text-sm font-medium">{(order as Record<string, unknown> & { customers?: { name?: string } })?.customers?.name ?? '—'}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{(order as Record<string, unknown>).order_type as string ?? '—'}</TableCell>
-                    <TableCell>{getStatusBadge((order as Record<string, unknown>).status as string)}</TableCell>
+                    <TableCell className="text-sm font-medium">{o.customers?.customer_name ?? '—'}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{(o.order_type as string) ?? '—'}</TableCell>
+                    <TableCell>{getStatusBadge(o.status as string)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {(order as Record<string, unknown>).created_at ? format(new Date((order as Record<string, unknown>).created_at as string), 'dd MMM yyyy', { locale: id }) : '—'}
+                      {dateStr ? format(new Date(dateStr), 'dd MMM yyyy', { locale: id }) : '—'}
                     </TableCell>
                   </TableRow>
                   )
