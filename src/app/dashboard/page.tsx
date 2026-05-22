@@ -34,6 +34,7 @@ interface KpiData {
   totalCustomers: number
   totalTechnicians: number
   totalRevenue: number
+  estimatedRevenue: number
   unpaidTransactions: number
   previous?: Omit<KpiData, 'previous' | 'windowDays'>
   windowDays?: number
@@ -43,6 +44,7 @@ interface ChartDataPoint {
   date: string
   orders: number
   revenue: number
+  estimatedRevenue: number
   formattedDate: string
 }
 
@@ -57,7 +59,7 @@ function getStatusBadge(status: string) {
 export default function DashboardPage() {
   const [kpiData, setKpiData] = useState<KpiData>({
     totalOrders: 0, pendingOrders: 0, completedOrders: 0, cancelledOrders: 0,
-    totalCustomers: 0, totalTechnicians: 0, totalRevenue: 0, unpaidTransactions: 0,
+    totalCustomers: 0, totalTechnicians: 0, totalRevenue: 0, estimatedRevenue: 0, unpaidTransactions: 0,
   })
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
   const [recentOrders, setRecentOrders] = useState<unknown[]>([])
@@ -153,7 +155,17 @@ export default function DashboardPage() {
       sparkKey: 'orders' as const,
     },
     {
-      title: 'Total Revenue',
+      title: 'Estimated Revenue',
+      value: `Rp ${(kpiData.estimatedRevenue / 1000000).toFixed(1)}M`,
+      currentValue: kpiData.estimatedRevenue,
+      previousValue: kpiData.previous?.estimatedRevenue ?? 0,
+      icon: ClipboardList,
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50 dark:bg-indigo-950/30',
+      sparkKey: 'estimatedRevenue' as const,
+    },
+    {
+      title: 'Actual Revenue',
       value: `Rp ${(kpiData.totalRevenue / 1000000).toFixed(1)}M`,
       currentValue: kpiData.totalRevenue,
       previousValue: kpiData.previous?.totalRevenue ?? 0,
@@ -192,8 +204,8 @@ export default function DashboardPage() {
             </div>
             <Skeleton className="h-10 w-48" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => <KpiCardSkeleton key={i} />)}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {Array.from({ length: 5 }).map((_, i) => <KpiCardSkeleton key={i} />)}
           </div>
           <ChartSkeleton height={300} />
         </div>
@@ -237,10 +249,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Section 2: KPI Cards with sparklines */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {kpiCards.map((kpi) => {
             const Icon = kpi.icon
-            const sparkVals = sparklineData.map(d => ({ v: d[kpi.sparkKey] }))
+            const sparkVals = sparklineData.map(d => ({ v: (d as unknown as Record<string, number>)[kpi.sparkKey] ?? 0 }))
             const pct = kpi.previousValue > 0 ? Math.round(((kpi.currentValue - kpi.previousValue) / kpi.previousValue) * 100) : 0
             const up = pct >= 0
             return (
@@ -283,7 +295,8 @@ export default function DashboardPage() {
               <ChartContainer
                 config={{
                   orders: { label: 'Orders', color: 'hsl(var(--chart-1))' },
-                  revenue: { label: 'Revenue', color: 'hsl(var(--chart-2))' },
+                  estimatedRevenue: { label: 'Estimated', color: 'hsl(var(--chart-4))' },
+                  revenue: { label: 'Actual', color: 'hsl(var(--chart-2))' },
                 }}
                 className="h-[260px] w-full"
               >
@@ -293,7 +306,8 @@ export default function DashboardPage() {
                   <YAxis yAxisId="rev" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `${(v / 1e6).toFixed(0)}M`} />
                   <YAxis yAxisId="ord" orientation="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar yAxisId="rev" dataKey="revenue" fill="hsl(var(--chart-2))" radius={[3, 3, 0, 0]} opacity={0.8} name="revenue" />
+                  <Bar yAxisId="rev" dataKey="estimatedRevenue" fill="hsl(var(--chart-4))" radius={[3, 3, 0, 0]} opacity={0.6} name="estimatedRevenue" />
+                  <Bar yAxisId="rev" dataKey="revenue" fill="hsl(var(--chart-2))" radius={[3, 3, 0, 0]} opacity={0.9} name="revenue" />
                   <Line yAxisId="ord" type="monotone" dataKey="orders" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} name="orders" />
                 </ComposedChart>
               </ChartContainer>

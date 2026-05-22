@@ -41,12 +41,14 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
       techniciansResult,
       paymentsResult,
       unpaidResult,
+      estimatedRevenueResult,
       previousTotalOrdersResult,
       previousPendingOrdersResult,
       previousCompletedOrdersResult,
       previousCancelledOrdersResult,
       previousPaymentsResult,
       previousUnpaidResult,
+      previousEstimatedRevenueResult,
     ] = await Promise.all([
       // Total orders count (with date range)
       supabase
@@ -104,6 +106,14 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
         .gte('invoice_date', currentStart)
         .lte('invoice_date', currentEnd),
 
+      // Estimated revenue (sum of order_items prices for orders in range, exclude cancelled)
+      supabase
+        .from('order_items')
+        .select('estimated_price, actual_price, orders!inner(order_date, status)')
+        .gte('orders.order_date', currentStart)
+        .lte('orders.order_date', currentEnd)
+        .neq('orders.status', 'CANCELLED'),
+
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
@@ -143,6 +153,14 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
         .eq('payment_status', 'UNPAID')
         .gte('invoice_date', previousStart)
         .lte('invoice_date', previousEnd),
+
+      // Previous estimated revenue
+      supabase
+        .from('order_items')
+        .select('estimated_price, actual_price, orders!inner(order_date, status)')
+        .gte('orders.order_date', previousStart)
+        .lte('orders.order_date', previousEnd)
+        .neq('orders.status', 'CANCELLED'),
     ])
     
     
@@ -171,8 +189,14 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
     if (previousUnpaidResult.error) {
       logger.error('Previous unpaid query error:', previousUnpaidResult.error)
     }
+    if (estimatedRevenueResult.error) {
+      logger.error('Estimated revenue query error:', estimatedRevenueResult.error)
+    }
+    if (previousEstimatedRevenueResult.error) {
+      logger.error('Previous estimated revenue query error:', previousEstimatedRevenueResult.error)
+    }
     
-    // Calculate total revenue
+    // Calculate actual revenue (cash collected via payment_records)
     const totalRevenue = paymentsResult.data?.reduce((sum: number, payment: { amount?: number }) => {
       const paymentAmount = Number(payment.amount) || 0
       return sum + paymentAmount
@@ -183,6 +207,16 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
       return sum + paymentAmount
     }, 0) || 0
 
+    // Calculate estimated revenue (actual_price ?? estimated_price from order_items)
+    const sumOrderItems = (rows: Array<{ estimated_price?: number | null; actual_price?: number | null }> | null | undefined) =>
+      rows?.reduce((sum, row) => {
+        const price = row.actual_price ?? row.estimated_price ?? 0
+        return sum + (Number(price) || 0)
+      }, 0) || 0
+
+    const estimatedRevenue = sumOrderItems(estimatedRevenueResult.data as Array<{ estimated_price?: number | null; actual_price?: number | null }>)
+    const previousEstimatedRevenue = sumOrderItems(previousEstimatedRevenueResult.data as Array<{ estimated_price?: number | null; actual_price?: number | null }>)
+
     const previous = {
       totalOrders: previousTotalOrdersResult.count || 0,
       pendingOrders: previousPendingOrdersResult.count || 0,
@@ -191,6 +225,7 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
       totalCustomers: customersResult.count || 0,
       totalTechnicians: techniciansResult.count || 0,
       totalRevenue: previousTotalRevenue,
+      estimatedRevenue: previousEstimatedRevenue,
       unpaidTransactions: previousUnpaidResult.count || 0,
     }
     
@@ -202,6 +237,7 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
       totalCustomers: customersResult.count || 0,
       totalTechnicians: techniciansResult.count || 0,
       totalRevenue,
+      estimatedRevenue,
       unpaidTransactions: unpaidResult.count || 0,
       previous,
       windowDays,
@@ -278,7 +314,7 @@ export async function getChartData(startDate?: string, endDate?: string) {
     
     if (ordersError) throw ordersError
     
-    // Get daily revenue data
+    // Get daily revenue data (actual cash collected)
     const { data: paymentsData, error: paymentsError } = await supabase
       .from('payment_records')
       .select('payment_date, amount')
@@ -287,6 +323,16 @@ export async function getChartData(startDate?: string, endDate?: string) {
       .order('payment_date')
     
     if (paymentsError) throw paymentsError
+
+    // Get daily estimated revenue (order_items joined with orders for date)
+    const { data: estimatedData, error: estimatedError } = await supabase
+      .from('order_items')
+      .select('estimated_price, actual_price, orders!inner(order_date, status)')
+      .gte('orders.order_date', dateStart)
+      .lte('orders.order_date', dateEnd)
+      .neq('orders.status', 'CANCELLED')
+
+    if (estimatedError) throw estimatedError
     
     // Process data to create daily aggregates
     const dailyData = new Map()
@@ -301,6 +347,7 @@ export async function getChartData(startDate?: string, endDate?: string) {
         date: dateStr,
         orders: 0,
         revenue: 0,
+        estimatedRevenue: 0,
         formattedDate: new Date(dateStr).toLocaleDateString('id-ID', { 
           day: '2-digit', 
           month: 'short' 
@@ -317,11 +364,25 @@ export async function getChartData(startDate?: string, endDate?: string) {
       }
     })
     
-    // Aggregate revenue by date
+    // Aggregate actual revenue by date
     paymentsData?.forEach(payment => {
       const date = payment.payment_date
       if (dailyData.has(date)) {
         dailyData.get(date).revenue += Number(payment.amount) || 0
+      }
+    })
+
+    // Aggregate estimated revenue by order_date
+    ;(estimatedData as Array<{
+      estimated_price?: number | null
+      actual_price?: number | null
+      orders?: { order_date?: string } | { order_date?: string }[] | null
+    }> | null | undefined)?.forEach(item => {
+      const ord = Array.isArray(item.orders) ? item.orders[0] : item.orders
+      const date = ord?.order_date
+      if (date && dailyData.has(date)) {
+        const price = item.actual_price ?? item.estimated_price ?? 0
+        dailyData.get(date).estimatedRevenue += Number(price) || 0
       }
     })
     
