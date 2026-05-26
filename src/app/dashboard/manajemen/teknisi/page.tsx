@@ -33,10 +33,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
-import { Edit, Trash2, Search, Plus } from 'lucide-react'
+import { Edit, Trash2, Search, Plus, Wrench } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
 import { formatPhone } from '@/lib/utils'
+import { EmptyState } from '@/components/ui/empty-state'
+import { TableSkeleton } from '@/components/ui/skeleton'
 
 interface Technician {
   technician_id: string
@@ -258,7 +260,7 @@ export default function TechniciansPage() {
           </div>
 
           {loading ? (
-            <div className="text-center py-8">Loading...</div>
+            <TableSkeleton rows={5} columns={5} />
           ) : (
             <div className="data-table-container overflow-x-auto">
               <Table>
@@ -282,8 +284,17 @@ export default function TechniciansPage() {
                 <TableBody>
                   {technicians.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center">
-                        No technicians found
+                      <TableCell colSpan={5} className="p-0">
+                        <EmptyState
+                          icon={Wrench}
+                          title="Belum ada teknisi"
+                          description="Tambahkan teknisi untuk mulai menugaskan order."
+                          action={{
+                            label: 'Tambah Teknisi',
+                            icon: Plus,
+                            onClick: () => setIsCreateOpen(true),
+                          }}
+                        />
                       </TableCell>
                     </TableRow>
                   ) : (

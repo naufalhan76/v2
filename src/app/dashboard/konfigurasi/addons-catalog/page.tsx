@@ -19,6 +19,8 @@ import {
   Search,
   AlertTriangle,
 } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
+import { TableSkeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
   DialogContent,
@@ -533,17 +535,18 @@ export default function AddonsCatalogPage() {
         </CardHeader>
         <CardContent>
           {isFetching ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <TableSkeleton rows={6} columns={7} />
           ) : addons.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">Belum ada add-ons</h3>
-              <p className="text-sm text-muted-foreground mt-2">
-                Mulai dengan menambahkan item pertama ke katalog
-              </p>
-            </div>
+            <EmptyState
+              icon={Package}
+              title="Belum ada add-ons"
+              description="Tambahkan item pertama ke katalog untuk mulai menggunakan add-ons di order."
+              action={{
+                label: 'Tambah Item',
+                icon: Plus,
+                onClick: () => handleOpenDialog(),
+              }}
+            />
           ) : (
             <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
               <Table>

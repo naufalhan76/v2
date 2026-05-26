@@ -18,6 +18,8 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
+import { EmptyState } from '@/components/ui/empty-state'
+import { TableSkeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
   DialogContent,
@@ -394,14 +396,22 @@ export default function ManajemenUserPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">
-                      <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                    <TableCell colSpan={6} className="p-0">
+                      <TableSkeleton rows={6} columns={6} />
                     </TableCell>
                   </TableRow>
                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      {searchQuery ? 'Tidak ada user yang sesuai dengan pencarian' : 'Tidak ada data user. Klik "Tambah User" untuk menambahkan.'}
+                    <TableCell colSpan={6} className="p-0">
+                      <EmptyState
+                        icon={User}
+                        title={searchQuery ? 'Tidak ditemukan' : 'Belum ada user'}
+                        description={
+                          searchQuery
+                            ? 'Coba ubah kata kunci pencarian.'
+                            : 'Tambahkan user pertama untuk mulai mengelola akses sistem.'
+                        }
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -466,13 +476,27 @@ export default function ManajemenUserPage() {
           {/* Mobile Card View */}
           <div className="md:hidden space-y-4">
             {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
+              <div className="space-y-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="p-4">
+                    <div className="space-y-3">
+                      <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+                      <div className="h-3 w-48 rounded bg-muted animate-pulse" />
+                      <div className="h-8 w-full rounded bg-muted animate-pulse" />
+                    </div>
+                  </Card>
+                ))}
               </div>
             ) : filteredUsers.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                {searchQuery ? 'Tidak ada user yang sesuai dengan pencarian' : 'Tidak ada data user. Klik "Tambah User" untuk menambahkan.'}
-              </div>
+              <EmptyState
+                icon={User}
+                title={searchQuery ? 'Tidak ditemukan' : 'Belum ada user'}
+                description={
+                  searchQuery
+                    ? 'Coba ubah kata kunci pencarian.'
+                    : 'Tambahkan user pertama untuk mulai mengelola akses sistem.'
+                }
+              />
             ) : (
               filteredUsers.map((user) => (
                 <Card key={user.user_id} className="p-4">

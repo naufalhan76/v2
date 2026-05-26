@@ -142,8 +142,21 @@ export default function InvoiceConfigPage() {
 
   if (isFetching) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <div className="h-8 w-64 rounded bg-muted animate-pulse" />
+          <div className="h-4 w-80 rounded bg-muted animate-pulse" />
+        </div>
+        <div className="h-10 w-full rounded bg-muted animate-pulse" />
+        <div className="rounded-xl border border-border/50 bg-card p-6 space-y-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+              <div className="h-10 w-full rounded bg-muted animate-pulse" />
+            </div>
+          ))}
+          <div className="h-10 w-32 rounded bg-muted animate-pulse" />
+        </div>
       </div>
     )
   }

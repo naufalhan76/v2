@@ -38,9 +38,10 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
-import { Plus, Pencil, Trash2, Search, MapPin, Building2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, MapPin, Building2, Users } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
+import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/skeleton'
 import { LoadingState, LoadingOverlay } from '@/components/ui/loading-state'
 import { useOptimisticArray } from '@/hooks/use-optimistic'
@@ -398,8 +399,17 @@ export default function CustomerManagementPage() {
                   <TableSkeleton rows={5} columns={8} />
                 ) : optimisticCustomers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center">
-                      Tidak ada data customer
+                    <TableCell colSpan={8} className="p-0">
+                      <EmptyState
+                        icon={Users}
+                        title="Belum ada pelanggan"
+                        description="Tambahkan pelanggan pertama untuk mulai membuat order."
+                        action={{
+                          label: 'Tambah Pelanggan',
+                          icon: Plus,
+                          onClick: () => setIsCreateOpen(true),
+                        }}
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (

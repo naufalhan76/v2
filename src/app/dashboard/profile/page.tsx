@@ -267,10 +267,28 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="mt-2 text-sm text-muted-foreground">Loading profile...</p>
+      <div className="min-h-screen bg-background p-6">
+        <div className="mx-auto max-w-4xl space-y-6">
+          <div className="space-y-2">
+            <div className="h-8 w-64 rounded bg-muted animate-pulse" />
+            <div className="h-4 w-80 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="rounded-lg border bg-card p-6 space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="h-20 w-20 rounded-full bg-muted animate-pulse" />
+              <div className="space-y-2">
+                <div className="h-4 w-48 rounded bg-muted animate-pulse" />
+                <div className="h-3 w-64 rounded bg-muted animate-pulse" />
+              </div>
+            </div>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+                <div className="h-10 w-full rounded bg-muted animate-pulse" />
+              </div>
+            ))}
+            <div className="h-10 w-32 rounded bg-muted animate-pulse" />
+          </div>
         </div>
       </div>
     )

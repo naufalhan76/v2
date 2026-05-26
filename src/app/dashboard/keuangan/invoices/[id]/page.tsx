@@ -50,7 +50,10 @@ import {
   X,
   FileText,
   AlertCircle,
+  Receipt,
 } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
+import { TableSkeleton } from '@/components/ui/skeleton'
 import {
   getInvoiceById,
   updateInvoiceStatus,
@@ -603,8 +606,26 @@ export default function InvoiceDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-6">
+        {/* header */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-7 w-48 rounded bg-muted animate-pulse" />
+            <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="h-10 w-32 rounded bg-muted animate-pulse" />
+        </div>
+        {/* meta grid */}
+        <div className="grid grid-cols-2 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-16 rounded-lg border bg-card p-3">
+              <div className="h-3 w-20 rounded bg-muted animate-pulse mb-2" />
+              <div className="h-5 w-32 rounded bg-muted animate-pulse" />
+            </div>
+          ))}
+        </div>
+        {/* line items */}
+        <TableSkeleton rows={4} columns={5} />
       </div>
     )
   }
@@ -1347,15 +1368,23 @@ export default function InvoiceDetailPage() {
           </Card>
 
           {/* Payment History */}
-          {payments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Riwayat Pembayaran</CardTitle>
-                <CardDescription>
-                  {payments.length} pembayaran tercatat
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader>
+              <CardTitle>Riwayat Pembayaran</CardTitle>
+              <CardDescription>
+                {payments.length > 0
+                  ? `${payments.length} pembayaran tercatat`
+                  : 'Belum ada pembayaran tercatat'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {payments.length === 0 ? (
+                <EmptyState
+                  icon={Receipt}
+                  title="Belum ada pembayaran"
+                  description="Catat pembayaran pertama untuk invoice ini lewat tombol di atas."
+                />
+              ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1401,9 +1430,9 @@ export default function InvoiceDetailPage() {
                     })()}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Actions Sidebar */}

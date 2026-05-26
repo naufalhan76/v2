@@ -29,10 +29,10 @@ import {
 } from '@/components/ui/select'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import {
-  Loader2,
   Plus,
   ChevronDown,
   Eye,
+  Receipt,
   FileText,
   Search,
   DollarSign,
@@ -40,6 +40,8 @@ import {
   AlertCircle,
 } from 'lucide-react'
 
+import { EmptyState } from '@/components/ui/empty-state'
+import { TableSkeleton } from '@/components/ui/skeleton'
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useSortableTable } from '@/hooks/use-sortable-table'
 import { useToast } from '@/hooks/use-toast'
@@ -303,24 +305,18 @@ export default function InvoicesPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <TableSkeleton rows={8} columns={10} />
           ) : invoices.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">Belum ada invoice</h3>
-              <p className="text-sm text-muted-foreground mt-2">
-                Mulai dengan membuat invoice pertama
-              </p>
-              <Button
-                onClick={() => handleCreateInvoice('/dashboard/keuangan/invoices/create')}
-                className="mt-4"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Buat Invoice (Transaksi)
-              </Button>
-            </div>
+            <EmptyState
+              icon={Receipt}
+              title="Belum ada invoice"
+              description="Invoice akan muncul di sini setelah dibuat dari order yang sudah selesai atau secara manual."
+              action={{
+                label: 'Buat Invoice',
+                icon: Plus,
+                onClick: () => handleCreateInvoice('/dashboard/keuangan/invoices/create-blank'),
+              }}
+            />
           ) : (
             <div className="data-table-container">
               <Table>

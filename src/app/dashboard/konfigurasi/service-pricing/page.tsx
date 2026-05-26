@@ -18,6 +18,8 @@ import {
   DollarSign,
   Clock,
 } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
+import { TableSkeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
   DialogContent,
@@ -446,17 +448,18 @@ export default function ServicePricingPage() {
         </CardHeader>
         <CardContent>
           {isFetching ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <TableSkeleton rows={6} columns={7} />
           ) : services.length === 0 ? (
-            <div className="text-center py-12">
-              <DollarSign className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">Belum ada harga service</h3>
-              <p className="text-sm text-muted-foreground mt-2">
-                Mulai dengan menambahkan harga service pertama
-              </p>
-            </div>
+            <EmptyState
+              icon={DollarSign}
+              title="Belum ada harga service"
+              description="Tambahkan harga service pertama untuk mulai membuat order."
+              action={{
+                label: 'Tambah Harga',
+                icon: Plus,
+                onClick: () => handleOpenDialog(),
+              }}
+            />
           ) : (
             <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
               <Table>
