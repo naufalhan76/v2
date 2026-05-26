@@ -17,8 +17,8 @@ import {
   ChevronLeft,
   Moon,
   Sun,
-  DollarSign,
-  Code
+  Wrench,
+  FileText
 } from 'lucide-react'
 
 const sidebarItems = [
@@ -28,55 +28,35 @@ const sidebarItems = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Operasional',
-    href: '/dashboard/operasional',
+    title: 'Orders',
+    href: '/dashboard/orders',
     icon: ClipboardList,
-    children: [
-      { title: 'Create Order', href: '/dashboard/operasional/create-order' },
-      { title: 'Assign Order', href: '/dashboard/operasional/assign-order' },
-      { title: 'Monitoring Ongoing', href: '/dashboard/operasional/monitoring-ongoing' },
-      { title: 'Monitoring History', href: '/dashboard/operasional/monitoring-history' },
-    ],
   },
   {
-    title: 'Konfigurasi',
-    href: '/dashboard/konfigurasi',
+    title: 'Invoices',
+    href: '/dashboard/keuangan/invoices',
+    icon: FileText,
+  },
+  {
+    title: 'Customers',
+    href: '/dashboard/manajemen/customer',
+    icon: Users,
+  },
+  {
+    title: 'Technicians',
+    href: '/dashboard/manajemen/teknisi',
+    icon: Wrench,
+  },
+  {
+    title: 'Settings',
+    href: '/dashboard/settings',
     icon: Settings,
     children: [
-      { title: 'Invoice Config', href: '/dashboard/konfigurasi/invoice-config' },
-      { title: 'Konfigurasi Service', href: '/dashboard/konfigurasi/service-config' },
-      { title: 'SLA Service', href: '/dashboard/konfigurasi/sla-service' },
-    ],
-  },
-  {
-    title: 'Manajemen',
-    href: '/dashboard/manajemen',
-    icon: Users,
-    children: [
-      { title: 'User', href: '/dashboard/manajemen/user', requireRole: 'SUPERADMIN' },
-      { title: 'Customer', href: '/dashboard/manajemen/customer' },
-      { title: 'AC Units', href: '/dashboard/manajemen/ac-units' },
-      { title: 'Teknisi', href: '/dashboard/manajemen/teknisi' },
-      { title: 'Lokasi Pelanggan', href: '/dashboard/manajemen/lokasi' },
-    ],
-  },
-  {
-    title: 'Keuangan',
-    href: '/dashboard/keuangan',
-    icon: DollarSign,
-    children: [
-      { title: 'Daftar Invoice', href: '/dashboard/keuangan/invoices' },
-      { title: 'Buat Invoice (Transaksi)', href: '/dashboard/keuangan/invoices/create' },
-      { title: 'Buat Invoice Kosong', href: '/dashboard/keuangan/invoices/create-blank' },
-    ],
-  },
-  {
-    title: 'Admin',
-    href: '/dashboard/admin',
-    icon: Code,
-    requireRole: 'SUPERADMIN',
-    children: [
-      { title: 'API Documentation', href: '/dashboard/admin/api-docs', requireRole: 'SUPERADMIN' },
+      { title: 'Service Catalog', href: '/dashboard/settings/service-catalog' },
+      { title: 'Addons', href: '/dashboard/konfigurasi/addons-catalog' },
+      { title: 'Invoice Settings', href: '/dashboard/konfigurasi/invoice-config' },
+      { title: 'Users', href: '/dashboard/manajemen/user', requireRole: 'SUPERADMIN' },
+      { title: 'API Docs', href: '/dashboard/admin/api-docs', requireRole: 'SUPERADMIN' },
     ],
   },
 ]
