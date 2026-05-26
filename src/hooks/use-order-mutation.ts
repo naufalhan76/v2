@@ -1,6 +1,8 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { format } from 'date-fns'
+import { id as localeId } from 'date-fns/locale'
 import { useToast } from '@/hooks/use-toast'
 import { updateOrderStatus, assignOrdersToTechnician, cancelOrder, rescheduleOrder } from '@/lib/actions/orders'
 import type { OrderStatus } from '@/lib/order-status'
@@ -133,10 +135,16 @@ export function useReschedule() {
         description: err instanceof Error ? err.message : 'Terjadi kesalahan',
       })
     },
-    onSuccess: () => {
+    onSuccess: (_, { newScheduledDate }) => {
+      let formatted = newScheduledDate
+      try {
+        formatted = format(new Date(newScheduledDate), 'EEEE, d MMMM yyyy', { locale: localeId })
+      } catch {
+        // fall back to raw string
+      }
       toast({
         title: 'Order di-reschedule',
-        description: 'Order dikembalikan ke status Menunggu',
+        description: `Order dipindahkan ke ${formatted}`,
       })
     },
     onSettled: (_, __, { orderId }) => {

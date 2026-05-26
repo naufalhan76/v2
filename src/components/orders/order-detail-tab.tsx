@@ -28,6 +28,7 @@ export interface OrderDetailData {
   scheduled_visit_date?: string | null
   req_visit_date?: string | null
   notes?: string | null
+  assigned_technician_id?: string | null
   customers?: {
     customer_name?: string | null
     primary_contact_person?: string | null
@@ -37,6 +38,7 @@ export interface OrderDetailData {
   } | null
   order_items?: DetailOrderItem[] | null
   order_technicians?: Array<{
+    technician_id?: string | null
     role?: string | null
     technicians?: { technician_name?: string | null; contact_number?: string | null } | null
   }> | null

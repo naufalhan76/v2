@@ -46,6 +46,11 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
   const order = (data?.data ?? null) as OrderDetailData | null
   const canonical = order ? toCanonical(order.status) : null
 
+  const currentLeadFromTechnicians =
+    order?.order_technicians?.find((ot) => ot.role === 'lead')?.technician_id ?? null
+  const currentTechnicianId =
+    order?.assigned_technician_id ?? currentLeadFromTechnicians ?? null
+
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
@@ -165,6 +170,7 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
         onOpenChange={setAssignOpen}
         orderIds={orderId ? [orderId] : []}
         defaultDate={order?.scheduled_visit_date}
+        currentTechnicianId={canonical === 'ASSIGNED' ? currentTechnicianId : null}
       />
       <RescheduleModal
         open={rescheduleOpen}

@@ -48,6 +48,7 @@ interface AssignModalProps {
   onOpenChange: (open: boolean) => void
   orderIds: string[]
   defaultDate?: string | null
+  currentTechnicianId?: string | null
   onSuccess?: () => void
 }
 
@@ -56,10 +57,13 @@ export function AssignModal({
   onOpenChange,
   orderIds,
   defaultDate,
+  currentTechnicianId,
   onSuccess,
 }: AssignModalProps) {
   const { toast } = useToast()
   const mutation = useAssignTechnician()
+
+  const isReassign = Boolean(currentTechnicianId)
 
   const { data: techResp, isLoading: techLoading } = useQuery({
     queryKey: ['technicians', 'all'],
@@ -75,7 +79,7 @@ export function AssignModal({
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      technicianId: '',
+      technicianId: currentTechnicianId ?? '',
       helperIds: [],
       scheduledDate: defaultDate ? new Date(defaultDate) : new Date(),
     },
@@ -84,12 +88,12 @@ export function AssignModal({
   useEffect(() => {
     if (open) {
       form.reset({
-        technicianId: '',
+        technicianId: currentTechnicianId ?? '',
         helperIds: [],
         scheduledDate: defaultDate ? new Date(defaultDate) : new Date(),
       })
     }
-  }, [open, defaultDate, form])
+  }, [open, defaultDate, currentTechnicianId, form])
 
   async function onSubmit(values: FormValues) {
     if (orderIds.length === 0) {
@@ -114,9 +118,11 @@ export function AssignModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Assign Teknisi</DialogTitle>
+          <DialogTitle>{isReassign ? 'Reassign Teknisi' : 'Assign Teknisi'}</DialogTitle>
           <DialogDescription>
-            {orderIds.length === 1
+            {isReassign
+              ? `Ganti teknisi lead untuk order ${orderIds[0]}.`
+              : orderIds.length === 1
               ? `Assign teknisi untuk order ${orderIds[0]}`
               : `Assign teknisi untuk ${orderIds.length} order sekaligus`}
           </DialogDescription>
@@ -201,7 +207,7 @@ export function AssignModal({
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Assign
+              {isReassign ? 'Reassign' : 'Assign'}
             </Button>
           </DialogFooter>
         </form>
