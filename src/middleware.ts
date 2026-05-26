@@ -18,9 +18,9 @@ function getCachedUser(userId: string) {
 function setCachedUser(userId: string, data: unknown) {
   userCache.set(userId, {
     data,
-    expiry: Date.now() + CACHE_DURATION
+    expiry: Date.now() + CACHE_DURATION,
   })
-  
+
   // Clean up old entries
   if (userCache.size > 100) {
     const now = Date.now()
@@ -36,7 +36,7 @@ export async function middleware(req: NextRequest) {
   let res = NextResponse.next({
     request: req,
   })
-  
+
   // Skip middleware for static files and API routes to reduce rate limit usage
   const pathname = req.nextUrl.pathname
   if (
@@ -46,7 +46,7 @@ export async function middleware(req: NextRequest) {
   ) {
     return res
   }
-  
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -67,23 +67,19 @@ export async function middleware(req: NextRequest) {
       },
     }
   )
-  
+
   // Get authenticated user - more secure than getSession()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Define protected routes
-  const protectedRoutes = ['/dashboard', '/konfigurasi', '/manajemen', '/operasional', '/profile']
-  const isProtectedRoute = protectedRoutes.some(route => 
-    pathname.startsWith(route)
-  )
+  // Define protected routes (add /technician)
+  const protectedRoutes = ['/dashboard', '/technician', '/konfigurasi', '/manajemen', '/operasional', '/profile']
+  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route))
 
   // Define auth routes
   const authRoutes = ['/login']
-  const isAuthRoute = authRoutes.some(route => 
-    pathname === route
-  )
+  const isAuthRoute = authRoutes.some((route) => pathname === route)
 
   // Redirect root path based on auth status
   if (pathname === '/') {
@@ -104,15 +100,15 @@ export async function middleware(req: NextRequest) {
   // Check if user is active in user_management table
   if (isProtectedRoute && user) {
     // Check cache first
-    let userData = getCachedUser(user.id)
-    
+    let userData = getCachedUser(user.id) as { is_active?: boolean; role?: string } | null
+
     if (!userData) {
       // If not in cache, fetch from database
       const { data, error } = await supabase
         .from('user_management')
         .select('is_active, role')
         .eq('auth_user_id', user.id)
-        .maybeSingle() // Use maybeSingle() instead of single() to avoid throwing error
+        .maybeSingle()
 
       // If user is not found or not active, sign out and redirect to login
       if (error || !data || !data.is_active) {
@@ -122,23 +118,51 @@ export async function middleware(req: NextRequest) {
         redirectUrl.searchParams.set('error', 'Account is inactive or not found')
         return NextResponse.redirect(redirectUrl)
       }
-      
+
       userData = data
       // Cache the result
       setCachedUser(user.id, userData)
     }
 
+    const userRole = userData?.role
+
+    // --- Role-based routing for TECHNICIAN ---
+    // TECHNICIAN accessing /dashboard → redirect to /technician
+    if (userRole === 'TECHNICIAN' && pathname.startsWith('/dashboard')) {
+      return NextResponse.redirect(new URL('/technician', req.url))
+    }
+
+    // Non-TECHNICIAN accessing /technician → redirect to /dashboard
+    if (userRole !== 'TECHNICIAN' && pathname.startsWith('/technician')) {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+
     // Role-based access control for specific routes
     if (pathname.startsWith('/dashboard/manajemen/user')) {
       // Only SUPERADMIN can access user management
-      if ((userData as Record<string, unknown>).role !== 'SUPERADMIN') {
+      if (userRole !== 'SUPERADMIN') {
         return NextResponse.redirect(new URL('/dashboard', req.url))
       }
     }
   }
 
-  // Redirect authenticated users to dashboard if accessing auth routes
+  // Redirect authenticated users based on role when accessing auth routes
   if (isAuthRoute && user) {
+    // Check role to determine redirect target
+    let userData = getCachedUser(user.id) as { role?: string } | null
+    if (!userData) {
+      const { data } = await supabase
+        .from('user_management')
+        .select('is_active, role')
+        .eq('auth_user_id', user.id)
+        .maybeSingle()
+      userData = data
+      if (data) setCachedUser(user.id, data)
+    }
+
+    if (userData?.role === 'TECHNICIAN') {
+      return NextResponse.redirect(new URL('/technician', req.url))
+    }
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
@@ -147,13 +171,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
