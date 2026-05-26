@@ -1,0 +1,265 @@
+'use client'
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
+import { ArrowLeft, Clock, MapPin, Phone, User, Wrench, FileText, Timer } from 'lucide-react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { StatusBadge } from '@/components/orders/status-badge'
+import { JobDetailSkeleton } from './job-detail-skeleton'
+import { cn } from '@/lib/utils'
+import { useState, useEffect } from 'react'
+import type { OrderStatus } from '@/lib/order-status'
+
+interface JobDetailContentProps {
+  orderId: string
+}
+
+async function fetchJobDetail(orderId: string) {
+  const res = await fetch(`/api/technician/jobs/${orderId}`, {
+    credentials: 'include',
+  })
+  if (!res.ok) throw new Error('Gagal memuat detail pekerjaan')
+  const json = await res.json()
+  if (!json.success) throw new Error(json.error || 'Gagal memuat data')
+  return json.data
+}
+
+async function transitionJob(orderId: string, toStatus: string) {
+  const res = await fetch(`/api/technician/jobs/${orderId}/transition`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to_status: toStatus }),
+  })
+  if (!res.ok) {
+    const json = await res.json()
+    throw new Error(json.error || 'Gagal mengubah status')
+  }
+  return res.json()
+}
+
+export function JobDetailContent({ orderId }: JobDetailContentProps) {
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const [workTimer, setWorkTimer] = useState<number>(0)
+
+  const { data: job, isLoading, isError, error } = useQuery({
+    queryKey: ['technician', 'job', orderId],
+    queryFn: () => fetchJobDetail(orderId),
+    staleTime: 30_000,
+  })
+
+  const transitionMutation = useMutation({
+    mutationFn: (toStatus: string) => transitionJob(orderId, toStatus),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['technician', 'job', orderId] })
+      queryClient.invalidateQueries({ queryKey: ['technician', 'jobs', 'today'] })
+    },
+  })
+
+  // Work timer for IN_PROGRESS state
+  useEffect(() => {
+    if (job?.canonical_status === 'IN_PROGRESS') {
+      const interval = setInterval(() => {
+        setWorkTimer((prev) => prev + 1)
+      }, 1000)
+      return () => clearInterval(interval)
+    } else {
+      setWorkTimer(0)
+    }
+  }, [job?.canonical_status])
+
+  if (isLoading) return <JobDetailSkeleton />
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <p className="text-sm text-destructive mb-4">
+          {error instanceof Error ? error.message : 'Terjadi kesalahan'}
+        </p>
+        <Button variant="outline" onClick={() => router.back()} className="h-11">
+          Kembali
+        </Button>
+      </div>
+    )
+  }
+
+  if (!job) return null
+
+  const canonicalStatus: OrderStatus = job.canonical_status
+  const customer = job.customers
+  const orderItem = job.order_items?.[0]
+  const location = orderItem?.locations
+  const acUnit = orderItem?.ac_units
+  const scheduledTime = new Date(job.scheduled_visit_date).toLocaleString('id-ID', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  function formatTimer(seconds: number) {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Back button + status */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/technician"
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground h-11 px-1"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Kembali</span>
+        </Link>
+        <StatusBadge status={job.status} />
+      </div>
+
+      {/* Customer info card */}
+      <div className="rounded-xl border bg-card p-4 space-y-3">
+        <h2 className="font-semibold text-lg">{customer?.customer_name ?? 'Customer'}</h2>
+
+        {customer?.primary_contact_person && (
+          <div className="flex items-center gap-2 text-sm">
+            <User className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+            <span>{customer.primary_contact_person}</span>
+          </div>
+        )}
+
+        {customer?.phone_number && (
+          <div className="flex items-center gap-2 text-sm">
+            <Phone className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+            <a
+              href={`tel:${customer.phone_number}`}
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              {customer.phone_number}
+            </a>
+          </div>
+        )}
+
+        {location && (
+          <div className="flex items-start gap-2 text-sm">
+            <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
+            <span>{location.full_address}{location.city ? `, ${location.city}` : ''}</span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 text-sm">
+          <Clock className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+          <span>{scheduledTime}</span>
+        </div>
+      </div>
+
+      {/* Service info card */}
+      <div className="rounded-xl border bg-card p-4 space-y-3">
+        <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+          Detail Layanan
+        </h3>
+
+        <div className="flex items-center gap-2 text-sm">
+          <Wrench className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+          <span className="font-medium">{orderItem?.service_type ?? '-'}</span>
+        </div>
+
+        {acUnit && (
+          <div className="text-sm space-y-1 pl-6">
+            <p><span className="text-muted-foreground">Merk:</span> {acUnit.brand ?? '-'}</p>
+            <p><span className="text-muted-foreground">Model:</span> {acUnit.model_number ?? '-'}</p>
+            {acUnit.serial_number && (
+              <p><span className="text-muted-foreground">S/N:</span> {acUnit.serial_number}</p>
+            )}
+          </div>
+        )}
+
+        {orderItem?.description && (
+          <div className="flex items-start gap-2 text-sm">
+            <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
+            <span>{orderItem.description}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Notes */}
+      {job.notes && (
+        <div className="rounded-xl border bg-card p-4">
+          <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-2">
+            Catatan
+          </h3>
+          <p className="text-sm whitespace-pre-wrap">{job.notes}</p>
+        </div>
+      )}
+
+      {/* Work timer (IN_PROGRESS only) */}
+      {canonicalStatus === 'IN_PROGRESS' && (
+        <div className="rounded-xl border border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/30 p-4 text-center">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Timer className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden="true" />
+            <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
+              Waktu Kerja
+            </span>
+          </div>
+          <p className="text-2xl font-mono font-bold text-violet-900 dark:text-violet-100">
+            {formatTimer(workTimer)}
+          </p>
+        </div>
+      )}
+
+      {/* Action buttons — state-aware */}
+      <div className="pt-2 pb-4">
+        {canonicalStatus === 'ASSIGNED' && (
+          <Button
+            onClick={() => transitionMutation.mutate('EN_ROUTE')}
+            disabled={transitionMutation.isPending}
+            className="w-full h-12 text-base font-medium"
+            size="lg"
+          >
+            {transitionMutation.isPending ? 'Memproses...' : 'Berangkat'}
+          </Button>
+        )}
+
+        {canonicalStatus === 'EN_ROUTE' && (
+          <Button
+            onClick={() => transitionMutation.mutate('IN_PROGRESS')}
+            disabled={transitionMutation.isPending}
+            className="w-full h-12 text-base font-medium"
+            size="lg"
+          >
+            {transitionMutation.isPending ? 'Memproses...' : 'Mulai Kerja'}
+          </Button>
+        )}
+
+        {canonicalStatus === 'IN_PROGRESS' && (
+          <Button
+            onClick={() => router.push(`/technician/job/${orderId}/complete`)}
+            className="w-full h-12 text-base font-medium"
+            size="lg"
+          >
+            Selesai Kerja
+          </Button>
+        )}
+
+        {canonicalStatus === 'COMPLETED' && job.has_report && (
+          <div className="text-center text-sm text-muted-foreground py-2">
+            Laporan sudah disubmit
+          </div>
+        )}
+
+        {/* Error display */}
+        {transitionMutation.isError && (
+          <p className="text-sm text-destructive text-center mt-2">
+            {transitionMutation.error instanceof Error
+              ? transitionMutation.error.message
+              : 'Gagal mengubah status'}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
