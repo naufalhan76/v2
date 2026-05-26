@@ -29,6 +29,15 @@
     --chart-3: 142 71% 45%;
     --chart-4: 38 92% 50%;
     --chart-5: 0 84% 60%;
+    /* Status badge tokens (semantic, dark-mode aware) */
+    --status-pending: 38 92% 50%;
+    --status-assigned: 221 83% 53%;
+    --status-en-route: 234 89% 64%;
+    --status-in-progress: 270 91% 65%;
+    --status-completed: 142 71% 45%;
+    --status-invoiced: 188 92% 43%;
+    --status-paid: 142 76% 36%;
+    --status-cancelled: 0 84% 60%;
   }
 
   .dark {
@@ -56,6 +65,15 @@
     --chart-3: 142 71% 55%;
     --chart-4: 38 92% 60%;
     --chart-5: 0 84% 65%;
+    /* Status badge tokens (dark mode) */
+    --status-pending: 38 92% 60%;
+    --status-assigned: 221 83% 63%;
+    --status-en-route: 234 89% 74%;
+    --status-in-progress: 270 91% 75%;
+    --status-completed: 142 71% 55%;
+    --status-invoiced: 188 92% 53%;
+    --status-paid: 142 76% 46%;
+    --status-cancelled: 0 84% 70%;
   }
 }
 
@@ -85,16 +103,16 @@
     @apply bg-primary/10 text-primary font-medium border-l-2 border-primary;
   }
 
-  /* CRUD Button Hover Effects */
+  /* CRUD Button Hover Effects (no scale — prevents layout shift) */
   .crud-button {
     @apply transition-all duration-200 ease-in-out;
   }
 
   .crud-button:hover {
-    @apply scale-105 shadow-md;
+    @apply shadow-md brightness-95;
   }
 
   .crud-button:active {
-    @apply scale-95;
+    @apply brightness-90;
   }
 }
