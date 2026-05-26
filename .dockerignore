@@ -1,0 +1,54 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Next.js build output
+.next
+out
+
+# Environment files (use docker-compose env_file or build args)
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+
+# Documentation (not needed in image)
+docs/
+README.md
+*.md
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Brainstorming artifacts
+.superpowers/
+
+# Supabase migrations (run separately)
+supabase/
+
+# Test outputs
+coverage
+.nyc_output
+
+# Misc
+.cloudflared/
+*.pem

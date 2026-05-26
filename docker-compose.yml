@@ -1,42 +1,52 @@
-version: '3.8'
+# MSN ERP V2 — Local staging via Docker
+# Runs alongside V1 (production on Vercel) — same Supabase database, port 3001
+# Exposed via Cloudflare tunnel at v2.nufnh.my.id
 
 services:
-  app:
+  webpanel-v2:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: technician-service-erp
+      args:
+        # NEXT_PUBLIC_* must be baked at build time
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+    image: msn-erp-v2:latest
+    container_name: msn-erp-v2
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      # 3001 to avoid clashing with any local V1 dev server on 3000
+      - "127.0.0.1:3001:3000"
     environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      NODE_ENV: production
+      # Server-only secrets (NOT baked into client bundle)
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT}
+      # Public vars also at runtime (some Next.js code paths read at runtime)
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+      # Optional: third-party services
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
     env_file:
-      - .env
+      - .env.staging
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
-      - app-network
-
-  # Optional: Add nginx proxy if needed
-  # nginx:
-  #   image: jwilder/nginx-proxy
-  #   container_name: nginx-proxy
-  #   restart: unless-stopped
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - /var/run/docker.sock:/tmp/docker.sock:ro
-  #     - ./nginx/certs:/etc/nginx/certs:ro
-  #     - ./nginx/vhost.d:/etc/nginx/vhost.d:ro
-  #     - ./nginx/html:/usr/share/nginx/html:ro
-  #   networks:
-  #     - app-network
-  #   depends_on:
-  #     - app
+      - msn-erp-v2
 
 networks:
-  app-network:
+  msn-erp-v2:
+    name: msn-erp-v2
     driver: bridge
