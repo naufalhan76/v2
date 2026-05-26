@@ -52,9 +52,13 @@ Supabase Postgres Change subscriptions in `src/lib/realtime.ts` — channels for
 
 ### Order Workflow
 
-Orders follow a strict state machine:
-`NEW → ACCEPTED → ASSIGNED → EN ROUTE → ARRIVED → IN_PROGRESS → DONE → INVOICED → PAID → CLOSED`
-Plus `RESCHEDULE` and `CANCELLED`. Transitions are enforced in `src/lib/actions/orders.ts`.
+Orders follow a strict state machine (8 canonical states):
+`PENDING → ASSIGNED → EN_ROUTE → IN_PROGRESS → COMPLETED → INVOICED → PAID`
+Plus `CANCELLED` (terminal). Reschedule is an action that resets to PENDING. Reassign replaces lead while in ASSIGNED. Transitions enforced in `src/lib/actions/orders.ts`. Status mapper at `src/lib/order-status.ts` is the single source of truth (handles legacy DB values via `toCanonical()`).
+
+### Push Notifications
+
+Web push for technicians via VAPID. Browser helpers in `src/lib/push.ts`, server sender in `src/lib/server/push-sender.ts`. Triggered fire-and-forget from `assignOrdersToTechnician` and `rescheduleOrder` in `src/lib/actions/orders.ts`. Subscription state managed in `/technician/profile`. Service worker at `public/technician-sw.js` handles push, notificationclick, and pushsubscriptionchange events.
 
 ### Logging
 
