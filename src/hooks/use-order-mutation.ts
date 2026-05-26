@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks/use-toast'
-import { updateOrderStatus, assignOrdersToTechnician, cancelOrder } from '@/lib/actions/orders'
+import { updateOrderStatus, assignOrdersToTechnician, cancelOrder, rescheduleOrder } from '@/lib/actions/orders'
 import type { OrderStatus } from '@/lib/order-status'
 
 /**
@@ -71,18 +71,13 @@ export function useAssignTechnician() {
   const { toast } = useToast()
 
   return useMutation({
-    mutationFn: async ({ orderIds, technicianId, helperIds, scheduledDate }: {
+    mutationFn: async (params: {
       orderIds: string[]
       technicianId: string
-      helperIds?: string[]
+      helperTechnicianIds?: string[]
       scheduledDate: string
     }) => {
-      const result = await assignOrdersToTechnician({
-        orderIds,
-        technicianId,
-        helperTechnicianIds: helperIds || [],
-        scheduledDate,
-      })
+      const result = await assignOrdersToTechnician(params)
       if (!result.success) throw new Error(result.error || 'Failed to assign technician')
       return result
     },
@@ -113,21 +108,22 @@ export function useReschedule() {
   const { toast } = useToast()
 
   return useMutation({
-    mutationFn: async ({ orderId, reason, newDate }: {
+    mutationFn: async (params: {
       orderId: string
       reason: string
-      newDate?: string
+      newScheduledDate: string
     }) => {
-      const result = await updateOrderStatus(orderId, 'PENDING', reason, newDate)
+      const result = await rescheduleOrder(params)
       if (!result.success) throw new Error(result.error || 'Failed to reschedule')
       return result
     },
     onMutate: async ({ orderId }) => {
       await queryClient.cancelQueries({ queryKey: ['orders'] })
+      await queryClient.cancelQueries({ queryKey: ['order', orderId] })
       const previousOrders = queryClient.getQueryData(['orders'])
       return { previousOrders }
     },
-    onError: (err, _, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previousOrders) {
         queryClient.setQueryData(['orders'], context.previousOrders)
       }
@@ -143,8 +139,9 @@ export function useReschedule() {
         description: 'Order dikembalikan ke status Menunggu',
       })
     },
-    onSettled: () => {
+    onSettled: (_, __, { orderId }) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
+      queryClient.invalidateQueries({ queryKey: ['order', orderId] })
     },
   })
 }

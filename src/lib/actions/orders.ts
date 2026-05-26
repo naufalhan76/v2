@@ -545,3 +545,67 @@ export async function deleteOrder(orderId: string) {
     }
   }
 }
+
+export async function rescheduleOrder(params: {
+  orderId: string
+  reason: string
+  newScheduledDate: string
+}) {
+  try {
+    const supabase = await createClient()
+
+    // Get current status for transition log
+    const { data: currentOrder, error: fetchError } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('order_id', params.orderId)
+      .single()
+
+    if (fetchError) throw fetchError
+
+    // Reset to PENDING + clear assignments + set new date
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({
+        status: 'PENDING',
+        assigned_technician_id: null,
+        scheduled_visit_date: params.newScheduledDate,
+        req_visit_date: params.newScheduledDate,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('order_id', params.orderId)
+
+    if (updateError) throw updateError
+
+    // Clear technician assignments
+    const { error: deleteError } = await supabase
+      .from('order_technicians')
+      .delete()
+      .eq('order_id', params.orderId)
+
+    if (deleteError) {
+      logger.error('Error clearing technician assignments on reschedule:', deleteError)
+      throw deleteError
+    }
+
+    // Log transition
+    await supabase.from('order_status_transitions').insert({
+      order_id: params.orderId,
+      from_status: currentOrder.status,
+      to_status: 'PENDING',
+      notes: `Reschedule: ${params.reason}`,
+      transition_date: new Date().toISOString(),
+    })
+
+    revalidatePath('/dashboard/orders')
+    revalidatePath('/dashboard')
+
+    return { success: true, message: 'Order rescheduled' }
+  } catch (error: unknown) {
+    logger.error('Error rescheduling order:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to reschedule order',
+    }
+  }
+}
