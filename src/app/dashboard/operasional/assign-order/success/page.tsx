@@ -2,9 +2,11 @@
 
 import { Suspense, type ReactNode } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueries } from '@tanstack/react-query'
 import { getOrderById } from '@/lib/actions/orders'
 import { getTechnicianById } from '@/lib/actions/technicians'
+import { ServiceTypeBadge } from '@/components/orders/service-type-badge'
+import { StatusBadge } from '@/components/orders/status-badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -32,72 +34,25 @@ function AssignmentSuccessContent() {
     enabled: !!technicianId
   })
 
-  const helperQuery0 = useQuery({
-    queryKey: ['technician', helperIds[0]],
-    queryFn: () => getTechnicianById(helperIds[0]),
-    enabled: !!helperIds[0]
+  const helperResults = useQueries({
+    queries: helperIds.map((id) => ({
+      queryKey: ['technician', id],
+      queryFn: () => getTechnicianById(id),
+      enabled: !!id,
+    })),
   })
-  const helperQuery1 = useQuery({
-    queryKey: ['technician', helperIds[1]],
-    queryFn: () => getTechnicianById(helperIds[1]),
-    enabled: !!helperIds[1]
-  })
-  const helperQuery2 = useQuery({
-    queryKey: ['technician', helperIds[2]],
-    queryFn: () => getTechnicianById(helperIds[2]),
-    enabled: !!helperIds[2]
-  })
-  const helperQuery3 = useQuery({
-    queryKey: ['technician', helperIds[3]],
-    queryFn: () => getTechnicianById(helperIds[3]),
-    enabled: !!helperIds[3]
-  })
-  const helperQuery4 = useQuery({
-    queryKey: ['technician', helperIds[4]],
-    queryFn: () => getTechnicianById(helperIds[4]),
-    enabled: !!helperIds[4]
-  })
-  const allHelperQueries = [helperQuery0, helperQuery1, helperQuery2, helperQuery3, helperQuery4]
-  const helperQueries = allHelperQueries.slice(0, helperIds.length)
-  const helpers = helperQueries.map(q => q.data?.data).filter(Boolean)
+  const helpers = helperResults.map(q => q.data?.data).filter(Boolean)
 
-  const orderQuery0 = useQuery({
-    queryKey: ['order', orderIds[0]],
-    queryFn: () => getOrderById(orderIds[0]),
-    enabled: !!orderIds[0]
+  const orderResults = useQueries({
+    queries: orderIds.map((id) => ({
+      queryKey: ['order', id],
+      queryFn: () => getOrderById(id),
+      enabled: !!id,
+    })),
   })
-  const orderQuery1 = useQuery({
-    queryKey: ['order', orderIds[1]],
-    queryFn: () => getOrderById(orderIds[1]),
-    enabled: !!orderIds[1]
-  })
-  const orderQuery2 = useQuery({
-    queryKey: ['order', orderIds[2]],
-    queryFn: () => getOrderById(orderIds[2]),
-    enabled: !!orderIds[2]
-  })
-  const orderQuery3 = useQuery({
-    queryKey: ['order', orderIds[3]],
-    queryFn: () => getOrderById(orderIds[3]),
-    enabled: !!orderIds[3]
-  })
-  const orderQuery4 = useQuery({
-    queryKey: ['order', orderIds[4]],
-    queryFn: () => getOrderById(orderIds[4]),
-    enabled: !!orderIds[4]
-  })
-  const allOrderQueries = [orderQuery0, orderQuery1, orderQuery2, orderQuery3, orderQuery4]
-  const orderQueries = allOrderQueries.slice(0, orderIds.length)
-  const orders = (orderQueries.map(q => q.data?.data).filter(Boolean)) as unknown[]
-  const isLoading = orderQueries.some(q => q.isLoading)
+  const orders = orderResults.map(q => q.data?.data).filter(Boolean) as unknown[]
+  const isLoading = orderResults.some(q => q.isLoading)
 
-  const SERVICE_TYPE_MAP: Record<string, { label: string; color: string }> = {
-    'REFILL_FREON': { label: 'Refill Freon', color: 'bg-blue-500' },
-    'CLEANING': { label: 'Cleaning', color: 'bg-green-500' },
-    'REPAIR': { label: 'Repair', color: 'bg-orange-500' },
-    'INSTALLATION': { label: 'Installation', color: 'bg-purple-500' },
-    'INSPECTION': { label: 'Inspection', color: 'bg-cyan-500' },
-  }
 
   const ordersContent: ReactNode[] = []
   for (let index = 0; index < orders.length; index++) {
@@ -123,17 +78,13 @@ function AssignmentSuccessContent() {
           <div>
             <div className='flex items-center gap-2 mb-1'>
               <span className='font-mono text-sm font-bold'>{o.order_id as string}</span>
-              <Badge className={SERVICE_TYPE_MAP[o.order_type as string]?.color || 'bg-gray-500'}>
-                {SERVICE_TYPE_MAP[o.order_type as string]?.label || o.order_type as string}
-              </Badge>
+              <ServiceTypeBadge serviceType={o.order_type as string} />
             </div>
             <p className='text-xs text-muted-foreground'>
               Order Date: {o.order_date ? format(new Date(o.order_date as string), 'dd MMM yyyy') : '-'}
             </p>
           </div>
-          <Badge variant='outline' className='bg-green-50 text-green-700 border-green-200'>
-            ASSIGNED
-          </Badge>
+          <StatusBadge status="ASSIGNED" />
         </div>
 
         {/* Customer Info */}
@@ -199,9 +150,7 @@ function AssignmentSuccessContent() {
                     <div key={idx} className='flex justify-between items-start text-sm p-2 bg-background rounded'>
                       <div className='space-y-0.5'>
                         <div className='flex items-center gap-2'>
-                          <Badge variant='outline' className='text-xs'>
-                            {SERVICE_TYPE_MAP[it.service_type as string]?.label || it.service_type as string}
-                          </Badge>
+                          <ServiceTypeBadge serviceType={it.service_type as string} />
                           <span className='text-xs text-muted-foreground'>×{it.quantity as number}</span>
                         </div>
                         {acUnits && (
