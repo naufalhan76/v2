@@ -66,4 +66,19 @@ Plus `RESCHEDULE` and `CANCELLED`. Transitions are enforced in `src/lib/actions/
 - Soft deletes — records are never hard-deleted
 - Zod schemas for all API inputs live in `src/app/api/schemas/`
 - shadcn components live in `src/components/ui/` — add new ones via `npx shadcn@latest add <component>`
-- Dashboard pages are under `src/app/dashboard/` grouped by domain: `operasional/`, `manajemen/`, `konfigurasi/`, `keuangan/`, `admin/`
+- Dashboard pages are under `src/app/dashboard/`. Primary route: `orders/` (replaces `operasional/*` for order lifecycle). Other groups: `manajemen/` (customer, teknisi), `keuangan/` (invoices), `settings/` (service-catalog), `admin/`. Legacy `operasional/`, `konfigurasi/`, and `manajemen/lokasi`, `manajemen/ac-units` remain accessible via direct URL until Phase 5 cleanup.
+- Order workflow primarily lives at `/dashboard/orders` with `?view=board` (Kanban) or `?view=list` (table). State machine transitions enforced server-side in `src/lib/actions/orders.ts`. Optimistic mutations via hooks in `src/hooks/use-order-mutation.ts`.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `naufalhan76/webpanel`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Multi-context layout with CONTEXT-MAP.md at root. See `docs/agents/domain.md`.
