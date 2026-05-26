@@ -99,7 +99,7 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
                       orderId={order.order_id}
                       orderStatus={order.status}
                       onCreateInvoice={() => {
-                        window.location.href = `/dashboard/keuangan/invoices/create?orderId=${order.order_id}`
+                        window.location.href = `/dashboard/keuangan/invoices/create/from-order/${order.order_id}`
                       }}
                     />
                   </TabsContent>
@@ -140,7 +140,7 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
                 )}
                 {canonical === 'COMPLETED' && (
                   <Button asChild className="flex-1">
-                    <Link href={`/dashboard/keuangan/invoices/create?orderId=${order.order_id}`}>
+                    <Link href={`/dashboard/keuangan/invoices/create/from-order/${order.order_id}`}>
                       Buat Invoice
                     </Link>
                   </Button>

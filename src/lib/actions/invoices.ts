@@ -8,6 +8,7 @@ import { canAccessCustomer, requireFinanceRole, type UserRole } from '@/lib/rbac
 import { isOverdue, type InvoiceStatus } from '@/lib/invoice-status'
 import { canReviseInvoice, getInvoiceSource, type InvoiceSource, REVISABLE_STATUSES } from '@/lib/invoice-utils'
 import { getInvoiceConfig } from '@/lib/actions/invoice-config'
+import { getServiceReport } from '@/lib/service-report'
 import {
   CreateBlankInvoiceSchema,
   type CreateBlankInvoiceInput,
@@ -1557,5 +1558,137 @@ export async function getInvoiceStats(): Promise<{
     overdue: overdueCount,
     totalRevenue,
     unpaidAmount,
+  }
+}
+
+export class ServiceReportMissingError extends Error {
+  constructor(orderId: string) {
+    super(`Service report belum ada untuk order ${orderId}`)
+    this.name = 'ServiceReportMissingError'
+  }
+}
+
+export interface CreateInvoiceFromOrderResult {
+  invoice_id: string
+  invoice_number: string
+  total_amount: number
+  source: 'SERVICE_REPORT'
+}
+
+/**
+ * Auto-populate a draft invoice from a completed order's service report.
+ *
+ * Line items are composed from:
+ *  - Base service rows (one per order_item) using estimated price.
+ *  - Material rows (one per report.materials entry) as ADDON line items.
+ *
+ * Returns the new invoice's id so the UI can redirect to the detail page
+ * for review/edit before sending.
+ */
+export async function createInvoiceFromOrder(
+  orderId: string
+): Promise<CreateInvoiceFromOrderResult> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  await requireFinanceRole(user)
+
+  // Fetch order and verify state
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('order_id, customer_id, status')
+    .eq('order_id', orderId)
+    .maybeSingle()
+
+  if (orderError || !order) {
+    throw new Error('Order tidak ditemukan')
+  }
+
+  // Accept both COMPLETED (canonical) and DONE (legacy alias)
+  const acceptableStatuses = ['COMPLETED', 'DONE']
+  if (!acceptableStatuses.includes(order.status)) {
+    throw new Error(
+      `Order belum siap untuk invoice (status: ${order.status}). ` +
+        `Tunggu teknisi submit laporan terlebih dahulu.`
+    )
+  }
+
+  if (!order.customer_id) {
+    throw new Error('Order tidak memiliki customer terhubung')
+  }
+
+  // Fetch service report — required for auto-populate
+  const report = await getServiceReport(orderId)
+  if (!report) {
+    throw new ServiceReportMissingError(orderId)
+  }
+
+  // Fetch order items (base services per AC unit)
+  const orderItems = await getOrderItemsForInvoice(orderId)
+
+  // Build invoice line items
+  const baseServiceItems: CreateInvoiceInput['items'] = orderItems.map((oi) => ({
+    item_type: 'BASE_SERVICE',
+    description: [
+      oi.serviceName,
+      oi.unitTypeName ? `— ${oi.unitTypeName}` : null,
+      oi.capacityLabel ? `(${oi.capacityLabel})` : null,
+      oi.msnCode ? `· MSN ${oi.msnCode}` : null,
+    ]
+      .filter(Boolean)
+      .join(' '),
+    quantity: oi.quantity,
+    unit_price: oi.estimatedPrice,
+    service_type: oi.serviceType,
+  }))
+
+  const materialItems: CreateInvoiceInput['items'] = report.materials.map((m) => ({
+    item_type: 'ADDON',
+    description: m.name,
+    quantity: m.qty,
+    unit_price: m.unit_price,
+    addon_id: m.addon_id ?? undefined,
+  }))
+
+  const items = [...baseServiceItems, ...materialItems]
+  if (items.length === 0) {
+    throw new Error('Order tidak memiliki item yang bisa di-invoice')
+  }
+
+  // Resolve base service price for invoice header (sum of base lines)
+  const baseServicePrice = baseServiceItems.reduce(
+    (sum, it) => sum + it.quantity * it.unit_price,
+    0
+  )
+
+  // Resolve invoice config defaults (due date)
+  const config = await getInvoiceConfig()
+  const dueDate = new Date()
+  dueDate.setDate(dueDate.getDate() + (config?.default_due_days ?? 30))
+
+  const primaryServiceType = orderItems[0]?.serviceType ?? 'SERVICE'
+  const primaryServiceName = orderItems[0]?.serviceName ?? 'Service'
+
+  const invoice = await createInvoice({
+    order_id: orderId,
+    customer_id: order.customer_id,
+    invoice_type: 'FINAL',
+    due_date: dueDate.toISOString().split('T')[0],
+    service_type: primaryServiceType,
+    service_name: primaryServiceName,
+    base_service_price: baseServicePrice,
+    items,
+    notes:
+      `Auto-populated dari service report ${report.report_id}.` +
+      (report.notes ? `\n\nCatatan teknisi:\n${report.notes}` : ''),
+    tax_percentage: config?.default_tax_percentage ?? 11,
+  })
+
+  return {
+    invoice_id: invoice.invoice_id,
+    invoice_number: invoice.invoice_number,
+    total_amount: invoice.total_amount,
+    source: 'SERVICE_REPORT',
   }
 }
