@@ -7,19 +7,44 @@ export type ServiceTypeEnum =
   | 'REPAIR' 
   | 'CLEANING'; // Legacy enum format for backward compatibility
 
-export type OrderStatus = 
-  | 'NEW' 
-  | 'ACCEPTED' 
+/**
+ * Canonical order status — 8 states for MSN ERP v2.
+ * This is the primary type used across the application.
+ */
+export type OrderStatus =
+  | 'PENDING'
   | 'ASSIGNED'
-  | 'EN ROUTE'
-  | 'ARRIVED'
+  | 'EN_ROUTE'
   | 'IN_PROGRESS'
-  | 'DONE'
-  | 'RESCHEDULE'
+  | 'COMPLETED'
   | 'INVOICED'
   | 'PAID'
+  | 'CANCELLED'
+
+/**
+ * Legacy order status values that may still exist in the database.
+ * Used for backward compatibility during Phase 0-4 transition.
+ * Will be removed in Phase 5 after data migration.
+ */
+export type LegacyOrderStatus =
+  | 'NEW'
+  | 'ACCEPTED'
+  | 'EN ROUTE'
+  | 'ARRIVED'
+  | 'DONE'
+  | 'RESCHEDULE'
   | 'CLOSED'
-  | 'CANCELLED';
+  | 'TO_WORKSHOP'
+  | 'IN_WORKSHOP'
+  | 'READY_TO_RETURN'
+  | 'DELIVERED'
+
+/**
+ * Union of all possible status values at runtime (canonical + legacy).
+ * Use this when reading raw data from the database.
+ * Always convert to OrderStatus via toCanonical() from '@/lib/order-status' for display.
+ */
+export type AnyOrderStatus = OrderStatus | LegacyOrderStatus
 
 export type OrderItem = {
   order_item_id: string;
@@ -37,7 +62,7 @@ export type OrderItem = {
   description: string | null;
   estimated_price: number;
   actual_price: number | null;
-  status: OrderStatus;
+  status: AnyOrderStatus;
   created_at: string;
   updated_at: string;
 };
