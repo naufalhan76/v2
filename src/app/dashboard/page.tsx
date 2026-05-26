@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { getDashboardKpis, getChartData, getRecentOrders } from '@/lib/actions/dashboard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { KpiCardSkeleton, ChartSkeleton, Skeleton } from '@/components/ui/skeleton'
@@ -25,6 +24,7 @@ import { id } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { ResourceHints } from '@/components/ui/priority-components'
 import { useToast } from '@/hooks/use-toast'
+import { StatusBadge } from '@/components/orders/status-badge'
 
 interface KpiData {
   totalOrders: number
@@ -46,14 +46,6 @@ interface ChartDataPoint {
   revenue: number
   estimatedRevenue: number
   formattedDate: string
-}
-
-function getStatusBadge(status: string) {
-  const s = status?.toUpperCase()
-  if (['PAID', 'CLOSED'].includes(s)) return <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100">{status}</Badge>
-  if (['CANCELLED'].includes(s)) return <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">{status}</Badge>
-  if (['NEW', 'ASSIGNED', 'IN_PROGRESS', 'EN ROUTE', 'ARRIVED', 'ACCEPTED'].includes(s)) return <Badge className="bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100">{status}</Badge>
-  return <Badge variant="secondary">{status}</Badge>
 }
 
 export default function DashboardPage() {
@@ -391,7 +383,7 @@ export default function DashboardPage() {
                     <TableCell className="font-mono text-xs text-muted-foreground">{(o.order_id as string)?.slice(0, 8)}…</TableCell>
                     <TableCell className="text-sm font-medium">{o.customers?.customer_name ?? '—'}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{(o.order_type as string) ?? '—'}</TableCell>
-                    <TableCell>{getStatusBadge(o.status as string)}</TableCell>
+                    <TableCell><StatusBadge status={o.status as string} /></TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {dateStr ? format(new Date(dateStr), 'dd MMM yyyy', { locale: id }) : '—'}
                     </TableCell>

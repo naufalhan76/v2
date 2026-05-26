@@ -38,6 +38,7 @@ import { CheckCircle, Search, Eye, Check, X, User, MapPin, Phone, Mail, Building
 import { format } from 'date-fns'
 import { cn, formatPhone } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+import { StatusBadge } from '@/components/orders/status-badge'
 import { createClient } from '@/lib/supabase-browser'
 import { logger } from '@/lib/logger'
 
@@ -49,11 +50,6 @@ const SERVICE_TYPES = [
   { value: 'INSPECTION', label: 'Inspection' },
 ]
 
-const STATUS_COLORS: Record<string, string> = {
-  NEW: 'bg-slate-500',
-  ACCEPTED: 'bg-blue-500',
-  CANCELLED: 'bg-red-500',
-}
 
 export default function AcceptOrderPage() {
   const queryClient = useQueryClient()
@@ -237,9 +233,7 @@ export default function AcceptOrderPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={cn('text-white', STATUS_COLORS[o.status] || 'bg-gray-500')}>
-                          {o.status}
-                        </Badge>
+                        <StatusBadge status={o.status} />
                       </TableCell>
                       <TableCell className='text-right'>
                         <div className='flex justify-end gap-2 w-[200px] ml-auto'>
@@ -328,9 +322,7 @@ export default function AcceptOrderPage() {
                     <div>
                       <span className='text-muted-foreground'>Status:</span>
                       <div className='mt-1'>
-                        <Badge className={cn('text-white', STATUS_COLORS[orderDetail.data.status])}>
-                          {orderDetail.data.status}
-                        </Badge>
+                        <StatusBadge status={orderDetail.data.status} />
                       </div>
                     </div>
                     <div>

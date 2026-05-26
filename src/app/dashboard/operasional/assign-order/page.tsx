@@ -30,14 +30,16 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useToast } from '@/hooks/use-toast'
+import { ServiceTypeBadge } from '@/components/orders/service-type-badge'
+import { StatusBadge } from '@/components/orders/status-badge'
 import { logger } from '@/lib/logger'
 
 const SERVICE_TYPES = [
-  { value: 'REFILL_FREON', label: 'Refill Freon', color: 'bg-blue-500' },
-  { value: 'CLEANING', label: 'Cleaning', color: 'bg-green-500' },
-  { value: 'REPAIR', label: 'Repair', color: 'bg-orange-500' },
-  { value: 'INSTALLATION', label: 'Installation', color: 'bg-purple-500' },
-  { value: 'INSPECTION', label: 'Inspection', color: 'bg-cyan-500' },
+  { value: 'REFILL_FREON', label: 'Refill Freon', dot: 'bg-blue-500' },
+  { value: 'CLEANING', label: 'Cleaning', dot: 'bg-green-500' },
+  { value: 'REPAIR', label: 'Repair', dot: 'bg-orange-500' },
+  { value: 'INSTALLATION', label: 'Installation', dot: 'bg-purple-500' },
+  { value: 'INSPECTION', label: 'Inspection', dot: 'bg-cyan-500' },
 ]
 
 export default function AssignOrderPage() {
@@ -226,19 +228,19 @@ export default function AssignOrderPage() {
             <Card className={cn('cursor-pointer transition-all hover:shadow-md', filterServiceType === 'ALL' && 'ring-2 ring-primary')} onClick={() => setFilterServiceType('ALL')}>
               <CardContent className='p-4 text-center'><div className='text-2xl font-bold'>{orders.length}</div><div className='text-xs text-muted-foreground mt-1'>All Orders</div></CardContent></Card>
             {SERVICE_TYPES.map((type) => (<Card key={type.value} className={cn('cursor-pointer transition-all hover:shadow-md', filterServiceType === type.value && 'ring-2 ring-primary')} onClick={() => setFilterServiceType(type.value)}>
-              <CardContent className='p-4 text-center'><div className={cn('w-3 h-3 rounded-full mx-auto mb-2', type.color)} /><div className='text-2xl font-bold'>{orderCounts[type.value] || 0}</div>
+              <CardContent className='p-4 text-center'><div className={cn('w-3 h-3 rounded-full mx-auto mb-2', type.dot)} /><div className='text-2xl font-bold'>{orderCounts[type.value] || 0}</div>
               <div className='text-xs text-muted-foreground mt-1'>{type.label}</div></CardContent></Card>))}
           </div>
           <div className='grid gap-4'>{ordersLoading ? <p>Loading orders...</p> : filteredOrders.length === 0 ? (<Card><CardContent className='p-8 text-center text-muted-foreground'>No orders found for assignment</CardContent></Card>) : (
-            filteredOrders.map((order: unknown) => {const o = order as Record<string, unknown> & { customers?: { customer_name?: string }; order_id: string; order_date?: string; req_visit_date?: string; order_type?: string; status: string }; const serviceType = SERVICE_TYPES.find(t => t.value === o.order_type); const isSelected = selectedOrders.includes(o.order_id)
+            filteredOrders.map((order: unknown) => {const o = order as Record<string, unknown> & { customers?: { customer_name?: string }; order_id: string; order_date?: string; req_visit_date?: string; order_type?: string; status: string }; const isSelected = selectedOrders.includes(o.order_id)
             return (<Card key={o.order_id} className={cn('transition-all', isSelected && 'ring-2 ring-primary', o.status === 'RESCHEDULE' && 'bg-amber-50 border-l-4 border-l-amber-500')}><CardContent className='p-4'><div className='flex items-start gap-4'>
               <Checkbox checked={isSelected} onCheckedChange={(checked) => {if (checked) {setSelectedOrders([...selectedOrders, o.order_id])} else {setSelectedOrders(selectedOrders.filter(id => id !== o.order_id))}}} className='mt-1' />
               <div className='flex-1 grid grid-cols-2 md:grid-cols-6 gap-4'><div><div className='text-xs text-muted-foreground'>Order ID</div><div className='font-semibold'>{o.order_id}</div></div>
               <div><div className='text-xs text-muted-foreground'>Customer</div><div className='font-medium'>{o.customers?.customer_name}</div></div>
-              <div><div className='text-xs text-muted-foreground'>Status</div><Badge className={cn('text-white', o.status === 'RESCHEDULE' ? 'bg-amber-500' : 'bg-blue-500')}>{o.status}</Badge></div>
+              <div><div className='text-xs text-muted-foreground'>Status</div><StatusBadge status={o.status} /></div>
               <div><div className='text-xs text-muted-foreground'>Order Date</div><div>{o.order_date ? format(new Date(o.order_date), 'dd MMM yyyy') : '-'}</div></div>
               <div><div className='text-xs text-muted-foreground'>Req. Visit Date</div><div>{o.req_visit_date ? format(new Date(o.req_visit_date), 'dd MMM yyyy') : '-'}</div></div>
-              <div><div className='text-xs text-muted-foreground'>Service Type</div><Badge className={serviceType?.color}>{serviceType?.label || o.order_type}</Badge></div></div>
+              <div><div className='text-xs text-muted-foreground'>Service Type</div><ServiceTypeBadge serviceType={o.order_type} /></div></div>
               <Button variant='outline' size='sm' onClick={() => setDetailOrderId(o.order_id)}><Eye className='h-4 w-4' /></Button></div></CardContent></Card>)}))}</div>
           <div className='flex justify-between'><Button variant='outline' onClick={() => setCurrentStep(1)}><ChevronLeft className='mr-2 h-4 w-4' /> Back</Button>
           <Button onClick={handleNextStep} disabled={selectedOrders.length === 0}>Next ({selectedOrders.length} selected) <ChevronRight className='ml-2 h-4 w-4' /></Button></div></div>

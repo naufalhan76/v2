@@ -49,22 +49,7 @@ import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
 import { formatPhone } from '@/lib/utils'
-import { getInvoiceStatusLabel } from '@/lib/invoice-status'
-
-const STATUS_COLORS: Record<string, string> = {
-  DRAFT: 'bg-gray-500',
-  SENT: 'bg-blue-500',
-  PARTIAL_PAID: 'bg-amber-500',
-  PAID: 'bg-green-500',
-  OVERDUE: 'bg-red-500',
-  CANCELLED: 'bg-gray-400',
-}
-
-const PAYMENT_STATUS_COLORS: Record<string, string> = {
-  UNPAID: 'bg-red-500',
-  PARTIAL: 'bg-amber-500',
-  PAID: 'bg-green-500',
-}
+import { InvoiceStatusBadge } from '@/components/invoices/invoice-status-badge'
 
 const getInvoiceSourceLabel = (source?: Invoice['source']) => (source === 'BLANK' ? 'Kosong' : 'Transaksi')
 
@@ -412,14 +397,10 @@ export default function InvoicesPage() {
                         {formatCurrency(invoice.total_amount)}
                       </TableCell>
                       <TableCell>
-                        <Badge className={STATUS_COLORS[displayStatus]} data-testid="invoice-status-badge">
-                          {getInvoiceStatusLabel(displayStatus)}
-                        </Badge>
+                        <InvoiceStatusBadge status={displayStatus} data-testid="invoice-status-badge" />
                       </TableCell>
                       <TableCell>
-                        <Badge className={PAYMENT_STATUS_COLORS[invoice.payment_status]}>
-                          {invoice.payment_status}
-                        </Badge>
+                        <InvoiceStatusBadge status={invoice.payment_status === 'PARTIAL' ? 'PARTIAL_PAID' : invoice.payment_status} />
                       </TableCell>
                       <TableCell className="text-right">
                         <Button

@@ -71,17 +71,8 @@ import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
 import { formatPhone } from '@/lib/utils'
-import { getInvoiceStatusLabel } from '@/lib/invoice-status'
 import { canReviseInvoice } from '@/lib/invoice-utils'
-
-const STATUS_COLORS: Record<string, string> = {
-  DRAFT: 'bg-gray-500',
-  SENT: 'bg-blue-500',
-  PARTIAL_PAID: 'bg-amber-500',
-  PAID: 'bg-green-500',
-  OVERDUE: 'bg-red-500',
-  CANCELLED: 'bg-gray-400',
-}
+import { InvoiceStatusBadge } from '@/components/invoices/invoice-status-badge'
 
 const getInvoiceSourceLabel = (source?: Invoice['source']) => (source === 'BLANK' ? 'Kosong' : 'Transaksi')
 
@@ -892,20 +883,8 @@ export default function InvoiceDetailPage() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Badge className={STATUS_COLORS[displayStatus]} data-testid="invoice-status-badge">
-                    {getInvoiceStatusLabel(displayStatus)}
-                  </Badge>
-                  <Badge
-                    className={
-                      invoice.payment_status === 'PAID'
-                        ? 'bg-green-500'
-                        : invoice.payment_status === 'PARTIAL'
-                        ? 'bg-amber-500'
-                        : 'bg-red-500'
-                    }
-                  >
-                    {invoice.payment_status}
-                  </Badge>
+                  <InvoiceStatusBadge status={displayStatus} data-testid="invoice-status-badge" />
+                  <InvoiceStatusBadge status={invoice.payment_status === 'PARTIAL' ? 'PARTIAL_PAID' : invoice.payment_status} />
                 </div>
               </div>
             </CardHeader>

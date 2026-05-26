@@ -54,6 +54,7 @@ import { format, subDays } from 'date-fns'
 import { cn, formatPhone } from '@/lib/utils'
 import { id } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
+import { StatusBadge } from '@/components/orders/status-badge'
 
 // Helper functions for multi-location orders
 function getLocationsSummary(orderItems: unknown[]) {
@@ -128,21 +129,6 @@ const STATUS_GROUPS = {
 }
 
 const ALL_ONGOING_STATUSES = [...STATUS_GROUPS.NON_ASSIGNED, ...STATUS_GROUPS.ASSIGNED, ...STATUS_GROUPS.INVOICED]
-
-const STATUS_COLORS: Record<string, string> = {
-  NEW: 'bg-gray-500',
-  ACCEPTED: 'bg-blue-500',
-  ASSIGNED: 'bg-cyan-500',
-  'EN ROUTE': 'bg-indigo-500',
-  ARRIVED: 'bg-purple-500',
-  IN_PROGRESS: 'bg-yellow-500',
-  DONE: 'bg-green-500',
-  RESCHEDULE: 'bg-orange-500',
-  INVOICED: 'bg-emerald-500',
-  PAID: 'bg-lime-500',
-  CLOSED: 'bg-slate-500',
-  CANCELLED: 'bg-red-600',
-}
 
 const SERVICE_TYPES = [
   { value: 'REFILL_FREON', label: 'Refill Freon' },
@@ -861,9 +847,7 @@ function MonitoringOngoingContent() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={cn('text-white', STATUS_COLORS[o.status as string] || 'bg-gray-500')}>
-                            {o.status as string}
-                          </Badge>
+                          <StatusBadge status={o.status as string} />
                         </TableCell>
                         <TableCell className='text-sm'>
                           {o.order_technicians && (o.order_technicians as unknown[]).length > 0 ? (
@@ -947,9 +931,7 @@ function MonitoringOngoingContent() {
                     <div>
                       <span className='text-muted-foreground'>Status:</span>
                       <div className='mt-1'>
-                        <Badge className={cn('text-white', STATUS_COLORS[orderDetail.data.status])}>
-                          {orderDetail.data.status}
-                        </Badge>
+                        <StatusBadge status={orderDetail.data.status} />
                       </div>
                     </div>
                     <div>
