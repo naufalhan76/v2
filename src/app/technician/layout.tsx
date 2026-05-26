@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { BottomTabBar } from '@/components/technician/bottom-tab-bar'
+import { ServiceWorkerRegister } from './sw-register'
 
 export const metadata: Metadata = {
   title: 'MSN Tech',
@@ -27,6 +28,9 @@ export default function TechnicianLayout({
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-background">
+      {/* Service worker registration */}
+      <ServiceWorkerRegister />
+
       {/* Main content area — scrollable, padded for bottom bar */}
       <main className="flex-1 overflow-y-auto pb-20">
         <div className="mx-auto max-w-md px-4 py-4">
