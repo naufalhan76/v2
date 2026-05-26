@@ -45,3 +45,5 @@ tsc_output.txt
 tsc_output_2.txt
 update_page.js
 update_page.py
+# Brainstorming companion artifacts
+.superpowers/
