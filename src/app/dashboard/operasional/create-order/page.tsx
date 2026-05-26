@@ -105,7 +105,7 @@ type CustomerSuggestion = {
   email: string | null
 }
 
-export default function CreateOrderPage() {
+export function CreateOrderPage() {
   const router = useRouter()
   const { toast } = useToast()
   
@@ -1936,3 +1936,5 @@ function EditBillingAddressModal({
     </Dialog>
   )
 }
+
+export default CreateOrderPage
