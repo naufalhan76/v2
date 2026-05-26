@@ -1,0 +1,49 @@
+import { type LucideIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+
+interface EmptyStateProps {
+  /** Lucide icon component to display */
+  icon: LucideIcon
+  /** Main title text */
+  title: string
+  /** Optional description text */
+  description?: string
+  /** Optional action button */
+  action?: {
+    label: string
+    onClick: () => void
+    icon?: LucideIcon
+  }
+  /** Optional additional className */
+  className?: string
+}
+
+/**
+ * Reusable empty state component for tables, lists, and board columns.
+ * Displays an icon, title, optional description, and optional action button.
+ */
+export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
+  return (
+    <div className={cn('flex flex-col items-center justify-center py-12 px-4 text-center', className)}>
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted mb-4">
+        <Icon className="h-6 w-6 text-muted-foreground" />
+      </div>
+      <h3 className="text-sm font-semibold text-foreground mb-1">{title}</h3>
+      {description && (
+        <p className="text-sm text-muted-foreground max-w-[280px] mb-4">{description}</p>
+      )}
+      {action && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={action.onClick}
+          className="mt-2"
+        >
+          {action.icon && <action.icon className="mr-2 h-4 w-4" />}
+          {action.label}
+        </Button>
+      )}
+    </div>
+  )
+}
