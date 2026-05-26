@@ -11,8 +11,8 @@ import {
 import { Button } from '@/components/ui/button'
 import {
   createInvoiceFromOrder,
-  ServiceReportMissingError,
 } from '@/lib/actions/invoices'
+import { ServiceReportMissingError } from '@/lib/invoice-errors'
 import { logger } from '@/lib/logger'
 
 interface PageProps {

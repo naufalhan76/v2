@@ -47,3 +47,4 @@ update_page.js
 update_page.py
 # Brainstorming companion artifacts
 .superpowers/
+.env.staging

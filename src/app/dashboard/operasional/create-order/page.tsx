@@ -105,7 +105,7 @@ type CustomerSuggestion = {
   email: string | null
 }
 
-export function CreateOrderPage() {
+function CreateOrderPage() {
   const router = useRouter()
   const { toast } = useToast()
   

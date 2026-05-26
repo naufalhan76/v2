@@ -4,8 +4,9 @@ import { createClient } from '@/lib/supabase-server'
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { reportId: string } }
+  { params }: { params: Promise<{ reportId: string }> }
 ) {
+  const { reportId } = await params
   const supabase = await createClient()
   const {
     data: { user },
@@ -20,7 +21,7 @@ export async function GET(
 
   // RLS on service_reports already gates SELECT; if the user can read the
   // report row, they may also see its signed URL. Otherwise we get null.
-  const signedUrl = await getSignedSignatureUrl(params.reportId)
+  const signedUrl = await getSignedSignatureUrl(reportId)
 
   return NextResponse.json({
     success: true,
