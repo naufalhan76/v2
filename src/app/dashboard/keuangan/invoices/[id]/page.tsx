@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,11 +48,12 @@ import {
   Plus,
   Save,
   X,
+  FileText,
+  AlertCircle,
 } from 'lucide-react'
 import {
   getInvoiceById,
   updateInvoiceStatus,
-  recordPayment,
   deleteInvoice,
   reviseInvoice,
   type Invoice,
@@ -60,6 +61,7 @@ import {
   type PaymentRecord,
   type ReviseInvoiceItemInput,
 } from '@/lib/actions/invoices'
+import { RecordPaymentModal } from '@/components/invoices/record-payment-modal'
 import { getInvoiceConfig, type InvoiceConfig } from '@/lib/actions/invoice-config'
 import { parseBankAccounts, type BankAccount } from '@/lib/bank-accounts'
 import { 
@@ -85,7 +87,9 @@ const formatBankAccountLine = (account: { account_label: string; bank: string; a
 export default function InvoiceDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const invoiceId = params?.id as string
+  const isPrefilledFromReport = searchParams?.get('prefilled') === 'service-report'
   const { toast } = useToast()
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [items, setItems] = useState<InvoiceItem[]>([])
@@ -104,13 +108,6 @@ export default function InvoiceDetailPage() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-
-  // Payment form state
-  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0])
-  const [paymentMethod, setPaymentMethod] = useState('TRANSFER')
-  const [paymentAmount, setPaymentAmount] = useState('')
-  const [paymentReference, setPaymentReference] = useState('')
-  const [paymentNotes, setPaymentNotes] = useState('')
 
   // Revision mode state
   type RevisionItemDraft = {
@@ -200,38 +197,6 @@ export default function InvoiceDetailPage() {
     }
   }
 
-  const handleRecordPayment = async () => {
-    if (!invoice || !paymentAmount) return
-
-    try {
-      setIsProcessing(true)
-      await recordPayment(invoice.invoice_id, {
-        payment_date: paymentDate,
-        payment_method: paymentMethod,
-        amount: parseFloat(paymentAmount),
-        reference_number: paymentReference || undefined,
-        notes: paymentNotes || undefined,
-      })
-
-      toast({
-        title: 'Berhasil',
-        description: 'Pembayaran berhasil dicatat',
-      })
-
-      setIsPaymentDialogOpen(false)
-      resetPaymentForm()
-      loadInvoice()
-    } catch (error: unknown) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Gagal mencatat pembayaran',
-      })
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
   const handleDelete = async () => {
     if (!invoice) return
 
@@ -283,14 +248,6 @@ export default function InvoiceDetailPage() {
     } finally {
       setIsProcessing(false)
     }
-  }
-
-  const resetPaymentForm = () => {
-    setPaymentDate(new Date().toISOString().split('T')[0])
-    setPaymentMethod('TRANSFER')
-    setPaymentAmount('')
-    setPaymentReference('')
-    setPaymentNotes('')
   }
 
   const buildRevisionDraft = (): RevisionDraft | null => {
@@ -853,6 +810,27 @@ export default function InvoiceDetailPage() {
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-2 space-y-6">
+          {/* Pre-filled from service report banner */}
+          {isPrefilledFromReport && (
+            <Card className="border-blue-200 bg-blue-50/40">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3">
+                  <FileText className="h-5 w-5 text-blue-700 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-blue-900">
+                      Invoice di-populate dari service report
+                    </p>
+                    <p className="text-sm text-blue-800">
+                      Item invoice diambil dari laporan teknisi (foto, material, harga). Anda
+                      dapat mengedit item, mengubah pajak/diskon, atau menambah item sebelum
+                      mengirim ke customer. Klik <strong>Edit / Revisi</strong> untuk mengubah.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Mode Revisi banner */}
           {isRevisionMode && (
             <Card className="border-amber-300 bg-amber-50">
@@ -868,6 +846,36 @@ export default function InvoiceDetailPage() {
                     </p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Prominent Remaining Balance banner (partial payment polish) */}
+          {invoice.payment_status === 'PARTIAL' && remainingAmount > 0 && (
+            <Card className="border-amber-300 bg-amber-50/60">
+              <CardContent className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-700" />
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-amber-800">
+                      Sisa Tagihan
+                    </p>
+                    <p className="text-2xl font-bold text-amber-900">
+                      {formatCurrency(remainingAmount)}
+                    </p>
+                    <p className="text-xs text-amber-800">
+                      Sudah dibayar {formatCurrency(invoice.paid_amount)} dari{' '}
+                      {formatCurrency(invoice.total_amount)}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => setIsPaymentDialogOpen(true)}
+                  className="bg-amber-600 hover:bg-amber-700"
+                >
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Catat Pembayaran
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -1342,37 +1350,55 @@ export default function InvoiceDetailPage() {
           {payments.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Payment History</CardTitle>
+                <CardTitle>Riwayat Pembayaran</CardTitle>
+                <CardDescription>
+                  {payments.length} pembayaran tercatat
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Method</TableHead>
-                      <TableHead>Reference</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Tanggal</TableHead>
+                      <TableHead>Metode</TableHead>
+                      <TableHead>Referensi</TableHead>
+                      <TableHead className="text-right">Jumlah</TableHead>
+                      <TableHead className="text-right">Sisa Setelah</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payments.map((payment) => (
-                      <TableRow key={payment.payment_id}>
-                        <TableCell>
-                          {format(new Date(payment.payment_date), 'dd MMM yyyy', {
-                            locale: localeId,
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{payment.payment_method}</Badge>
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {payment.reference_number || '-'}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-green-600">
-                          {formatCurrency(payment.amount)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {(() => {
+                      // Sort oldest first to compute running balance, then reverse for display
+                      const sorted = [...payments].sort(
+                        (a, b) =>
+                          new Date(a.payment_date).getTime() -
+                          new Date(b.payment_date).getTime()
+                      )
+                      let running = invoice.total_amount
+                      const rows = sorted.map((p) => {
+                        running -= p.amount
+                        return { ...p, balanceAfter: running }
+                      })
+                      return rows.reverse().map((p) => (
+                        <TableRow key={p.payment_id}>
+                          <TableCell>
+                            {format(new Date(p.payment_date), 'dd MMM yyyy', { locale: localeId })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{p.payment_method}</Badge>
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {p.reference_number || '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-green-600">
+                            {formatCurrency(p.amount)}
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {formatCurrency(p.balanceAfter)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    })()}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -1410,10 +1436,7 @@ export default function InvoiceDetailPage() {
               {invoice.payment_status !== 'PAID' && (
                 <Button
                   className="w-full"
-                  onClick={() => {
-                    setPaymentAmount(remainingAmount.toString())
-                    setIsPaymentDialogOpen(true)
-                  }}
+                  onClick={() => setIsPaymentDialogOpen(true)}
                 >
                   <DollarSign className="mr-2 h-4 w-4" />
                   Record Payment
@@ -1450,91 +1473,12 @@ export default function InvoiceDetailPage() {
       </div>
 
       {/* Payment Dialog */}
-      <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Record Payment</DialogTitle>
-            <DialogDescription>Catat pembayaran untuk invoice ini</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Payment Date</Label>
-              <Input
-                type="date"
-                value={paymentDate}
-                onChange={(e) => setPaymentDate(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Payment Method</Label>
-              <SearchableSelect
-                options={[
-                  { id: 'CASH', label: 'Cash' },
-                  { id: 'TRANSFER', label: 'Transfer' },
-                  { id: 'CREDIT_CARD', label: 'Credit Card' },
-                  { id: 'DEBIT_CARD', label: 'Debit Card' },
-                  { id: 'QRIS', label: 'QRIS' },
-                  { id: 'OTHER', label: 'Other' },
-                ]}
-                value={paymentMethod}
-                onValueChange={setPaymentMethod}
-                placeholder="Pilih metode"
-                searchPlaceholder="Cari metode..."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Amount</Label>
-              <Input
-                type="number"
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(e.target.value)}
-                placeholder="0"
-              />
-              <p className="text-sm text-muted-foreground">
-                Remaining: {formatCurrency(remainingAmount)}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>Reference Number</Label>
-              <Input
-                value={paymentReference}
-                onChange={(e) => setPaymentReference(e.target.value)}
-                placeholder="Transfer reference, receipt number, etc."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Input
-                value={paymentNotes}
-                onChange={(e) => setPaymentNotes(e.target.value)}
-                placeholder="Optional notes"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsPaymentDialogOpen(false)
-                resetPaymentForm()
-              }}
-              disabled={isProcessing}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleRecordPayment} disabled={isProcessing || !paymentAmount}>
-              {isProcessing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                'Record Payment'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RecordPaymentModal
+        open={isPaymentDialogOpen}
+        onOpenChange={setIsPaymentDialogOpen}
+        invoice={invoice}
+        onSuccess={loadInvoice}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
