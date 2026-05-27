@@ -26,9 +26,21 @@ interface DraftData {
   customer_signature: string | null
   customer_name_signed: string
   work_started_at: string | null
+  next_service_date: string
+  next_service_notes: string
 }
 
 const DRAFT_KEY_PREFIX = 'draft-'
+
+/** Default next-service date: today + 90 days, formatted YYYY-MM-DD. */
+function getDefaultNextServiceDate(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + 90)
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
 
 function getDraftKey(orderId: string) {
   return `${DRAFT_KEY_PREFIX}${orderId}`
@@ -74,6 +86,8 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
   const [customerSignature, setCustomerSignature] = useState<string | null>(null)
   const [customerNameSigned, setCustomerNameSigned] = useState('')
   const [workStartedAt] = useState<string | null>(new Date().toISOString())
+  const [nextServiceDate, setNextServiceDate] = useState<string>(getDefaultNextServiceDate())
+  const [nextServiceNotes, setNextServiceNotes] = useState('')
 
   // UI state
   const [submitting, setSubmitting] = useState(false)
@@ -92,6 +106,8 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
       setNotes(draft.notes)
       setCustomerSignature(draft.customer_signature)
       setCustomerNameSigned(draft.customer_name_signed)
+      if (draft.next_service_date) setNextServiceDate(draft.next_service_date)
+      if (draft.next_service_notes) setNextServiceNotes(draft.next_service_notes)
       setDraftRestored(true)
     }
   }, [orderId])
@@ -112,6 +128,8 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
         customer_signature: customerSignature,
         customer_name_signed: customerNameSigned,
         work_started_at: workStartedAt,
+        next_service_date: nextServiceDate,
+        next_service_notes: nextServiceNotes,
       }
       saveDraft(orderId, draftData)
     }, 500)
@@ -121,7 +139,7 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
         clearTimeout(saveTimeoutRef.current)
       }
     }
-  }, [photosBefore, photosAfter, materials, actualPrice, notes, customerSignature, customerNameSigned, orderId, workStartedAt])
+  }, [photosBefore, photosAfter, materials, actualPrice, notes, customerSignature, customerNameSigned, orderId, workStartedAt, nextServiceDate, nextServiceNotes])
 
   // Online/offline detection
   useEffect(() => {
@@ -214,6 +232,8 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
           notes: notes.trim(),
           work_started_at: workStartedAt,
           work_completed_at: new Date().toISOString(),
+          next_service_recommendation_date: nextServiceDate || null,
+          next_service_recommendation_notes: nextServiceNotes.trim() || null,
         }),
       })
 
@@ -241,6 +261,8 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
     customerNameSigned,
     notes,
     workStartedAt,
+    nextServiceDate,
+    nextServiceNotes,
     orderId,
     queryClient,
     router,
@@ -347,6 +369,44 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
           placeholder="Catatan tambahan tentang pekerjaan..."
           className="min-h-[80px] text-base"
         />
+      </div>
+
+      {/* Next-service recommendation */}
+      <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+        <div>
+          <h2 className="text-sm font-semibold">Rekomendasi Service Berikutnya</h2>
+          <p className="text-xs text-muted-foreground">
+            Estimasi jadwal service rutin selanjutnya. Default 90 hari, sesuaikan jika perlu.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium" htmlFor="next-service-date">
+            Tanggal Service Rutin Berikutnya
+          </label>
+          <Input
+            id="next-service-date"
+            type="date"
+            value={nextServiceDate}
+            onChange={(e) => setNextServiceDate(e.target.value)}
+            disabled={submitting}
+            className="h-11 text-base"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium" htmlFor="next-service-notes">
+            Catatan untuk service berikutnya
+          </label>
+          <Textarea
+            id="next-service-notes"
+            value={nextServiceNotes}
+            onChange={(e) => setNextServiceNotes(e.target.value)}
+            disabled={submitting}
+            placeholder="Mis. perlu cek freon, ganti filter, dll..."
+            className="min-h-[80px] text-base"
+          />
+        </div>
       </div>
 
       {/* Customer Signature */}

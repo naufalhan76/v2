@@ -23,6 +23,12 @@ const reportSchema = z.object({
   notes: z.string().optional().default(''),
   work_started_at: z.string().datetime().optional().nullable(),
   work_completed_at: z.string().datetime().optional().nullable(),
+  next_service_recommendation_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD')
+    .optional()
+    .nullable(),
+  next_service_recommendation_notes: z.string().optional().nullable(),
 })
 
 /**
@@ -112,11 +118,45 @@ export async function POST(
         work_started_at: reportData.work_started_at,
         work_completed_at: reportData.work_completed_at || new Date().toISOString(),
         submitted_at: new Date().toISOString(),
+        next_service_recommendation_date: reportData.next_service_recommendation_date || null,
+        next_service_recommendation_notes: reportData.next_service_recommendation_notes || null,
       })
       .select('report_id')
       .single()
 
     if (reportError) throw reportError
+
+    // If technician recommended a next-service date, propagate it to the
+    // ac_units linked to this order's order_items so the reminder system
+    // can pick them up via ac_units.next_service_due_date.
+    if (reportData.next_service_recommendation_date) {
+      const { data: orderItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select('ac_unit_id')
+        .eq('order_id', orderId)
+
+      if (itemsError) throw itemsError
+
+      const acUnitIds = Array.from(
+        new Set(
+          (orderItems ?? [])
+            .map((it) => it.ac_unit_id)
+            .filter((id): id is string => Boolean(id))
+        )
+      )
+
+      if (acUnitIds.length > 0) {
+        const { error: acUpdateError } = await supabase
+          .from('ac_units')
+          .update({
+            next_service_due_date: reportData.next_service_recommendation_date,
+            updated_at: new Date().toISOString(),
+          })
+          .in('ac_unit_id', acUnitIds)
+
+        if (acUpdateError) throw acUpdateError
+      }
+    }
 
     // Transition order to COMPLETED
     const { error: transitionError } = await supabase
