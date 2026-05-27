@@ -35,17 +35,30 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
   return (
     <div className="w-full">
       <div className="border-b">
-        <div className="flex items-center p-4 space-x-4">
+        <div className="flex items-center p-3 sm:p-4 gap-3 sm:gap-4">
           {Array.from({ length: columns }).map((_, i) => (
-            <Skeleton key={i} className="h-4 flex-1" />
+            <Skeleton
+              key={i}
+              className={cn(
+                'h-4 flex-1',
+                // Hide non-essential columns on mobile (keep first 2)
+                i >= 2 && 'hidden md:block'
+              )}
+            />
           ))}
         </div>
       </div>
       <div className="divide-y">
         {Array.from({ length: rows }).map((_, rowIndex) => (
-          <div key={rowIndex} className="flex items-center p-4 space-x-4">
+          <div key={rowIndex} className="flex items-center p-3 sm:p-4 gap-3 sm:gap-4">
             {Array.from({ length: columns }).map((_, colIndex) => (
-              <Skeleton key={colIndex} className="h-4 flex-1" />
+              <Skeleton
+                key={colIndex}
+                className={cn(
+                  'h-4 flex-1',
+                  colIndex >= 2 && 'hidden md:block'
+                )}
+              />
             ))}
           </div>
         ))}

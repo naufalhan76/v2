@@ -96,7 +96,7 @@ export function MultiSelectDropdown({
       {/* Dropdown trigger button */}
       <Button
         variant="outline"
-        className="w-full justify-between"
+        className="w-full justify-between min-h-[44px] sm:min-h-10"
         onClick={() => {
           setIsOpen(!isOpen)
           if (!isOpen) {
@@ -104,17 +104,17 @@ export function MultiSelectDropdown({
           }
         }}
       >
-        <span className="text-muted-foreground">
+        <span className="text-muted-foreground truncate">
           {selectedOptions.length > 0
             ? `${selectedOptions.length} selected`
             : placeholder}
         </span>
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </Button>
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-50 max-h-64 overflow-hidden flex flex-col">
+        <div className="absolute top-full left-0 right-0 mt-1 w-full bg-white border rounded-lg shadow-lg z-50 max-h-[60vh] sm:max-h-64 overflow-hidden flex flex-col">
           {/* Search input */}
           <div className="p-2 border-b sticky top-0 bg-white">
             <Input
@@ -123,7 +123,7 @@ export function MultiSelectDropdown({
               placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 text-sm"
+              className="h-9 sm:h-8 text-sm"
             />
           </div>
 
@@ -133,7 +133,7 @@ export function MultiSelectDropdown({
               filteredOptions.map(option => (
                 <div
                   key={option.id}
-                  className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
+                  className="flex items-center gap-2 px-3 py-3 sm:py-2 min-h-[44px] sm:min-h-0 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                   onClick={() => handleToggleOption(option.id)}
                 >
                   <Checkbox
@@ -141,10 +141,10 @@ export function MultiSelectDropdown({
                     onCheckedChange={() => handleToggleOption(option.id)}
                     className="cursor-pointer"
                   />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{option.label}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{option.label}</div>
                     {option.secondaryLabel && (
-                      <div className="text-xs text-muted-foreground">{option.secondaryLabel}</div>
+                      <div className="text-xs text-muted-foreground truncate">{option.secondaryLabel}</div>
                     )}
                   </div>
                 </div>

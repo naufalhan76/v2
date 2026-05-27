@@ -72,16 +72,16 @@ export function LoadingState({
   }
 
   return (
-    <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
+    <div className={`flex flex-col items-center justify-center p-6 sm:p-8 w-full min-h-[120px] ${className}`}>
       {!hasTimedOut ? (
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className={`animate-spin ${sizeClasses[size]}`} />
-          <p className="text-sm text-muted-foreground animate-pulse">
+          <p className="text-sm text-muted-foreground animate-pulse text-center">
             {message}
           </p>
         </div>
       ) : (
-        <div className="flex flex-col items-center space-y-4 max-w-md text-center">
+        <div className="flex flex-col items-center space-y-4 max-w-md w-full text-center px-2">
           {showTimeout && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
