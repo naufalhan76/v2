@@ -166,14 +166,14 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Invoice</h1>
-          <p className="text-muted-foreground">Kelola dan monitor invoice pelanggan</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Invoice</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Kelola dan monitor invoice pelanggan</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 w-full sm:w-auto min-h-[44px]">
               <Plus className="h-4 w-4" />
               Buat Invoice
               <ChevronDown className="h-4 w-4" />
@@ -191,7 +191,7 @@ export default function InvoicesPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Invoice</CardTitle>
@@ -242,7 +242,7 @@ export default function InvoicesPage() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex gap-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -250,49 +250,51 @@ export default function InvoicesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10"
+                className="pl-10 min-h-[44px]"
               />
             </div>
-            <SearchableSelect
-              options={[
-                { id: 'ALL', label: 'Semua Status' },
-                { id: 'DRAFT', label: 'Draft' },
-                { id: 'SENT', label: 'Terkirim' },
-                { id: 'PARTIAL_PAID', label: 'Partial Paid' },
-                { id: 'PAID', label: 'Dibayar' },
-                { id: 'OVERDUE', label: 'Overdue' },
-                { id: 'CANCELLED', label: 'Dibatalkan' },
-              ]}
-              value={statusFilter}
-              onValueChange={handleStatusFilterChange}
-              placeholder="Status"
-              searchPlaceholder="Cari status..."
-              className="w-[180px]"
-            />
-            <SearchableSelect
-              options={[
-                { id: 'ALL', label: 'Semua Pembayaran' },
-                { id: 'UNPAID', label: 'Belum Dibayar' },
-                { id: 'PARTIAL', label: 'Dibayar Sebagian' },
-                { id: 'PAID', label: 'Lunas' },
-              ]}
-              value={paymentFilter}
-              onValueChange={handlePaymentFilterChange}
-              placeholder="Pembayaran"
-              searchPlaceholder="Cari pembayaran..."
-              className="w-[180px]"
-            />
-            <Select value={sourceFilter} onValueChange={handleSourceFilterChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Sumber" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Sumber</SelectItem>
-                <SelectItem value="ORDER_LINKED">Transaksi</SelectItem>
-                <SelectItem value="BLANK">Kosong</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={handleSearch}>Cari</Button>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:flex lg:flex-row lg:gap-4">
+              <SearchableSelect
+                options={[
+                  { id: 'ALL', label: 'Semua Status' },
+                  { id: 'DRAFT', label: 'Draft' },
+                  { id: 'SENT', label: 'Terkirim' },
+                  { id: 'PARTIAL_PAID', label: 'Partial Paid' },
+                  { id: 'PAID', label: 'Dibayar' },
+                  { id: 'OVERDUE', label: 'Overdue' },
+                  { id: 'CANCELLED', label: 'Dibatalkan' },
+                ]}
+                value={statusFilter}
+                onValueChange={handleStatusFilterChange}
+                placeholder="Status"
+                searchPlaceholder="Cari status..."
+                className="w-full lg:w-[180px]"
+              />
+              <SearchableSelect
+                options={[
+                  { id: 'ALL', label: 'Semua Pembayaran' },
+                  { id: 'UNPAID', label: 'Belum Dibayar' },
+                  { id: 'PARTIAL', label: 'Dibayar Sebagian' },
+                  { id: 'PAID', label: 'Lunas' },
+                ]}
+                value={paymentFilter}
+                onValueChange={handlePaymentFilterChange}
+                placeholder="Pembayaran"
+                searchPlaceholder="Cari pembayaran..."
+                className="w-full lg:w-[180px]"
+              />
+              <Select value={sourceFilter} onValueChange={handleSourceFilterChange}>
+                <SelectTrigger className="w-full lg:w-[180px] min-h-[44px]">
+                  <SelectValue placeholder="Sumber" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Sumber</SelectItem>
+                  <SelectItem value="ORDER_LINKED">Transaksi</SelectItem>
+                  <SelectItem value="BLANK">Kosong</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={handleSearch} className="w-full lg:w-auto min-h-[44px]">Cari</Button>
           </div>
         </CardContent>
       </Card>
@@ -318,102 +320,160 @@ export default function InvoicesPage() {
               }}
             />
           ) : (
-            <div className="data-table-container">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <SortableTableHead sortKey="invoice_number" currentSort={sortConfig} onSort={requestSort}>
-                      Invoice Number
-                    </SortableTableHead>
-                    <TableHead>Sumber</TableHead>
-                    <TableHead>Tipe</TableHead>
-                    <SortableTableHead sortKey="customers.customer_name" currentSort={sortConfig} onSort={requestSort}>
-                      Customer
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="invoice_date" currentSort={sortConfig} onSort={requestSort}>
-                      Tanggal
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="due_date" currentSort={sortConfig} onSort={requestSort}>
-                      Jatuh Tempo
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="total_amount" currentSort={sortConfig} onSort={requestSort}>
-                      Total
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="computed_status" currentSort={sortConfig} onSort={requestSort}>
-                      Status
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="payment_status" currentSort={sortConfig} onSort={requestSort}>
-                      Pembayaran
-                    </SortableTableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invoices.map((invoice) => {
-                    const displayStatus = invoice.computed_status ?? invoice.status
-
-                    return (
-                    <TableRow key={invoice.invoice_id}>
-                      <TableCell className="font-mono font-semibold">
-                        {invoice.invoice_number}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getInvoiceSourceVariant(invoice.source)}>
+            <>
+              {/* Mobile card list (hidden on md+) */}
+              <div className="md:hidden space-y-3">
+                {invoices.map((invoice) => {
+                  const displayStatus = invoice.computed_status ?? invoice.status
+                  return (
+                    <button
+                      key={invoice.invoice_id}
+                      type="button"
+                      onClick={() =>
+                        router.push(`/dashboard/keuangan/invoices/${invoice.invoice_id}`)
+                      }
+                      className="w-full text-left rounded-lg border bg-card p-3 space-y-2 hover:bg-accent/50 transition-colors min-h-[44px]"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-mono font-semibold text-sm break-all">
+                          {invoice.invoice_number}
+                        </div>
+                        <InvoiceStatusBadge
+                          status={displayStatus}
+                          size="sm"
+                          data-testid="invoice-status-badge"
+                        />
+                      </div>
+                      <div className="text-sm font-medium">
+                        {invoice.customers?.customer_name ?? invoice.customer_name_override ?? '—'}
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>
+                          {format(new Date(invoice.invoice_date), 'dd MMM yyyy', { locale: localeId })}
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          {formatCurrency(invoice.total_amount)}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge variant={getInvoiceSourceVariant(invoice.source)} className="text-[10px]">
                           {getInvoiceSourceLabel(invoice.source)}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={invoice.invoice_type === 'FINAL' ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={invoice.invoice_type === 'FINAL' ? 'default' : 'secondary'}
+                          className="text-[10px]"
+                        >
                           {invoice.invoice_type}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {invoice.customers?.customer_name ?? invoice.customer_name_override ?? '—'}
-                          </div>
-                          {(invoice.customers?.phone_number ?? invoice.customer_phone_override) ? (
-                            <div className="text-sm text-muted-foreground">
-                              {formatPhone(invoice.customers?.phone_number ?? invoice.customer_phone_override)}
-                            </div>
-                          ) : null}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(invoice.invoice_date), 'dd MMM yyyy', {
-                          locale: localeId,
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(invoice.due_date), 'dd MMM yyyy', {
-                          locale: localeId,
-                        })}
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        {formatCurrency(invoice.total_amount)}
-                      </TableCell>
-                      <TableCell>
-                        <InvoiceStatusBadge status={displayStatus} data-testid="invoice-status-badge" />
-                      </TableCell>
-                      <TableCell>
-                        <InvoiceStatusBadge status={invoice.payment_status === 'PARTIAL' ? 'PARTIAL_PAID' : invoice.payment_status} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
+                        <InvoiceStatusBadge
+                          status={invoice.payment_status === 'PARTIAL' ? 'PARTIAL_PAID' : invoice.payment_status}
                           size="sm"
-                          onClick={() =>
-                            router.push(`/dashboard/keuangan/invoices/${invoice.invoice_id}`)
-                          }
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+                        />
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Tablet/desktop table */}
+              <div className="hidden md:block data-table-container">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <SortableTableHead sortKey="invoice_number" currentSort={sortConfig} onSort={requestSort}>
+                        Invoice Number
+                      </SortableTableHead>
+                      <TableHead className="hidden xl:table-cell">Sumber</TableHead>
+                      <TableHead className="hidden lg:table-cell">Tipe</TableHead>
+                      <SortableTableHead sortKey="customers.customer_name" currentSort={sortConfig} onSort={requestSort}>
+                        Customer
+                      </SortableTableHead>
+                      <SortableTableHead sortKey="invoice_date" currentSort={sortConfig} onSort={requestSort} className="hidden lg:table-cell">
+                        Tanggal
+                      </SortableTableHead>
+                      <SortableTableHead sortKey="due_date" currentSort={sortConfig} onSort={requestSort} className="hidden xl:table-cell">
+                        Jatuh Tempo
+                      </SortableTableHead>
+                      <SortableTableHead sortKey="total_amount" currentSort={sortConfig} onSort={requestSort}>
+                        Total
+                      </SortableTableHead>
+                      <SortableTableHead sortKey="computed_status" currentSort={sortConfig} onSort={requestSort}>
+                        Status
+                      </SortableTableHead>
+                      <SortableTableHead sortKey="payment_status" currentSort={sortConfig} onSort={requestSort} className="hidden lg:table-cell">
+                        Pembayaran
+                      </SortableTableHead>
+                      <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
-                  )})}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {invoices.map((invoice) => {
+                      const displayStatus = invoice.computed_status ?? invoice.status
+
+                      return (
+                      <TableRow key={invoice.invoice_id}>
+                        <TableCell className="font-mono font-semibold">
+                          {invoice.invoice_number}
+                        </TableCell>
+                        <TableCell className="hidden xl:table-cell">
+                          <Badge variant={getInvoiceSourceVariant(invoice.source)}>
+                            {getInvoiceSourceLabel(invoice.source)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <Badge variant={invoice.invoice_type === 'FINAL' ? 'default' : 'secondary'}>
+                            {invoice.invoice_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {invoice.customers?.customer_name ?? invoice.customer_name_override ?? '—'}
+                            </div>
+                            {(invoice.customers?.phone_number ?? invoice.customer_phone_override) ? (
+                              <div className="text-sm text-muted-foreground">
+                                {formatPhone(invoice.customers?.phone_number ?? invoice.customer_phone_override)}
+                              </div>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {format(new Date(invoice.invoice_date), 'dd MMM yyyy', {
+                            locale: localeId,
+                          })}
+                        </TableCell>
+                        <TableCell className="hidden xl:table-cell">
+                          {format(new Date(invoice.due_date), 'dd MMM yyyy', {
+                            locale: localeId,
+                          })}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {formatCurrency(invoice.total_amount)}
+                        </TableCell>
+                        <TableCell>
+                          <InvoiceStatusBadge status={displayStatus} data-testid="invoice-status-badge" />
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <InvoiceStatusBadge status={invoice.payment_status === 'PARTIAL' ? 'PARTIAL_PAID' : invoice.payment_status} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="min-h-[44px] min-w-[44px]"
+                            onClick={() =>
+                              router.push(`/dashboard/keuangan/invoices/${invoice.invoice_id}`)
+                            }
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )})}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

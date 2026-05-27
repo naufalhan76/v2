@@ -129,7 +129,7 @@ export function RecordPaymentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Catat Pembayaran</DialogTitle>
           <DialogDescription>
@@ -138,18 +138,18 @@ export function RecordPaymentModal({
         </DialogHeader>
 
         <div className="rounded-md border bg-muted/40 p-3 text-sm">
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-2">
             <span className="text-muted-foreground">Total Invoice</span>
             <span className="font-semibold">{formatCurrency(invoice.total_amount)}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-2">
             <span className="text-muted-foreground">Sudah Dibayar</span>
             <span className="font-semibold text-green-700">
               {formatCurrency(invoice.paid_amount)}
             </span>
           </div>
           <Separator className="my-2" />
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-2">
             <span className="font-semibold">Sisa Tagihan</span>
             <span className="font-bold text-amber-700">{formatCurrency(remaining)}</span>
           </div>
@@ -168,11 +168,12 @@ export function RecordPaymentModal({
               step="0.01"
               {...form.register('amount', { valueAsNumber: true })}
               placeholder="0"
+              className="min-h-[44px]"
             />
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <button
                 type="button"
-                className="text-primary hover:underline"
+                className="text-primary hover:underline min-h-[32px]"
                 onClick={() => form.setValue('amount', remaining, { shouldValidate: true })}
               >
                 Bayar penuh ({formatCurrency(remaining)})
@@ -185,7 +186,7 @@ export function RecordPaymentModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="payment_method">
                 Metode <span className="text-destructive">*</span>
@@ -198,7 +199,7 @@ export function RecordPaymentModal({
                   })
                 }
               >
-                <SelectTrigger id="payment_method">
+                <SelectTrigger id="payment_method" className="min-h-[44px]">
                   <SelectValue placeholder="Pilih metode" />
                 </SelectTrigger>
                 <SelectContent>
@@ -219,6 +220,7 @@ export function RecordPaymentModal({
                 id="payment_date"
                 type="date"
                 {...form.register('payment_date')}
+                className="min-h-[44px]"
               />
               {form.formState.errors.payment_date && (
                 <p className="text-xs text-destructive">
@@ -234,6 +236,7 @@ export function RecordPaymentModal({
               id="reference_number"
               {...form.register('reference_number')}
               placeholder="Misal: nomor transfer, nomor cek"
+              className="min-h-[44px]"
             />
           </div>
 
@@ -247,11 +250,11 @@ export function RecordPaymentModal({
             />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="min-h-[44px]">
               Batal
             </Button>
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button type="submit" disabled={mutation.isPending} className="min-h-[44px]">
               {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Catat Pembayaran
             </Button>

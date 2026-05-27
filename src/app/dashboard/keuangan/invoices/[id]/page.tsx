@@ -668,14 +668,14 @@ export default function InvoiceDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.back()}>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+          <Button variant="ghost" onClick={() => router.back()} className="shrink-0 min-h-[44px] min-w-[44px]">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">{invoice.invoice_number}</h1>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight break-all">{invoice.invoice_number}</h1>
               <Badge variant={getInvoiceSourceVariant(invoice.source)}>
                 {getInvoiceSourceLabel(invoice.source)}
               </Badge>
@@ -683,26 +683,26 @@ export default function InvoiceDetailPage() {
                 {invoice.invoice_type}
               </Badge>
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {invoice.invoice_type === 'PROFORMA' ? 'Invoice Proforma' : 'Invoice Final'}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleSendWhatsApp} 
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={handleSendWhatsApp}
             disabled={!invoice?.customers?.phone_number || isProcessing}
-            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200 flex-1 sm:flex-initial min-h-[44px]"
           >
             <Send className="mr-2 h-4 w-4" />
-            Send to WhatsApp
+            <span className="hidden sm:inline">Send to </span>WhatsApp
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={handleSendEmail} 
+          <Button
+            variant="outline"
+            onClick={handleSendEmail}
             disabled={!invoice?.customers?.email || isProcessing}
-            className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+            className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 flex-1 sm:flex-initial min-h-[44px]"
           >
             {isProcessing ? (
               <>
@@ -712,13 +712,13 @@ export default function InvoiceDetailPage() {
             ) : (
               <>
                 <Mail className="mr-2 h-4 w-4" />
-                Send to Email
+                <span className="hidden sm:inline">Send to </span>Email
               </>
             )}
           </Button>
-          <Button variant="outline" onClick={handleExportPDF} disabled={isProcessing}>
+          <Button variant="outline" onClick={handleExportPDF} disabled={isProcessing} className="flex-1 sm:flex-initial min-h-[44px]">
             <Download className="mr-2 h-4 w-4" />
-            Export PDF
+            <span className="hidden sm:inline">Export </span>PDF
           </Button>
           {/* Edit / Revisi — only for DRAFT/SENT */}
           {!isRevisionMode && canReviseInvoice(invoice.status) && (
@@ -726,7 +726,7 @@ export default function InvoiceDetailPage() {
               variant="outline"
               onClick={handleEnterRevisionMode}
               disabled={isProcessing}
-              className="border-amber-200 text-amber-700 hover:bg-amber-50"
+              className="border-amber-200 text-amber-700 hover:bg-amber-50 flex-1 sm:flex-initial min-h-[44px]"
               data-testid="invoice-edit-revisi-button"
             >
               <Pencil className="mr-2 h-4 w-4" />
@@ -734,7 +734,7 @@ export default function InvoiceDetailPage() {
             </Button>
           )}
           {!isRevisionMode && revisionHelpMessage && (
-            <p className="max-w-[18rem] text-xs leading-relaxed text-muted-foreground">
+            <p className="w-full sm:w-auto sm:max-w-[18rem] text-xs leading-relaxed text-muted-foreground">
               {revisionHelpMessage}
             </p>
           )}
@@ -744,6 +744,7 @@ export default function InvoiceDetailPage() {
                 onClick={handleSaveRevision}
                 disabled={isSavingRevision}
                 data-testid="invoice-save-revision"
+                className="flex-1 sm:flex-initial min-h-[44px]"
               >
                 {isSavingRevision ? (
                   <>
@@ -762,6 +763,7 @@ export default function InvoiceDetailPage() {
                 onClick={handleCancelRevision}
                 disabled={isSavingRevision}
                 data-testid="invoice-cancel-revision"
+                className="flex-1 sm:flex-initial min-h-[44px]"
               >
                 <X className="mr-2 h-4 w-4" />
                 Batal
@@ -770,10 +772,11 @@ export default function InvoiceDetailPage() {
           )}
           {/* Only show delete button for DRAFT invoices */}
           {!isRevisionMode && invoice.status === 'DRAFT' && (
-            <Button 
-              variant="destructive" 
-              onClick={() => setIsDeleteDialogOpen(true)} 
+            <Button
+              variant="destructive"
+              onClick={() => setIsDeleteDialogOpen(true)}
               disabled={isProcessing}
+              className="flex-1 sm:flex-initial min-h-[44px]"
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Hapus
@@ -781,14 +784,14 @@ export default function InvoiceDetailPage() {
           )}
           {/* Show cancel button for non-DRAFT invoices */}
           {!isRevisionMode && invoice.status !== 'DRAFT' && invoice.status !== 'CANCELLED' && (
-            <Button 
-              variant="outline" 
-              onClick={() => handleStatusChange('CANCELLED')} 
+            <Button
+              variant="outline"
+              onClick={() => handleStatusChange('CANCELLED')}
               disabled={isProcessing}
-              className="border-orange-200 text-orange-700 hover:bg-orange-50"
+              className="border-orange-200 text-orange-700 hover:bg-orange-50 flex-1 sm:flex-initial min-h-[44px]"
             >
               <XCircle className="mr-2 h-4 w-4" />
-              Cancel Invoice
+              <span className="hidden sm:inline">Cancel </span>Invoice
             </Button>
           )}
         </div>
@@ -798,8 +801,8 @@ export default function InvoiceDetailPage() {
       {communicationStats.totalSent > 0 && (
         <Card className="bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Mail className="h-5 w-5 text-blue-600" />
                   <div>
@@ -807,7 +810,7 @@ export default function InvoiceDetailPage() {
                     <p className="text-2xl font-bold text-blue-600">{communicationStats.emailSent}x</p>
                   </div>
                 </div>
-                <Separator orientation="vertical" className="h-12" />
+                <Separator orientation="vertical" className="h-12 hidden sm:block" />
                 <div className="flex items-center gap-2">
                   <Send className="h-5 w-5 text-green-600" />
                   <div>
@@ -817,7 +820,7 @@ export default function InvoiceDetailPage() {
                 </div>
               </div>
               {communicationStats.lastSentAt && (
-                <div className="text-right">
+                <div className="sm:text-right">
                   <p className="text-sm text-gray-600">Last Sent via {communicationStats.lastSentType}</p>
                   <p className="text-sm font-medium text-gray-800">
                     {format(new Date(communicationStats.lastSentAt), "dd MMM yyyy 'at' HH:mm", { locale: localeId })}
@@ -829,8 +832,8 @@ export default function InvoiceDetailPage() {
         </Card>
       )}
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 space-y-6">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
           {/* Pre-filled from service report banner */}
           {isPrefilledFromReport && (
             <Card className="border-blue-200 bg-blue-50/40">
@@ -874,14 +877,14 @@ export default function InvoiceDetailPage() {
           {/* Prominent Remaining Balance banner (partial payment polish) */}
           {invoice.payment_status === 'PARTIAL' && remainingAmount > 0 && (
             <Card className="border-amber-300 bg-amber-50/60">
-              <CardContent className="flex items-center justify-between p-4">
+              <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
-                  <AlertCircle className="h-5 w-5 text-amber-700" />
+                  <AlertCircle className="h-5 w-5 text-amber-700 shrink-0" />
                   <div>
                     <p className="text-xs uppercase tracking-wide text-amber-800">
                       Sisa Tagihan
                     </p>
-                    <p className="text-2xl font-bold text-amber-900">
+                    <p className="text-xl sm:text-2xl font-bold text-amber-900">
                       {formatCurrency(remainingAmount)}
                     </p>
                     <p className="text-xs text-amber-800">
@@ -892,7 +895,7 @@ export default function InvoiceDetailPage() {
                 </div>
                 <Button
                   onClick={() => setIsPaymentDialogOpen(true)}
-                  className="bg-amber-600 hover:bg-amber-700"
+                  className="bg-amber-600 hover:bg-amber-700 w-full sm:w-auto min-h-[44px]"
                 >
                   <DollarSign className="mr-2 h-4 w-4" />
                   Catat Pembayaran
@@ -904,14 +907,14 @@ export default function InvoiceDetailPage() {
           {/* Invoice Header */}
           <Card>
             <CardHeader>
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <CardTitle>Invoice Details</CardTitle>
                   <CardDescription>
                     Created {format(new Date(invoice.created_at), 'dd MMM yyyy', { locale: localeId })}
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <InvoiceStatusBadge status={displayStatus} data-testid="invoice-status-badge" />
                   <InvoiceStatusBadge status={invoice.payment_status === 'PARTIAL' ? 'PARTIAL_PAID' : invoice.payment_status} />
                 </div>
@@ -971,7 +974,7 @@ export default function InvoiceDetailPage() {
 
                   <Separator />
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground">Invoice Date</Label>
                       <p>{format(new Date(invoice.invoice_date), 'dd MMM yyyy', { locale: localeId })}</p>
@@ -989,14 +992,14 @@ export default function InvoiceDetailPage() {
                 </>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground">Customer</Label>
                       <p className="font-semibold">{customerDisplayName}</p>
                       <p className="text-sm text-muted-foreground">
                         {customerDisplayPhone ? formatPhone(customerDisplayPhone) : '—'}
                       </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
+                      <p className="mt-1 text-sm text-muted-foreground break-all">
                         {customerDisplayEmail || '—'}
                       </p>
                       <p className="text-sm text-muted-foreground">
@@ -1005,13 +1008,13 @@ export default function InvoiceDetailPage() {
                     </div>
                     <div>
                       <Label className="text-muted-foreground">Order ID</Label>
-                      <p className="font-mono font-semibold">{displayOrderId}</p>
+                      <p className="font-mono font-semibold break-all">{displayOrderId}</p>
                     </div>
                   </div>
 
                   <Separator />
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground">Invoice Date</Label>
                       <p>{format(new Date(invoice.invoice_date), 'dd MMM yyyy', { locale: localeId })}</p>
@@ -1041,7 +1044,7 @@ export default function InvoiceDetailPage() {
                 <div className="space-y-3" data-testid="invoice-revision-items">
                   {revisionDraft.items.map((item, idx) => (
                     <div key={item.item_id ?? `new-${idx}`} className="rounded-lg border p-3 space-y-3">
-                      <div className="grid gap-3 md:grid-cols-12">
+                      <div className="grid gap-3 grid-cols-1 md:grid-cols-12">
                         <div className="space-y-1 md:col-span-6">
                           <Label htmlFor={`rev-item-desc-${idx}`}>Deskripsi</Label>
                           <Input
@@ -1051,31 +1054,33 @@ export default function InvoiceDetailPage() {
                             placeholder="Deskripsi item"
                           />
                         </div>
-                        <div className="space-y-1 md:col-span-2">
-                          <Label htmlFor={`rev-item-qty-${idx}`}>Qty</Label>
-                          <Input
-                            id={`rev-item-qty-${idx}`}
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              updateRevisionItem(idx, { quantity: parseInt(e.target.value, 10) || 0 })
-                            }
-                          />
+                        <div className="grid grid-cols-3 gap-3 md:contents">
+                          <div className="space-y-1 md:col-span-2">
+                            <Label htmlFor={`rev-item-qty-${idx}`}>Qty</Label>
+                            <Input
+                              id={`rev-item-qty-${idx}`}
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) =>
+                                updateRevisionItem(idx, { quantity: parseInt(e.target.value, 10) || 0 })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-1 md:col-span-3 col-span-2">
+                            <Label htmlFor={`rev-item-price-${idx}`}>Harga Satuan</Label>
+                            <Input
+                              id={`rev-item-price-${idx}`}
+                              type="number"
+                              min="0"
+                              value={item.unit_price}
+                              onChange={(e) =>
+                                updateRevisionItem(idx, { unit_price: parseFloat(e.target.value) || 0 })
+                              }
+                            />
+                          </div>
                         </div>
-                        <div className="space-y-1 md:col-span-3">
-                          <Label htmlFor={`rev-item-price-${idx}`}>Harga Satuan</Label>
-                          <Input
-                            id={`rev-item-price-${idx}`}
-                            type="number"
-                            min="0"
-                            value={item.unit_price}
-                            onChange={(e) =>
-                              updateRevisionItem(idx, { unit_price: parseFloat(e.target.value) || 0 })
-                            }
-                          />
-                        </div>
-                        <div className="md:col-span-1 flex items-end">
+                        <div className="md:col-span-1 flex md:items-end justify-end">
                           <Button
                             type="button"
                             variant="ghost"
@@ -1083,6 +1088,7 @@ export default function InvoiceDetailPage() {
                             onClick={() => removeRevisionItem(idx)}
                             disabled={revisionDraft.items.length <= 1}
                             aria-label="Hapus item"
+                            className="min-h-[44px] min-w-[44px]"
                           >
                             <Trash2 className="h-4 w-4 text-red-600" />
                           </Button>
@@ -1093,7 +1099,7 @@ export default function InvoiceDetailPage() {
                       </div>
                     </div>
                   ))}
-                  <Button type="button" variant="outline" onClick={addRevisionItem} className="w-full">
+                  <Button type="button" variant="outline" onClick={addRevisionItem} className="w-full min-h-[44px]">
                     <Plus className="mr-2 h-4 w-4" />
                     Tambah Item
                   </Button>
@@ -1190,37 +1196,39 @@ export default function InvoiceDetailPage() {
                 })()
               ) : (
                 // Fallback to simple items table if no order items
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Unit Price</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item) => (
-                      <TableRow key={item.item_id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{item.description}</p>
-                            <Badge variant="outline" className="text-xs">
-                              {item.item_type}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(item.unit_price)}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {formatCurrency(item.total_price)}
-                        </TableCell>
+                <div className="data-table-container -mx-2 overflow-x-auto sm:mx-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Unit Price</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((item) => (
+                        <TableRow key={item.item_id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{item.description}</p>
+                              <Badge variant="outline" className="text-xs">
+                                {item.item_type}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">{item.quantity}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">
+                            {formatCurrency(item.unit_price)}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold whitespace-nowrap">
+                            {formatCurrency(item.total_price)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
 
               <Separator className="my-4" />
@@ -1385,19 +1393,10 @@ export default function InvoiceDetailPage() {
                   description="Catat pembayaran pertama untuk invoice ini lewat tombol di atas."
                 />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tanggal</TableHead>
-                      <TableHead>Metode</TableHead>
-                      <TableHead>Referensi</TableHead>
-                      <TableHead className="text-right">Jumlah</TableHead>
-                      <TableHead className="text-right">Sisa Setelah</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Mobile cards */}
+                  <div className="md:hidden space-y-2">
                     {(() => {
-                      // Sort oldest first to compute running balance, then reverse for display
                       const sorted = [...payments].sort(
                         (a, b) =>
                           new Date(a.payment_date).getTime() -
@@ -1409,27 +1408,80 @@ export default function InvoiceDetailPage() {
                         return { ...p, balanceAfter: running }
                       })
                       return rows.reverse().map((p) => (
-                        <TableRow key={p.payment_id}>
-                          <TableCell>
-                            {format(new Date(p.payment_date), 'dd MMM yyyy', { locale: localeId })}
-                          </TableCell>
-                          <TableCell>
+                        <div key={p.payment_id} className="rounded-lg border p-3 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">
+                              {format(new Date(p.payment_date), 'dd MMM yyyy', { locale: localeId })}
+                            </span>
                             <Badge variant="outline">{p.payment_method}</Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {p.reference_number || '-'}
-                          </TableCell>
-                          <TableCell className="text-right font-semibold text-green-600">
-                            {formatCurrency(p.amount)}
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {formatCurrency(p.balanceAfter)}
-                          </TableCell>
-                        </TableRow>
+                          </div>
+                          {p.reference_number && (
+                            <div className="font-mono text-xs text-muted-foreground break-all">
+                              {p.reference_number}
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-semibold text-green-600">
+                              {formatCurrency(p.amount)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Sisa: {formatCurrency(p.balanceAfter)}
+                            </span>
+                          </div>
+                        </div>
                       ))
                     })()}
-                  </TableBody>
-                </Table>
+                  </div>
+
+                  {/* Tablet/desktop table */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tanggal</TableHead>
+                          <TableHead>Metode</TableHead>
+                          <TableHead>Referensi</TableHead>
+                          <TableHead className="text-right">Jumlah</TableHead>
+                          <TableHead className="text-right">Sisa Setelah</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(() => {
+                          // Sort oldest first to compute running balance, then reverse for display
+                          const sorted = [...payments].sort(
+                            (a, b) =>
+                              new Date(a.payment_date).getTime() -
+                              new Date(b.payment_date).getTime()
+                          )
+                          let running = invoice.total_amount
+                          const rows = sorted.map((p) => {
+                            running -= p.amount
+                            return { ...p, balanceAfter: running }
+                          })
+                          return rows.reverse().map((p) => (
+                            <TableRow key={p.payment_id}>
+                              <TableCell className="whitespace-nowrap">
+                                {format(new Date(p.payment_date), 'dd MMM yyyy', { locale: localeId })}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{p.payment_method}</Badge>
+                              </TableCell>
+                              <TableCell className="font-mono text-sm break-all">
+                                {p.reference_number || '-'}
+                              </TableCell>
+                              <TableCell className="text-right font-semibold text-green-600 whitespace-nowrap">
+                                {formatCurrency(p.amount)}
+                              </TableCell>
+                              <TableCell className="text-right text-muted-foreground whitespace-nowrap">
+                                {formatCurrency(p.balanceAfter)}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        })()}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -1511,7 +1563,7 @@ export default function InvoiceDetailPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Hapus Invoice</DialogTitle>
             <DialogDescription>
@@ -1522,18 +1574,20 @@ export default function InvoiceDetailPage() {
               </span>
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-2">
             <Button
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
               disabled={isProcessing}
+              className="min-h-[44px]"
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleDelete} 
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
               disabled={isProcessing}
+              className="min-h-[44px]"
             >
               {isProcessing ? (
                 <>

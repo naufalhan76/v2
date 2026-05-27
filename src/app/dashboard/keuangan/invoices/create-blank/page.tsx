@@ -303,13 +303,13 @@ export default function CreateBlankInvoicePage() {
       autoFocus
     >
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+      <div className="flex items-center gap-3 sm:gap-4">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0 min-h-[44px] min-w-[44px]">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Buat Invoice Kosong</h1>
-          <p className="text-muted-foreground">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Buat Invoice Kosong</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Buat invoice manual tanpa menautkan ke transaksi/order
           </p>
         </div>
@@ -455,7 +455,7 @@ export default function CreateBlankInvoicePage() {
         {/* Line items */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>Item Invoice</CardTitle>
                 <CardDescription>Tambahkan minimal satu item</CardDescription>
@@ -464,6 +464,7 @@ export default function CreateBlankInvoicePage() {
                 type="button"
                 variant="outline"
                 size="sm"
+                className="w-full sm:w-auto min-h-[44px]"
                 onClick={() =>
                   append({
                     item_type: 'BASE_SERVICE',
@@ -492,7 +493,7 @@ export default function CreateBlankInvoicePage() {
               return (
                 <div
                   key={field.id}
-                  className="grid gap-3 rounded-lg border p-4 md:grid-cols-12"
+                  className="grid gap-3 rounded-lg border p-4 grid-cols-1 md:grid-cols-12"
                 >
                   <div className="space-y-1 md:col-span-2">
                     <Label className="text-xs">Tipe</Label>
@@ -527,48 +528,50 @@ export default function CreateBlankInvoicePage() {
                     )}
                   </div>
 
-                  <div className="space-y-1 md:col-span-1">
-                    <Label className="text-xs">Qty</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      step="1"
-                      {...register(`items.${index}.quantity` as const, {
-                        valueAsNumber: true,
-                      })}
-                    />
-                    {errors.items?.[index]?.quantity && (
-                      <p className="text-xs text-destructive">
-                        {errors.items[index]?.quantity?.message}
-                      </p>
-                    )}
-                  </div>
+                  <div className="grid grid-cols-3 gap-3 md:contents">
+                    <div className="space-y-1 md:col-span-1">
+                      <Label className="text-xs">Qty</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        step="1"
+                        {...register(`items.${index}.quantity` as const, {
+                          valueAsNumber: true,
+                        })}
+                      />
+                      {errors.items?.[index]?.quantity && (
+                        <p className="text-xs text-destructive">
+                          {errors.items[index]?.quantity?.message}
+                        </p>
+                      )}
+                    </div>
 
-                  <div className="space-y-1 md:col-span-2">
-                    <Label className="text-xs">Harga Satuan</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      {...register(`items.${index}.unit_price` as const, {
-                        valueAsNumber: true,
-                      })}
-                    />
-                    {errors.items?.[index]?.unit_price && (
-                      <p className="text-xs text-destructive">
-                        {errors.items[index]?.unit_price?.message}
-                      </p>
-                    )}
-                  </div>
+                    <div className="space-y-1 md:col-span-2">
+                      <Label className="text-xs">Harga Satuan</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        {...register(`items.${index}.unit_price` as const, {
+                          valueAsNumber: true,
+                        })}
+                      />
+                      {errors.items?.[index]?.unit_price && (
+                        <p className="text-xs text-destructive">
+                          {errors.items[index]?.unit_price?.message}
+                        </p>
+                      )}
+                    </div>
 
-                  <div className="space-y-1 md:col-span-1">
-                    <Label className="text-xs">Subtotal</Label>
-                    <div className="flex h-9 items-center text-sm font-medium">
-                      {formatCurrency(lineTotal)}
+                    <div className="space-y-1 md:col-span-1">
+                      <Label className="text-xs">Subtotal</Label>
+                      <div className="flex h-9 items-center text-sm font-medium">
+                        {formatCurrency(lineTotal)}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-end md:col-span-1">
+                  <div className="flex md:col-span-1 md:items-end justify-end">
                     <Button
                       type="button"
                       variant="ghost"
@@ -576,6 +579,7 @@ export default function CreateBlankInvoicePage() {
                       onClick={() => remove(index)}
                       disabled={fields.length <= 1}
                       aria-label="Hapus item"
+                      className="min-h-[44px] min-w-[44px]"
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -728,11 +732,11 @@ export default function CreateBlankInvoicePage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={() => router.back()} className="min-h-[44px]">
             Batal
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} className="min-h-[44px]">
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -754,7 +758,7 @@ export default function CreateBlankInvoicePage() {
           if (!open) setCreatedInvoice(null)
         }}
       >
-        <DialogContent className="max-w-lg border-0 shadow-2xl">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto border-0 shadow-2xl">
           {createdInvoice ? (
             <>
               <DialogHeader className="space-y-3 text-center sm:text-left">

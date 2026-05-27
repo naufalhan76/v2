@@ -462,22 +462,22 @@ export default function CreateInvoicePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => router.back()}>
+      <div className="flex items-center gap-3 sm:gap-4">
+        <Button variant="ghost" onClick={() => router.back()} className="shrink-0 min-h-[44px] min-w-[44px]">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Buat Invoice</h1>
-          <p className="text-muted-foreground">Wizard pembuatan invoice baru</p>
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Buat Invoice</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Wizard pembuatan invoice baru</p>
         </div>
       </div>
 
       {/* Step Indicator */}
-      <div className="flex items-center justify-center gap-4">
+      <div className="flex items-center justify-center gap-2 sm:gap-4 overflow-x-auto">
         {[1, 2, 3, 4].map((step) => (
           <div key={step} className="flex items-center gap-2">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
+              className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border-2 text-sm ${
                 currentStep === step
                   ? 'border-primary bg-primary text-primary-foreground'
                   : currentStep > step
@@ -485,9 +485,9 @@ export default function CreateInvoicePage() {
                   : 'border-muted-foreground text-muted-foreground'
               }`}
             >
-              {currentStep > step ? <Check className="h-5 w-5" /> : step}
+              {currentStep > step ? <Check className="h-4 w-4 sm:h-5 sm:w-5" /> : step}
             </div>
-            {step < 4 && <div className="h-0.5 w-12 bg-muted-foreground" />}
+            {step < 4 && <div className="h-0.5 w-6 sm:w-12 bg-muted-foreground" />}
           </div>
         ))}
       </div>
@@ -584,6 +584,7 @@ export default function CreateInvoicePage() {
                   type="button"
                   onClick={() => setCurrentStep(2)}
                   disabled={!selectedOrder}
+                  className="w-full sm:w-auto min-h-[44px]"
                 >
                   Lanjut <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -639,8 +640,8 @@ export default function CreateInvoicePage() {
                       {baseServiceItems.map(({ item, index }) => (
                         <div key={index} className="rounded-lg border p-3 space-y-2">
                           <div className="text-sm font-medium">{item.description}</div>
-                          <div className="flex items-center gap-4">
-                            <div className="flex-1">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
                               <Label>Quantity</Label>
                               <Input
                                 type="number"
@@ -651,7 +652,7 @@ export default function CreateInvoicePage() {
                                 min="1"
                               />
                             </div>
-                            <div className="flex-1">
+                            <div>
                               <Label>Harga Satuan (Edit jika perlu)</Label>
                               <Input
                                 type="number"
@@ -661,7 +662,7 @@ export default function CreateInvoicePage() {
                                 }
                               />
                             </div>
-                            <div className="flex-1">
+                            <div>
                               <Label>Total</Label>
                               <Input value={formatCurrency(item.total)} disabled />
                             </div>
@@ -674,11 +675,11 @@ export default function CreateInvoicePage() {
                 )
               })()}
 
-              <div className="flex justify-between">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep(1)}>
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2">
+                <Button type="button" variant="outline" onClick={() => setCurrentStep(1)} className="min-h-[44px]">
                   <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
                 </Button>
-                <Button type="button" onClick={() => setCurrentStep(3)}>
+                <Button type="button" onClick={() => setCurrentStep(3)} className="min-h-[44px]">
                   Lanjut <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -694,7 +695,7 @@ export default function CreateInvoicePage() {
               <CardDescription>Tambahkan parts, freon, atau add-ons lainnya</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
                 <div className="flex-1">
                   <Label>Add-on</Label>
                   {addons.length > 3 ? (
@@ -724,71 +725,109 @@ export default function CreateInvoicePage() {
                     </Select>
                   )}
                 </div>
-                <div className="w-32">
-                  <Label>Quantity</Label>
-                  <Input
-                    type="number"
-                    value={addonQuantity}
-                    onChange={(e) => setAddonQuantity(parseInt(e.target.value) || 1)}
-                    min="1"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    onClick={handleAddAddon}
-                    disabled={!selectedAddon}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                <div className="flex gap-2 sm:gap-4 sm:items-end">
+                  <div className="flex-1 sm:w-32">
+                    <Label>Quantity</Label>
+                    <Input
+                      type="number"
+                      value={addonQuantity}
+                      onChange={(e) => setAddonQuantity(parseInt(e.target.value) || 1)}
+                      min="1"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      onClick={handleAddAddon}
+                      disabled={!selectedAddon}
+                      className="min-h-[44px] min-w-[44px]"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
               {lineItems.length > 0 && (
-                <div className="data-table-container">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Item</TableHead>
-                        <TableHead>Qty</TableHead>
-                        <TableHead>Harga</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {lineItems.map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{item.description}</TableCell>
-                          <TableCell>{item.quantity}</TableCell>
-                          <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
-                          <TableCell className="font-semibold">
+                <>
+                  {/* Mobile cards */}
+                  <div className="md:hidden space-y-2">
+                    {lineItems.map((item, index) => (
+                      <div key={index} className="rounded-lg border p-3 space-y-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-medium text-sm flex-1 min-w-0 break-words">
+                            {item.description}
+                          </div>
+                          {item.type === 'ADDON' && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveItem(index)}
+                              className="shrink-0 min-h-[44px] min-w-[44px]"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <span>
+                            {item.quantity} × {formatCurrency(item.unitPrice)}
+                          </span>
+                          <span className="font-semibold text-foreground">
                             {formatCurrency(item.total)}
-                          </TableCell>
-                          <TableCell>
-                            {item.type === 'ADDON' && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveItem(index)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            )}
-                          </TableCell>
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Desktop table */}
+                  <div className="hidden md:block data-table-container">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item</TableHead>
+                          <TableHead>Qty</TableHead>
+                          <TableHead>Harga</TableHead>
+                          <TableHead>Total</TableHead>
+                          <TableHead></TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {lineItems.map((item, index) => (
+                          <TableRow key={index}>
+                            <TableCell>{item.description}</TableCell>
+                            <TableCell>{item.quantity}</TableCell>
+                            <TableCell className="whitespace-nowrap">{formatCurrency(item.unitPrice)}</TableCell>
+                            <TableCell className="font-semibold whitespace-nowrap">
+                              {formatCurrency(item.total)}
+                            </TableCell>
+                            <TableCell>
+                              {item.type === 'ADDON' && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveItem(index)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
               )}
 
-              <div className="flex justify-between">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep(2)}>
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2">
+                <Button type="button" variant="outline" onClick={() => setCurrentStep(2)} className="min-h-[44px]">
                   <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
                 </Button>
-                <Button type="button" onClick={() => setCurrentStep(4)}>
+                <Button type="button" onClick={() => setCurrentStep(4)} className="min-h-[44px]">
                   Lanjut <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -893,11 +932,11 @@ export default function CreateInvoicePage() {
                 </div>
               </div>
 
-              <div className="flex justify-between">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep(3)}>
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2">
+                <Button type="button" variant="outline" onClick={() => setCurrentStep(3)} className="min-h-[44px]">
                   <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} className="min-h-[44px]">
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
