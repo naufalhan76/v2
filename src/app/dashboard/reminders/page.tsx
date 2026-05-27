@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { Suspense, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Loader2, Sparkles } from 'lucide-react'
@@ -22,6 +22,14 @@ function isValidTab(v: string | null): v is TabValue {
 }
 
 export default function RemindersPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <RemindersPageInner />
+    </Suspense>
+  )
+}
+
+function RemindersPageInner() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const router = useRouter()
