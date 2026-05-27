@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -69,6 +70,7 @@ const emptyForm: CustomerFormData = {
 
 export default function CustomerManagementPage() {
   const queryClient = useQueryClient()
+  const router = useRouter()
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1)
@@ -424,10 +426,11 @@ export default function CustomerManagementPage() {
                     return (
                       <TableRow
                         key={c.customer_id as string}
-                        className={deletingId === c.customer_id ? "opacity-50" : ""}
+                        className={`cursor-pointer hover:bg-muted/50 ${deletingId === c.customer_id ? "opacity-50" : ""}`}
+                        onClick={() => router.push(`/dashboard/manajemen/customer/${c.customer_id as string}`)}
                       >
                         <TableCell className="font-medium">
-                          {c.customer_name as string}
+                          <span className="hover:underline">{c.customer_name as string}</span>
                         </TableCell>
                         <TableCell>{c.primary_contact_person as string}</TableCell>
                         <TableCell data-testid="phone-cell">{formatPhone(c.phone_number as string | number | null | undefined)}</TableCell>
@@ -442,7 +445,12 @@ export default function CustomerManagementPage() {
                           ) : (
                             <Popover>
                               <PopoverTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 gap-1"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <MapPin className="w-4 h-4" />
                                   {locationsCount} lokasi
                                   {totalAcUnits > 0 && (
@@ -452,7 +460,11 @@ export default function CustomerManagementPage() {
                                   )}
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-80" align="start">
+                              <PopoverContent
+                                className="w-80"
+                                align="start"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <div className="space-y-3">
                                   <div className="flex items-center gap-2 pb-2 border-b">
                                     <Building2 className="w-4 h-4 text-muted-foreground" />
@@ -504,7 +516,7 @@ export default function CustomerManagementPage() {
                         <TableCell className="max-w-xs truncate">
                           {(c.notes as string) || '-'}
                         </TableCell>
-                      <TableCell className="text-right w-[180px]">
+                      <TableCell className="text-right w-[180px]" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end gap-2">
                           <LoadingOverlay isLoading={isUpdating && editingId === c.customer_id}>
                             <Button

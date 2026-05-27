@@ -1564,6 +1564,203 @@ export async function getInvoiceStats(): Promise<{
 import { ServiceReportMissingError, type CreateInvoiceFromOrderResult } from '@/lib/invoice-errors'
 
 /**
+ * Create a PROFORMA invoice from a freshly-created order, using estimated prices.
+ *
+ * Unlike createInvoiceFromOrder() (which requires the order to be COMPLETED/DONE
+ * and pulls actual prices from the service report), this action is meant to run
+ * immediately after order creation — so it bypasses the status check and uses the
+ * estimated price already captured on order_items.
+ *
+ * Line items composition:
+ *   - One BASE_SERVICE row per order_item, using estimated_price.
+ *   - One ADDON row per order_addon (if any).
+ */
+export async function createProformaInvoice(orderId: string): Promise<{
+  success: boolean
+  data?: { invoice_id: string; invoice_number: string; total_amount: number }
+  error?: string
+}> {
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    await requireFinanceRole(user)
+
+    // Fetch order — we do NOT require COMPLETED here; proforma is upfront.
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('order_id, customer_id, status')
+      .eq('order_id', orderId)
+      .maybeSingle()
+
+    if (orderError || !order) {
+      return { success: false, error: 'Order tidak ditemukan' }
+    }
+    if (!order.customer_id) {
+      return { success: false, error: 'Order tidak memiliki customer terhubung' }
+    }
+
+    // Build base service line items from order_items + service catalog joins
+    const orderItems = await getOrderItemsForInvoice(orderId)
+
+    const baseServiceItems: CreateInvoiceInput['items'] = orderItems.map((oi) => ({
+      item_type: 'BASE_SERVICE',
+      description: [
+        oi.serviceName,
+        oi.unitTypeName ? `— ${oi.unitTypeName}` : null,
+        oi.capacityLabel ? `(${oi.capacityLabel})` : null,
+        oi.msnCode ? `· MSN ${oi.msnCode}` : null,
+      ]
+        .filter(Boolean)
+        .join(' '),
+      quantity: oi.quantity,
+      unit_price: oi.estimatedPrice,
+      service_type: oi.serviceType,
+    }))
+
+    // Pull any pre-attached order_addons (rare on fresh orders, but supported)
+    const { data: orderAddons } = await supabase
+      .from('order_addons')
+      .select(`
+        order_addon_id,
+        addon_id,
+        quantity,
+        unit_price,
+        notes,
+        addon_catalog ( item_name )
+      `)
+      .eq('order_id', orderId)
+
+    const addonItems: CreateInvoiceInput['items'] = (orderAddons || []).map((row) => {
+      const addonRow = row as unknown as Record<string, unknown>
+      const addonCatalog = addonRow.addon_catalog as Record<string, unknown> | null
+      const itemName = (addonCatalog?.item_name as string | undefined) ||
+        (addonRow.notes as string | undefined) ||
+        'Add-on'
+      return {
+        item_type: 'ADDON',
+        description: itemName,
+        quantity: Number(addonRow.quantity) || 1,
+        unit_price: Number(addonRow.unit_price) || 0,
+        addon_id: (addonRow.addon_id as string | undefined) || undefined,
+        order_addon_id: (addonRow.order_addon_id as string | undefined) || undefined,
+      }
+    })
+
+    const items = [...baseServiceItems, ...addonItems]
+    if (items.length === 0) {
+      return { success: false, error: 'Order tidak memiliki item yang bisa di-invoice' }
+    }
+
+    // Header amounts — proforma uses estimated prices, no discount, default tax.
+    const baseServiceTotal = baseServiceItems.reduce(
+      (sum, it) => sum + it.quantity * it.unit_price,
+      0
+    )
+    const addonsSubtotal = addonItems.reduce(
+      (sum, it) => sum + it.quantity * it.unit_price,
+      0
+    )
+    const subtotal = baseServiceTotal + addonsSubtotal
+    const config = await getInvoiceConfig()
+    const taxPercentage = config?.default_tax_percentage ?? 11
+    const taxAmount = (subtotal * taxPercentage) / 100
+    const totalAmount = subtotal + taxAmount
+
+    const dueDate = new Date()
+    dueDate.setDate(dueDate.getDate() + (config?.default_due_days ?? 30))
+
+    const primaryServiceType = orderItems[0]?.serviceType ?? 'PROFORMA'
+    const primaryServiceName =
+      orderItems.length > 1
+        ? 'Multiple Services'
+        : orderItems[0]?.serviceName ?? 'Service'
+
+    const invoiceNumber = await generateInvoiceNumber()
+    const todayISO = new Date().toISOString().split('T')[0]
+
+    const { data: invoice, error: invoiceError } = await supabase
+      .from('invoices')
+      .insert({
+        invoice_number: invoiceNumber,
+        invoice_type: 'PROFORMA',
+        order_id: orderId,
+        customer_id: order.customer_id,
+        invoice_date: todayISO,
+        due_date: dueDate.toISOString().split('T')[0],
+        service_type: primaryServiceType,
+        service_name: primaryServiceName,
+        base_service_quantity: 1,
+        base_service_price: baseServiceTotal,
+        base_service_total: baseServiceTotal,
+        addons_subtotal: addonsSubtotal,
+        subtotal,
+        discount_amount: 0,
+        discount_percentage: 0,
+        tax_percentage: taxPercentage,
+        tax_amount: taxAmount,
+        total_amount: totalAmount,
+        status: 'DRAFT',
+        payment_status: 'UNPAID',
+        paid_amount: 0,
+        notes: 'Proforma invoice — generated automatically dari order baru.',
+        terms_conditions: config?.terms_conditions_template || null,
+        created_by: user!.id,
+      })
+      .select()
+      .single()
+
+    if (invoiceError || !invoice) {
+      logger.error('Error creating proforma invoice:', invoiceError)
+      return { success: false, error: invoiceError?.message || 'Gagal membuat proforma invoice' }
+    }
+
+    const itemsToInsert = items.map((item, index) => ({
+      invoice_id: invoice.invoice_id,
+      item_type: item.item_type,
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      total_price: item.quantity * item.unit_price,
+      service_type: item.service_type || null,
+      addon_id: item.addon_id || null,
+      order_addon_id: item.order_addon_id || null,
+      line_order: index,
+    }))
+
+    const { error: itemsError } = await supabase
+      .from('invoice_items')
+      .insert(itemsToInsert)
+
+    if (itemsError) {
+      logger.error('Error creating proforma invoice items:', itemsError)
+      // Rollback invoice header
+      await supabase.from('invoices').delete().eq('invoice_id', invoice.invoice_id)
+      return { success: false, error: itemsError.message || 'Gagal membuat invoice items' }
+    }
+
+    revalidatePath('/dashboard/keuangan/invoices')
+
+    return {
+      success: true,
+      data: {
+        invoice_id: invoice.invoice_id,
+        invoice_number: invoice.invoice_number,
+        total_amount: invoice.total_amount,
+      },
+    }
+  } catch (error) {
+    logger.error('createProformaInvoice failed:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Gagal membuat proforma invoice',
+    }
+  }
+}
+
+
+/**
  * Auto-populate a draft invoice from a completed order's service report.
  *
  * Line items are composed from:

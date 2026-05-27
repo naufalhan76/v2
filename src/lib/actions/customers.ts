@@ -94,31 +94,27 @@ export async function getCustomers(filters?: {
 export async function getCustomerById(customerId: string) {
   try {
     const supabase = await createClient()
-    
+
     const { data, error } = await supabase
       .from('customers')
       .select(`
         *,
         locations (
           location_id,
-          address,
+          full_address,
+          house_number,
           city,
-          province,
-          postal_code
-        ),
-        orders (
-          order_id,
-          order_type,
-          status,
-          priority,
-          created_at
+          landmarks,
+          ac_units (
+            ac_unit_id
+          )
         )
       `)
       .eq('customer_id', customerId)
       .single()
-    
+
     if (error) throw error
-    
+
     return {
       success: true,
       data,

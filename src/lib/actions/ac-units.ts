@@ -155,24 +155,35 @@ export async function createAcUnit(acUnitData: {
   capacity_btu?: number
   installation_date?: string
   status?: string
+  unit_type_id?: string
+  capacity_id?: string
+  brand_id?: string
 }) {
   try {
     const supabase = await createClient()
-    
+
+    // Strip empty-string ids so they don't violate FK constraints
+    const cleanData = {
+      ...acUnitData,
+      unit_type_id: acUnitData.unit_type_id || undefined,
+      capacity_id: acUnitData.capacity_id || undefined,
+      brand_id: acUnitData.brand_id || undefined,
+      installation_date: acUnitData.installation_date || undefined,
+      status: acUnitData.status || 'ACTIVE',
+      created_at: new Date().toISOString(),
+    }
+
     const { data, error } = await supabase
       .from('ac_units')
-      .insert({
-        ...acUnitData,
-        status: acUnitData.status || 'ACTIVE',
-        created_at: new Date().toISOString(),
-      })
+      .insert(cleanData)
       .select()
       .single()
-    
+
     if (error) throw error
-    
-    revalidatePath('/ac-units')
-    
+
+    revalidatePath('/dashboard/manajemen/ac-units')
+    revalidatePath('/dashboard/manajemen/customer')
+
     return {
       success: true,
       data,
