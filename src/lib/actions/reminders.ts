@@ -641,6 +641,354 @@ export async function generateRemindersFromAcUnits(options?: {
   }
 }
 
+// =============================================================================
+// Monitoring (AC units that have been serviced)
+// =============================================================================
+
+export type ServicedAcStatusFilter =
+  | 'all'
+  | 'overdue'
+  | 'due_soon'
+  | 'upcoming'
+  | 'no_date'
+
+export interface ServicedAcFilters {
+  status?: ServicedAcStatusFilter
+  search?: string
+  date_from?: string // ISO date — next_service_due_date >= date_from
+  date_to?: string // ISO date — next_service_due_date <= date_to
+  page?: number
+  limit?: number
+}
+
+export interface ServicedAcUnitRow {
+  ac_unit_id: string
+  customer_id: string | null
+  customer_name: string | null
+  location_id: string | null
+  location_address: string | null
+  brand: string | null
+  model_number: string | null
+  capacity_btu: number | null
+  last_service_date: string | null
+  next_service_due_date: string | null
+  has_pending_reminder: boolean
+}
+
+interface RawAcUnitRow {
+  ac_unit_id: string
+  brand: string | null
+  model_number: string | null
+  capacity_btu: number | null
+  last_service_date: string | null
+  next_service_due_date: string | null
+  location_id: string | null
+  ac_brands: { name: string } | null
+  locations: {
+    location_id: string
+    full_address: string | null
+    house_number: string | null
+    city: string | null
+    customers: {
+      customer_id: string
+      customer_name: string | null
+    } | null
+  } | null
+}
+
+/**
+ * Fetch AC units that have been serviced at least once (i.e. have either a
+ * `last_service_date` or `next_service_due_date`), joined with their customer
+ * and an indicator whether they currently have a PENDING reminder queued.
+ *
+ * Sorted by `next_service_due_date ASC NULLS LAST` so the most-urgent units
+ * surface first.
+ */
+export async function getServicedAcUnits(
+  filters?: ServicedAcFilters
+): Promise<ActionResult<ServicedAcUnitRow[]>> {
+  try {
+    const auth = await requireRoles(READ_ROLES)
+    if (!auth.ok) return { success: false, error: auth.error }
+
+    const supabase = await createClient()
+    let query = supabase
+      .from('ac_units')
+      .select(
+        `
+          ac_unit_id,
+          brand,
+          model_number,
+          capacity_btu,
+          last_service_date,
+          next_service_due_date,
+          location_id,
+          ac_brands ( name ),
+          locations (
+            location_id,
+            full_address,
+            house_number,
+            city,
+            customers (
+              customer_id,
+              customer_name
+            )
+          )
+        `
+      )
+      .or('last_service_date.not.is.null,next_service_due_date.not.is.null')
+      .order('next_service_due_date', { ascending: true, nullsFirst: false })
+
+    if (filters?.date_from) {
+      query = query.gte('next_service_due_date', filters.date_from)
+    }
+    if (filters?.date_to) {
+      query = query.lte('next_service_due_date', filters.date_to)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    const rawUnits = (data ?? []) as unknown as RawAcUnitRow[]
+
+    // Pull pending reminders so we can mark each unit
+    const unitIds = rawUnits.map((u) => u.ac_unit_id)
+    const pendingSet = new Set<string>()
+    if (unitIds.length > 0) {
+      const { data: pendingData, error: pendingErr } = await supabase
+        .from('customer_reminders')
+        .select('ac_unit_id')
+        .eq('status', 'PENDING')
+        .in('ac_unit_id', unitIds)
+
+      if (pendingErr) throw pendingErr
+      for (const row of (pendingData ?? []) as { ac_unit_id: string | null }[]) {
+        if (row.ac_unit_id) pendingSet.add(row.ac_unit_id)
+      }
+    }
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayMs = today.getTime()
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
+
+    const mapped: ServicedAcUnitRow[] = rawUnits.map((u) => {
+      const loc = u.locations
+      const cust = loc?.customers ?? null
+      const fullAddr =
+        [loc?.full_address, loc?.house_number, loc?.city]
+          .filter((s) => !!s && String(s).trim().length > 0)
+          .join(', ') || null
+
+      return {
+        ac_unit_id: u.ac_unit_id,
+        customer_id: cust?.customer_id ?? null,
+        customer_name: cust?.customer_name ?? null,
+        location_id: loc?.location_id ?? u.location_id ?? null,
+        location_address: fullAddr,
+        brand: u.ac_brands?.name ?? u.brand ?? null,
+        model_number: u.model_number,
+        capacity_btu: u.capacity_btu,
+        last_service_date: u.last_service_date,
+        next_service_due_date: u.next_service_due_date,
+        has_pending_reminder: pendingSet.has(u.ac_unit_id),
+      }
+    })
+
+    // Status filter (in-memory; the underlying date math is small)
+    let result = mapped
+    if (filters?.status && filters.status !== 'all') {
+      result = result.filter((row) => {
+        const due = row.next_service_due_date
+        if (!due) return filters.status === 'no_date'
+        const dueMs = new Date(`${due}T00:00:00`).getTime()
+        if (Number.isNaN(dueMs)) return filters.status === 'no_date'
+        const diff = dueMs - todayMs
+        switch (filters.status) {
+          case 'overdue':
+            return diff < 0
+          case 'due_soon':
+            return diff >= 0 && diff <= sevenDaysMs
+          case 'upcoming':
+            return diff > sevenDaysMs
+          case 'no_date':
+            return false
+          default:
+            return true
+        }
+      })
+    }
+
+    if (filters?.search) {
+      const q = filters.search.trim().toLowerCase()
+      if (q) {
+        result = result.filter((row) => {
+          const name = row.customer_name?.toLowerCase() ?? ''
+          const addr = row.location_address?.toLowerCase() ?? ''
+          const brand = row.brand?.toLowerCase() ?? ''
+          const model = row.model_number?.toLowerCase() ?? ''
+          return (
+            name.includes(q) ||
+            addr.includes(q) ||
+            brand.includes(q) ||
+            model.includes(q)
+          )
+        })
+      }
+    }
+
+    return { success: true, data: result }
+  } catch (err) {
+    logger.error('getServicedAcUnits failed:', err)
+    return {
+      success: false,
+      error: toErrorMessage(err, 'Failed to fetch serviced AC units'),
+    }
+  }
+}
+
+/**
+ * Manually create a `customer_reminders` row for a single AC unit. Uses the
+ * provided rule, or falls back to the first active rule. The message body is
+ * rendered from the rule's `message_template` using the AC unit's customer
+ * context.
+ */
+export async function createManualReminder(
+  acUnitId: string,
+  ruleId?: string
+): Promise<ActionResult<{ reminder_id: string }>> {
+  try {
+    const auth = await requireRoles(WRITE_ROLES)
+    if (!auth.ok) return { success: false, error: auth.error }
+
+    if (!acUnitId) {
+      return { success: false, error: 'acUnitId is required' }
+    }
+
+    const supabase = await createClient()
+
+    // 1. Resolve rule
+    let rule: ReminderRule | null = null
+    if (ruleId) {
+      const { data: ruleData, error: ruleErr } = await supabase
+        .from('reminder_rules')
+        .select('*')
+        .eq('rule_id', ruleId)
+        .single()
+      if (ruleErr) throw ruleErr
+      rule = ruleData as ReminderRule
+    } else {
+      const { data: ruleData, error: ruleErr } = await supabase
+        .from('reminder_rules')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      if (ruleErr) throw ruleErr
+      rule = (ruleData as ReminderRule | null) ?? null
+    }
+
+    if (!rule) {
+      return {
+        success: false,
+        error:
+          'Tidak ada rule reminder aktif. Buat rule terlebih dahulu di Settings > Reminder Rules.',
+      }
+    }
+
+    // 2. Fetch AC unit + customer context
+    const { data: unitData, error: unitErr } = await supabase
+      .from('ac_units')
+      .select(
+        `
+          ac_unit_id,
+          brand,
+          model_number,
+          next_service_due_date,
+          locations (
+            location_id,
+            full_address,
+            city,
+            customers (
+              customer_id,
+              customer_name,
+              phone_number,
+              email
+            )
+          )
+        `
+      )
+      .eq('ac_unit_id', acUnitId)
+      .single()
+
+    if (unitErr) throw unitErr
+    const unit = unitData as unknown as AcUnitRow
+
+    const customer = unit.locations?.customers ?? null
+    if (!customer) {
+      return {
+        success: false,
+        error: 'Customer untuk AC unit ini tidak ditemukan.',
+      }
+    }
+
+    const recipient = pickRecipient(rule.channel, customer)
+    if (!recipient) {
+      const channelLabel = rule.channel === 'WHATSAPP' ? 'nomor WhatsApp' : 'email'
+      return {
+        success: false,
+        error: `Customer belum memiliki ${channelLabel} untuk channel rule ini.`,
+      }
+    }
+
+    const dueIso =
+      unit.next_service_due_date ?? new Date().toISOString().slice(0, 10)
+
+    const locationLabel =
+      [unit.locations?.full_address, unit.locations?.city]
+        .filter(Boolean)
+        .join(', ') || null
+
+    const ctx: ReminderTemplateContext = {
+      customer_name: customer.customer_name ?? null,
+      ac_brand: unit.brand,
+      ac_model: unit.model_number,
+      location: locationLabel,
+      due_date: formatDueDate(dueIso),
+    }
+
+    // 3. Insert reminder
+    const { data: insertData, error: insertErr } = await supabase
+      .from('customer_reminders')
+      .insert({
+        customer_id: customer.customer_id,
+        ac_unit_id: unit.ac_unit_id,
+        rule_id: rule.rule_id,
+        due_date: dueIso,
+        channel: rule.channel,
+        recipient,
+        message: formatReminderMessage(rule.message_template, ctx),
+        status: 'PENDING',
+      })
+      .select('reminder_id')
+      .single()
+
+    if (insertErr) throw insertErr
+
+    revalidatePath('/dashboard/reminders')
+    return {
+      success: true,
+      data: { reminder_id: (insertData as { reminder_id: string }).reminder_id },
+    }
+  } catch (err) {
+    logger.error('createManualReminder failed:', err)
+    return {
+      success: false,
+      error: toErrorMessage(err, 'Failed to create reminder'),
+    }
+  }
+}
+
 /**
  * Server action wrapper around `formatReminderMessage` for callers that need
  * a server-side render (e.g. previewing a template against live customer data).
