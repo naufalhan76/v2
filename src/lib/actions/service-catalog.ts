@@ -47,7 +47,7 @@ export interface CreateCatalogInput {
   is_active?: boolean
 }
 
-export interface UpdateCatalogInput extends Partial<CreateCatalogInput> {}
+export type UpdateCatalogInput = Partial<CreateCatalogInput>
 
 export interface CatalogActionResult<T = unknown> {
   success: boolean
