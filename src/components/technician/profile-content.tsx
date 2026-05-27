@@ -27,7 +27,7 @@ async function fetchProfile() {
 
   const { data: technician, error } = await supabase
     .from('technicians')
-    .select('technician_id, technician_name, contact_number, email, specialization, company')
+    .select('technician_id, technician_name, contact_number, email, company')
     .eq('auth_user_id', user.id)
     .single()
   if (error) throw new Error('Gagal memuat profil')
@@ -183,8 +183,8 @@ export function ProfileContent() {
           </div>
           <div>
             <h2 className="font-semibold text-base">{technician.technician_name}</h2>
-            {technician.specialization && (
-              <p className="text-xs text-muted-foreground">{technician.specialization}</p>
+            {technician.company && (
+              <p className="text-xs text-muted-foreground">{technician.company}</p>
             )}
           </div>
         </div>
