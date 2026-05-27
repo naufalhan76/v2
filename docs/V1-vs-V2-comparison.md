@@ -201,6 +201,19 @@ These were preserved as-is:
 - **Error boundaries** at root, dashboard, and technician routes
 - **Sidebar restructure** — flat 5 top-level + Settings group
 
+### Service Reminders
+- Configurable reminder rules at `/dashboard/settings/reminder-rules` — name, days-before-due lead time, channel (WhatsApp/Email), message template with variables, auto-send toggle.
+- Reminder queue at `/dashboard/reminders` — admin reviews `PENDING` reminders and sends or dismisses; status badges for SENT / FAILED / DISMISSED.
+- Daily cron at `POST /api/admin/reminders/run` (Bearer `CRON_SECRET`) generates reminders from `ac_units.next_service_due_date` for any unit whose due date is within an active rule's window. Idempotent: dedup key is `(ac_unit_id, rule_id, due_date)`.
+- Technicians enter next-service date in the Complete Job Form; submission auto-updates `ac_units.next_service_due_date` so the next cron run picks it up.
+- Default rule seeded: 7 days before due date, WhatsApp channel.
+- Template variables: `{{customer_name}}`, `{{ac_brand}}`, `{{ac_model}}`, `{{location}}`, `{{due_date}}`.
+
+### Auto-Proforma Invoices
+- Optional checkbox on Create Order form (`/dashboard/orders/new`). When ticked, the order creation flow also calls `createProformaInvoice` and produces an `invoice_type='PROFORMA'`, `status='DRAFT'` invoice using estimated prices from order items.
+- The final invoice (`invoice_type='FINAL'`) is still generated post-completion via `createInvoiceFromOrder` using actual prices reported by the technician.
+- Lets admin/finance hand customers an upfront price quote without waiting for service completion.
+
 ---
 
 ## 8. Deferred — planned for V2 but not yet shipped
@@ -209,10 +222,10 @@ These were spec'd but pushed to later phases (out of scope for this staging rele
 
 | Feature | Phase | Status |
 |---------|-------|--------|
-| Single-page accordion Create Order form | Phase 3 | **Deferred**. V2 currently redirects `/dashboard/orders/new` to existing wizard. |
-| Service Catalog data model merge (pricing + config in one table) | Phase 3 | **Deferred**. V2 ships tabbed shell embedding both old pages. |
+| Single-page accordion Create Order form | Phase 3 | **Delivered (Phase 5)**. Accordion sections at `/dashboard/orders/new` with optional proforma checkbox. |
+| Customer detail page with Lokasi/AC Units tabs inline | Phase 1+ | **Delivered (Phase 5)**. New page at `/dashboard/manajemen/customer/[id]` with Detail / Lokasi / AC Units / Orders tabs. |
+| Service Catalog data model merge (pricing + config in one table) | Phase 3 | **Delivered (Phase 5)**. Unified UI at `/dashboard/settings/service-catalog` replaces tabbed shell. |
 | SLA Service field merged into service catalog | Phase 3 | **Deferred** |
-| Customer detail page with Lokasi/AC Units tabs inline | Phase 1+ | **Deferred**. Old pages still work at their original URLs. |
 | Phase 5 cleanup: drop legacy enum values | Phase 5 | **Not started** |
 | Phase 5: drop redundant columns (`assigned_technician_id`, etc.) | Phase 5 | **Not started** |
 | Phase 5: delete legacy operasional pages | Phase 5 | **Not started** |
@@ -221,6 +234,7 @@ These were spec'd but pushed to later phases (out of scope for this staging rele
 | Offline-first technician app | Out of scope | Just shows offline banner; no sync queue |
 | GPS tracking technician | Out of scope | Not planned |
 | Customer self-service portal | Out of scope | Not planned |
+| Reminder gateway integration (WhatsApp Business / Email) | Post-V2 | **Stubbed**. `markReminderSent` records status only — no upstream send yet. |
 
 ---
 
@@ -236,16 +250,51 @@ ALTER TYPE order_status ADD VALUE 'COMPLETED';
 -- New tables
 CREATE TABLE service_reports (...);
 CREATE TABLE push_subscriptions (...);
+CREATE TABLE reminder_rules (...);
+CREATE TABLE customer_reminders (...);
 
 -- New columns (additive)
 ALTER TABLE technicians ADD COLUMN auth_user_id UUID;
+ALTER TABLE ac_units ADD COLUMN next_service_due_date DATE;
+ALTER TABLE service_reports
+  ADD COLUMN next_service_recommendation_date DATE,
+  ADD COLUMN next_service_recommendation_notes TEXT;
 ```
 
 V2 staging uses a **separate Supabase project** (`dejzpeytapjolajveond.supabase.co`), so testing won't touch V1 production data.
 
 ---
 
-## 10. Quick visual cheat-sheet
+## 10. Service Reminder System
+
+End-to-end workflow for proactive customer outreach:
+
+```
+1. Technician submits service report → enters next-service date recommendation
+2. System sets ac_units.next_service_due_date
+3. Daily cron (or manual) generates reminders for AC units approaching due date
+4. Admin reviews queue at /dashboard/reminders → sends or dismisses
+5. Auto-send rules (when configured): system sends without manual review
+```
+
+**Components**
+
+| Layer | Path |
+|-------|------|
+| Schema migration | `supabase/migrations/02_phase5_reminders.sql` |
+| Backend actions | `src/lib/actions/reminders.ts` |
+| Template helpers | `src/lib/reminder-utils.ts` |
+| Generator (cron-callable) | `generateRemindersFromAcUnits()` |
+| Cron endpoint | `POST /api/admin/reminders/run` (Bearer `CRON_SECRET` or admin) |
+| Rules CRUD | `/dashboard/settings/reminder-rules` |
+| Reminder queue UI | `/dashboard/reminders` |
+| Technician input | `next_service_recommendation_date` field in Complete Job Form |
+
+See **`docs/REMINDER-SYSTEM.md`** for full details and **`docs/CRON-SETUP.md`** for scheduling options.
+
+---
+
+## 11. Quick visual cheat-sheet
 
 ```
                     V1                              V2
@@ -280,7 +329,7 @@ Loading patterns     Mostly Loader2 spinner          Skeleton patterns (4-tier r
 
 ---
 
-## 11. Risk register for V2 → V1 promotion
+## 12. Risk register for V2 → V1 promotion
 
 If we eventually merge V2 to production, these are the gotchas:
 
@@ -292,13 +341,16 @@ If we eventually merge V2 to production, these are the gotchas:
 | `service_records` rows still exist but UI shows nothing | Migrate to `service_reports` if historical data matters |
 | Forms still using useState (not RHF+Zod) | Inventory documented; migrate gradually post-launch |
 | Phase 5 not done = legacy URLs still work | Acceptable for soft launch; lock down before final cutover |
+| Reminder delivery integration (WhatsApp/Email gateway) is stubbed | `markReminderSent` only flips status to `SENT` and logs `external_id` — no upstream API call. Wire to actual gateway (WhatsApp Business API or Resend) before relying on auto-send in production. |
 
 ---
 
-## 12. Documents for deeper reading
+## 13. Documents for deeper reading
 
 - **PRD**: `docs/superpowers/specs/2026-05-26-msn-erp-v2-prd.md`
 - **Design Spec**: `docs/superpowers/specs/2026-05-26-msn-erp-v2-design.md`
 - **Phase plans**: `docs/superpowers/plans/2026-05-26-phase-{0,1,2,3,4}-*.md`
 - **UX audits**: `docs/superpowers/audits/2026-05-26-{empty-states,loading-states,forms}-audit.md`
 - **Staging guide**: `docs/STAGING.md`
+- **Reminder system**: `docs/REMINDER-SYSTEM.md`
+- **Cron setup**: `docs/CRON-SETUP.md`

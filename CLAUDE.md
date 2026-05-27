@@ -60,6 +60,14 @@ Plus `CANCELLED` (terminal). Reschedule is an action that resets to PENDING. Rea
 
 Web push for technicians via VAPID. Browser helpers in `src/lib/push.ts`, server sender in `src/lib/server/push-sender.ts`. Triggered fire-and-forget from `assignOrdersToTechnician` and `rescheduleOrder` in `src/lib/actions/orders.ts`. Subscription state managed in `/technician/profile`. Service worker at `public/technician-sw.js` handles push, notificationclick, and pushsubscriptionchange events.
 
+### Service Reminders
+
+Configurable reminder rules in `reminder_rules` table; queue in `customer_reminders`. Generated from `ac_units.next_service_due_date` via `generateRemindersFromAcUnits()` in `src/lib/actions/reminders.ts`. Admin UI at `/dashboard/reminders`. Rules CRUD at `/dashboard/settings/reminder-rules`. Cron entrypoint: `POST /api/admin/reminders/run` (Bearer `CRON_SECRET` or admin session — see `docs/CRON-SETUP.md`). Technicians input next-service date in the Complete Job Form; system auto-updates `ac_units.next_service_due_date` on report submission.
+
+### Proforma Invoices
+
+Optional checkbox in Create Order form (`/dashboard/orders/new`). When checked, creates a proforma invoice (`invoice_type='PROFORMA'`, `status='DRAFT'`) automatically using estimated prices from order items. See `createProformaInvoice` in `src/lib/actions/invoices.ts`. The final invoice (`invoice_type='FINAL'`) is still generated post-completion via `createInvoiceFromOrder` using actual reported prices.
+
 ### Logging
 
 `src/lib/logger.ts` — scoped logger. `debug`/`info` stripped in production via `next.config.js`. Use `warn`/`error` for anything that must appear in prod.
