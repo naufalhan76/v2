@@ -467,12 +467,22 @@ function pickRecipient(
  *
  * Returns a summary of what was created.
  */
-export async function generateRemindersFromAcUnits(): Promise<
+export async function generateRemindersFromAcUnits(options?: {
+  /**
+   * Skip the cookie-session role check. Use only from trusted server-side
+   * callers that have already authenticated the request (e.g. the
+   * `/api/admin/reminders/run` route handles cron-secret and admin auth
+   * before calling this).
+   */
+  asSystem?: boolean
+}): Promise<
   ActionResult<{ created: number; skipped: number; rulesScanned: number }>
 > {
   try {
-    const auth = await requireRoles(WRITE_ROLES)
-    if (!auth.ok) return { success: false, error: auth.error }
+    if (!options?.asSystem) {
+      const auth = await requireRoles(WRITE_ROLES)
+      if (!auth.ok) return { success: false, error: auth.error }
+    }
 
     const supabase = await createClient()
 

@@ -31,7 +31,6 @@ import {
   getCustomerReminders,
   markReminderSent,
   markReminderDismissed,
-  generateRemindersFromAcUnits,
 } from '@/lib/actions/reminders'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -269,23 +268,26 @@ export default function RemindersPage() {
 
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const result = await generateRemindersFromAcUnits()
-      if (!result?.success) {
-        throw new Error(result?.error || 'Gagal generate reminder')
+      const res = await fetch('/api/admin/reminders/run', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const json = (await res.json()) as {
+        success: boolean
+        data?: { generated_count: number; skipped_count: number }
+        error?: string
       }
-      return result
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Gagal generate reminder')
+      }
+      return json.data ?? { generated_count: 0, skipped_count: 0 }
     },
-    onSuccess: (result) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['customer-reminders'] })
-      const count =
-        (result as { data?: { count?: number } })?.data?.count ??
-        (result as { count?: number })?.count
       toast({
         title: 'Reminder digenerate',
-        description:
-          typeof count === 'number'
-            ? `${count} reminder baru berhasil dibuat.`
-            : 'Reminder baru berhasil dibuat dari data AC unit.',
+        description: `${data.generated_count} reminder baru, ${data.skipped_count} dilewati.`,
       })
     },
     onError: (error: Error) => {
