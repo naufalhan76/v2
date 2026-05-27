@@ -229,13 +229,13 @@ export default function TechniciansPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Technicians</h1>
-          <p className="text-muted-foreground">Manage technicians data (Full CRUD)</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Technicians</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Manage technicians data (Full CRUD)</p>
         </div>
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Add Technician
         </Button>
@@ -251,7 +251,7 @@ export default function TechniciansPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 type="text"
-                placeholder="Search by name, phone, email, or company..."
+                placeholder="Search by name, phone, email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -261,49 +261,93 @@ export default function TechniciansPage() {
 
           {loading ? (
             <TableSkeleton rows={5} columns={5} />
+          ) : technicians.length === 0 ? (
+            <EmptyState
+              icon={Wrench}
+              title="Belum ada teknisi"
+              description="Tambahkan teknisi untuk mulai menugaskan order."
+              action={{
+                label: 'Tambah Teknisi',
+                icon: Plus,
+                onClick: () => setIsCreateOpen(true),
+              }}
+            />
           ) : (
-            <div className="data-table-container overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <SortableTableHead sortKey="technician_name" currentSort={sortConfig} onSort={requestSort}>
-                      Name
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="contact_number" currentSort={sortConfig} onSort={requestSort}>
-                      Contact Number
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="email" currentSort={sortConfig} onSort={requestSort}>
-                      Email
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="company" currentSort={sortConfig} onSort={requestSort}>
-                      Company
-                    </SortableTableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {technicians.length === 0 ? (
+            <>
+              {/* Mobile cards */}
+              <div className="md:hidden space-y-3">
+                {technicians.map((technician) => (
+                  <div
+                    key={technician.technician_id}
+                    className="rounded-lg border p-3 space-y-2"
+                  >
+                    <div className="space-y-1">
+                      <h3 className="font-semibold">{technician.technician_name}</h3>
+                      <p className="text-sm text-muted-foreground" data-testid="phone-cell">
+                        {formatPhone(technician.contact_number)}
+                      </p>
+                      {technician.email && (
+                        <p className="text-sm text-muted-foreground break-all">
+                          {technician.email}
+                        </p>
+                      )}
+                      {technician.company && (
+                        <p className="text-xs text-muted-foreground">
+                          {technician.company}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-10"
+                        onClick={() => handleEdit(technician)}
+                      >
+                        <Edit className="h-4 w-4 mr-1.5" />
+                        Ubah
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="h-10"
+                        onClick={() => handleDelete(technician.technician_id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1.5" />
+                        Hapus
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden md:block data-table-container overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={5} className="p-0">
-                        <EmptyState
-                          icon={Wrench}
-                          title="Belum ada teknisi"
-                          description="Tambahkan teknisi untuk mulai menugaskan order."
-                          action={{
-                            label: 'Tambah Teknisi',
-                            icon: Plus,
-                            onClick: () => setIsCreateOpen(true),
-                          }}
-                        />
-                      </TableCell>
+                      <SortableTableHead sortKey="technician_name" currentSort={sortConfig} onSort={requestSort}>
+                        Name
+                      </SortableTableHead>
+                      <SortableTableHead sortKey="contact_number" currentSort={sortConfig} onSort={requestSort}>
+                        Contact Number
+                      </SortableTableHead>
+                      <SortableTableHead sortKey="email" currentSort={sortConfig} onSort={requestSort} className="hidden lg:table-cell">
+                        Email
+                      </SortableTableHead>
+                      <SortableTableHead sortKey="company" currentSort={sortConfig} onSort={requestSort} className="hidden lg:table-cell">
+                        Company
+                      </SortableTableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ) : (
-                    technicians.map((technician) => (
+                  </TableHeader>
+                  <TableBody>
+                    {technicians.map((technician) => (
                       <TableRow key={technician.technician_id}>
                         <TableCell className="font-medium">{technician.technician_name}</TableCell>
                         <TableCell data-testid="phone-cell">{formatPhone(technician.contact_number)}</TableCell>
-                        <TableCell>{technician.email || '-'}</TableCell>
-                        <TableCell>{technician.company || '-'}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{technician.email || '-'}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{technician.company || '-'}</TableCell>
                         <TableCell className="text-right w-[180px]">
                           <div className="flex gap-2 justify-end">
                             <Button
@@ -329,18 +373,18 @@ export default function TechniciansPage() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
 
       {/* Create Sheet */}
       <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <SheetContent className="overflow-y-auto">
+        <SheetContent className="w-full max-w-full sm:max-w-md overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Add New Technician</SheetTitle>
             <SheetDescription>
@@ -407,7 +451,7 @@ export default function TechniciansPage() {
 
       {/* Edit Sheet */}
       <Sheet open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <SheetContent className="overflow-y-auto">
+        <SheetContent className="w-full max-w-full sm:max-w-md overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Edit Technician</SheetTitle>
             <SheetDescription>

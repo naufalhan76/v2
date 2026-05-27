@@ -260,10 +260,10 @@ export default function CustomerDetailPage() {
 
   if (isLoadingCustomer) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-10 w-96" />
+        <Skeleton className="h-10 w-full sm:w-96" />
         <Skeleton className="h-64 w-full" />
       </div>
     )
@@ -271,7 +271,7 @@ export default function CustomerDetailPage() {
 
   if (isCustomerError || !customer) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <Button variant="ghost" onClick={() => router.back()} className="mb-4">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Kembali
@@ -293,21 +293,21 @@ export default function CustomerDetailPage() {
 
   return (
     <>
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} className="mt-1">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex items-start gap-3 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="mt-1 flex-shrink-0">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold">{customer.customer_name}</h1>
-              <p className="text-muted-foreground mt-1">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold break-words">{customer.customer_name}</h1>
+              <p className="text-muted-foreground mt-1 text-sm sm:text-base">
                 Detail customer & riwayat layanan
               </p>
             </div>
           </div>
-          <Button onClick={handleOpenEditCustomer}>
+          <Button onClick={handleOpenEditCustomer} className="w-full sm:w-auto">
             <Pencil className="h-4 w-4 mr-2" />
             Edit Customer
           </Button>
@@ -368,12 +368,14 @@ export default function CustomerDetailPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="detail" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
-            <TabsTrigger value="detail">Detail</TabsTrigger>
-            <TabsTrigger value="lokasi">Lokasi</TabsTrigger>
-            <TabsTrigger value="ac-units">AC Units</TabsTrigger>
-            <TabsTrigger value="orders">Riwayat Order</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+            <TabsList className="inline-flex w-auto sm:grid sm:w-full sm:grid-cols-4 sm:max-w-2xl">
+              <TabsTrigger value="detail">Detail</TabsTrigger>
+              <TabsTrigger value="lokasi">Lokasi</TabsTrigger>
+              <TabsTrigger value="ac-units">AC Units</TabsTrigger>
+              <TabsTrigger value="orders">Riwayat Order</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="detail">
             <DetailTab customer={customer} onEdit={handleOpenEditCustomer} />
@@ -401,7 +403,7 @@ export default function CustomerDetailPage() {
 
       {/* Edit Customer Sheet */}
       <Sheet open={isEditCustomerOpen} onOpenChange={setIsEditCustomerOpen}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent className="w-full max-w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Edit Customer</SheetTitle>
             <SheetDescription>Perbarui informasi customer</SheetDescription>
@@ -688,9 +690,9 @@ function LokasiTab({ customerId }: { customerId: string }) {
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
         <CardTitle>Lokasi ({locations.length})</CardTitle>
-        <Button size="sm" onClick={openCreate}>
+        <Button size="sm" onClick={openCreate} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           Tambah Lokasi
         </Button>
@@ -714,55 +716,99 @@ function LokasiTab({ customerId }: { customerId: string }) {
             }}
           />
         ) : (
-          <div className="data-table-container overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Alamat</TableHead>
-                  <TableHead>No. Rumah</TableHead>
-                  <TableHead>Kota</TableHead>
-                  <TableHead>Patokan</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {locations.map((loc) => (
-                  <TableRow key={loc.location_id}>
-                    <TableCell className="font-medium">{loc.full_address}</TableCell>
-                    <TableCell>{loc.house_number}</TableCell>
-                    <TableCell>{loc.city}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {loc.landmarks || '-'}
-                    </TableCell>
-                    <TableCell className="text-right w-[140px]">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => openEdit(loc)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => setDeleteId(loc.location_id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          <>
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+              {locations.map((loc) => (
+                <div key={loc.location_id} className="rounded-lg border p-3 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm break-words">{loc.full_address}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        No. {loc.house_number} · {loc.city}
+                      </p>
+                      {loc.landmarks && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Patokan: {loc.landmarks}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEdit(loc)}
+                      className="h-10"
+                    >
+                      <Pencil className="h-4 w-4 mr-1.5" />
+                      Ubah
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleteId(loc.location_id)}
+                      className="h-10"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1.5" />
+                      Hapus
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden md:block data-table-container overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Alamat</TableHead>
+                    <TableHead>No. Rumah</TableHead>
+                    <TableHead>Kota</TableHead>
+                    <TableHead>Patokan</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {locations.map((loc) => (
+                    <TableRow key={loc.location_id}>
+                      <TableCell className="font-medium">{loc.full_address}</TableCell>
+                      <TableCell>{loc.house_number}</TableCell>
+                      <TableCell>{loc.city}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {loc.landmarks || '-'}
+                      </TableCell>
+                      <TableCell className="text-right w-[140px]">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => openEdit(loc)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => setDeleteId(loc.location_id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </CardContent>
 
       {/* Form Sheet */}
       <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <SheetContent className="overflow-y-auto">
+        <SheetContent className="w-full max-w-full sm:max-w-md overflow-y-auto">
           <SheetHeader>
             <SheetTitle>
               {editingLocation ? 'Edit Lokasi' : 'Tambah Lokasi'}
@@ -1066,9 +1112,9 @@ function AcUnitsTab({ customerId }: { customerId: string }) {
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
         <CardTitle>AC Units ({acUnits.length})</CardTitle>
-        <Button size="sm" onClick={openCreate} disabled={locations.length === 0}>
+        <Button size="sm" onClick={openCreate} disabled={locations.length === 0} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           Tambah AC
         </Button>
@@ -1104,13 +1150,13 @@ function AcUnitsTab({ customerId }: { customerId: string }) {
               return (
                 <div key={loc.location_id} className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-semibold border-b pb-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{loc.full_address}</span>
-                    <Badge variant="secondary" className="ml-auto">
+                    <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate">{loc.full_address}</span>
+                    <Badge variant="secondary" className="ml-auto flex-shrink-0">
                       {units.length} unit
                     </Badge>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {units.map((unit) => (
                       <div
                         key={unit.ac_unit_id}
@@ -1183,7 +1229,7 @@ function AcUnitsTab({ customerId }: { customerId: string }) {
 
       {/* Form Sheet */}
       <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <SheetContent className="overflow-y-auto">
+        <SheetContent className="w-full max-w-full sm:max-w-md overflow-y-auto">
           <SheetHeader>
             <SheetTitle>
               {editingAcUnit ? 'Edit AC Unit' : 'Tambah AC Unit'}
@@ -1420,56 +1466,99 @@ function OrdersTab({
             }}
           />
         ) : (
-          <div className="data-table-container overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order ID</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead className="text-right">Total Estimasi</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((order) => {
-                  const dateStr =
-                    order.scheduled_visit_date ?? order.req_visit_date ?? order.created_at
-                  return (
-                    <TableRow
-                      key={order.order_id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => onOpenOrder(order.order_id)}
-                    >
-                      <TableCell className="font-mono text-xs">
-                        {order.order_id}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={order.status} />
-                      </TableCell>
-                      <TableCell>{formatDateOnly(dateStr)}</TableCell>
-                      <TableCell className="text-right font-mono text-sm">
+          <>
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+              {orders.map((order) => {
+                const dateStr =
+                  order.scheduled_visit_date ?? order.req_visit_date ?? order.created_at
+                return (
+                  <div
+                    key={order.order_id}
+                    className="rounded-lg border p-3 space-y-2 cursor-pointer hover:bg-muted/30 transition-colors"
+                    onClick={() => onOpenOrder(order.order_id)}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-mono text-xs break-all">{order.order_id}</p>
+                      <StatusBadge status={order.status} />
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {formatDateOnly(dateStr)}
+                      </span>
+                      <span className="font-mono font-medium">
                         {formatCurrency(orderTotal(order))}
-                      </TableCell>
-                      <TableCell className="text-right w-[100px]">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onOpenOrder(order.order_id)
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-1.5" />
-                          Lihat
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                      </span>
+                    </div>
+                    <div className="flex justify-end pt-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onOpenOrder(order.order_id)
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-1.5" />
+                        Lihat Detail
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden md:block data-table-container overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead className="text-right">Total Estimasi</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => {
+                    const dateStr =
+                      order.scheduled_visit_date ?? order.req_visit_date ?? order.created_at
+                    return (
+                      <TableRow
+                        key={order.order_id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => onOpenOrder(order.order_id)}
+                      >
+                        <TableCell className="font-mono text-xs">
+                          {order.order_id}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={order.status} />
+                        </TableCell>
+                        <TableCell>{formatDateOnly(dateStr)}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">
+                          {formatCurrency(orderTotal(order))}
+                        </TableCell>
+                        <TableCell className="text-right w-[100px]">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onOpenOrder(order.order_id)
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1.5" />
+                            Lihat
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

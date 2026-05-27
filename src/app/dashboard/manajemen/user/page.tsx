@@ -250,23 +250,23 @@ export default function ManajemenUserPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2">
           <User className="h-6 w-6" />
-          <h1 className="text-3xl font-bold">Manajemen User</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Manajemen User</h1>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open)
           if (!open) resetForm()
         }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Tambah User
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="w-[calc(100vw-2rem)] max-w-lg sm:w-full">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
                 <DialogTitle>
@@ -361,10 +361,10 @@ export default function ManajemenUserPage() {
         </CardHeader>
         <CardContent>
           <div className="mb-4 flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
+            <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <Input 
               placeholder="Cari user..." 
-              className="max-w-sm" 
+              className="max-w-full sm:max-w-sm" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

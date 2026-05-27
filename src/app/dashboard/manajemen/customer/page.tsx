@@ -322,27 +322,31 @@ export default function CustomerManagementPage() {
       <ResourceHints
         domains={['api.supabase.co', 'fonts.googleapis.com', 'fonts.gstatic.com']}
       />
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Manajemen Customer</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl sm:text-3xl font-bold">Manajemen Customer</h1>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
               Kelola data customer dan informasi kontak
             </p>
           </div>
           <LoadingOverlay isLoading={isCreating || isUpdating || isDeleting}>
-            <Button onClick={() => setIsCreateOpen(true)} disabled={isCreating || isUpdating || isDeleting}>
+            <Button
+              onClick={() => setIsCreateOpen(true)}
+              disabled={isCreating || isUpdating || isDeleting}
+              className="w-full sm:w-auto"
+            >
               <Plus className="mr-2 h-4 w-4" />
               Tambah Customer
             </Button>
           </LoadingOverlay>
         </div>
 
-        <div className="flex gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Cari nama, telepon, email, alamat billing, atau lokasi service..."
+              placeholder="Cari nama, telepon, email..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value)
@@ -373,29 +377,30 @@ export default function CustomerManagementPage() {
               </div>
             }
           >
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableTableHead sortKey="customer_name" currentSort={sortConfig} onSort={requestSort}>
-                    Nama Customer
-                  </SortableTableHead>
-                  <SortableTableHead sortKey="primary_contact_person" currentSort={sortConfig} onSort={requestSort}>
-                    Kontak Person
-                  </SortableTableHead>
-                  <SortableTableHead sortKey="phone_number" currentSort={sortConfig} onSort={requestSort}>
-                    Nomor Telepon
-                  </SortableTableHead>
-                  <SortableTableHead sortKey="email" currentSort={sortConfig} onSort={requestSort}>
-                    Email
-                  </SortableTableHead>
-                  <SortableTableHead sortKey="billing_address" currentSort={sortConfig} onSort={requestSort}>
-                    Alamat Billing
-                  </SortableTableHead>
-                  <TableHead>Lokasi Service</TableHead>
-                  <TableHead>Catatan</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <SortableTableHead sortKey="customer_name" currentSort={sortConfig} onSort={requestSort}>
+                      Nama Customer
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="primary_contact_person" currentSort={sortConfig} onSort={requestSort} className="hidden md:table-cell">
+                      Kontak Person
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="phone_number" currentSort={sortConfig} onSort={requestSort}>
+                      Nomor Telepon
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="email" currentSort={sortConfig} onSort={requestSort} className="hidden lg:table-cell">
+                      Email
+                    </SortableTableHead>
+                    <SortableTableHead sortKey="billing_address" currentSort={sortConfig} onSort={requestSort} className="hidden xl:table-cell">
+                      Alamat Billing
+                    </SortableTableHead>
+                    <TableHead className="hidden lg:table-cell">Lokasi Service</TableHead>
+                    <TableHead className="hidden xl:table-cell">Catatan</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableSkeleton rows={5} columns={8} />
@@ -432,11 +437,11 @@ export default function CustomerManagementPage() {
                         <TableCell className="font-medium">
                           <span className="hover:underline">{c.customer_name as string}</span>
                         </TableCell>
-                        <TableCell>{c.primary_contact_person as string}</TableCell>
+                        <TableCell className="hidden md:table-cell">{c.primary_contact_person as string}</TableCell>
                         <TableCell data-testid="phone-cell">{formatPhone(c.phone_number as string | number | null | undefined)}</TableCell>
-                        <TableCell>{c.email as string}</TableCell>
-                        <TableCell>{c.billing_address as string}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden lg:table-cell">{c.email as string}</TableCell>
+                        <TableCell className="hidden xl:table-cell">{c.billing_address as string}</TableCell>
+                        <TableCell className="hidden lg:table-cell">
                           {locationsCount === 0 ? (
                             <Badge variant="secondary" className="gap-1">
                               <MapPin className="w-3 h-3" />
@@ -513,20 +518,21 @@ export default function CustomerManagementPage() {
                             </Popover>
                           )}
                         </TableCell>
-                        <TableCell className="max-w-xs truncate">
+                        <TableCell className="hidden xl:table-cell max-w-xs truncate">
                           {(c.notes as string) || '-'}
                         </TableCell>
-                      <TableCell className="text-right w-[180px]" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-end gap-2">
+                      <TableCell className="text-right w-[100px] sm:w-[180px]" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-end gap-1 sm:gap-2">
                           <LoadingOverlay isLoading={isUpdating && editingId === c.customer_id}>
                             <Button
                               variant="outline"
-                              className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
+                              size="icon"
+                              className="h-10 w-10 sm:h-9 sm:w-auto sm:px-2 sm:group sm:relative sm:overflow-hidden sm:transition-all sm:duration-300 sm:ease-in-out sm:hover:w-24 sm:flex sm:items-center sm:justify-start"
                               onClick={() => handleEdit(c)}
                               disabled={isDeleting}
                             >
                               <Pencil className="h-4 w-4 flex-shrink-0" />
-                              <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              <span className="hidden sm:inline ml-2 whitespace-nowrap opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
                                 Ubah
                               </span>
                             </Button>
@@ -534,12 +540,13 @@ export default function CustomerManagementPage() {
                           <LoadingOverlay isLoading={isDeleting && deletingId === c.customer_id}>
                             <Button
                               variant="destructive"
-                              className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
+                              size="icon"
+                              className="h-10 w-10 sm:h-9 sm:w-auto sm:px-2 sm:group sm:relative sm:overflow-hidden sm:transition-all sm:duration-300 sm:ease-in-out sm:hover:w-28 sm:flex sm:items-center sm:justify-start"
                               onClick={() => handleDelete(c.customer_id as string)}
                               disabled={isUpdating}
                             >
                               <Trash2 className="h-4 w-4 flex-shrink-0" />
-                              <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              <span className="hidden sm:inline ml-2 whitespace-nowrap opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">
                                 Hapus
                               </span>
                             </Button>
@@ -552,6 +559,7 @@ export default function CustomerManagementPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </LoadingState>
         </div>
 
@@ -579,7 +587,7 @@ export default function CustomerManagementPage() {
 
       {/* Create Dialog */}
       <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent className="w-full max-w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Tambah Customer Baru</SheetTitle>
             <SheetDescription>
@@ -665,7 +673,7 @@ export default function CustomerManagementPage() {
 
       {/* Edit Dialog */}
       <Sheet open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent className="w-full max-w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Edit Customer</SheetTitle>
             <SheetDescription>
