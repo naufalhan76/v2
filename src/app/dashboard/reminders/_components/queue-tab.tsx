@@ -366,6 +366,7 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
             </div>
           )
         },
+        meta: { className: 'hidden lg:table-cell' },
       },
       {
         accessorKey: 'due_date',
@@ -401,6 +402,7 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
           )
         },
         enableSorting: false,
+        meta: { className: 'hidden md:table-cell' },
       },
       {
         accessorKey: 'status',
@@ -424,20 +426,21 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
             dismissMutation.variables === r.reminder_id
 
           return (
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-1 sm:gap-2">
               {r.status === 'PENDING' && (
                 <Button
                   size="sm"
                   variant="default"
                   onClick={() => sendMutation.mutate(r.reminder_id)}
                   disabled={isSending}
+                  className="min-h-[44px] sm:min-h-9"
                 >
                   {isSending ? (
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin sm:mr-2" />
                   ) : (
-                    <Send className="mr-2 h-3 w-3" />
+                    <Send className="h-3 w-3 sm:mr-2" />
                   )}
-                  Kirim
+                  <span className="hidden sm:inline">Kirim</span>
                 </Button>
               )}
               {(r.status === 'PENDING' || r.status === 'FAILED') && (
@@ -446,13 +449,14 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
                   variant="ghost"
                   onClick={() => dismissMutation.mutate(r.reminder_id)}
                   disabled={isDismissing}
+                  className="min-h-[44px] sm:min-h-9"
                 >
                   {isDismissing ? (
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin sm:mr-2" />
                   ) : (
-                    <X className="mr-2 h-3 w-3" />
+                    <X className="h-3 w-3 sm:mr-2" />
                   )}
-                  Abaikan
+                  <span className="hidden sm:inline">Abaikan</span>
                 </Button>
               )}
             </div>
@@ -483,9 +487,9 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
   // -- Render ------------------------------------------------------------------
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         <StatCard
           title="Menunggu"
           value={stats.pending}
@@ -512,8 +516,8 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
           <CardTitle className="text-base">Filter</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-[240px] flex-1 max-w-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="relative w-full sm:flex-1 sm:min-w-[240px] sm:max-w-sm">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Cari customer, kontak, atau nomor..."
@@ -523,101 +527,111 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
               />
             </div>
 
-            <Select
-              value={statusFilter}
-              onValueChange={(v) =>
-                setStatusFilter(v as 'all' | ReminderStatus)
-              }
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Status</SelectItem>
-                <SelectItem value="PENDING">Menunggu</SelectItem>
-                <SelectItem value="SENT">Terkirim</SelectItem>
-                <SelectItem value="FAILED">Gagal</SelectItem>
-                <SelectItem value="DISMISSED">Diabaikan</SelectItem>
-                <SelectItem value="CANCELLED">Dibatalkan</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
+              <Select
+                value={statusFilter}
+                onValueChange={(v) =>
+                  setStatusFilter(v as 'all' | ReminderStatus)
+                }
+              >
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="PENDING">Menunggu</SelectItem>
+                  <SelectItem value="SENT">Terkirim</SelectItem>
+                  <SelectItem value="FAILED">Gagal</SelectItem>
+                  <SelectItem value="DISMISSED">Diabaikan</SelectItem>
+                  <SelectItem value="CANCELLED">Dibatalkan</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Popover>
-              <PopoverTrigger asChild>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      !dateFrom && 'text-muted-foreground',
+                      'w-full sm:min-w-[120px]'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom
+                      ? format(dateFrom, 'd MMM', { locale: localeId })
+                      : 'Dari'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={setDateFrom}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      !dateTo && 'text-muted-foreground',
+                      'w-full sm:min-w-[120px]'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo
+                      ? format(dateTo, 'd MMM', { locale: localeId })
+                      : 'Sampai'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={setDateTo}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {hasFilters && (
                 <Button
-                  variant="outline"
-                  className={cn(
-                    !dateFrom && 'text-muted-foreground',
-                    'min-w-[120px]'
-                  )}
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="col-span-2 sm:col-span-1"
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateFrom
-                    ? format(dateFrom, 'd MMM', { locale: localeId })
-                    : 'Dari'}
+                  <X className="mr-1 h-4 w-4" />
+                  Reset
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dateFrom}
-                  onSelect={setDateFrom}
-                />
-              </PopoverContent>
-            </Popover>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    !dateTo && 'text-muted-foreground',
-                    'min-w-[120px]'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateTo
-                    ? format(dateTo, 'd MMM', { locale: localeId })
-                    : 'Sampai'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dateTo}
-                  onSelect={setDateTo}
-                />
-              </PopoverContent>
-            </Popover>
-
-            {hasFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
-                <X className="mr-1 h-4 w-4" />
-                Reset
-              </Button>
-            )}
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Bulk action bar */}
+      {/* Bulk action bar — sticky bottom on mobile */}
       {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2">
-          <p className="text-sm text-muted-foreground">
-            {selectedIds.length} reminder dipilih
-          </p>
-          <Button
-            size="sm"
-            onClick={() => bulkSendMutation.mutate(selectedIds)}
-            disabled={bulkSendMutation.isPending}
-          >
-            {bulkSendMutation.isPending ? (
-              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-            ) : (
-              <Send className="mr-2 h-3 w-3" />
-            )}
-            Kirim Terpilih
-          </Button>
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-4 py-3 backdrop-blur sm:static sm:rounded-lg sm:border sm:bg-muted/40 sm:px-3 sm:py-2 sm:backdrop-blur-none">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm text-muted-foreground">
+              {selectedIds.length} reminder dipilih
+            </p>
+            <Button
+              size="sm"
+              onClick={() => bulkSendMutation.mutate(selectedIds)}
+              disabled={bulkSendMutation.isPending}
+              className="min-h-[44px] sm:min-h-9"
+            >
+              {bulkSendMutation.isPending ? (
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-3 w-3" />
+              )}
+              Kirim Terpilih
+            </Button>
+          </div>
         </div>
       )}
 
@@ -659,30 +673,40 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
                 <TableHeader>
                   {table.getHeaderGroups().map((hg) => (
                     <TableRow key={hg.id}>
-                      {hg.headers.map((h) => (
-                        <TableHead key={h.id}>
-                          {h.isPlaceholder
-                            ? null
-                            : flexRender(
-                                h.column.columnDef.header,
-                                h.getContext()
-                              )}
-                        </TableHead>
-                      ))}
+                      {hg.headers.map((h) => {
+                        const meta = h.column.columnDef.meta as
+                          | { className?: string }
+                          | undefined
+                        return (
+                          <TableHead key={h.id} className={meta?.className}>
+                            {h.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  h.column.columnDef.header,
+                                  h.getContext()
+                                )}
+                          </TableHead>
+                        )
+                      })}
                     </TableRow>
                   ))}
                 </TableHeader>
                 <TableBody>
                   {table.getRowModel().rows.map((row) => (
                     <TableRow key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
+                      {row.getVisibleCells().map((cell) => {
+                        const meta = cell.column.columnDef.meta as
+                          | { className?: string }
+                          | undefined
+                        return (
+                          <TableCell key={cell.id} className={meta?.className}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        )
+                      })}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -694,18 +718,19 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
 
       {/* Pagination */}
       {filteredReminders.length > 0 && (
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted-foreground text-center sm:text-left">
             Menampilkan {table.getRowModel().rows.length} dari{' '}
             {filteredReminders.length} reminder
             {isFetching && ' • memuat ulang...'}
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-center sm:justify-end">
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
+              className="flex-1 sm:flex-none"
             >
               Sebelumnya
             </Button>
@@ -714,12 +739,16 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
+              className="flex-1 sm:flex-none"
             >
               Berikutnya
             </Button>
           </div>
         </div>
       )}
+
+      {/* Spacer when sticky bulk bar is visible on mobile */}
+      {selectedIds.length > 0 && <div className="h-16 sm:hidden" />}
     </div>
   )
 }

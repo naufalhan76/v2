@@ -93,99 +93,112 @@ export function OrderFilters() {
     !!dateTo
 
   return (
-    <div className="flex flex-wrap gap-2 items-center">
-      <div className="relative min-w-[240px] flex-1 max-w-sm">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="relative w-full sm:min-w-[240px] sm:flex-1 sm:max-w-sm">
+        <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Cari order ID, customer, alamat..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+          className="h-11 pl-9 sm:h-9"
         />
       </div>
 
-      <Select value={technicianId} onValueChange={(v) => setParam('technicianId', v)}>
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Teknisi" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Semua Teknisi</SelectItem>
-          {technicians.map((t) => (
-            <SelectItem key={t.technician_id} value={t.technician_id}>
-              {t.technician_name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="grid grid-cols-2 gap-2 sm:contents">
+        <Select value={technicianId} onValueChange={(v) => setParam('technicianId', v)}>
+          <SelectTrigger className="h-11 w-full sm:h-9 sm:w-[180px]">
+            <SelectValue placeholder="Teknisi" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Teknisi</SelectItem>
+            {technicians.map((t) => (
+              <SelectItem key={t.technician_id} value={t.technician_id}>
+                {t.technician_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Select value={serviceType} onValueChange={(v) => setParam('serviceType', v)}>
-        <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder="Service Type" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Semua Service</SelectItem>
-          {SERVICE_TYPES.map((s) => (
-            <SelectItem key={s.value} value={s.value}>
-              {s.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Select value={serviceType} onValueChange={(v) => setParam('serviceType', v)}>
+          <SelectTrigger className="h-11 w-full sm:h-9 sm:w-[160px]">
+            <SelectValue placeholder="Service Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Service</SelectItem>
+            {SERVICE_TYPES.map((s) => (
+              <SelectItem key={s.value} value={s.value}>
+                {s.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Select value={urgency} onValueChange={(v) => setParam('urgency', v)}>
-        <SelectTrigger className="w-[140px]">
-          <SelectValue placeholder="Urgensi" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Semua</SelectItem>
-          {URGENCY_OPTIONS.map((u) => (
-            <SelectItem key={u.value} value={u.value}>
-              {u.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Select value={urgency} onValueChange={(v) => setParam('urgency', v)}>
+          <SelectTrigger className="h-11 w-full sm:h-9 sm:w-[140px]">
+            <SelectValue placeholder="Urgensi" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua</SelectItem>
+            {URGENCY_OPTIONS.map((u) => (
+              <SelectItem key={u.value} value={u.value}>
+                {u.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(!dateFrom && 'text-muted-foreground', 'min-w-[120px]')}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {dateFrom ? format(new Date(dateFrom), 'd MMM') : 'Dari'}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
-          <Calendar
-            mode="single"
-            selected={dateFrom ? new Date(dateFrom) : undefined}
-            onSelect={(d) => setParam('dateFrom', d ? format(d, 'yyyy-MM-dd') : null)}
-          />
-        </PopoverContent>
-      </Popover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                !dateFrom && 'text-muted-foreground',
+                'h-11 w-full justify-start sm:h-9 sm:w-auto sm:min-w-[120px] sm:justify-center'
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateFrom ? format(new Date(dateFrom), 'd MMM') : 'Dari'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={dateFrom ? new Date(dateFrom) : undefined}
+              onSelect={(d) => setParam('dateFrom', d ? format(d, 'yyyy-MM-dd') : null)}
+            />
+          </PopoverContent>
+        </Popover>
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={cn(!dateTo && 'text-muted-foreground', 'min-w-[120px]')}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {dateTo ? format(new Date(dateTo), 'd MMM') : 'Sampai'}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
-          <Calendar
-            mode="single"
-            selected={dateTo ? new Date(dateTo) : undefined}
-            onSelect={(d) => setParam('dateTo', d ? format(d, 'yyyy-MM-dd') : null)}
-          />
-        </PopoverContent>
-      </Popover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                !dateTo && 'text-muted-foreground',
+                'h-11 w-full justify-start sm:h-9 sm:w-auto sm:min-w-[120px] sm:justify-center'
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateTo ? format(new Date(dateTo), 'd MMM') : 'Sampai'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar
+              mode="single"
+              selected={dateTo ? new Date(dateTo) : undefined}
+              onSelect={(d) => setParam('dateTo', d ? format(d, 'yyyy-MM-dd') : null)}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
 
       {hasFilters && (
-        <Button variant="ghost" size="sm" onClick={clearAll}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={clearAll}
+          className="h-11 w-full sm:h-9 sm:w-auto"
+        >
           <X className="mr-1 h-4 w-4" />
           Reset
         </Button>

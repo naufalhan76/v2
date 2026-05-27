@@ -188,15 +188,15 @@ export default function DashboardPage() {
     return (
       <>
         <ResourceHints domains={['api.supabase.co']} />
-        <div className="p-6 space-y-6 max-w-7xl mx-auto">
-          <div className="flex justify-between items-start">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
             <div className="space-y-2">
               <Skeleton className="h-8 w-48" />
               <Skeleton className="h-4 w-64" />
             </div>
-            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-10 w-full sm:w-48" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
             {Array.from({ length: 5 }).map((_, i) => <KpiCardSkeleton key={i} />)}
           </div>
           <ChartSkeleton height={300} />
@@ -208,21 +208,21 @@ export default function DashboardPage() {
   return (
     <>
       <ResourceHints domains={['api.supabase.co']} />
-      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
 
         {/* Section 1: Welcome + Date Filter */}
-        <div className="flex items-start justify-between flex-wrap gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Welcome back, {userName}</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Welcome back, {userName}</h1>
             <p className="text-muted-foreground text-sm mt-1">Here&apos;s your AC service overview</p>
           </div>
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex flex-col items-stretch sm:items-end gap-1 w-full sm:w-auto">
             <span className="text-xs text-muted-foreground">Filter Tanggal</span>
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className={cn('w-[240px] justify-start text-left font-normal text-sm', (!dateRange.from || !dateRange.to) && 'text-muted-foreground')}>
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {formatDateRange()}
+                <Button variant="outline" className={cn('w-full sm:w-[240px] justify-start text-left font-normal text-sm', (!dateRange.from || !dateRange.to) && 'text-muted-foreground')}>
+                  <Calendar className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="truncate">{formatDateRange()}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
@@ -232,7 +232,18 @@ export default function DashboardPage() {
                   defaultMonth={dateRange.from}
                   selected={tempDateRange}
                   onSelect={handleDateRangeSelect}
+                  numberOfMonths={1}
+                  className="sm:hidden"
+                  locale={id as never}
+                />
+                <CalendarComponent
+                  initialFocus
+                  mode="range"
+                  defaultMonth={dateRange.from}
+                  selected={tempDateRange}
+                  onSelect={handleDateRangeSelect}
                   numberOfMonths={2}
+                  className="hidden sm:block"
                   locale={id as never}
                 />
               </PopoverContent>
@@ -241,7 +252,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Section 2: KPI Cards with sparklines */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {kpiCards.map((kpi) => {
             const Icon = kpi.icon
             const sparkVals = sparklineData.map(d => ({ v: (d as unknown as Record<string, number>)[kpi.sparkKey] ?? 0 }))
@@ -277,7 +288,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Section 3: Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
           {/* Combo chart */}
           <Card className="lg:col-span-2 border-border/50">
             <CardHeader className="pb-2">
@@ -290,13 +301,13 @@ export default function DashboardPage() {
                   estimatedRevenue: { label: 'Estimated', color: 'hsl(var(--chart-4))' },
                   revenue: { label: 'Actual', color: 'hsl(var(--chart-2))' },
                 }}
-                className="h-[260px] w-full"
+                className="h-[220px] sm:h-[260px] w-full"
               >
-                <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                <ComposedChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="formattedDate" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} interval="preserveStartEnd" />
-                  <YAxis yAxisId="rev" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `${(v / 1e6).toFixed(0)}M`} />
-                  <YAxis yAxisId="ord" orientation="left" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                  <XAxis dataKey="formattedDate" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} interval="preserveStartEnd" />
+                  <YAxis yAxisId="rev" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `${(v / 1e6).toFixed(0)}M`} width={32} />
+                  <YAxis yAxisId="ord" orientation="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} width={28} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Bar yAxisId="rev" dataKey="estimatedRevenue" fill="hsl(var(--chart-4))" radius={[3, 3, 0, 0]} opacity={0.6} name="estimatedRevenue" />
                   <Bar yAxisId="rev" dataKey="revenue" fill="hsl(var(--chart-2))" radius={[3, 3, 0, 0]} opacity={0.9} name="revenue" />
@@ -339,59 +350,67 @@ export default function DashboardPage() {
         </div>
 
         {/* Section 4: Quick Actions */}
-        <div className="flex gap-3 flex-wrap">
-          <Button variant="outline" asChild>
+        <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2 sm:gap-3">
+          <Button variant="outline" asChild className="w-full sm:w-auto justify-start sm:justify-center">
             <Link href="/dashboard/operasional/create-order"><Plus className="h-4 w-4 mr-2" />Create Order</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="w-full sm:w-auto justify-start sm:justify-center">
             <Link href="/dashboard/operasional/assign-order"><UserCheck className="h-4 w-4 mr-2" />Assign Order</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="w-full sm:w-auto justify-start sm:justify-center">
             <Link href="/dashboard/keuangan/invoices"><FileText className="h-4 w-4 mr-2" />View Invoices</Link>
           </Button>
         </div>
 
         {/* Section 5: Recent Orders */}
-        <div className="data-table-container">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
+        <div className="data-table-container overflow-hidden">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/50">
             <h2 className="text-base font-semibold">Recent Orders</h2>
             <Link href="/dashboard/operasional/monitoring-ongoing" className="text-sm text-primary hover:underline">View All</Link>
           </div>
           {recentOrders.length === 0 ? (
             <p className="text-center text-muted-foreground py-10 text-sm">No orders yet</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="border-0 hover:bg-transparent">
-                  <TableHead className="text-xs font-medium text-muted-foreground">Order ID</TableHead>
-                  <TableHead className="text-xs font-medium text-muted-foreground">Customer</TableHead>
-                  <TableHead className="text-xs font-medium text-muted-foreground">Type</TableHead>
-                  <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-xs font-medium text-muted-foreground">Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentOrders.map((order) => {
-                  const o = order as Record<string, unknown> & {
-                    customers?: { customer_name?: string; phone_number?: string }
-                    order_date?: string
-                    created_at?: string
-                  }
-                  const dateStr = o.order_date || o.created_at
-                  return (
-                  <TableRow key={o.order_id as string} className="border-0 hover:bg-muted/50">
-                    <TableCell className="font-mono text-xs text-muted-foreground">{(o.order_id as string)?.slice(0, 8)}…</TableCell>
-                    <TableCell className="text-sm font-medium">{o.customers?.customer_name ?? '—'}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{(o.order_type as string) ?? '—'}</TableCell>
-                    <TableCell><StatusBadge status={o.status as string} /></TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {dateStr ? format(new Date(dateStr), 'dd MMM yyyy', { locale: id }) : '—'}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-0 hover:bg-transparent">
+                    <TableHead className="hidden md:table-cell text-xs font-medium text-muted-foreground">Order ID</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Customer</TableHead>
+                    <TableHead className="hidden sm:table-cell text-xs font-medium text-muted-foreground">Type</TableHead>
+                    <TableHead className="text-xs font-medium text-muted-foreground">Status</TableHead>
+                    <TableHead className="hidden lg:table-cell text-xs font-medium text-muted-foreground">Date</TableHead>
                   </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {recentOrders.map((order) => {
+                    const o = order as Record<string, unknown> & {
+                      customers?: { customer_name?: string; phone_number?: string }
+                      order_date?: string
+                      created_at?: string
+                    }
+                    const dateStr = o.order_date || o.created_at
+                    return (
+                    <TableRow key={o.order_id as string} className="border-0 hover:bg-muted/50">
+                      <TableCell className="hidden md:table-cell font-mono text-xs text-muted-foreground">{(o.order_id as string)?.slice(0, 8)}…</TableCell>
+                      <TableCell className="text-sm font-medium">
+                        <div>{o.customers?.customer_name ?? '—'}</div>
+                        <div className="text-xs text-muted-foreground sm:hidden mt-0.5">
+                          {(o.order_type as string) ?? '—'}
+                          {dateStr && ` • ${format(new Date(dateStr), 'dd MMM', { locale: id })}`}
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{(o.order_type as string) ?? '—'}</TableCell>
+                      <TableCell><StatusBadge status={o.status as string} /></TableCell>
+                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                        {dateStr ? format(new Date(dateStr), 'dd MMM yyyy', { locale: id }) : '—'}
+                      </TableCell>
+                    </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </div>
 

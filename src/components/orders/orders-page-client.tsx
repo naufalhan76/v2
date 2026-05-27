@@ -93,27 +93,31 @@ export function OrdersPageClient() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Orders</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold sm:text-2xl">Orders</h1>
           <p className="text-sm text-muted-foreground">
             Kelola semua order dalam satu dashboard
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Tabs value={view} onValueChange={(v) => setView(v as 'board' | 'list')}>
-            <TabsList>
-              <TabsTrigger value="board" className="gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <Tabs
+            value={view}
+            onValueChange={(v) => setView(v as 'board' | 'list')}
+            className="flex-1 sm:flex-none"
+          >
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger value="board" className="flex-1 gap-1.5 sm:flex-none">
                 <LayoutGrid className="h-3.5 w-3.5" />
                 Board
               </TabsTrigger>
-              <TabsTrigger value="list" className="gap-1.5">
+              <TabsTrigger value="list" className="flex-1 gap-1.5 sm:flex-none">
                 <List className="h-3.5 w-3.5" />
                 List
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button asChild>
+          <Button asChild className="h-11 sm:h-9">
             <Link href="/dashboard/orders/new">
               <Plus className="mr-2 h-4 w-4" />
               Buat Order

@@ -648,8 +648,8 @@ export default function NewOrderAccordionPage() {
   return (
     <div className="p-4 md:p-6">
       <LoadingOverlay isLoading={submitting} message="Menyimpan order..." fullscreen autoFocus>
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold md:text-3xl">Buat Order Baru</h1>
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl font-bold sm:text-2xl md:text-3xl">Buat Order Baru</h1>
           <p className="text-sm text-muted-foreground">
             Isi setiap section secara berurutan. Section yang sudah lengkap akan menampilkan ringkasan.
           </p>
@@ -665,7 +665,7 @@ export default function NewOrderAccordionPage() {
           {/* ==============================================================
               SECTION 1: CUSTOMER
               ============================================================== */}
-          <AccordionItem value="section-customer" className="rounded-md border bg-card px-4">
+          <AccordionItem value="section-customer" className="rounded-md border bg-card px-3 sm:px-4">
             <AccordionTrigger className="hover:no-underline">
               <SectionHeader
                 icon={<User className="h-5 w-5" />}
@@ -781,7 +781,7 @@ export default function NewOrderAccordionPage() {
           <AccordionItem
             value="section-locations"
             className={cn(
-              'rounded-md border bg-card px-4',
+              'rounded-md border bg-card px-3 sm:px-4',
               !isCustomerFilled && 'pointer-events-none opacity-60'
             )}
           >
@@ -895,7 +895,10 @@ export default function NewOrderAccordionPage() {
 
                 {isLocationsFilled && (
                   <div className="flex justify-end">
-                    <Button onClick={() => setOpenSection('section-services')}>
+                    <Button
+                      onClick={() => setOpenSection('section-services')}
+                      className="h-11 w-full sm:h-9 sm:w-auto"
+                    >
                       Lanjut ke Service Items
                     </Button>
                   </div>
@@ -910,7 +913,7 @@ export default function NewOrderAccordionPage() {
           <AccordionItem
             value="section-services"
             className={cn(
-              'rounded-md border bg-card px-4',
+              'rounded-md border bg-card px-3 sm:px-4',
               !isLocationsFilled && 'pointer-events-none opacity-60'
             )}
           >
@@ -955,7 +958,10 @@ export default function NewOrderAccordionPage() {
                     </div>
                     {isServicesFilled && (
                       <div className="flex justify-end">
-                        <Button onClick={() => setOpenSection('section-schedule')}>
+                        <Button
+                          onClick={() => setOpenSection('section-schedule')}
+                          className="h-11 w-full sm:h-9 sm:w-auto"
+                        >
                           Lanjut ke Schedule
                         </Button>
                       </div>
@@ -972,7 +978,7 @@ export default function NewOrderAccordionPage() {
           <AccordionItem
             value="section-schedule"
             className={cn(
-              'rounded-md border bg-card px-4',
+              'rounded-md border bg-card px-3 sm:px-4',
               !isServicesFilled && 'pointer-events-none opacity-60'
             )}
           >
@@ -1005,7 +1011,7 @@ export default function NewOrderAccordionPage() {
                       <Button
                         variant="outline"
                         className={cn(
-                          'w-full justify-start text-left font-normal',
+                          'h-11 w-full justify-start text-left font-normal sm:h-9',
                           !scheduledDate && 'text-muted-foreground'
                         )}
                       >
@@ -1083,7 +1089,10 @@ export default function NewOrderAccordionPage() {
 
                 {isScheduleFilled && (
                   <div className="flex justify-end">
-                    <Button onClick={() => setOpenSection('section-review')}>
+                    <Button
+                      onClick={() => setOpenSection('section-review')}
+                      className="h-11 w-full sm:h-9 sm:w-auto"
+                    >
                       Lanjut ke Review
                     </Button>
                   </div>
@@ -1098,7 +1107,7 @@ export default function NewOrderAccordionPage() {
           <AccordionItem
             value="section-review"
             className={cn(
-              'rounded-md border bg-card px-4',
+              'rounded-md border bg-card px-3 sm:px-4',
               !isScheduleFilled && 'pointer-events-none opacity-60'
             )}
           >
@@ -1189,11 +1198,20 @@ export default function NewOrderAccordionPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2">
-                  <Button variant="ghost" onClick={() => router.back()} disabled={submitting}>
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <Button
+                    variant="ghost"
+                    onClick={() => router.back()}
+                    disabled={submitting}
+                    className="h-11 w-full sm:h-9 sm:w-auto"
+                  >
                     Batal
                   </Button>
-                  <Button onClick={handleSubmit} disabled={submitting}>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    className="h-11 w-full sm:h-9 sm:w-auto"
+                  >
                     {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {createProforma ? 'Buat Order + Proforma' : 'Buat Order'}
                   </Button>

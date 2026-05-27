@@ -284,23 +284,23 @@ export default function ReminderRulesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
             Reminder Rules
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm sm:text-base">
             Kelola template dan threshold pengingat service rutin AC
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()} className="gap-2">
+            <Button onClick={() => handleOpenDialog()} className="gap-2 w-full sm:w-auto">
               <Plus className="h-4 w-4" />
               Tambah Rule
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto rounded-xl border border-border/50 shadow-sm">
+          <DialogContent className="w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:max-w-[640px] max-h-[90vh] overflow-y-auto rounded-xl border border-border/50 shadow-sm">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-foreground">
                 {editingRule ? 'Edit Reminder Rule' : 'Tambah Reminder Rule'}
@@ -330,7 +330,7 @@ export default function ReminderRulesPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label
                     htmlFor="days_before_due"
@@ -419,7 +419,7 @@ export default function ReminderRulesPage() {
                         key={v.key}
                         type="button"
                         onClick={() => insertVariable(v.key)}
-                        className="text-xs font-mono rounded-md border border-border/60 bg-background px-2 py-1 hover:bg-muted transition-colors"
+                        className="text-xs font-mono rounded-md border border-border/60 bg-background px-3 py-2 min-h-[36px] hover:bg-muted active:bg-muted transition-colors"
                         title={v.description}
                       >
                         {v.key}
@@ -473,16 +473,17 @@ export default function ReminderRulesPage() {
                 </div>
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleCloseDialog}
                   disabled={isLoading}
+                  className="w-full sm:w-auto"
                 >
                   Batal
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -522,15 +523,15 @@ export default function ReminderRulesPage() {
               }}
             />
           ) : (
-            <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
+            <div className="overflow-x-auto rounded-xl border border-border/50 shadow-sm bg-card">
               <Table>
                 <TableHeader className="[&_tr]:border-0">
                   <TableRow className="border-0">
                     <TableHead>Nama</TableHead>
-                    <TableHead>Hari Sebelum</TableHead>
-                    <TableHead>Channel</TableHead>
+                    <TableHead className="hidden md:table-cell">Hari Sebelum</TableHead>
+                    <TableHead className="hidden sm:table-cell">Channel</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Auto Send</TableHead>
+                    <TableHead className="hidden lg:table-cell">Auto Send</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -541,10 +542,13 @@ export default function ReminderRulesPage() {
                       className="border-0 hover:bg-muted/50"
                     >
                       <TableCell className="font-medium">
-                        {rule.name}
+                        <div>{rule.name}</div>
+                        <div className="text-xs text-muted-foreground md:hidden mt-1">
+                          {rule.days_before_due} hari sebelum
+                        </div>
                       </TableCell>
-                      <TableCell>{rule.days_before_due} hari</TableCell>
-                      <TableCell>{renderChannelBadge(rule.channel)}</TableCell>
+                      <TableCell className="hidden md:table-cell">{rule.days_before_due} hari</TableCell>
+                      <TableCell className="hidden sm:table-cell">{renderChannelBadge(rule.channel)}</TableCell>
                       <TableCell>
                         {rule.is_active ? (
                           <Badge className="bg-emerald-500 hover:bg-emerald-500/90">
@@ -554,7 +558,7 @@ export default function ReminderRulesPage() {
                           <Badge variant="secondary">Nonaktif</Badge>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         {rule.auto_send ? (
                           <Badge variant="outline" className="border-blue-500/50 text-blue-600 dark:text-blue-400">
                             Otomatis
@@ -564,11 +568,12 @@ export default function ReminderRulesPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1 sm:gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleOpenDialog(rule)}
+                            className="min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -579,6 +584,7 @@ export default function ReminderRulesPage() {
                               setDeletingRule(rule)
                               setIsDeleteDialogOpen(true)
                             }}
+                            className="min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>

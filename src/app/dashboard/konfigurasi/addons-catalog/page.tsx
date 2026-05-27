@@ -286,21 +286,21 @@ export default function AddonsCatalogPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Katalog Add-ons</h1>
-          <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">Katalog Add-ons</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Kelola katalog parts, freon, labor, dan add-ons lainnya
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()} className="gap-2">
+            <Button onClick={() => handleOpenDialog()} className="gap-2 w-full sm:w-auto">
               <Plus className="h-4 w-4" />
               Tambah Add-on
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] rounded-xl border border-border/50 shadow-sm">
+          <DialogContent className="w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-xl border border-border/50 shadow-sm">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-foreground">
                 {editingAddon ? 'Edit Add-on' : 'Tambah Add-on'}
@@ -310,7 +310,7 @@ export default function AddonsCatalogPage() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="category" className="text-sm font-medium text-foreground">
                     Kategori <span className="text-destructive">*</span>
@@ -363,7 +363,7 @@ export default function AddonsCatalogPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="unitOfMeasure" className="text-sm font-medium text-foreground">
                     Satuan <span className="text-destructive">*</span>
@@ -398,7 +398,7 @@ export default function AddonsCatalogPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="stockQuantity" className="text-sm font-medium text-foreground">Stok</Label>
                   <Input
@@ -432,16 +432,17 @@ export default function AddonsCatalogPage() {
                 </div>
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleCloseDialog}
                   disabled={isLoading}
+                  className="w-full sm:w-auto"
                 >
                   Batal
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -495,7 +496,7 @@ export default function AddonsCatalogPage() {
       {/* Filters */}
       <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardContent className="pt-6">
-          <div className="flex gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -507,20 +508,22 @@ export default function AddonsCatalogPage() {
                 />
               </div>
             </div>
-            <Tabs
-              value={categoryFilter}
-              onValueChange={setCategoryFilter}
-              className="w-auto"
-            >
-              <TabsList>
-                <TabsTrigger value="ALL">Semua</TabsTrigger>
-                {CATEGORIES.map((cat) => (
-                  <TabsTrigger key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+            <div className="overflow-x-auto -mx-1 px-1 sm:mx-0 sm:px-0 sm:w-auto">
+              <Tabs
+                value={categoryFilter}
+                onValueChange={setCategoryFilter}
+                className="w-auto"
+              >
+                <TabsList className="inline-flex w-auto">
+                  <TabsTrigger value="ALL">Semua</TabsTrigger>
+                  {CATEGORIES.map((cat) => (
+                    <TabsTrigger key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -548,15 +551,15 @@ export default function AddonsCatalogPage() {
               }}
             />
           ) : (
-            <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
+            <div className="overflow-x-auto rounded-xl border border-border/50 shadow-sm bg-card">
               <Table>
                 <TableHeader className="[&_tr]:border-0">
                   <TableRow className="border-0">
-                    <TableHead>Kategori</TableHead>
-                    <TableHead>Kode</TableHead>
+                    <TableHead className="hidden sm:table-cell">Kategori</TableHead>
+                    <TableHead className="hidden lg:table-cell">Kode</TableHead>
                     <TableHead>Nama Item</TableHead>
                     <TableHead>Harga</TableHead>
-                    <TableHead>Satuan</TableHead>
+                    <TableHead className="hidden md:table-cell">Satuan</TableHead>
                     <TableHead>Stok</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
@@ -564,19 +567,29 @@ export default function AddonsCatalogPage() {
                 <TableBody>
                   {addons.map((addon) => (
                     <TableRow key={addon.addon_id} className="border-0 hover:bg-muted/50">
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <Badge className={getCategoryColor(addon.category)}>
                           {getCategoryLabel(addon.category)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-xs">
+                      <TableCell className="hidden lg:table-cell font-mono text-xs">
                         {addon.item_code || '-'}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {addon.item_name}
+                        <div>{addon.item_name}</div>
+                        <div className="flex flex-wrap gap-1.5 mt-1 sm:hidden">
+                          <Badge className={getCategoryColor(addon.category)}>
+                            {getCategoryLabel(addon.category)}
+                          </Badge>
+                          {addon.item_code && (
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {addon.item_code}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{formatCurrency(addon.unit_price)}</TableCell>
-                      <TableCell>{addon.unit_of_measure}</TableCell>
+                      <TableCell className="hidden md:table-cell">{addon.unit_of_measure}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span
@@ -594,11 +607,12 @@ export default function AddonsCatalogPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1 sm:gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleOpenDialog(addon)}
+                            className="min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -609,6 +623,7 @@ export default function AddonsCatalogPage() {
                               setDeletingAddon(addon)
                               setIsDeleteDialogOpen(true)
                             }}
+                            className="min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>

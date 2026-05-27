@@ -91,7 +91,7 @@ export function BankAccountsSection({ accounts, onChange }: BankAccountsSectionP
       {/* Bank Accounts */}
       <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-lg font-semibold text-foreground">Rekening Bank</CardTitle>
               <CardDescription>
@@ -99,7 +99,7 @@ export function BankAccountsSection({ accounts, onChange }: BankAccountsSectionP
               </CardDescription>
             </div>
           {!isAdding && (
-            <Button onClick={() => setIsAdding(true)} size="sm">
+            <Button onClick={() => setIsAdding(true)} size="sm" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Tambah Rekening
             </Button>
@@ -182,9 +182,9 @@ export function BankAccountsSection({ accounts, onChange }: BankAccountsSectionP
                 ) : (
                   // View Mode
                   <div>
-                    <div className="flex items-start justify-between mb-2">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-2">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
                           <Badge variant="outline" className="text-sm font-semibold">
                             {account.account_label}
                           </Badge>
@@ -193,18 +193,19 @@ export function BankAccountsSection({ accounts, onChange }: BankAccountsSectionP
                           </Badge>
                         </div>
                         <h4 className="font-semibold mb-1">{account.bank}</h4>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground break-all">
                           {account.account_number}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           a/n {account.account_name}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 sm:shrink-0">
                         <Button
                           onClick={() => handleEdit(account)}
                           variant="outline"
                           size="sm"
+                          className="flex-1 sm:flex-none min-h-[44px] sm:min-h-9"
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -212,6 +213,7 @@ export function BankAccountsSection({ accounts, onChange }: BankAccountsSectionP
                           onClick={() => handleDelete(account.id)}
                           variant="destructive"
                           size="sm"
+                          className="flex-1 sm:flex-none min-h-[44px] sm:min-h-9"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

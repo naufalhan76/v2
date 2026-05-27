@@ -335,6 +335,7 @@ export function MonitoringTab() {
             </div>
           )
         },
+        meta: { className: 'hidden xl:table-cell' },
       },
       {
         id: 'ac',
@@ -356,6 +357,7 @@ export function MonitoringTab() {
             </div>
           )
         },
+        meta: { className: 'hidden lg:table-cell' },
       },
       {
         id: 'last_service',
@@ -366,6 +368,7 @@ export function MonitoringTab() {
             {formatDateOrDash(row.original.last_service_date)}
           </span>
         ),
+        meta: { className: 'hidden xl:table-cell' },
       },
       {
         id: 'next_service',
@@ -376,6 +379,7 @@ export function MonitoringTab() {
             {formatDateOrDash(row.original.next_service_due_date)}
           </span>
         ),
+        meta: { className: 'hidden md:table-cell' },
       },
       {
         id: 'days_until',
@@ -408,6 +412,7 @@ export function MonitoringTab() {
           }
           return <span className="text-muted-foreground">—</span>
         },
+        meta: { className: 'hidden lg:table-cell' },
       },
       {
         id: 'actions',
@@ -419,29 +424,35 @@ export function MonitoringTab() {
             createMutation.isPending &&
             createMutation.variables === u.ac_unit_id
           return (
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-1 sm:gap-2">
               {!u.has_pending_reminder && (
                 <Button
                   size="sm"
                   variant="default"
                   onClick={() => createMutation.mutate(u.ac_unit_id)}
                   disabled={isCreating}
+                  className="min-h-[44px] sm:min-h-9"
                 >
                   {isCreating ? (
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin sm:mr-2" />
                   ) : (
-                    <BellPlus className="mr-2 h-3 w-3" />
+                    <BellPlus className="h-3 w-3 sm:mr-2" />
                   )}
-                  Buat Reminder
+                  <span className="hidden sm:inline">Buat Reminder</span>
                 </Button>
               )}
               {u.customer_id && (
-                <Button asChild size="sm" variant="ghost">
+                <Button
+                  asChild
+                  size="sm"
+                  variant="ghost"
+                  className="min-h-[44px] sm:min-h-9"
+                >
                   <Link
                     href={`/dashboard/manajemen/customer/${u.customer_id}?tab=ac-units`}
                   >
-                    <ExternalLink className="mr-2 h-3 w-3" />
-                    Detail
+                    <ExternalLink className="h-3 w-3 sm:mr-2" />
+                    <span className="hidden sm:inline">Detail</span>
                   </Link>
                 </Button>
               )}
@@ -468,9 +479,9 @@ export function MonitoringTab() {
   // -- Render ------------------------------------------------------------------
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <StatCard
           title="Total AC Dimonitor"
           value={stats.total}
@@ -505,8 +516,8 @@ export function MonitoringTab() {
           <CardTitle className="text-base">Filter</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-[240px] flex-1 max-w-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="relative w-full sm:flex-1 sm:min-w-[240px] sm:max-w-sm">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Cari customer, lokasi, brand, atau model..."
@@ -516,78 +527,85 @@ export function MonitoringTab() {
               />
             </div>
 
-            <Select
-              value={statusFilter}
-              onValueChange={(v) =>
-                setStatusFilter(v as ServicedAcStatusFilter)
-              }
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Status</SelectItem>
-                <SelectItem value="overdue">Overdue</SelectItem>
-                <SelectItem value="due_soon">Jatuh Tempo (≤7 hari)</SelectItem>
-                <SelectItem value="upcoming">Mendatang</SelectItem>
-                <SelectItem value="no_date">Belum ada jadwal</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
+              <Select
+                value={statusFilter}
+                onValueChange={(v) =>
+                  setStatusFilter(v as ServicedAcStatusFilter)
+                }
+              >
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="overdue">Overdue</SelectItem>
+                  <SelectItem value="due_soon">Jatuh Tempo (≤7 hari)</SelectItem>
+                  <SelectItem value="upcoming">Mendatang</SelectItem>
+                  <SelectItem value="no_date">Belum ada jadwal</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Popover>
-              <PopoverTrigger asChild>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      !dateFrom && 'text-muted-foreground',
+                      'w-full sm:min-w-[120px]'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom
+                      ? format(dateFrom, 'd MMM', { locale: localeId })
+                      : 'Dari'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom}
+                    onSelect={setDateFrom}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      !dateTo && 'text-muted-foreground',
+                      'w-full sm:min-w-[120px]'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo
+                      ? format(dateTo, 'd MMM', { locale: localeId })
+                      : 'Sampai'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo}
+                    onSelect={setDateTo}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {hasFilters && (
                 <Button
-                  variant="outline"
-                  className={cn(
-                    !dateFrom && 'text-muted-foreground',
-                    'min-w-[120px]'
-                  )}
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="col-span-2 sm:col-span-1"
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateFrom
-                    ? format(dateFrom, 'd MMM', { locale: localeId })
-                    : 'Dari'}
+                  <X className="mr-1 h-4 w-4" />
+                  Reset
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dateFrom}
-                  onSelect={setDateFrom}
-                />
-              </PopoverContent>
-            </Popover>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    !dateTo && 'text-muted-foreground',
-                    'min-w-[120px]'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateTo
-                    ? format(dateTo, 'd MMM', { locale: localeId })
-                    : 'Sampai'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dateTo}
-                  onSelect={setDateTo}
-                />
-              </PopoverContent>
-            </Popover>
-
-            {hasFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
-                <X className="mr-1 h-4 w-4" />
-                Reset
-              </Button>
-            )}
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -622,30 +640,40 @@ export function MonitoringTab() {
                 <TableHeader>
                   {table.getHeaderGroups().map((hg) => (
                     <TableRow key={hg.id}>
-                      {hg.headers.map((h) => (
-                        <TableHead key={h.id}>
-                          {h.isPlaceholder
-                            ? null
-                            : flexRender(
-                                h.column.columnDef.header,
-                                h.getContext()
-                              )}
-                        </TableHead>
-                      ))}
+                      {hg.headers.map((h) => {
+                        const meta = h.column.columnDef.meta as
+                          | { className?: string }
+                          | undefined
+                        return (
+                          <TableHead key={h.id} className={meta?.className}>
+                            {h.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  h.column.columnDef.header,
+                                  h.getContext()
+                                )}
+                          </TableHead>
+                        )
+                      })}
                     </TableRow>
                   ))}
                 </TableHeader>
                 <TableBody>
                   {table.getRowModel().rows.map((row) => (
                     <TableRow key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
+                      {row.getVisibleCells().map((cell) => {
+                        const meta = cell.column.columnDef.meta as
+                          | { className?: string }
+                          | undefined
+                        return (
+                          <TableCell key={cell.id} className={meta?.className}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        )
+                      })}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -657,18 +685,19 @@ export function MonitoringTab() {
 
       {/* Pagination */}
       {filtered.length > 0 && (
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted-foreground text-center sm:text-left">
             Menampilkan {table.getRowModel().rows.length} dari {filtered.length}{' '}
             unit AC
             {isFetching && ' • memuat ulang...'}
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-center sm:justify-end">
             <Button
               variant="outline"
               size="sm"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
+              className="flex-1 sm:flex-none"
             >
               Sebelumnya
             </Button>
@@ -677,6 +706,7 @@ export function MonitoringTab() {
               size="sm"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
+              className="flex-1 sm:flex-none"
             >
               Berikutnya
             </Button>

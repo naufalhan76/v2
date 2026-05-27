@@ -78,7 +78,7 @@ export function RescheduleModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-w-[calc(100vw-2rem)]">
         <DialogHeader>
           <DialogTitle>Reschedule Order</DialogTitle>
           <DialogDescription>
@@ -112,7 +112,7 @@ export function RescheduleModal({
                   variant="outline"
                   type="button"
                   className={cn(
-                    'w-full justify-start text-left font-normal',
+                    'h-11 w-full justify-start text-left font-normal sm:h-9',
                     !newDate && 'text-muted-foreground'
                   )}
                 >
@@ -138,11 +138,20 @@ export function RescheduleModal({
             )}
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="h-11 w-full sm:h-9 sm:w-auto"
+            >
               Batal
             </Button>
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button
+              type="submit"
+              disabled={mutation.isPending}
+              className="h-11 w-full sm:h-9 sm:w-auto"
+            >
               {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Reschedule
             </Button>

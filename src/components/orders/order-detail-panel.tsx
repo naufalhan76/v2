@@ -54,7 +54,7 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="sm:max-w-xl w-full overflow-y-auto flex flex-col">
+        <SheetContent className="w-full sm:max-w-xl p-4 sm:p-6 overflow-y-auto flex flex-col">
           {isLoading || !order ? (
             <>
               <SheetHeader>
@@ -109,51 +109,67 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
                 </div>
               </Tabs>
 
-              <SheetFooter className="flex-row gap-2 border-t pt-4 mt-2">
+              <SheetFooter className="flex-col gap-2 sm:flex-row sm:gap-2 border-t pt-4 mt-2">
                 {canonical === 'PENDING' && (
                   <>
-                    <Button onClick={() => setAssignOpen(true)} className="flex-1">
+                    <Button onClick={() => setAssignOpen(true)} className="h-11 w-full sm:h-9 sm:flex-1">
                       Assign Teknisi
                     </Button>
-                    <Button variant="outline" onClick={() => setCancelOpen(true)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCancelOpen(true)}
+                      className="h-11 w-full sm:h-9 sm:w-auto"
+                    >
                       Batalkan
                     </Button>
                   </>
                 )}
                 {canonical === 'ASSIGNED' && (
                   <>
-                    <Button onClick={() => setAssignOpen(true)} variant="outline" className="flex-1">
+                    <Button
+                      onClick={() => setAssignOpen(true)}
+                      variant="outline"
+                      className="h-11 w-full sm:h-9 sm:flex-1"
+                    >
                       Reassign
                     </Button>
-                    <Button onClick={() => setRescheduleOpen(true)} variant="outline">
+                    <Button
+                      onClick={() => setRescheduleOpen(true)}
+                      variant="outline"
+                      className="h-11 w-full sm:h-9 sm:w-auto"
+                    >
                       Reschedule
                     </Button>
-                    <Button onClick={() => setCancelOpen(true)} variant="ghost">
+                    <Button
+                      onClick={() => setCancelOpen(true)}
+                      variant="ghost"
+                      className="h-11 w-full sm:h-9 sm:w-auto"
+                    >
                       Batalkan
                     </Button>
                   </>
                 )}
                 {(canonical === 'EN_ROUTE' || canonical === 'IN_PROGRESS') && (
-                  <Button variant="outline" disabled className="flex-1">
+                  <Button variant="outline" disabled className="h-11 w-full sm:h-9 sm:flex-1">
                     Sedang dikerjakan teknisi
                   </Button>
                 )}
                 {canonical === 'COMPLETED' && (
-                  <Button asChild className="flex-1">
+                  <Button asChild className="h-11 w-full sm:h-9 sm:flex-1">
                     <Link href={`/dashboard/keuangan/invoices/create/from-order/${order.order_id}`}>
                       Buat Invoice
                     </Link>
                   </Button>
                 )}
                 {canonical === 'INVOICED' && (
-                  <Button asChild className="flex-1">
+                  <Button asChild className="h-11 w-full sm:h-9 sm:flex-1">
                     <Link href={`/dashboard/keuangan/invoices?orderId=${order.order_id}`}>
                       Catat Pembayaran
                     </Link>
                   </Button>
                 )}
                 {canonical === 'PAID' && (
-                  <Button asChild variant="outline" className="flex-1">
+                  <Button asChild variant="outline" className="h-11 w-full sm:h-9 sm:flex-1">
                     <Link href={`/dashboard/keuangan/invoices?orderId=${order.order_id}`}>
                       Lihat Invoice
                     </Link>

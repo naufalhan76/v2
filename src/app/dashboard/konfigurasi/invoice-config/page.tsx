@@ -164,26 +164,29 @@ export default function InvoiceConfigPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Konfigurasi Invoice</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">Konfigurasi Invoice</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">
           Kelola informasi perusahaan, bank, dan pengaturan invoice
         </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Tabs defaultValue="company" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 rounded-xl border border-border/50 bg-muted/50 p-1">
-            <TabsTrigger value="company" className="flex items-center gap-2 rounded-lg">
-              <Building2 className="h-4 w-4" />
-              Data Perusahaan
+          <TabsList className="grid w-full grid-cols-3 rounded-xl border border-border/50 bg-muted/50 p-1 h-auto">
+            <TabsTrigger value="company" className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg py-2 text-xs sm:text-sm">
+              <Building2 className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Data Perusahaan</span>
+              <span className="sm:hidden">Perusahaan</span>
             </TabsTrigger>
-            <TabsTrigger value="bank" className="flex items-center gap-2 rounded-lg">
-              <Banknote className="h-4 w-4" />
-              Informasi Bank
+            <TabsTrigger value="bank" className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg py-2 text-xs sm:text-sm">
+              <Banknote className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Informasi Bank</span>
+              <span className="sm:hidden">Bank</span>
             </TabsTrigger>
-            <TabsTrigger value="invoice" className="flex items-center gap-2 rounded-lg">
-              <FileText className="h-4 w-4" />
-              Pengaturan Invoice
+            <TabsTrigger value="invoice" className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg py-2 text-xs sm:text-sm">
+              <FileText className="h-4 w-4 shrink-0" />
+              <span className="hidden sm:inline">Pengaturan Invoice</span>
+              <span className="sm:hidden">Invoice</span>
             </TabsTrigger>
           </TabsList>
 
@@ -222,7 +225,7 @@ export default function InvoiceConfigPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="companyPhone" className="text-sm font-medium text-foreground">Telepon</Label>
                     <Input
@@ -342,7 +345,7 @@ export default function InvoiceConfigPage() {
         </Tabs>
 
         <div className="flex justify-end mt-6">
-          <Button type="submit" disabled={isLoading} className="min-w-[150px]">
+          <Button type="submit" disabled={isLoading} className="w-full sm:w-auto sm:min-w-[150px]">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

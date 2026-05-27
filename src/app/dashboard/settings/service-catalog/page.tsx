@@ -334,12 +334,14 @@ export default function ServiceCatalogPage() {
         header: 'Unit Type',
         accessorFn: (row) => row.unit_types?.name ?? '-',
         cell: ({ getValue }) => <span className="text-sm">{getValue<string>()}</span>,
+        meta: { className: 'hidden lg:table-cell' },
       },
       {
         id: 'capacity',
         header: 'Kapasitas',
         accessorFn: (row) => row.capacity_ranges?.capacity_label ?? '-',
         cell: ({ getValue }) => <span className="text-sm">{getValue<string>()}</span>,
+        meta: { className: 'hidden xl:table-cell' },
       },
       {
         id: 'service_type',
@@ -350,6 +352,7 @@ export default function ServiceCatalogPage() {
             {getValue<string>()}
           </Badge>
         ),
+        meta: { className: 'hidden lg:table-cell' },
       },
       {
         accessorKey: 'base_price',
@@ -370,6 +373,7 @@ export default function ServiceCatalogPage() {
               : '-'}
           </div>
         ),
+        meta: { className: 'hidden xl:table-cell' },
       },
       {
         accessorKey: 'is_active',
@@ -393,7 +397,7 @@ export default function ServiceCatalogPage() {
           const isToggling =
             toggleMutation.isPending && toggleMutation.variables?.id === entry.catalog_id
           return (
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex items-center justify-end gap-2 sm:gap-3">
               <Switch
                 checked={entry.is_active}
                 disabled={isToggling}
@@ -407,6 +411,7 @@ export default function ServiceCatalogPage() {
                 size="sm"
                 onClick={() => openEdit(entry)}
                 aria-label="Edit"
+                className="min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9"
               >
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -439,14 +444,14 @@ export default function ServiceCatalogPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-end justify-between gap-4 flex-wrap">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div>
           <h1 className="text-2xl font-bold">Service Catalog</h1>
           <p className="text-sm text-muted-foreground">
             Master data layanan: kombinasi MSN code, unit type, kapasitas, dan harga.
           </p>
         </div>
-        <Button onClick={openCreate} className="gap-2">
+        <Button onClick={openCreate} className="gap-2 w-full sm:w-auto">
           <Plus className="h-4 w-4" />
           Tambah Catalog Entry
         </Button>
@@ -468,8 +473,8 @@ export default function ServiceCatalogPage() {
 
       <Card className="rounded-xl border-border/50 shadow-sm">
         <CardContent className="pt-6">
-          <div className="flex flex-wrap items-end gap-3">
-            <form onSubmit={handleSearchSubmit} className="flex-1 min-w-[240px] space-y-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <form onSubmit={handleSearchSubmit} className="w-full sm:flex-1 sm:min-w-[240px] space-y-2">
               <Label className="text-xs font-medium">Cari (MSN Code / Nama Service)</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -483,52 +488,54 @@ export default function ServiceCatalogPage() {
               </div>
             </form>
 
-            <div className="w-[200px] space-y-2">
-              <Label className="text-xs font-medium">Unit Type</Label>
-              <Select value={unitTypeFilter} onValueChange={setUnitTypeFilter}>
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Semua" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Semua Unit Type</SelectItem>
-                  {lookups?.unitTypes.map((u) => (
-                    <SelectItem key={u.unit_type_id} value={u.unit_type_id}>
-                      {u.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="grid grid-cols-1 gap-3 sm:flex sm:gap-3">
+              <div className="w-full sm:w-[200px] space-y-2">
+                <Label className="text-xs font-medium">Unit Type</Label>
+                <Select value={unitTypeFilter} onValueChange={setUnitTypeFilter}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Semua" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Semua Unit Type</SelectItem>
+                    {lookups?.unitTypes.map((u) => (
+                      <SelectItem key={u.unit_type_id} value={u.unit_type_id}>
+                        {u.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="w-[200px] space-y-2">
-              <Label className="text-xs font-medium">Service Type</Label>
-              <Select value={serviceTypeFilter} onValueChange={setServiceTypeFilter}>
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Semua" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Semua Service Type</SelectItem>
-                  {lookups?.serviceTypes.map((s) => (
-                    <SelectItem key={s.service_type_id} value={s.service_type_id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="w-full sm:w-[200px] space-y-2">
+                <Label className="text-xs font-medium">Service Type</Label>
+                <Select value={serviceTypeFilter} onValueChange={setServiceTypeFilter}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Semua" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Semua Service Type</SelectItem>
+                    {lookups?.serviceTypes.map((s) => (
+                      <SelectItem key={s.service_type_id} value={s.service_type_id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="w-[160px] space-y-2">
-              <Label className="text-xs font-medium">Status</Label>
-              <Select value={activeFilter} onValueChange={setActiveFilter}>
-                <SelectTrigger className="h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Semua Status</SelectItem>
-                  <SelectItem value="ACTIVE">Aktif</SelectItem>
-                  <SelectItem value="INACTIVE">Nonaktif</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="w-full sm:w-[160px] space-y-2">
+                <Label className="text-xs font-medium">Status</Label>
+                <Select value={activeFilter} onValueChange={setActiveFilter}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Semua Status</SelectItem>
+                    <SelectItem value="ACTIVE">Aktif</SelectItem>
+                    <SelectItem value="INACTIVE">Nonaktif</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -558,50 +565,61 @@ export default function ServiceCatalogPage() {
             />
           ) : (
             <>
-              <div className="overflow-hidden rounded-lg border border-border/50">
+              <div className="overflow-x-auto rounded-lg border border-border/50">
                 <Table>
                   <TableHeader>
                     {table.getHeaderGroups().map((hg) => (
                       <TableRow key={hg.id}>
-                        {hg.headers.map((h) => (
-                          <TableHead key={h.id}>
-                            {h.isPlaceholder
-                              ? null
-                              : flexRender(h.column.columnDef.header, h.getContext())}
-                          </TableHead>
-                        ))}
+                        {hg.headers.map((h) => {
+                          const meta = h.column.columnDef.meta as
+                            | { className?: string }
+                            | undefined
+                          return (
+                            <TableHead key={h.id} className={meta?.className}>
+                              {h.isPlaceholder
+                                ? null
+                                : flexRender(h.column.columnDef.header, h.getContext())}
+                            </TableHead>
+                          )
+                        })}
                       </TableRow>
                     ))}
                   </TableHeader>
                   <TableBody>
                     {table.getRowModel().rows.map((row) => (
                       <TableRow key={row.id} className="hover:bg-muted/40">
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
+                        {row.getVisibleCells().map((cell) => {
+                          const meta = cell.column.columnDef.meta as
+                            | { className?: string }
+                            | undefined
+                          return (
+                            <TableCell key={cell.id} className={meta?.className}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          )
+                        })}
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
 
-              <div className="flex items-center justify-between pt-4 text-sm text-muted-foreground">
-                <span>
+              <div className="flex flex-col items-stretch gap-3 pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-center sm:text-left">
                   Menampilkan {table.getRowModel().rows.length} dari {data.length} entry
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2 sm:justify-end">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => table.previousPage()}
                     disabled={!table.getCanPreviousPage()}
+                    className="flex-1 sm:flex-none"
                   >
                     <ChevronLeft className="h-4 w-4" />
-                    Sebelumnya
+                    <span className="hidden sm:inline">Sebelumnya</span>
                   </Button>
-                  <span className="text-xs">
+                  <span className="text-xs whitespace-nowrap">
                     Hal. {table.getState().pagination.pageIndex + 1} /{' '}
                     {table.getPageCount() || 1}
                   </span>
@@ -610,8 +628,9 @@ export default function ServiceCatalogPage() {
                     size="sm"
                     onClick={() => table.nextPage()}
                     disabled={!table.getCanNextPage()}
+                    className="flex-1 sm:flex-none"
                   >
-                    Selanjutnya
+                    <span className="hidden sm:inline">Selanjutnya</span>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
@@ -631,7 +650,7 @@ export default function ServiceCatalogPage() {
           else setIsSheetOpen(true)
         }}
       >
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto p-4 sm:p-6">
           <SheetHeader>
             <SheetTitle>
               {editingEntry ? 'Edit Catalog Entry' : 'Tambah Catalog Entry'}
@@ -646,7 +665,7 @@ export default function ServiceCatalogPage() {
             className="space-y-4 py-6"
             id="catalog-form"
           >
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>MSN Code *</Label>
                 <Input
@@ -692,7 +711,7 @@ export default function ServiceCatalogPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label>Unit Type *</Label>
                 <Select
@@ -818,11 +837,11 @@ export default function ServiceCatalogPage() {
             </div>
           </form>
 
-          <SheetFooter className="gap-2 sm:gap-2">
-            <Button type="button" variant="outline" onClick={closeSheet}>
+          <SheetFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-2">
+            <Button type="button" variant="outline" onClick={closeSheet} className="w-full sm:w-auto">
               Batal
             </Button>
-            <Button type="submit" form="catalog-form" disabled={isSubmitting}>
+            <Button type="submit" form="catalog-form" disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? 'Menyimpan...' : editingEntry ? 'Simpan Perubahan' : 'Tambah'}
             </Button>
           </SheetFooter>

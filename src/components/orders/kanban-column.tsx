@@ -42,7 +42,7 @@ export function KanbanColumn({
   })
 
   return (
-    <div className="flex flex-col w-72 shrink-0 bg-muted/40 rounded-lg border border-border/50">
+    <div className="flex flex-col w-[280px] sm:w-72 shrink-0 snap-start sm:snap-none bg-muted/40 rounded-lg border border-border/50">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
         <h3 className="text-sm font-semibold">{title}</h3>
         <Badge variant="secondary" className="text-xs">
@@ -50,7 +50,7 @@ export function KanbanColumn({
         </Badge>
       </div>
 
-      <ScrollArea className="flex-1 max-h-[calc(100vh-280px)]">
+      <ScrollArea className="flex-1 max-h-[60vh] sm:max-h-[calc(100vh-280px)]">
         <div
           ref={setNodeRef}
           className={cn(

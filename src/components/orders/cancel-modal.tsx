@@ -40,7 +40,7 @@ export function CancelModal({ open, onOpenChange, orderId, onSuccess }: CancelMo
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg">
         <AlertDialogHeader>
           <AlertDialogTitle>Batalkan Order?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -60,12 +60,17 @@ export function CancelModal({ open, onOpenChange, orderId, onSuccess }: CancelMo
           />
         </div>
 
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={mutation.isPending}>Batal</AlertDialogCancel>
+        <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+          <AlertDialogCancel
+            disabled={mutation.isPending}
+            className="h-11 sm:h-9 mt-0"
+          >
+            Batal
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={mutation.isPending}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="h-11 sm:h-9 bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Batalkan Order

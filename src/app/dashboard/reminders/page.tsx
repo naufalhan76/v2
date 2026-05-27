@@ -89,18 +89,19 @@ function RemindersPageInner() {
   })
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header (shared across both tabs) */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Pengingat Service</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">Pengingat Service</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Kelola pengingat service rutin untuk pelanggan berdasarkan jadwal AC.
           </p>
         </div>
         <Button
           onClick={() => generateMutation.mutate()}
           disabled={generateMutation.isPending}
+          className="w-full sm:w-auto"
         >
           {generateMutation.isPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -114,9 +115,9 @@ function RemindersPageInner() {
       <Tabs
         value={initialTab}
         onValueChange={handleTabChange}
-        className="space-y-6"
+        className="space-y-4 sm:space-y-6"
       >
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto">
           <TabsTrigger value="antrian">Antrian Reminder</TabsTrigger>
           <TabsTrigger value="monitoring">Monitoring AC</TabsTrigger>
         </TabsList>
