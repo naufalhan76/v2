@@ -57,7 +57,6 @@ const sidebarItems = [
       { title: 'Reminder Rules', href: '/dashboard/settings/reminder-rules' },
       { title: 'Invoice Settings', href: '/dashboard/konfigurasi/invoice-config' },
       { title: 'Users', href: '/dashboard/manajemen/user', requireRole: 'SUPERADMIN' },
-      { title: 'API Docs', href: '/dashboard/admin/api-docs', requireRole: 'SUPERADMIN' },
     ],
   },
 ]
