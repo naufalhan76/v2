@@ -61,7 +61,7 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
-        .in('status', ['NEW', 'ACCEPTED', 'ASSIGNED', 'EN ROUTE', 'ARRIVED', 'IN_PROGRESS'])
+        .in('status', ['PENDING', 'ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS'])
         .gte('order_date', currentStart)
         .lte('order_date', currentEnd),
       
@@ -69,7 +69,7 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
-        .in('status', ['PAID', 'CLOSED'])
+        .in('status', ['COMPLETED', 'INVOICED', 'PAID'])
         .gte('order_date', currentStart)
         .lte('order_date', currentEnd),
       
@@ -123,14 +123,14 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
-        .in('status', ['NEW', 'ACCEPTED', 'ASSIGNED', 'EN ROUTE', 'ARRIVED', 'IN_PROGRESS'])
+        .in('status', ['PENDING', 'ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS'])
         .gte('order_date', previousStart)
         .lte('order_date', previousEnd),
 
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
-        .in('status', ['PAID', 'CLOSED'])
+        .in('status', ['COMPLETED', 'INVOICED', 'PAID'])
         .gte('order_date', previousStart)
         .lte('order_date', previousEnd),
 

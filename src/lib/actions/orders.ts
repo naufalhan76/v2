@@ -198,7 +198,7 @@ export async function createOrder(orderData: {
       .from('orders')
       .insert({
         ...orderData,
-        status: 'NEW',
+        status: 'PENDING',
         created_at: new Date().toISOString(),
       })
       .select()
@@ -514,7 +514,7 @@ export async function cancelOrder(orderId: string, reason?: string) {
           updated_at: new Date().toISOString()
         })
         .in('ac_unit_id', acUnitIds)
-        .eq('status', 'PENDING') // Only update pending units
+        .eq('status', 'ACTIVE') // Only deactivate currently active units
       
       if (acUpdateError) {
         logger.error('Error updating AC units status:', acUpdateError)

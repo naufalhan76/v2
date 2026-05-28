@@ -257,7 +257,7 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
     if (!user) throw new Error('Unauthorized')
     
     // Determine order status based on technician assignment
-    const orderStatus = input.assigned_technician_id ? 'ASSIGNED' : 'ACCEPTED'
+    const orderStatus = input.assigned_technician_id ? 'ASSIGNED' : 'PENDING'
     
     // Determine order_type (legacy field with FK constraint to service_pricing):
     // - If explicitly provided, use that
