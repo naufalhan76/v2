@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { canTransition, toCanonical, type TransitionRole } from '@/lib/order-status'
 import {
   sendJobAssignedNotification,
   sendJobRescheduledNotification,
@@ -62,6 +63,7 @@ export async function getOrders(filters?: {
         )
       `, { count: 'exact' })
       .order('created_at', { ascending: false })
+      .is('deleted_at', null)
       .range(from, to)
     
     if (filters?.status) {
@@ -237,7 +239,28 @@ export async function updateOrderStatus(orderId: string, newStatus: string, note
       .single()
     
     if (fetchError) throw fetchError
-    
+
+    if (!useAdminClient) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return { success: false, error: 'Tidak terautentikasi' }
+
+      const { data: userMgmt } = await supabase
+        .from('user_management')
+        .select('role')
+        .eq('auth_user_id', user.id)
+        .single()
+
+      const callerRole = (userMgmt?.role ?? 'ADMIN') as TransitionRole
+      const canonicalNew = toCanonical(newStatus)
+
+      if (!canTransition(currentOrder.status, canonicalNew, callerRole)) {
+        return {
+          success: false,
+          error: `Transisi dari ${currentOrder.status} ke ${newStatus} tidak diizinkan untuk role ${callerRole}`,
+        }
+      }
+    }
+
     // Prepare update data
     const updateData: Record<string, unknown> = {
       status: newStatus,
@@ -569,7 +592,10 @@ export async function deleteOrder(orderId: string) {
     
     const { error } = await supabase
       .from('orders')
-      .delete()
+      .update({
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       .eq('order_id', orderId)
     
     if (error) throw error
