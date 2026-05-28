@@ -140,10 +140,20 @@ export async function updateUser(input: UpdateUserInput) {
 
 /**
  * Toggle user active status
+ * When deactivating, also invalidates the user's active sessions.
  */
 export async function toggleUserStatus(userId: string, isActive: boolean) {
   try {
     const supabase = await createClient()
+
+    // Fetch auth_user_id before updating so we can sign out if deactivating
+    const { data: userData } = await supabase
+      .from('user_management')
+      .select('auth_user_id')
+      .eq('user_id', userId)
+      .single()
+
+    const authUserId = userData?.auth_user_id ?? null
 
     const { error } = await supabase
       .from('user_management')
@@ -158,6 +168,15 @@ export async function toggleUserStatus(userId: string, isActive: boolean) {
       return { success: false, error: error.message }
     }
 
+    // Force sign-out to invalidate active sessions when deactivating
+    if (!isActive && authUserId) {
+      const adminClient = createAdminClient()
+      const { error: signOutError } = await adminClient.auth.admin.signOut(authUserId)
+      if (signOutError) {
+        logger.warn('User deactivated but session invalidation failed:', signOutError)
+      }
+    }
+
     revalidatePath('/dashboard/manajemen/user')
     return { success: true, error: null }
   } catch (error) {
@@ -166,16 +185,11 @@ export async function toggleUserStatus(userId: string, isActive: boolean) {
   }
 }
 
-/**
- * Delete user permanently (hard delete from database and auth)
- * This will completely remove the user from the system
- */
 export async function deleteUser(userId: string) {
   try {
     const supabaseAdmin = createAdminClient()
     const supabase = await createClient()
 
-    // Get auth_user_id first
     const { data: userData } = await supabase
       .from('user_management')
       .select('auth_user_id')
@@ -186,24 +200,24 @@ export async function deleteUser(userId: string) {
       return { success: false, error: 'User not found' }
     }
 
-    // Delete from user_management first
+    if (!userData.auth_user_id) {
+      return { success: false, error: 'User has no auth account linked' }
+    }
+
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userData.auth_user_id)
+
+    if (authError) {
+      logger.error('Error deleting auth user:', authError)
+      return { success: false, error: `Failed to delete auth user: ${authError.message}` }
+    }
+
     const { error: dbError } = await supabase
       .from('user_management')
       .delete()
       .eq('user_id', userId)
 
     if (dbError) {
-      logger.error('Error deleting user from database:', dbError)
-      return { success: false, error: dbError.message }
-    }
-
-    // Delete from auth using admin client
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userData.auth_user_id)
-
-    if (authError) {
-      logger.error('Error deleting auth user:', authError)
-      // User already deleted from DB, log but don't fail
-      logger.warn('Database record deleted but auth user deletion failed')
+      logger.error('Auth user deleted but DB record remains:', dbError)
     }
 
     revalidatePath('/dashboard/manajemen/user')
