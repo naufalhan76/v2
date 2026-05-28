@@ -514,6 +514,12 @@ export async function cancelOrder(orderId: string, reason?: string) {
       .single()
     
     if (fetchError) throw fetchError
+
+    // Block cancellation of terminal-state orders
+    const terminalStatuses = ['PAID', 'CANCELLED']
+    if (terminalStatuses.includes(currentOrder.status)) {
+      return { success: false, error: `Order dengan status ${currentOrder.status} tidak dapat dibatalkan` }
+    }
     
     // Get all AC units created from this order's items
     const { data: orderItems, error: itemsError } = await supabase

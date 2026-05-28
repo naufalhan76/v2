@@ -1378,7 +1378,10 @@ export async function recordPayment(
   } = await supabase.auth.getUser()
   await requireFinanceRole(user)
 
-  // Get current invoice
+  if (payment.amount <= 0) {
+    throw new Error('Jumlah pembayaran harus lebih dari 0')
+  }
+
   const { data: invoice, error: fetchError } = await supabase
     .from('invoices')
     .select('total_amount, paid_amount')
@@ -1387,6 +1390,11 @@ export async function recordPayment(
 
   if (fetchError) {
     throw new Error('Invoice tidak ditemukan')
+  }
+
+  const remaining = invoice.total_amount - (invoice.paid_amount || 0)
+  if (payment.amount > remaining) {
+    throw new Error(`Jumlah melebihi sisa tagihan (Rp ${remaining.toLocaleString('id-ID')})`)
   }
 
   // Calculate new paid amount
