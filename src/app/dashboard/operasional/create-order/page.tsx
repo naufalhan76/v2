@@ -883,8 +883,8 @@ function CreateOrderPage() {
             )}
 
             {isPhoneVerified && isNewCustomer && (
-              <div className="space-y-4 border rounded-lg p-4 bg-blue-50">
-                <p className="text-sm font-medium text-blue-900">New Customer - Fill details below:</p>
+              <div className="space-y-4 border rounded-lg p-4 bg-primary/10">
+                <p className="text-sm font-medium text-primary">New Customer - Fill details below:</p>
                 <div>
                   <Label>Customer Name *</Label>
                   <Input

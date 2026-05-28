@@ -352,10 +352,10 @@ export default function DashboardPage() {
         {/* Section 4: Quick Actions */}
         <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2 sm:gap-3">
           <Button variant="outline" asChild className="w-full sm:w-auto justify-start sm:justify-center">
-            <Link href="/dashboard/operasional/create-order"><Plus className="h-4 w-4 mr-2" />Create Order</Link>
+            <Link href="/dashboard/orders/new"><Plus className="h-4 w-4 mr-2" />Create Order</Link>
           </Button>
           <Button variant="outline" asChild className="w-full sm:w-auto justify-start sm:justify-center">
-            <Link href="/dashboard/operasional/assign-order"><UserCheck className="h-4 w-4 mr-2" />Assign Order</Link>
+            <Link href="/dashboard/orders?view=board"><UserCheck className="h-4 w-4 mr-2" />Assign Order</Link>
           </Button>
           <Button variant="outline" asChild className="w-full sm:w-auto justify-start sm:justify-center">
             <Link href="/dashboard/keuangan/invoices"><FileText className="h-4 w-4 mr-2" />View Invoices</Link>
@@ -366,7 +366,7 @@ export default function DashboardPage() {
         <div className="data-table-container overflow-hidden">
           <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/50">
             <h2 className="text-base font-semibold">Recent Orders</h2>
-            <Link href="/dashboard/operasional/monitoring-ongoing" className="text-sm text-primary hover:underline">View All</Link>
+            <Link href="/dashboard/orders?view=list" className="text-sm text-primary hover:underline">View All</Link>
           </div>
           {recentOrders.length === 0 ? (
             <p className="text-center text-muted-foreground py-10 text-sm">No orders yet</p>

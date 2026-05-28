@@ -527,6 +527,7 @@ export default function CustomerManagementPage() {
                             <Button
                               variant="outline"
                               size="icon"
+                              aria-label="Edit"
                               className="h-10 w-10 sm:h-9 sm:w-auto sm:px-2 sm:group sm:relative sm:overflow-hidden sm:transition-all sm:duration-300 sm:ease-in-out sm:hover:w-24 sm:flex sm:items-center sm:justify-start"
                               onClick={() => handleEdit(c)}
                               disabled={isDeleting}
@@ -541,6 +542,7 @@ export default function CustomerManagementPage() {
                             <Button
                               variant="destructive"
                               size="icon"
+                              aria-label="Hapus"
                               className="h-10 w-10 sm:h-9 sm:w-auto sm:px-2 sm:group sm:relative sm:overflow-hidden sm:transition-all sm:duration-300 sm:ease-in-out sm:hover:w-28 sm:flex sm:items-center sm:justify-start"
                               onClick={() => handleDelete(c.customer_id as string)}
                               disabled={isUpdating}

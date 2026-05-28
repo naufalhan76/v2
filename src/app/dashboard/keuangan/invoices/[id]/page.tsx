@@ -89,6 +89,14 @@ const formatBankAccountLine = (account: { account_label: string; bank: string; a
 
 export default function InvoiceDetailPage() {
   const router = useRouter()
+
+  function handleBack() {
+    if (window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/dashboard/keuangan/invoices')
+    }
+  }
   const params = useParams()
   const searchParams = useSearchParams()
   const invoiceId = params?.id as string
@@ -634,7 +642,7 @@ export default function InvoiceDetailPage() {
     return (
       <div className="text-center py-12">
         <h3 className="text-lg font-semibold">Invoice tidak ditemukan</h3>
-        <Button onClick={() => router.back()} className="mt-4">
+        <Button onClick={handleBack} className="mt-4">
           Kembali
         </Button>
       </div>
@@ -799,30 +807,30 @@ export default function InvoiceDetailPage() {
 
       {/* Communication Stats Banner */}
       {communicationStats.totalSent > 0 && (
-        <Card className="bg-gradient-to-r from-blue-50 to-green-50 border-blue-200">
+        <Card className="bg-muted border-border">
           <CardContent className="pt-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <Mail className="h-5 w-5 text-blue-600" />
+                  <Mail className="h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-sm font-medium text-gray-700">Email Sent</p>
-                    <p className="text-2xl font-bold text-blue-600">{communicationStats.emailSent}x</p>
+                    <p className="text-sm font-medium text-foreground">Email Sent</p>
+                    <p className="text-2xl font-bold text-primary">{communicationStats.emailSent}x</p>
                   </div>
                 </div>
                 <Separator orientation="vertical" className="h-12 hidden sm:block" />
                 <div className="flex items-center gap-2">
                   <Send className="h-5 w-5 text-green-600" />
                   <div>
-                    <p className="text-sm font-medium text-gray-700">WhatsApp Sent</p>
+                    <p className="text-sm font-medium text-foreground">WhatsApp Sent</p>
                     <p className="text-2xl font-bold text-green-600">{communicationStats.whatsappSent}x</p>
                   </div>
                 </div>
               </div>
               {communicationStats.lastSentAt && (
                 <div className="sm:text-right">
-                  <p className="text-sm text-gray-600">Last Sent via {communicationStats.lastSentType}</p>
-                  <p className="text-sm font-medium text-gray-800">
+                  <p className="text-sm text-muted-foreground">Last Sent via {communicationStats.lastSentType}</p>
+                  <p className="text-sm font-medium text-foreground">
                     {format(new Date(communicationStats.lastSentAt), "dd MMM yyyy 'at' HH:mm", { locale: localeId })}
                   </p>
                 </div>

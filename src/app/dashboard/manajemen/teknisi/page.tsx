@@ -352,6 +352,7 @@ export default function TechniciansPage() {
                           <div className="flex gap-2 justify-end">
                             <Button
                               variant="outline"
+                              aria-label="Edit"
                               className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
                               onClick={() => handleEdit(technician)}
                             >
@@ -362,6 +363,7 @@ export default function TechniciansPage() {
                             </Button>
                             <Button
                               variant="destructive"
+                              aria-label="Hapus"
                               className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
                               onClick={() => handleDelete(technician.technician_id)}
                             >

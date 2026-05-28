@@ -16,7 +16,7 @@ export function DashboardShell({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
-    <div className="fixed inset-0 w-full overflow-hidden">
+    <div className="h-dvh w-full overflow-hidden">
       {/* Mobile Layout */}
       <div className="md:hidden h-full min-h-0 flex flex-col">
         {/* Mobile Header with Hamburger */}

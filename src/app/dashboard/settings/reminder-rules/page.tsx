@@ -572,6 +572,7 @@ export default function ReminderRulesPage() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            aria-label="Edit"
                             onClick={() => handleOpenDialog(rule)}
                             className="min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9"
                           >
@@ -580,6 +581,7 @@ export default function ReminderRulesPage() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            aria-label="Hapus"
                             onClick={() => {
                               setDeletingRule(rule)
                               setIsDeleteDialogOpen(true)
