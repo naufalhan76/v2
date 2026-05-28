@@ -7,7 +7,7 @@
 import crypto from 'crypto'
 import { logger } from '@/lib/logger'
 
-const API_KEY_SECRET = process.env.API_KEY_SECRET || 'your-secret-key-change-in-production'
+const API_KEY_SECRET = process.env.API_KEY_SECRET
 
 interface ApiKeyPayload {
   userId: string
@@ -27,8 +27,12 @@ export function generateApiKey(
   email: string,
   role: string
 ): string {
+  if (!API_KEY_SECRET) {
+    throw new Error('API_KEY_SECRET environment variable is not set')
+  }
+
   const timestamp = Math.floor(Date.now() / 1000)
-  const expiresAt = timestamp + 30 * 24 * 60 * 60 // 30 days
+  const expiresAt = timestamp + 30 * 24 * 60 * 60
 
   const payload: ApiKeyPayload = {
     userId,
@@ -38,24 +42,20 @@ export function generateApiKey(
     exp: expiresAt,
   }
 
-  // Create signature using SHA512
   const payloadStr = JSON.stringify(payload)
   const signature = crypto
     .createHmac('sha512', API_KEY_SECRET)
     .update(payloadStr)
     .digest('hex')
-    .substring(0, 32) // First 32 chars of SHA512 hash
+    .substring(0, 32)
 
   const payloadHash = crypto
     .createHash('sha512')
     .update(payloadStr)
     .digest('hex')
-    .substring(0, 32) // First 32 chars of SHA512 hash
+    .substring(0, 32)
 
-  // Format: sk_<payload-hash><signature-hash> = sk_<64-chars>
-  const apiKey = `sk_${payloadHash}${signature}`
-
-  return apiKey
+  return `sk_${payloadHash}${signature}`
 }
 
 /**

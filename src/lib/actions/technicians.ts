@@ -6,7 +6,6 @@ import { logger } from '@/lib/logger'
 
 export async function getTechnicians(filters?: {
   search?: string
-  specialization?: string
   page?: number
   limit?: number
 }) {
@@ -27,9 +26,6 @@ export async function getTechnicians(filters?: {
       query = query.or(`technician_name.ilike.%${filters.search}%,contact_number.ilike.%${filters.search}%,email.ilike.%${filters.search}%,company.ilike.%${filters.search}%`)
     }
     
-    if (filters?.specialization) {
-      query = query.eq('specialization', filters.specialization)
-    }
     
     const { data, error, count } = await query
     
@@ -205,10 +201,9 @@ export async function getTechnicianAvailability(date?: string) {
       .from('technicians')
       .select(`
         technician_id,
-        name,
-        phone,
-        specialization,
-        service_records!inner (
+        technician_name,
+        contact_number,
+        service_records (
           service_id,
           service_date,
           status
@@ -227,9 +222,8 @@ export async function getTechnicianAvailability(date?: string) {
       
       return {
         technician_id: tech.technician_id,
-        name: tech.name,
-        phone: tech.phone,
-        specialization: tech.specialization,
+        name: tech.technician_name,
+        phone: tech.contact_number,
         activeServices,
         isAvailable: activeServices < 3, // Assume max 3 services per day
       }

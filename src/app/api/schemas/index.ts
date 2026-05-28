@@ -174,7 +174,7 @@ export const CreateAcUnitSchema = z.object({
   acType: z.string().optional(),
   capacityBtu: z.number().positive().optional(),
   installationDate: z.string().optional(),
-  status: z.enum(['ACTIVE', 'INACTIVE', 'MAINTENANCE']).optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'RETIRED']).optional(),
 })
 
 export const UpdateAcUnitSchema = CreateAcUnitSchema.extend({

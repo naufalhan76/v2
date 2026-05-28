@@ -154,8 +154,7 @@ function formatDateOnly(value: string | null | undefined) {
 function getStatusBadge(status: string) {
   const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
     ACTIVE: 'default',
-    MAINTENANCE: 'secondary',
-    WORKSHOP: 'secondary',
+    RETIRED: 'secondary',
     INACTIVE: 'destructive',
   }
   return <Badge variant={variants[status] || 'outline'}>{status}</Badge>
@@ -1370,9 +1369,8 @@ function AcUnitsTab({ customerId }: { customerId: string }) {
               <SearchableSelect
                 options={[
                   { id: 'ACTIVE', label: 'Active' },
-                  { id: 'MAINTENANCE', label: 'Maintenance' },
-                  { id: 'WORKSHOP', label: 'Workshop' },
                   { id: 'INACTIVE', label: 'Inactive' },
+                  { id: 'RETIRED', label: 'Retired' },
                 ]}
                 value={form.status}
                 onValueChange={(value) => setForm({ ...form, status: value })}

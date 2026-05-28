@@ -80,7 +80,7 @@ export default function ManajemenUserPage() {
     full_name: '',
     email: '',
     password: '',
-    role: 'STAFF',
+    role: 'TECHNICIAN',
   })
 
   const { toast } = useToast()
@@ -119,7 +119,7 @@ export default function ManajemenUserPage() {
       full_name: '',
       email: '',
       password: '',
-      role: 'STAFF',
+      role: 'TECHNICIAN',
     })
     setEditingUser(null)
   }
@@ -323,7 +323,6 @@ export default function ManajemenUserPage() {
                       { id: 'ADMIN', label: 'Admin' },
                       { id: 'TECHNICIAN', label: 'Technician' },
                       { id: 'FINANCE', label: 'Finance' },
-                      { id: 'DISPATCHER', label: 'Dispatcher' },
                     ]}
                     value={formData.role}
                     onValueChange={(value) => setFormData({ ...formData, role: value })}
