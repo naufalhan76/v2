@@ -21,13 +21,27 @@ const nextConfig = {
   },
 
   images: {
-    domains: ['ybxnosmcjubuezefofko.supabase.co'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+      },
+    ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
   },
 
   async headers() {
     return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
+        ],
+      },
       {
         source: '/:path*\\.(js|css|woff|woff2|png|jpg|jpeg|svg|ico)',
         headers: [
@@ -37,7 +51,7 @@ const nextConfig = {
       {
         source: '/dashboard/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=120' },
+          { key: 'Cache-Control', value: 'private, no-store' },
         ],
       },
     ]
