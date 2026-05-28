@@ -123,9 +123,9 @@ function getUniqueServiceLabels(orderItems: unknown[]): string[] {
 
 
 const STATUS_GROUPS = {
-  NON_ASSIGNED: ['NEW', 'ACCEPTED'],
-  ASSIGNED: ['ASSIGNED', 'EN ROUTE', 'ARRIVED', 'IN_PROGRESS', 'RESCHEDULE'],
-  INVOICED: ['DONE', 'INVOICED', 'PAID']
+  NON_ASSIGNED: ['PENDING'],
+  ASSIGNED: ['ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS'],
+  INVOICED: ['COMPLETED', 'INVOICED', 'PAID']
 }
 
 const ALL_ONGOING_STATUSES = [...STATUS_GROUPS.NON_ASSIGNED, ...STATUS_GROUPS.ASSIGNED, ...STATUS_GROUPS.INVOICED]
@@ -480,7 +480,7 @@ function MonitoringOngoingContent() {
           scheduled_visit_date: formattedDate,
           req_visit_date: formattedDate,
           assigned_technician_id: null,
-          status: 'RESCHEDULE',
+          status: 'PENDING',
           updated_at: new Date().toISOString()
         })
         .eq('order_id', detailOrderId)
@@ -770,7 +770,7 @@ function MonitoringOngoingContent() {
                       <TableRow
                         key={o.order_id as string}
                         className={cn(
-                          o.status === 'RESCHEDULE' && 'bg-amber-50 border-l-4 border-l-amber-500 hover:bg-amber-100'
+                          o.status === 'PENDING' && 'bg-amber-50 border-l-4 border-l-amber-500 hover:bg-amber-100'
                         )}
                       >
                         <TableCell className='font-mono text-sm'>{o.order_id as string}</TableCell>
@@ -1184,7 +1184,7 @@ function MonitoringOngoingContent() {
           })()}
 
           {/* Action Buttons - Outside IIFE */}
-          {orderDetail?.data && orderDetail.data.status !== 'DONE' && orderDetail.data.status !== 'INVOICED' && orderDetail.data.status !== 'PAID' && (
+          {orderDetail?.data && orderDetail.data.status !== 'COMPLETED' && orderDetail.data.status !== 'INVOICED' && orderDetail.data.status !== 'PAID' && (
             <div className='flex gap-3 pt-4 border-t'>
               <Button
                 variant='destructive'

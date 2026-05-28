@@ -76,10 +76,8 @@ export async function GET(request: NextRequest) {
       // Default: show completed, paid, invoiced, cancelled (not active ones)
       query = query.in('status', [
         'COMPLETED',
-        'DONE',
         'INVOICED',
         'PAID',
-        'CLOSED',
         'CANCELLED',
       ])
     }

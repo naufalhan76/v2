@@ -31,41 +31,25 @@ export const ApiResponseSchema = z.object({
 // ============================================================================
 
 export const OrderStatusEnum = z.enum([
-  'NEW',
-  'ACCEPTED',
+  'PENDING',
   'ASSIGNED',
-  'EN ROUTE',
-  'ARRIVED',
+  'EN_ROUTE',
   'IN_PROGRESS',
-  'DONE',
-  'RESCHEDULE',
-  'TO_WORKSHOP',
-  'IN_WORKSHOP',
-  'READY_TO_RETURN',
-  'DELIVERED',
+  'COMPLETED',
   'INVOICED',
   'PAID',
-  'CLOSED',
   'CANCELLED',
 ])
 
 export const OrderStatusTransitionMap: Record<string, string[]> = {
-  NEW: ['ACCEPTED', 'RESCHEDULE', 'CANCELLED'],
-  ACCEPTED: ['ASSIGNED', 'RESCHEDULE', 'CANCELLED'],
-  ASSIGNED: ['EN ROUTE', 'RESCHEDULE', 'CANCELLED'],
-  'EN ROUTE': ['ARRIVED', 'DONE', 'RESCHEDULE', 'CANCELLED'],
-  ARRIVED: ['IN_PROGRESS', 'RESCHEDULE', 'CANCELLED'],
-  IN_PROGRESS: ['IN_PROGRESS', 'DONE', 'RESCHEDULE', 'CANCELLED'],
-  DONE: ['RESCHEDULE', 'INVOICED', 'CANCELLED'],
-  RESCHEDULE: ['NEW', 'ASSIGNED', 'CANCELLED'],
-  TO_WORKSHOP: ['IN_WORKSHOP', 'CANCELLED'],
-  IN_WORKSHOP: ['READY_TO_RETURN', 'CANCELLED'],
-  READY_TO_RETURN: ['DELIVERED', 'CANCELLED'],
-  DELIVERED: ['INVOICED', 'CANCELLED'],
+  PENDING: ['ASSIGNED', 'CANCELLED'],
+  ASSIGNED: ['EN_ROUTE', 'CANCELLED'],
+  EN_ROUTE: ['IN_PROGRESS', 'CANCELLED'],
+  IN_PROGRESS: ['COMPLETED', 'CANCELLED'],
+  COMPLETED: ['INVOICED', 'CANCELLED'],
   INVOICED: ['PAID', 'CANCELLED'],
-  PAID: ['CLOSED'],
-  CLOSED: ['RESCHEDULE'],
-  CANCELLED: ['RESCHEDULE'],
+  PAID: [],
+  CANCELLED: [],
 }
 
 export const GetOrdersQuerySchema = z.object({
@@ -84,22 +68,10 @@ export const GetOrderByIdParamSchema = z.object({
 })
 
 export const UpdateOrderStatusSchema = z.object({
-  orderId: z.string().min(1), // Support custom order ID format like REQ/2026-01/036148
+  orderId: z.string().min(1),
   newStatus: OrderStatusEnum,
-  req_visit_date: z.string().datetime().optional(), // Required when status = RESCHEDULE
-}).refine(
-  (data) => {
-    // If status is RESCHEDULE, req_visit_date must be provided
-    if (data.newStatus === 'RESCHEDULE' && !data.req_visit_date) {
-      return false
-    }
-    return true
-  },
-  {
-    message: 'req_visit_date is required when status is RESCHEDULE',
-    path: ['req_visit_date'],
-  }
-)
+  req_visit_date: z.string().datetime().optional(),
+})
 
 export const AssignTechnicianSchema = z.object({
   orderId: z.string().uuid(),

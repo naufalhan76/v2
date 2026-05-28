@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
       `)
       .in('order_id', orderIds)
       .eq('scheduled_visit_date', dateStr)
-      .in('status', ['ASSIGNED', 'EN_ROUTE', 'EN ROUTE', 'IN_PROGRESS', 'ARRIVED'])
+      .in('status', ['ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS'])
       .order('scheduled_visit_date', { ascending: true })
 
     if (orderError) throw orderError
