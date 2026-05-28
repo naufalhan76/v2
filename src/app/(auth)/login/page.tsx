@@ -113,25 +113,32 @@ function LoginForm() {
         throw new Error('User not found in the system. Please contact an administrator to set up your account.')
       }
 
-      if (!['SUPERADMIN', 'ADMIN'].includes(userData.role)) {
-        throw new Error('You do not have permission to access this admin panel')
+      if (!['SUPERADMIN', 'ADMIN', 'FINANCE', 'TECHNICIAN'].includes(userData.role)) {
+        throw new Error('Invalid user role. Please contact an administrator.')
       }
 
-      setLoadingMessage('Login successful! Loading dashboard...')
+      let targetRoute = redirectTo
+      if (userData.role === 'TECHNICIAN') {
+        targetRoute = '/technician'
+      } else if (!redirectTo || redirectTo === '/dashboard') {
+        targetRoute = '/dashboard'
+      }
+
+      setLoadingMessage('Login successful! Loading...')
 
       toast({
         title: "Login successful",
-        description: `Welcome back, ${userData.full_name || 'Admin'}!`,
+        description: `Welcome back, ${userData.full_name || userData.role}!`,
       })
 
       // Refresh router to update server-side session
       router.refresh()
       
       // Small delay to ensure cookie is set and show success message
-      await new Promise(resolve => setTimeout(resolve, 800))
+      await new Promise(resolve => setTimeout(resolve, 500))
       
       // Then redirect - loading state akan tetap sampai page benar-benar pindah
-      router.push(redirectTo)
+      router.push(targetRoute)
       
       // Keep loading state active - akan hilang saat component unmount
       // Ini memastikan overlay tetap ada sampai dashboard selesai load
@@ -168,7 +175,7 @@ function LoginForm() {
               />
             </div>
             <CardDescription className="text-center">
-              Login to access the admin panel
+              Login to access the application
             </CardDescription>
           </CardHeader>
           <CardContent>

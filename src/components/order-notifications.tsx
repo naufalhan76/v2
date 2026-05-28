@@ -24,7 +24,7 @@ const MAX_READ_NOTIFICATIONS = 100
 interface OrderNotification {
   order_id: string
   customer_name: string
-  status: 'CANCELLED' | 'RESCHEDULE'
+  status: 'CANCELLED'
   updated_at: string
   scheduled_visit_date?: string
   read: boolean
@@ -73,7 +73,7 @@ export function OrderNotifications() {
             customer_name
           )
         `)
-        .in('status', ['CANCELLED', 'RESCHEDULE'])
+        .in('status', ['CANCELLED'])
         .gte('updated_at', sevenDaysAgo.toISOString())
         .order('updated_at', { ascending: false })
         .limit(100)
@@ -87,7 +87,7 @@ export function OrderNotifications() {
       const formattedNotifications: OrderNotification[] = (orders || []).map((rawOrder: unknown) => {
         const order = rawOrder as {
           order_id: string
-          status: 'CANCELLED' | 'RESCHEDULE'
+          status: 'CANCELLED'
           updated_at: string
           scheduled_visit_date?: string
           customers?: { customer_name?: string } | null
@@ -165,7 +165,7 @@ export function OrderNotifications() {
     setUnreadCount(0)
   }
 
-  const rescheduledNotifications = notifications.filter(n => n.status === 'RESCHEDULE')
+  const rescheduledNotifications: OrderNotification[] = []
   const cancelledNotifications = notifications.filter(n => n.status === 'CANCELLED')
 
   const unreadRescheduled = rescheduledNotifications.filter(n => !n.read).length
@@ -190,11 +190,7 @@ export function OrderNotifications() {
           <p className="font-mono text-xs text-muted-foreground mb-1">
             {notification.order_id}
           </p>
-          {notification.status === 'RESCHEDULE' && notification.scheduled_visit_date && (
-            <p className="text-xs text-muted-foreground">
-              Dijadwalkan ulang ke: {format(new Date(notification.scheduled_visit_date), 'dd MMM yyyy', { locale: id })}
-            </p>
-          )}
+
         </div>
         <div className="text-right flex-shrink-0">
           <Badge

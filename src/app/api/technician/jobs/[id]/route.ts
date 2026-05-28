@@ -40,7 +40,7 @@ export async function GET(
         order_id,
         status,
         scheduled_visit_date,
-        notes,
+        description,
         created_at,
         updated_at,
         customers (

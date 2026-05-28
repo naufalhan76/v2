@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         order_id,
         status,
         scheduled_visit_date,
-        notes,
+        description,
         created_at,
         customers (
           customer_id,
