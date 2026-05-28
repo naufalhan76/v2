@@ -1,0 +1,61 @@
+'use client'
+
+import { useState } from 'react'
+import { Sidebar } from '@/components/sidebar'
+import { Navbar } from '@/components/navbar'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
+import { Menu } from 'lucide-react'
+
+export function DashboardShell({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  return (
+    <div className="fixed inset-0 w-full overflow-hidden">
+      {/* Mobile Layout */}
+      <div className="md:hidden h-full min-h-0 flex flex-col">
+        {/* Mobile Header with Hamburger */}
+        <header className="flex-none flex h-14 items-center gap-4 border-b bg-background px-4">
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0 h-full">
+              <Sidebar onCollapse={setIsSidebarCollapsed} />
+            </SheetContent>
+          </Sheet>
+          <Navbar />
+        </header>
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+          {children}
+        </main>
+      </div>
+
+      {/* Desktop Layout */}
+      <div
+        className="hidden md:grid h-full min-h-0 transition-[grid-template-columns] duration-300"
+        style={{ gridTemplateColumns: `${isSidebarCollapsed ? '4rem' : '16rem'} 1fr` }}
+      >
+        <aside className="h-full min-h-0 overflow-hidden">
+          <Sidebar onCollapse={setIsSidebarCollapsed} />
+        </aside>
+        <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
+          <header className="flex-none">
+            <Navbar />
+          </header>
+          <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 lg:p-6">
+            {children}
+          </main>
+        </div>
+      </div>
+    </div>
+  )
+}
