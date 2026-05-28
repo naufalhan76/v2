@@ -17,11 +17,12 @@ export async function GET(request: NextRequest) {
     const { technicianId } = authResult
     const supabase = await createClient()
 
-    // Get today's date range (local timezone handled by client, server uses UTC)
-    const today = new Date()
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    const endOfDay = new Date(startOfDay)
-    endOfDay.setDate(endOfDay.getDate() + 1)
+    // Use client-supplied date (YYYY-MM-DD) to avoid UTC/local mismatch around midnight.
+    // Falls back to server UTC date if not provided.
+    const dateParam = request.nextUrl.searchParams.get('date')
+    const dateStr = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+      ? dateParam
+      : new Date().toISOString().slice(0, 10)
 
     // Find orders assigned to this technician for today
     const { data: assignments, error: assignError } = await supabase
@@ -73,8 +74,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .in('order_id', orderIds)
-      .gte('scheduled_visit_date', startOfDay.toISOString())
-      .lt('scheduled_visit_date', endOfDay.toISOString())
+      .eq('scheduled_visit_date', dateStr)
       .in('status', ['ASSIGNED', 'EN_ROUTE', 'EN ROUTE', 'IN_PROGRESS', 'ARRIVED'])
       .order('scheduled_visit_date', { ascending: true })
 

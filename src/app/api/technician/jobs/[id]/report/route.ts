@@ -18,7 +18,7 @@ const reportSchema = z.object({
   photos_after: z.array(z.string().url()).min(1, 'Minimal 1 foto sesudah'),
   materials: z.array(materialSchema).default([]),
   actual_total_price: z.number().min(0, 'Harga aktual wajib diisi'),
-  customer_signature_url: z.string().url('URL signature tidak valid'),
+  customer_signature_url: z.string().min(1, 'Signature path wajib diisi'),
   customer_name_signed: z.string().min(1, 'Nama penandatangan wajib diisi'),
   notes: z.string().optional().default(''),
   work_started_at: z.string().datetime().optional().nullable(),

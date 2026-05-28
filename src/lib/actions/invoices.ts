@@ -284,7 +284,8 @@ function pickAllowedRevisionUpdates(updates: InvoiceRevisionHeaderUpdates): Reco
 
 function calculateInvoiceTotals(
   subtotal: number,
-  adjustments: InvoiceAdjustments
+  adjustments: InvoiceAdjustments,
+  items?: Array<{ item_type?: string; total_price?: number; quantity?: number; unit_price?: number }>
 ): InvoiceTotals {
   const safeSubtotal = Math.max(0, subtotal)
   const discountAmountInput = adjustments.discount_amount ?? 0
@@ -299,9 +300,15 @@ function calculateInvoiceTotals(
   const taxableBase = Math.max(0, safeSubtotal - discountAmount)
   const taxAmount = calculateTax(taxableBase, taxPercentage)
 
+  const addonsSubtotal = items
+    ? items
+        .filter((i) => i.item_type === 'ADDON')
+        .reduce((sum, i) => sum + (i.total_price ?? (i.quantity ?? 0) * (i.unit_price ?? 0)), 0)
+    : 0
+
   return {
     subtotal: safeSubtotal,
-    addons_subtotal: safeSubtotal,
+    addons_subtotal: addonsSubtotal,
     tax_amount: taxAmount,
     total_amount: taxableBase + taxAmount,
   }
@@ -314,7 +321,7 @@ async function calculateTotalsFromInvoiceItems(
 ): Promise<InvoiceTotals> {
   const { data: items, error } = await supabase
     .from('invoice_items')
-    .select('quantity, unit_price, total_price')
+    .select('item_type, quantity, unit_price, total_price')
     .eq('invoice_id', invoiceId)
 
   if (error) {
@@ -327,7 +334,7 @@ async function calculateTotalsFromInvoiceItems(
     return sum + totalPrice
   }, 0)
 
-  return calculateInvoiceTotals(subtotal, adjustments)
+  return calculateInvoiceTotals(subtotal, adjustments, items || [])
 }
 
 function normalizeRevisionItems(
@@ -1240,7 +1247,8 @@ export async function reviseInvoiceItems(
 
   const totals = calculateInvoiceTotals(
     replacementItems.reduce((sum, item) => sum + item.total_price, 0),
-    currentInvoice
+    currentInvoice,
+    replacementItems
   )
 
   const { data: updatedInvoice, error: updateError } = await supabase

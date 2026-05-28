@@ -140,38 +140,13 @@ self.addEventListener('notificationclick', (event) => {
   )
 })
 
-/**
- * Subscription change — browsers periodically rotate keys / drop subscriptions.
- * Resubscribe with the same VAPID key, then notify the server. The VAPID public
- * key is hardcoded into a fetched config so the SW does not need bundler env.
- */
 self.addEventListener('pushsubscriptionchange', (event) => {
   event.waitUntil(
-    (async () => {
-      try {
-        // Fetch current public key from a tiny config endpoint so we don't have
-        // to bake it into the SW at build time.
-        const res = await fetch('/api/technician/push/public-key')
-        if (!res.ok) throw new Error('Failed to fetch VAPID key')
-        const { publicKey } = await res.json()
-        if (!publicKey) throw new Error('No VAPID public key returned')
-
-        const sub = await self.registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicKey),
-        })
-
-        await fetch('/api/technician/push/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(sub.toJSON()),
-        })
-      } catch (err) {
-        // Swallow — there is nothing else the SW can do here. The next time
-        // the user opens the app, the profile page will reconcile state.
-        console.warn('[SW] pushsubscriptionchange failed:', err)
+    self.clients.matchAll({ type: 'window' }).then((clients) => {
+      for (const client of clients) {
+        client.postMessage({ type: 'PUSH_SUBSCRIPTION_CHANGED' })
       }
-    })()
+    })
   )
 })
 

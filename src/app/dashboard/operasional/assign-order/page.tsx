@@ -60,7 +60,7 @@ export default function AssignOrderPage() {
 
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
     queryKey: ['orders', 'assignable'],
-    queryFn: () => getOrders({ statusIn: 'ACCEPTED,RESCHEDULE', limit: 100 })
+    queryFn: () => getOrders({ statusIn: 'PENDING', limit: 100 })
   })
 
   const { data: orderDetail } = useQuery({

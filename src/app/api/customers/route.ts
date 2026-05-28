@@ -23,10 +23,13 @@ export async function GET(request: NextRequest) {
   const path = '/api/customers'
 
   try {
-    // Verify authentication (optional for MVP - allow anon access)
+    // Verify authentication
     const user = await requireAuth(request)
-    
-    logRequest(method, path, user?.id || 'anonymous', { type: 'list' })
+    if (!user) {
+      return jsonError('Unauthorized: Missing or invalid authentication', 401)
+    }
+
+    logRequest(method, path, user.id, { type: 'list' })
 
     // Parse and validate query parameters
     const searchParams = request.nextUrl.searchParams
@@ -38,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     const validation = GetCustomersQuerySchema.safeParse(queryInput)
     if (!validation.success) {
-      logResponse(logRequest(method, path, user?.id), 400, getDuration(), validation.error.message)
+      logResponse(    logRequest(method, path, user.id), 400, getDuration(), validation.error.message)
       return handleValidationError(validation.error)
     }
 
@@ -54,11 +57,11 @@ export async function GET(request: NextRequest) {
     const duration = getDuration()
 
     if (!result.success) {
-      logResponse(logRequest(method, path, user?.id), 400, duration, result.error)
+      logResponse(logRequest(method, path, user.id), 400, duration, result.error)
       return jsonError(result.error || 'Failed to fetch customers', 400)
     }
 
-    logResponse(logRequest(method, path, user?.id), 200, duration)
+    logResponse(logRequest(method, path, user.id), 200, duration)
 
     return jsonSuccess(result.data, 200, result.pagination)
   } catch (error) {

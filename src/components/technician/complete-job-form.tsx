@@ -197,7 +197,7 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
       // 1. Upload signature to Supabase Storage
       const supabase = createClient()
       const signatureBlob = await fetch(customerSignature).then((r) => r.blob())
-      const signatureFilename = `orders/${orderId}/signature-${Date.now()}.png`
+      const signatureFilename = `signatures/${orderId}/${Date.now()}.png`
 
       const { data: sigData, error: sigError } = await supabase.storage
         .from('signatures')
@@ -210,12 +210,9 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
         throw new Error(`Upload signature gagal: ${sigError.message}`)
       }
 
-      // Get signed URL for the signature (private bucket)
-      const { data: signedUrlData } = await supabase.storage
-        .from('signatures')
-        .createSignedUrl(sigData.path, 60 * 60 * 24 * 365) // 1 year
-
-      const signatureUrl = signedUrlData?.signedUrl || ''
+      // Store the storage path (not a signed URL) so it never expires.
+      // The read-side generates signed URLs on demand via /api/service-reports/[id]/signature.
+      const signaturePath = sigData.path
 
       // 2. Submit report via API
       const res = await fetch(`/api/technician/jobs/${orderId}/report`, {
@@ -227,7 +224,7 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
           photos_after: photosAfter,
           materials: materials.filter((m) => m.name.trim() !== ''),
           actual_total_price: actualPrice,
-          customer_signature_url: signatureUrl,
+          customer_signature_url: signaturePath,
           customer_name_signed: customerNameSigned.trim(),
           notes: notes.trim(),
           work_started_at: workStartedAt,

@@ -5,6 +5,7 @@ import { jsonSuccess, jsonError, handleValidationError, handleApiError } from '@
 import { requireAuth } from '@/app/api/middleware/auth'
 import { logRequest, logResponse, measureDuration, createAuditLog } from '@/app/api/middleware/logging'
 import { normalizeOrderServiceType } from '@/lib/service-types'
+import { createAdminClient } from '@/lib/supabase-admin'
 
 /**
  * POST /api/orders
@@ -55,7 +56,6 @@ export async function POST(request: NextRequest) {
 
     const { customerId, locationId, orderType, description, items } = validation.data
 
-    // Create order using server action
     const result = await createOrder({
       customer_id: customerId,
       location_id: locationId,
@@ -71,8 +71,25 @@ export async function POST(request: NextRequest) {
       return jsonError(result.error || 'Failed to create order', 400)
     }
 
-    // Log audit trail
-    await createAuditLog(user.id, 'CREATE', 'orders', result.data?.orderId || '', {
+    const orderId = result.data?.order_id || result.data?.orderId || ''
+
+    if (items && items.length > 0 && orderId) {
+      const supabase = createAdminClient()
+      const orderItems = items.map((item) => ({
+        order_id: orderId,
+        location_id: locationId,
+        service_type: normalizeOrderServiceType(item.serviceType),
+        quantity: item.quantity ?? 1,
+        estimated_price: item.estimatedPrice ?? 0,
+      }))
+      const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
+      if (itemsError) {
+        logResponse(logRequest(method, path, user.id), 500, getDuration(), itemsError.message)
+        return jsonError('Order created but failed to insert items: ' + itemsError.message, 500)
+      }
+    }
+
+    await createAuditLog(user.id, 'CREATE', 'orders', orderId, {
       customerId,
       locationId,
       orderType,

@@ -311,7 +311,7 @@ export async function markReminderSent(
   externalId?: string
 ): Promise<ActionResult<CustomerReminder>> {
   try {
-    const auth = await requireRoles(READ_ROLES)
+    const auth = await requireRoles(WRITE_ROLES)
     if (!auth.ok) return { success: false, error: auth.error }
 
     const supabase = await createClient()
@@ -326,6 +326,7 @@ export async function markReminderSent(
         updated_at: new Date().toISOString(),
       })
       .eq('reminder_id', reminderId)
+      .eq('status', 'PENDING')
       .select('*')
       .single()
 
@@ -350,7 +351,7 @@ export async function markReminderFailed(
   errorText: string
 ): Promise<ActionResult<CustomerReminder>> {
   try {
-    const auth = await requireRoles(READ_ROLES)
+    const auth = await requireRoles(WRITE_ROLES)
     if (!auth.ok) return { success: false, error: auth.error }
 
     const supabase = await createClient()
@@ -385,7 +386,7 @@ export async function markReminderDismissed(
   reminderId: string
 ): Promise<ActionResult<CustomerReminder>> {
   try {
-    const auth = await requireRoles(READ_ROLES)
+    const auth = await requireRoles(WRITE_ROLES)
     if (!auth.ok) return { success: false, error: auth.error }
 
     const supabase = await createClient()
