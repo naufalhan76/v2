@@ -166,7 +166,7 @@ export function OrderFilters() {
               mode="single"
               selected={dateFrom ? new Date(dateFrom) : undefined}
               onSelect={(d) => setParam('dateFrom', d ? format(d, 'yyyy-MM-dd') : null)}
-              locale={localeId}
+              locale={localeId as unknown as Record<string, unknown>}
             />
           </PopoverContent>
         </Popover>
@@ -189,7 +189,7 @@ export function OrderFilters() {
               mode="single"
               selected={dateTo ? new Date(dateTo) : undefined}
               onSelect={(d) => setParam('dateTo', d ? format(d, 'yyyy-MM-dd') : null)}
-              locale={localeId}
+              locale={localeId as unknown as Record<string, unknown>}
             />
           </PopoverContent>
         </Popover>

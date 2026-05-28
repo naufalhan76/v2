@@ -128,7 +128,7 @@ export function RescheduleModal({
                   onSelect={(d) =>
                     d && form.setValue('newScheduledDate', d, { shouldValidate: true })
                   }
-                  locale={localeId}
+                  locale={localeId as unknown as Record<string, unknown>}
                   initialFocus
                 />
               </PopoverContent>

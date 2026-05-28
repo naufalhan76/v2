@@ -191,7 +191,7 @@ export function AssignModal({
                     today.setHours(0, 0, 0, 0)
                     return date < today
                   }}
-                  locale={localeId}
+                  locale={localeId as unknown as Record<string, unknown>}
                   initialFocus
                 />
               </PopoverContent>
