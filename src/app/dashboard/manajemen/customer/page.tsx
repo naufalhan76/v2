@@ -491,11 +491,11 @@ export default function CustomerManagementPage() {
                                           </div>
                                           <div className="flex-1 min-w-0">
                                             <div className="font-medium text-sm">
-                                              {loc.building_name as string}
+                                              {(loc.full_address as string) || (loc.house_number as string) || '—'}
                                             </div>
                                             <div className="text-xs text-muted-foreground">
-                                              Floor {loc.floor as number}
-                                              {(loc.room_number as string) && ` • Room ${loc.room_number as string}`}
+                                              {(loc.city as string) && `${loc.city as string}`}
+                                              {(loc.landmarks as string) && ` • ${loc.landmarks as string}`}
                                             </div>
                                             {(loc.description as string) && (
                                               <div className="text-xs text-muted-foreground mt-1">

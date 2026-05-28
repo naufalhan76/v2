@@ -678,7 +678,7 @@ export default function InvoiceDetailPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3 sm:gap-4 min-w-0">
-          <Button variant="ghost" onClick={() => router.back()} className="shrink-0 min-h-[44px] min-w-[44px]">
+          <Button variant="ghost" aria-label="Kembali" onClick={handleBack} className="shrink-0 min-h-[44px] min-w-[44px]">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0">

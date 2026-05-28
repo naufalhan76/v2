@@ -1431,6 +1431,7 @@ function OrdersTab({
   customerId: string
   onOpenOrder: (orderId: string) => void
 }) {
+  const router = useRouter()
   const { data, isLoading } = useQuery({
     queryKey: ['customer-orders', customerId],
     queryFn: () => getOrders({ customerId, limit: 100 }),
@@ -1459,7 +1460,7 @@ function OrdersTab({
               label: 'Buat Order',
               icon: Plus,
               onClick: () => {
-                window.location.href = `/dashboard/operasional/create-order?customer=${customerId}`
+                router.push(`/dashboard/orders/new?customerId=${customerId}`)
               },
             }}
           />
