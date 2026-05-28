@@ -2,144 +2,125 @@ import { createClient } from '@supabase/supabase-js'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { QueryClient } from '@tanstack/react-query'
 
-export const realtimeClient = () =>
-  createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+// Single shared realtime client (module-level singleton)
+let _realtimeClient: ReturnType<typeof createClient> | null = null
+const _activeChannels = new Map<string, ReturnType<ReturnType<typeof createClient>['channel']>>()
 
-export function subscribeOrders(
+function getRealtimeClient() {
+  if (!_realtimeClient) {
+    _realtimeClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  }
+  return _realtimeClient
+}
+
+function subscribeChannel(
+  channelName: string,
+  table: string,
   queryClient: QueryClient,
+  invalidateKeys: string[],
   callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
 ) {
-  const supa = realtimeClient()
+  // Return existing channel if already active (prevents duplicate WebSockets under StrictMode)
+  if (_activeChannels.has(channelName)) {
+    return () => {
+      // No-op: channel is shared; caller should not unsubscribe unilaterally
+    }
+  }
+
+  const supa = getRealtimeClient()
   const channel = supa
-    .channel('orders-changes')
+    .channel(channelName)
     .on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
-        table: 'orders',
+        table,
       },
       (payload) => {
         callback(payload)
-        // Invalidate orders query cache
-        queryClient.invalidateQueries({ queryKey: ['orders'] })
-        queryClient.invalidateQueries({ queryKey: ['dashboard-kpi'] })
+        for (const key of invalidateKeys) {
+          queryClient.invalidateQueries({ queryKey: [key] })
+        }
       }
     )
     .subscribe()
 
+  _activeChannels.set(channelName, channel)
+
   return () => {
-    supa.removeChannel(channel)
+    const ch = _activeChannels.get(channelName)
+    if (ch) {
+      supa.removeChannel(ch)
+      _activeChannels.delete(channelName)
+    }
   }
+}
+
+export function subscribeOrders(
+  queryClient: QueryClient,
+  callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
+) {
+  return subscribeChannel(
+    'orders-changes',
+    'orders',
+    queryClient,
+    ['orders', 'dashboard-kpi'],
+    callback
+  )
 }
 
 export function subscribePayments(
   queryClient: QueryClient,
   callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
 ) {
-  const supa = realtimeClient()
-  const channel = supa
-    .channel('payments-changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'payments',
-      },
-      (payload) => {
-        callback(payload)
-        // Invalidate payments and dashboard query cache
-        queryClient.invalidateQueries({ queryKey: ['payments'] })
-        queryClient.invalidateQueries({ queryKey: ['dashboard-kpi'] })
-      }
-    )
-    .subscribe()
-
-  return () => {
-    supa.removeChannel(channel)
-  }
+  return subscribeChannel(
+    'payments-changes',
+    'payments',
+    queryClient,
+    ['payments', 'dashboard-kpi'],
+    callback
+  )
 }
 
 export function subscribeServiceRecords(
   queryClient: QueryClient,
   callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
 ) {
-  const supa = realtimeClient()
-  const channel = supa
-    .channel('service-records-changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'service_records',
-      },
-      (payload) => {
-        callback(payload)
-        // Invalidate service records and related queries
-        queryClient.invalidateQueries({ queryKey: ['service-records'] })
-        queryClient.invalidateQueries({ queryKey: ['dashboard-kpi'] })
-      }
-    )
-    .subscribe()
-
-  return () => {
-    supa.removeChannel(channel)
-  }
+  return subscribeChannel(
+    'service-records-changes',
+    'service_records',
+    queryClient,
+    ['service-records', 'dashboard-kpi'],
+    callback
+  )
 }
 
 export function subscribeServicePricing(
   queryClient: QueryClient,
   callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
 ) {
-  const supa = realtimeClient()
-  const channel = supa
-    .channel('service-pricing-changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'service_pricing',
-      },
-      (payload) => {
-        callback(payload)
-        queryClient.invalidateQueries({ queryKey: ['service-pricing'] })
-      }
-    )
-    .subscribe()
-
-  return () => {
-    supa.removeChannel(channel)
-  }
+  return subscribeChannel(
+    'service-pricing-changes',
+    'service_pricing',
+    queryClient,
+    ['service-pricing'],
+    callback
+  )
 }
 
 export function subscribeServiceSla(
   queryClient: QueryClient,
   callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
 ) {
-  const supa = realtimeClient()
-  const channel = supa
-    .channel('service-sla-changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'service_sla',
-      },
-      (payload) => {
-        callback(payload)
-        queryClient.invalidateQueries({ queryKey: ['service-sla'] })
-      }
-    )
-    .subscribe()
-
-  return () => {
-    supa.removeChannel(channel)
-  }
+  return subscribeChannel(
+    'service-sla-changes',
+    'service_sla',
+    queryClient,
+    ['service-sla'],
+    callback
+  )
 }

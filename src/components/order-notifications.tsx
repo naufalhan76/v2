@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -16,6 +16,10 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
+import { createClient } from '@/lib/supabase-browser'
+
+// Max entries kept in localStorage to prevent unbounded growth
+const MAX_READ_NOTIFICATIONS = 100
 
 interface OrderNotification {
   order_id: string
@@ -32,13 +36,12 @@ export function OrderNotifications() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const supabaseRef = useRef(createClient())
 
-  // Get current user ID for localStorage isolation
   useEffect(() => {
     const getUserId = async () => {
       try {
-        const supabase = await import('@/lib/supabase-browser').then(m => m.createClient())
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user } } = await supabaseRef.current.auth.getUser()
         if (user) {
           setUserId(user.id)
         }
@@ -49,12 +52,11 @@ export function OrderNotifications() {
     getUserId()
   }, [])
 
-  // Fetch notifications from localStorage or API
   const fetchNotifications = useCallback(async () => {
-    if (!userId) return // Wait for user ID
-    
+    if (!userId) return
+
     try {
-      const supabase = await import('@/lib/supabase-browser').then(m => m.createClient())
+      const supabase = supabaseRef.current
       
       // Get notifications from last 7 days untuk catch more notifications
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
@@ -143,10 +145,10 @@ export function OrderNotifications() {
     )
     
     const storageKey = `readNotifications_${userId}`
-    const readNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]')
+    const readNotifications: string[] = JSON.parse(localStorage.getItem(storageKey) || '[]')
     if (!readNotifications.includes(orderId)) {
-      readNotifications.push(orderId)
-      localStorage.setItem(storageKey, JSON.stringify(readNotifications))
+      const pruned = [...readNotifications, orderId].slice(-MAX_READ_NOTIFICATIONS)
+      localStorage.setItem(storageKey, JSON.stringify(pruned))
     }
     
     setUnreadCount(prev => Math.max(0, prev - 1))
@@ -155,7 +157,7 @@ export function OrderNotifications() {
   const markAllAsRead = () => {
     if (!userId) return
     
-    const allOrderIds = notifications.map(n => n.order_id)
+    const allOrderIds = notifications.map(n => n.order_id).slice(-MAX_READ_NOTIFICATIONS)
     const storageKey = `readNotifications_${userId}`
     localStorage.setItem(storageKey, JSON.stringify(allOrderIds))
     
