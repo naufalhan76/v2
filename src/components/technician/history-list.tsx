@@ -12,7 +12,7 @@ type FilterTab = 'all' | 'completed' | 'cancelled'
 
 const FILTER_TABS: { key: FilterTab; label: string; statuses: string }[] = [
   { key: 'all', label: 'Semua', statuses: '' },
-  { key: 'completed', label: 'Selesai', statuses: 'COMPLETED,DONE,INVOICED,PAID,CLOSED' },
+  { key: 'completed', label: 'Selesai', statuses: 'COMPLETED,INVOICED,PAID' },
   { key: 'cancelled', label: 'Dibatalkan', statuses: 'CANCELLED' },
 ]
 
