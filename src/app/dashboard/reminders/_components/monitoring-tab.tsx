@@ -1,27 +1,16 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  type SortingState,
-  useReactTable,
-} from '@tanstack/react-table'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, differenceInDays, startOfDay } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import {
   AlertTriangle,
-  BellPlus,
   CalendarIcon,
   CalendarClock,
   CheckCircle2,
-  ExternalLink,
-  Loader2,
+  MessageSquare,
+  Pencil,
   Search,
   Snowflake,
   Wrench,
@@ -34,6 +23,7 @@ import {
   type ServicedAcStatusFilter,
   type ServicedAcUnitRow,
 } from '@/lib/actions/reminders'
+import { updateAcUnitNextServiceDate } from '@/lib/actions/ac-units'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -61,42 +51,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { StatusBadge } from '@/components/orders/status-badge'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { logger } from '@/lib/logger'
 
-// =============================================================================
-// Helpers
-// =============================================================================
-
-function startOfDayLocal(): Date {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return d
+function todayMs() {
+  return startOfDay(new Date()).getTime()
 }
 
-function startOfDay(d: Date) {
-  const x = new Date(d)
-  x.setHours(0, 0, 0, 0)
-  return x
-}
-
-function endOfDay(d: Date) {
-  const x = new Date(d)
-  x.setHours(23, 59, 59, 999)
-  return x
-}
-
-function daysBetween(dueIso: string | null): number | null {
+function daysFromToday(dueIso: string | null): number | null {
   if (!dueIso) return null
   const due = new Date(`${dueIso}T00:00:00`)
   if (Number.isNaN(due.getTime())) return null
-  const today = startOfDayLocal()
-  const ms = due.getTime() - today.getTime()
-  return Math.round(ms / (1000 * 60 * 60 * 24))
+  return differenceInDays(due, startOfDay(new Date()))
 }
 
-function formatDateOrDash(iso: string | null): string {
+function fmtDate(iso: string | null): string {
   if (!iso) return '—'
   try {
     return format(parseISO(iso), 'd MMM yyyy', { locale: localeId })
@@ -105,116 +76,56 @@ function formatDateOrDash(iso: string | null): string {
   }
 }
 
-function formatBtu(value: number | null): string {
-  if (!value || value <= 0) return ''
-  if (value >= 1000) return `${(value / 1000).toLocaleString('id-ID')}k BTU`
-  return `${value} BTU`
+function fmtDateTime(iso: string | null): string {
+  if (!iso) return ''
+  try {
+    return format(parseISO(iso), 'd MMM HH:mm', { locale: localeId })
+  } catch {
+    return iso
+  }
 }
 
-interface RemainingDaysBadgeProps {
-  days: number | null
+function endOfDay(d: Date) {
+  const x = new Date(d)
+  x.setHours(23, 59, 59, 999)
+  return x
 }
-
-function RemainingDaysBadge({ days }: RemainingDaysBadgeProps) {
-  if (days === null) {
-    return <span className="text-muted-foreground">—</span>
-  }
-  if (days < 0) {
-    return (
-      <Badge
-        variant="outline"
-        className="border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
-      >
-        Overdue {Math.abs(days)} hari
-      </Badge>
-    )
-  }
-  if (days <= 7) {
-    return (
-      <Badge
-        variant="outline"
-        className="border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-300"
-      >
-        {days === 0 ? 'Hari ini' : `${days} hari lagi`}
-      </Badge>
-    )
-  }
-  if (days <= 30) {
-    return (
-      <Badge
-        variant="outline"
-        className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-300"
-      >
-        {days} hari lagi
-      </Badge>
-    )
-  }
-  return (
-    <Badge
-      variant="outline"
-      className="border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/40 dark:text-green-300"
-    >
-      {days} hari lagi
-    </Badge>
-  )
-}
-
-// =============================================================================
-// Component
-// =============================================================================
 
 export function MonitoringTab() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
-  // Filters
   const [statusFilter, setStatusFilter] = useState<ServicedAcStatusFilter>('all')
   const [search, setSearch] = useState('')
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined)
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined)
-
-  // Table state — default sort: Sisa Hari ASC (overdue first, then closest)
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: 'days_until', desc: false },
-  ])
-
-  // -- Data --------------------------------------------------------------------
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 20
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['serviced-ac-units'],
     queryFn: async () => {
       const result = await getServicedAcUnits({})
-      if (!result?.success) {
-        throw new Error(result?.error || 'Gagal memuat data AC')
-      }
-      const payload = (result as { data?: ServicedAcUnitRow[] }).data
-      return (payload ?? []) as ServicedAcUnitRow[]
+      if (!result?.success) throw new Error(result?.error || 'Gagal memuat data AC')
+      return ((result as { data?: ServicedAcUnitRow[] }).data ?? []) as ServicedAcUnitRow[]
     },
   })
 
   const units = useMemo(() => data ?? [], [data])
 
-  // Stat cards — computed from full set
   const stats = useMemo(() => {
     let overdue = 0
     let dueThisWeek = 0
     let activeReminders = 0
     for (const u of units) {
       if (u.has_pending_reminder) activeReminders++
-      const days = daysBetween(u.next_service_due_date)
+      const days = daysFromToday(u.next_service_due_date)
       if (days === null) continue
       if (days < 0) overdue++
       else if (days <= 7) dueThisWeek++
     }
-    return {
-      total: units.length,
-      overdue,
-      dueThisWeek,
-      activeReminders,
-    }
+    return { total: units.length, overdue, dueThisWeek, activeReminders }
   }, [units])
-
-  // -- Filter (client-side) ----------------------------------------------------
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -222,9 +133,8 @@ export function MonitoringTab() {
     const toMs = dateTo ? endOfDay(dateTo).getTime() : null
 
     return units.filter((u) => {
-      // Status
       if (statusFilter !== 'all') {
-        const days = daysBetween(u.next_service_due_date)
+        const days = daysFromToday(u.next_service_due_date)
         if (statusFilter === 'no_date') {
           if (days !== null) return false
         } else if (days === null) {
@@ -237,8 +147,6 @@ export function MonitoringTab() {
           return false
         }
       }
-
-      // Date range on next_service_due_date
       if (fromMs !== null || toMs !== null) {
         if (!u.next_service_due_date) return false
         const dueMs = new Date(`${u.next_service_due_date}T00:00:00`).getTime()
@@ -246,271 +154,71 @@ export function MonitoringTab() {
         if (fromMs !== null && dueMs < fromMs) return false
         if (toMs !== null && dueMs > toMs) return false
       }
-
-      // Search
       if (q) {
         const name = u.customer_name?.toLowerCase() ?? ''
-        const addr = u.location_address?.toLowerCase() ?? ''
+        const phone = u.customer_phone?.toLowerCase() ?? ''
         const brand = u.brand?.toLowerCase() ?? ''
         const model = u.model_number?.toLowerCase() ?? ''
-        if (
-          !name.includes(q) &&
-          !addr.includes(q) &&
-          !brand.includes(q) &&
-          !model.includes(q)
-        ) {
-          return false
-        }
+        if (!name.includes(q) && !phone.includes(q) && !brand.includes(q) && !model.includes(q)) return false
       }
-
       return true
     })
   }, [units, statusFilter, search, dateFrom, dateTo])
 
-  const hasFilters =
-    statusFilter !== 'all' || !!search || !!dateFrom || !!dateTo
+  const hasFilters = statusFilter !== 'all' || !!search || !!dateFrom || !!dateTo
 
   function clearFilters() {
     setStatusFilter('all')
     setSearch('')
     setDateFrom(undefined)
     setDateTo(undefined)
+    setPage(0)
   }
 
-  // -- Mutations ---------------------------------------------------------------
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   const createMutation = useMutation({
     mutationFn: async (acUnitId: string) => {
       const result = await createManualReminder(acUnitId)
-      if (!result?.success) {
-        throw new Error(result?.error || 'Gagal membuat reminder')
-      }
+      if (!result?.success) throw new Error(result?.error || 'Gagal membuat reminder')
       return result
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['serviced-ac-units'] })
       queryClient.invalidateQueries({ queryKey: ['customer-reminders'] })
-      toast({
-        title: 'Reminder dibuat',
-        description: 'Reminder masuk ke antrian dengan status Menunggu.',
-      })
+      toast({ title: 'Reminder dibuat', description: 'Reminder masuk ke antrian dengan status Menunggu.' })
     },
     onError: (error: Error) => {
       logger.error('createManualReminder failed:', error)
-      toast({
-        title: 'Gagal membuat reminder',
-        description: error.message,
-        variant: 'destructive',
-      })
+      toast({ title: 'Gagal membuat reminder', description: error.message, variant: 'destructive' })
     },
   })
 
-  // -- Columns -----------------------------------------------------------------
-
-  const columns: ColumnDef<ServicedAcUnitRow>[] = useMemo(
-    () => [
-      {
-        id: 'customer',
-        header: 'Customer',
-        accessorFn: (row) => row.customer_name ?? '',
-        cell: ({ row }) => (
-          <div className="text-sm font-medium">
-            {row.original.customer_name ?? '—'}
-          </div>
-        ),
-      },
-      {
-        id: 'location',
-        header: 'Lokasi',
-        accessorFn: (row) => row.location_address ?? '',
-        cell: ({ row }) => {
-          const addr = row.original.location_address
-          if (!addr) return <span className="text-muted-foreground">—</span>
-          return (
-            <div
-              className="max-w-[260px] truncate text-sm text-muted-foreground"
-              title={addr}
-            >
-              {addr}
-            </div>
-          )
-        },
-        meta: { className: 'hidden xl:table-cell' },
-      },
-      {
-        id: 'ac',
-        header: 'AC',
-        accessorFn: (row) =>
-          [row.brand, row.model_number].filter(Boolean).join(' '),
-        cell: ({ row }) => {
-          const u = row.original
-          const brand = u.brand ?? '—'
-          const btu = formatBtu(u.capacity_btu)
-          return (
-            <div className="text-sm">
-              <div className="font-medium">{brand}</div>
-              {(u.model_number || btu) && (
-                <div className="text-xs text-muted-foreground">
-                  {[u.model_number, btu].filter(Boolean).join(' • ')}
-                </div>
-              )}
-            </div>
-          )
-        },
-        meta: { className: 'hidden lg:table-cell' },
-      },
-      {
-        id: 'last_service',
-        header: 'Service Terakhir',
-        accessorFn: (row) => row.last_service_date ?? '',
-        cell: ({ row }) => (
-          <span className="text-sm">
-            {formatDateOrDash(row.original.last_service_date)}
-          </span>
-        ),
-        meta: { className: 'hidden xl:table-cell' },
-      },
-      {
-        id: 'next_service',
-        header: 'Service Berikutnya',
-        accessorFn: (row) => row.next_service_due_date ?? '',
-        cell: ({ row }) => (
-          <span className="text-sm">
-            {formatDateOrDash(row.original.next_service_due_date)}
-          </span>
-        ),
-        meta: { className: 'hidden md:table-cell' },
-      },
-      {
-        id: 'days_until',
-        header: 'Sisa Hari',
-        accessorFn: (row) => {
-          const d = daysBetween(row.next_service_due_date)
-          // Sort: nulls last, otherwise ascending (overdue first)
-          return d ?? Number.POSITIVE_INFINITY
-        },
-        cell: ({ row }) => (
-          <RemainingDaysBadge
-            days={daysBetween(row.original.next_service_due_date)}
-          />
-        ),
-      },
-      {
-        id: 'reminder_status',
-        header: 'Status Reminder',
-        accessorFn: (row) => (row.has_pending_reminder ? 1 : 0),
-        cell: ({ row }) => {
-          if (row.original.has_pending_reminder) {
-            return (
-              <Badge
-                variant="outline"
-                className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
-              >
-                Sudah ada antrian
-              </Badge>
-            )
-          }
-          return <span className="text-muted-foreground">—</span>
-        },
-        meta: { className: 'hidden lg:table-cell' },
-      },
-      {
-        id: 'actions',
-        header: '',
-        enableSorting: false,
-        cell: ({ row }) => {
-          const u = row.original
-          const isCreating =
-            createMutation.isPending &&
-            createMutation.variables === u.ac_unit_id
-          return (
-            <div className="flex justify-end gap-1 sm:gap-2">
-              {!u.has_pending_reminder && (
-                <Button
-                  size="sm"
-                  variant="default"
-                  onClick={() => createMutation.mutate(u.ac_unit_id)}
-                  disabled={isCreating}
-                  className="min-h-[44px] sm:min-h-9"
-                >
-                  {isCreating ? (
-                    <Loader2 className="h-3 w-3 animate-spin sm:mr-2" />
-                  ) : (
-                    <BellPlus className="h-3 w-3 sm:mr-2" />
-                  )}
-                  <span className="hidden sm:inline">Buat Reminder</span>
-                </Button>
-              )}
-              {u.customer_id && (
-                <Button
-                  asChild
-                  size="sm"
-                  variant="ghost"
-                  className="min-h-[44px] sm:min-h-9"
-                >
-                  <Link
-                    href={`/dashboard/manajemen/customer/${u.customer_id}?tab=ac-units`}
-                  >
-                    <ExternalLink className="h-3 w-3 sm:mr-2" />
-                    <span className="hidden sm:inline">Detail</span>
-                  </Link>
-                </Button>
-              )}
-            </div>
-          )
-        },
-      },
-    ],
-    [createMutation]
-  )
-
-  const table = useReactTable({
-    data: filtered,
-    columns,
-    state: { sorting },
-    onSortingChange: setSorting,
-    getRowId: (row) => row.ac_unit_id,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 20 } },
+  const dateMutation = useMutation({
+    mutationFn: async ({ acUnitId, newDate }: { acUnitId: string; newDate: string | null }) => {
+      const result = await updateAcUnitNextServiceDate(acUnitId, newDate)
+      if (!result?.success) throw new Error(result?.error || 'Gagal update tanggal')
+      return result
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['serviced-ac-units'] })
+      toast({ title: 'Tanggal diperbarui' })
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Gagal update tanggal', description: error.message, variant: 'destructive' })
+    },
   })
-
-  // -- Render ------------------------------------------------------------------
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Stats */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-        <StatCard
-          title="Total AC Dimonitor"
-          value={stats.total}
-          icon={<Snowflake className="h-4 w-4 text-muted-foreground" />}
-          isLoading={isLoading}
-        />
-        <StatCard
-          title="Overdue"
-          value={stats.overdue}
-          icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
-          isLoading={isLoading}
-          tone="danger"
-        />
-        <StatCard
-          title="Jatuh Tempo Minggu Ini"
-          value={stats.dueThisWeek}
-          icon={<CalendarClock className="h-4 w-4 text-orange-500" />}
-          isLoading={isLoading}
-          tone="warning"
-        />
-        <StatCard
-          title="Aktif Reminder"
-          value={stats.activeReminders}
-          icon={<CheckCircle2 className="h-4 w-4 text-amber-500" />}
-          isLoading={isLoading}
-        />
+        <StatCard title="Total AC Dimonitor" value={stats.total} icon={<Snowflake className="h-4 w-4 text-muted-foreground" />} isLoading={isLoading} />
+        <StatCard title="Overdue" value={stats.overdue} icon={<AlertTriangle className="h-4 w-4 text-red-500" />} isLoading={isLoading} tone="danger" />
+        <StatCard title="Jatuh Tempo Minggu Ini" value={stats.dueThisWeek} icon={<CalendarClock className="h-4 w-4 text-orange-500" />} isLoading={isLoading} tone="warning" />
+        <StatCard title="Aktif Reminder" value={stats.activeReminders} icon={<CheckCircle2 className="h-4 w-4 text-amber-500" />} isLoading={isLoading} />
       </div>
 
-      {/* Filters */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Filter</CardTitle>
@@ -520,87 +228,49 @@ export function MonitoringTab() {
             <div className="relative w-full sm:flex-1 sm:min-w-[240px] sm:max-w-sm">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Cari customer, lokasi, brand, atau model..."
+                placeholder="Cari customer, nomor, brand, model..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(0) }}
                 className="pl-9"
               />
             </div>
-
             <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
-              <Select
-                value={statusFilter}
-                onValueChange={(v) =>
-                  setStatusFilter(v as ServicedAcStatusFilter)
-                }
-              >
+              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as ServicedAcStatusFilter); setPage(0) }}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Status</SelectItem>
                   <SelectItem value="overdue">Overdue</SelectItem>
-                  <SelectItem value="due_soon">Jatuh Tempo (≤7 hari)</SelectItem>
+                  <SelectItem value="due_soon">Jatuh Tempo (7 hari)</SelectItem>
                   <SelectItem value="upcoming">Mendatang</SelectItem>
                   <SelectItem value="no_date">Belum ada jadwal</SelectItem>
                 </SelectContent>
               </Select>
-
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      !dateFrom && 'text-muted-foreground',
-                      'w-full sm:min-w-[120px]'
-                    )}
-                  >
+                  <Button variant="outline" className={cn(!dateFrom && 'text-muted-foreground', 'w-full sm:min-w-[120px]')}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateFrom
-                      ? format(dateFrom, 'd MMM', { locale: localeId })
-                      : 'Dari'}
+                    {dateFrom ? format(dateFrom, 'd MMM', { locale: localeId }) : 'Dari'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dateFrom}
-                    onSelect={setDateFrom}
-                  />
+                  <Calendar mode="single" selected={dateFrom} onSelect={(d) => { setDateFrom(d); setPage(0) }} />
                 </PopoverContent>
               </Popover>
-
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      !dateTo && 'text-muted-foreground',
-                      'w-full sm:min-w-[120px]'
-                    )}
-                  >
+                  <Button variant="outline" className={cn(!dateTo && 'text-muted-foreground', 'w-full sm:min-w-[120px]')}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateTo
-                      ? format(dateTo, 'd MMM', { locale: localeId })
-                      : 'Sampai'}
+                    {dateTo ? format(dateTo, 'd MMM', { locale: localeId }) : 'Sampai'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dateTo}
-                    onSelect={setDateTo}
-                  />
+                  <Calendar mode="single" selected={dateTo} onSelect={(d) => { setDateTo(d); setPage(0) }} />
                 </PopoverContent>
               </Popover>
-
               {hasFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="col-span-2 sm:col-span-1"
-                >
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="col-span-2 sm:col-span-1">
                   <X className="mr-1 h-4 w-4" />
                   Reset
                 </Button>
@@ -610,71 +280,51 @@ export function MonitoringTab() {
         </CardContent>
       </Card>
 
-      {/* Table */}
       <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Service Records ({filtered.length})</CardTitle>
+            <span className="text-xs text-muted-foreground hidden sm:block">Sorted by next service due date (nearest first)</span>
+          </div>
+        </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="space-y-2 p-4">
               {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+                <Skeleton key={i} className="h-14 w-full" />
               ))}
             </div>
           ) : filtered.length === 0 ? (
             hasFilters ? (
-              <EmptyState
-                icon={Snowflake}
-                title="Tidak ada AC yang cocok"
-                description="Coba ubah filter pencarian atau reset filter."
-                action={{ label: 'Reset Filter', onClick: clearFilters, icon: X }}
-              />
+              <EmptyState icon={Snowflake} title="Tidak ada AC yang cocok" description="Coba ubah filter pencarian atau reset filter." action={{ label: 'Reset Filter', onClick: clearFilters, icon: X }} />
             ) : (
-              <EmptyState
-                icon={Wrench}
-                title="Belum ada AC yang pernah di-service"
-                description="AC akan muncul di sini setelah teknisi menyelesaikan service report dan mengisi tanggal service berikutnya."
-              />
+              <EmptyState icon={Wrench} title="Belum ada AC yang pernah di-service" description="AC akan muncul di sini setelah teknisi menyelesaikan service report dan mengisi tanggal service berikutnya." />
             )
           ) : (
-            <div className="data-table-container overflow-x-auto">
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  {table.getHeaderGroups().map((hg) => (
-                    <TableRow key={hg.id}>
-                      {hg.headers.map((h) => {
-                        const meta = h.column.columnDef.meta as
-                          | { className?: string }
-                          | undefined
-                        return (
-                          <TableHead key={h.id} className={meta?.className}>
-                            {h.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  h.column.columnDef.header,
-                                  h.getContext()
-                                )}
-                          </TableHead>
-                        )
-                      })}
-                    </TableRow>
-                  ))}
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>AC Unit</TableHead>
+                    <TableHead className="hidden lg:table-cell">Last Service</TableHead>
+                    <TableHead>Next Service Due</TableHead>
+                    <TableHead className="hidden md:table-cell">Service Type</TableHead>
+                    <TableHead className="hidden lg:table-cell">Reminder History</TableHead>
+                    <TableHead className="hidden md:table-cell">Status</TableHead>
+                    <TableHead className="w-[48px]"></TableHead>
+                  </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {table.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id}>
-                      {row.getVisibleCells().map((cell) => {
-                        const meta = cell.column.columnDef.meta as
-                          | { className?: string }
-                          | undefined
-                        return (
-                          <TableCell key={cell.id} className={meta?.className}>
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </TableCell>
-                        )
-                      })}
-                    </TableRow>
+                  {paginated.map((u) => (
+                    <ServiceRecordRow
+                      key={u.ac_unit_id}
+                      unit={u}
+                      onSendReminder={() => createMutation.mutate(u.ac_unit_id)}
+                      isSending={createMutation.isPending && createMutation.variables === u.ac_unit_id}
+                      onUpdateDate={(newDate) => dateMutation.mutate({ acUnitId: u.ac_unit_id, newDate })}
+                      isUpdatingDate={dateMutation.isPending && (dateMutation.variables as { acUnitId: string } | undefined)?.acUnitId === u.ac_unit_id}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -683,31 +333,17 @@ export function MonitoringTab() {
         </CardContent>
       </Card>
 
-      {/* Pagination */}
-      {filtered.length > 0 && (
+      {filtered.length > PAGE_SIZE && (
         <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground text-center sm:text-left">
-            Menampilkan {table.getRowModel().rows.length} dari {filtered.length}{' '}
-            unit AC
+            Menampilkan {Math.min((page + 1) * PAGE_SIZE, filtered.length)} dari {filtered.length} unit AC
             {isFetching && ' • memuat ulang...'}
           </p>
           <div className="flex gap-2 justify-center sm:justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              className="flex-1 sm:flex-none"
-            >
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="flex-1 sm:flex-none">
               Sebelumnya
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              className="flex-1 sm:flex-none"
-            >
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="flex-1 sm:flex-none">
               Berikutnya
             </Button>
           </div>
@@ -716,10 +352,6 @@ export function MonitoringTab() {
     </div>
   )
 }
-
-// =============================================================================
-// Sub-components
-// =============================================================================
 
 function StatCard({
   title,
@@ -756,5 +388,130 @@ function StatCard({
         )}
       </CardContent>
     </Card>
+  )
+}
+
+interface ServiceRecordRowProps {
+  unit: ServicedAcUnitRow
+  onSendReminder: () => void
+  isSending: boolean
+  onUpdateDate: (newDate: string | null) => void
+  isUpdatingDate: boolean
+}
+
+function ServiceRecordRow({ unit: u, onSendReminder, isSending, onUpdateDate, isUpdatingDate }: ServiceRecordRowProps) {
+  const [datePickerOpen, setDatePickerOpen] = useState(false)
+  const [pickedDate, setPickedDate] = useState<Date | undefined>(
+    u.next_service_due_date ? new Date(`${u.next_service_due_date}T00:00:00`) : undefined
+  )
+
+  const days = daysFromToday(u.next_service_due_date)
+
+  function handleDateSelect(d: Date | undefined) {
+    setPickedDate(d)
+    if (d) {
+      const iso = format(d, 'yyyy-MM-dd')
+      onUpdateDate(iso)
+      setDatePickerOpen(false)
+    }
+  }
+
+  return (
+    <TableRow>
+      <TableCell>
+        <div className="font-medium text-sm">{u.customer_name ?? '—'}</div>
+        <div className="text-xs text-muted-foreground">{u.customer_phone ?? '—'}</div>
+      </TableCell>
+
+      <TableCell>
+        <div className="font-medium text-sm">
+          {[u.brand, u.model_number].filter(Boolean).join(' ') || '—'}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {u.unit_type_name ?? u.ac_type ?? '—'}
+        </div>
+      </TableCell>
+
+      <TableCell className="hidden lg:table-cell">
+        <span className="text-sm">{fmtDate(u.last_service_date)}</span>
+      </TableCell>
+
+      <TableCell>
+        <div className="space-y-1">
+          <div className="text-sm">{fmtDate(u.next_service_due_date)}</div>
+          {days !== null && days < 0 && (
+            <Badge variant="destructive" className="text-xs">
+              Overdue ({Math.abs(days)} hari)
+            </Badge>
+          )}
+          {days !== null && days >= 0 && days <= 7 && (
+            <Badge variant="outline" className="border-orange-200 bg-orange-50 text-orange-700 text-xs dark:border-orange-900 dark:bg-orange-950/40 dark:text-orange-300">
+              Jatuh tempo dalam {days} hari
+            </Badge>
+          )}
+          <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                disabled={isUpdatingDate}
+              >
+                <Pencil className="h-3 w-3" />
+                {u.next_service_due_date ? 'Edit tanggal' : 'Set tanggal'}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={pickedDate}
+                onSelect={handleDateSelect}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      </TableCell>
+
+      <TableCell className="hidden md:table-cell">
+        {u.latest_service_type ? (
+          <Badge variant="outline" className="text-xs">{u.latest_service_type}</Badge>
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
+        )}
+      </TableCell>
+
+      <TableCell className="hidden lg:table-cell">
+        <div className="space-y-1">
+          <Badge variant="secondary" className="rounded-full text-xs">
+            {u.reminder_count} reminders
+          </Badge>
+          {u.last_reminder_sent_at && (
+            <div className="text-xs text-muted-foreground">
+              Last: {fmtDateTime(u.last_reminder_sent_at)}
+            </div>
+          )}
+        </div>
+      </TableCell>
+
+      <TableCell className="hidden md:table-cell">
+        {u.latest_order_status ? (
+          <StatusBadge status={u.latest_order_status} size="sm" />
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
+        )}
+      </TableCell>
+
+      <TableCell>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8"
+          onClick={onSendReminder}
+          disabled={isSending}
+          title="Kirim reminder manual"
+        >
+          <MessageSquare className="h-4 w-4" />
+        </Button>
+      </TableCell>
+    </TableRow>
   )
 }

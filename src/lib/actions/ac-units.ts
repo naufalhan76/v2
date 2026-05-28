@@ -1,8 +1,45 @@
 'use server'
 
 import { createClient } from '@/lib/supabase-server'
+import { getUser, getUserRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+
+const WRITE_ROLES = ['SUPERADMIN', 'ADMIN'] as const
+
+export async function updateAcUnitNextServiceDate(
+  acUnitId: string,
+  newDate: string | null
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getUser()
+    if (!user) return { success: false, error: 'Not authenticated' }
+    const role = await getUserRole()
+    if (!role || !WRITE_ROLES.includes(role as typeof WRITE_ROLES[number])) {
+      return { success: false, error: 'Forbidden: insufficient role' }
+    }
+
+    const supabase = await createClient()
+    const { error } = await supabase
+      .from('ac_units')
+      .update({
+        next_service_due_date: newDate ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('ac_unit_id', acUnitId)
+
+    if (error) throw error
+
+    revalidatePath('/dashboard/reminders')
+    return { success: true }
+  } catch (err) {
+    logger.error('updateAcUnitNextServiceDate failed:', err)
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Failed to update date',
+    }
+  }
+}
 
 export async function getAcUnits(filters?: {
   search?: string

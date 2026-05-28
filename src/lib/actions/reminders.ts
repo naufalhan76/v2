@@ -666,25 +666,34 @@ export interface ServicedAcUnitRow {
   ac_unit_id: string
   customer_id: string | null
   customer_name: string | null
+  customer_phone: string | null
   location_id: string | null
   location_address: string | null
   brand: string | null
   model_number: string | null
+  ac_type: string | null
+  unit_type_name: string | null
   capacity_btu: number | null
   last_service_date: string | null
   next_service_due_date: string | null
   has_pending_reminder: boolean
+  reminder_count: number
+  last_reminder_sent_at: string | null
+  latest_order_status: string | null
+  latest_service_type: string | null
 }
 
 interface RawAcUnitRow {
   ac_unit_id: string
   brand: string | null
   model_number: string | null
+  ac_type: string | null
   capacity_btu: number | null
   last_service_date: string | null
   next_service_due_date: string | null
   location_id: string | null
   ac_brands: { name: string } | null
+  unit_types: { name: string } | null
   locations: {
     location_id: string
     full_address: string | null
@@ -693,6 +702,7 @@ interface RawAcUnitRow {
     customers: {
       customer_id: string
       customer_name: string | null
+      phone_number: string | null
     } | null
   } | null
 }
@@ -720,11 +730,13 @@ export async function getServicedAcUnits(
           ac_unit_id,
           brand,
           model_number,
+          ac_type,
           capacity_btu,
           last_service_date,
           next_service_due_date,
           location_id,
           ac_brands ( name ),
+          unit_types ( name ),
           locations (
             location_id,
             full_address,
@@ -732,7 +744,8 @@ export async function getServicedAcUnits(
             city,
             customers (
               customer_id,
-              customer_name
+              customer_name,
+              phone_number
             )
           )
         `
@@ -751,19 +764,61 @@ export async function getServicedAcUnits(
     if (error) throw error
     const rawUnits = (data ?? []) as unknown as RawAcUnitRow[]
 
-    // Pull pending reminders so we can mark each unit
     const unitIds = rawUnits.map((u) => u.ac_unit_id)
     const pendingSet = new Set<string>()
+    const reminderCountMap = new Map<string, number>()
+    const lastSentMap = new Map<string, string>()
+
     if (unitIds.length > 0) {
-      const { data: pendingData, error: pendingErr } = await supabase
+      const { data: reminderData, error: reminderErr } = await supabase
         .from('customer_reminders')
-        .select('ac_unit_id')
-        .eq('status', 'PENDING')
+        .select('ac_unit_id, status, sent_at')
         .in('ac_unit_id', unitIds)
 
-      if (pendingErr) throw pendingErr
-      for (const row of (pendingData ?? []) as { ac_unit_id: string | null }[]) {
-        if (row.ac_unit_id) pendingSet.add(row.ac_unit_id)
+      if (reminderErr) throw reminderErr
+      for (const row of (reminderData ?? []) as { ac_unit_id: string | null; status: string; sent_at: string | null }[]) {
+        if (!row.ac_unit_id) continue
+        if (row.status === 'PENDING') pendingSet.add(row.ac_unit_id)
+        reminderCountMap.set(row.ac_unit_id, (reminderCountMap.get(row.ac_unit_id) ?? 0) + 1)
+        if (row.sent_at) {
+          const prev = lastSentMap.get(row.ac_unit_id)
+          if (!prev || row.sent_at > prev) lastSentMap.set(row.ac_unit_id, row.sent_at)
+        }
+      }
+    }
+
+    const latestOrderStatusMap = new Map<string, string>()
+    const latestServiceTypeMap = new Map<string, string>()
+
+    if (unitIds.length > 0) {
+      const { data: orderItemData, error: orderItemErr } = await supabase
+        .from('order_items')
+        .select('ac_unit_id, service_type, orders ( status, created_at )')
+        .in('ac_unit_id', unitIds)
+
+      if (orderItemErr) throw orderItemErr
+
+      for (const row of (orderItemData ?? []) as unknown as Array<{
+        ac_unit_id: string | null
+        service_type: string | null
+        orders: { status: string; created_at: string } | Array<{ status: string; created_at: string }> | null
+      }>) {
+        if (!row.ac_unit_id) continue
+        const order = Array.isArray(row.orders) ? row.orders[0] : row.orders
+        if (!order) continue
+        const prev = latestOrderStatusMap.get(row.ac_unit_id)
+        const prevCreatedAt = prev
+          ? ((orderItemData ?? []) as unknown as Array<{ ac_unit_id: string | null; orders: unknown }>)
+              .map((r) => {
+                const o = Array.isArray(r.orders) ? (r.orders as Array<{ status: string; created_at: string }>)[0] : r.orders as { status: string; created_at: string } | null
+                return r.ac_unit_id === row.ac_unit_id && o?.status === prev ? o?.created_at ?? '' : ''
+              })
+              .find((v) => v !== '') ?? ''
+          : ''
+        if (!prev || order.created_at > prevCreatedAt) {
+          latestOrderStatusMap.set(row.ac_unit_id, order.status)
+          if (row.service_type) latestServiceTypeMap.set(row.ac_unit_id, row.service_type)
+        }
       }
     }
 
@@ -784,14 +839,21 @@ export async function getServicedAcUnits(
         ac_unit_id: u.ac_unit_id,
         customer_id: cust?.customer_id ?? null,
         customer_name: cust?.customer_name ?? null,
+        customer_phone: cust?.phone_number ?? null,
         location_id: loc?.location_id ?? u.location_id ?? null,
         location_address: fullAddr,
         brand: u.ac_brands?.name ?? u.brand ?? null,
         model_number: u.model_number,
+        ac_type: u.ac_type ?? null,
+        unit_type_name: u.unit_types?.name ?? null,
         capacity_btu: u.capacity_btu,
         last_service_date: u.last_service_date,
         next_service_due_date: u.next_service_due_date,
         has_pending_reminder: pendingSet.has(u.ac_unit_id),
+        reminder_count: reminderCountMap.get(u.ac_unit_id) ?? 0,
+        last_reminder_sent_at: lastSentMap.get(u.ac_unit_id) ?? null,
+        latest_order_status: latestOrderStatusMap.get(u.ac_unit_id) ?? null,
+        latest_service_type: latestServiceTypeMap.get(u.ac_unit_id) ?? null,
       }
     })
 
@@ -824,11 +886,13 @@ export async function getServicedAcUnits(
       if (q) {
         result = result.filter((row) => {
           const name = row.customer_name?.toLowerCase() ?? ''
+          const phone = row.customer_phone?.toLowerCase() ?? ''
           const addr = row.location_address?.toLowerCase() ?? ''
           const brand = row.brand?.toLowerCase() ?? ''
           const model = row.model_number?.toLowerCase() ?? ''
           return (
             name.includes(q) ||
+            phone.includes(q) ||
             addr.includes(q) ||
             brand.includes(q) ||
             model.includes(q)
