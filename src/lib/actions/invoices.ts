@@ -751,7 +751,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     throw new Error('Order tidak sesuai dengan customer yang dipilih')
   }
 
-  if (order.status !== 'DONE') {
+  if (!['DONE', 'COMPLETED'].includes(order.status)) {
     throw new Error('Order belum memenuhi syarat untuk pembuatan invoice')
   }
 
@@ -830,7 +830,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
       .eq('order_id', input.order_id)
       .single()
     
-    if (order?.status === 'DONE') {
+    if (order?.status === 'COMPLETED' || order?.status === 'DONE') {
       await supabase
         .from('orders')
         .update({ status: 'INVOICED', updated_at: new Date().toISOString() })
@@ -1346,11 +1346,11 @@ export async function deleteInvoice(invoiceId: string): Promise<void> {
     throw new Error('Gagal menghapus invoice')
   }
 
-  // Revert order status: INVOICED → DONE
+  // Revert order status: INVOICED → COMPLETED
   if (invoice.order_id && invoice.invoice_type === 'FINAL') {
     await supabase
       .from('orders')
-      .update({ status: 'DONE', updated_at: new Date().toISOString() })
+      .update({ status: 'COMPLETED', updated_at: new Date().toISOString() })
       .eq('order_id', invoice.order_id)
   }
 
@@ -1479,11 +1479,11 @@ export async function updateInvoiceStatus(
     throw new Error('Gagal mengupdate status invoice')
   }
 
-  // Sync order status: If invoice cancelled, revert order to DONE
+  // Sync order status: If invoice cancelled, revert order to COMPLETED
   if (status === 'CANCELLED' && data?.order_id && data?.invoice_type === 'FINAL') {
     await supabase
       .from('orders')
-      .update({ status: 'DONE', updated_at: new Date().toISOString() })
+      .update({ status: 'COMPLETED', updated_at: new Date().toISOString() })
       .eq('order_id', data.order_id)
   }
 

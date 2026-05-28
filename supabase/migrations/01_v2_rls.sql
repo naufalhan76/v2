@@ -76,12 +76,16 @@ CREATE POLICY "user_mgmt_superadmin_write" ON public.user_management
   WITH CHECK (current_user_role() = 'SUPERADMIN');
 
 -- =============================================================================
--- TECHNICIANS (admin/super manage; technicians read own row)
+-- TECHNICIANS (admin/super manage; finance read-only; technicians read own row)
 -- =============================================================================
-CREATE POLICY "technicians_admin_all" ON public.technicians
+CREATE POLICY "technicians_admin_write" ON public.technicians
   FOR ALL TO authenticated
-  USING (current_user_role() IN ('SUPERADMIN', 'ADMIN', 'FINANCE'))
+  USING (current_user_role() IN ('SUPERADMIN', 'ADMIN'))
   WITH CHECK (current_user_role() IN ('SUPERADMIN', 'ADMIN'));
+
+CREATE POLICY "technicians_finance_read" ON public.technicians
+  FOR SELECT TO authenticated
+  USING (current_user_role() = 'FINANCE');
 
 CREATE POLICY "technicians_self_read" ON public.technicians
   FOR SELECT TO authenticated
@@ -261,20 +265,19 @@ CREATE POLICY "service_reports_admin_update" ON public.service_reports
   USING (current_user_role() IN ('SUPERADMIN', 'ADMIN'))
   WITH CHECK (current_user_role() IN ('SUPERADMIN', 'ADMIN'));
 
--- legacy service_records / service_reminders
-DO $$
-DECLARE t TEXT;
-BEGIN
-  FOREACH t IN ARRAY ARRAY['service_records', 'service_reminders']
-  LOOP
-    EXECUTE format(
-      'CREATE POLICY "%I_admin_all" ON public.%I FOR ALL TO authenticated ' ||
-      'USING (current_user_role() IN (''SUPERADMIN'', ''ADMIN'', ''FINANCE'')) ' ||
-      'WITH CHECK (current_user_role() IN (''SUPERADMIN'', ''ADMIN''))',
-      t, t
-    );
-  END LOOP;
-END $$;
+CREATE POLICY "service_records_admin_write" ON public.service_records
+  FOR ALL TO authenticated
+  USING (current_user_role() IN ('SUPERADMIN', 'ADMIN'))
+  WITH CHECK (current_user_role() IN ('SUPERADMIN', 'ADMIN'));
+
+CREATE POLICY "service_records_finance_read" ON public.service_records
+  FOR SELECT TO authenticated
+  USING (current_user_role() = 'FINANCE');
+
+CREATE POLICY "service_reminders_admin_all" ON public.service_reminders
+  FOR ALL TO authenticated
+  USING (current_user_role() IN ('SUPERADMIN', 'ADMIN', 'FINANCE'))
+  WITH CHECK (current_user_role() IN ('SUPERADMIN', 'ADMIN'));
 
 -- =============================================================================
 -- INVOICES & PAYMENTS
