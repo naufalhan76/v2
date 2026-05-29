@@ -10,13 +10,15 @@ import { JobDetailSkeleton } from './job-detail-skeleton'
 import { cn } from '@/lib/utils'
 import { useState, useEffect } from 'react'
 import type { OrderStatus } from '@/lib/order-status'
+import { captureGps } from '@/lib/utils/geolocation'
+import type { GpsResult } from '@/lib/utils/geolocation'
 
 interface JobDetailContentProps {
   orderId: string
 }
 
 async function fetchJobDetail(orderId: string) {
-  const res = await fetch(`/api/technician/jobs/${orderId}`, {
+  const res = await fetch(`/api/technician/jobs/${encodeURIComponent(orderId)}`, {
     credentials: 'include',
   })
   if (!res.ok) throw new Error('Gagal memuat detail pekerjaan')
@@ -25,18 +27,33 @@ async function fetchJobDetail(orderId: string) {
   return json.data
 }
 
-async function transitionJob(orderId: string, toStatus: string) {
-  const res = await fetch(`/api/technician/jobs/${orderId}/transition`, {
+type TransitionPayload = {
+  to_status: string
+  idempotency_key: string
+  gps: GpsResult
+}
+
+async function transitionJob(orderId: string, payload: TransitionPayload) {
+  const res = await fetch(`/api/technician/jobs/${encodeURIComponent(orderId)}/transition`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ to_status: toStatus }),
+    body: JSON.stringify(payload),
   })
   if (!res.ok) {
     const json = await res.json()
     throw new Error(json.error || 'Gagal mengubah status')
   }
   return res.json()
+}
+
+async function buildTransitionPayload(toStatus: string): Promise<TransitionPayload> {
+  const gps = await captureGps({ timeoutMs: 5_000 })
+  return {
+    to_status: toStatus,
+    idempotency_key: crypto.randomUUID(),
+    gps,
+  }
 }
 
 export function JobDetailContent({ orderId }: JobDetailContentProps) {
@@ -51,7 +68,10 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
   })
 
   const transitionMutation = useMutation({
-    mutationFn: (toStatus: string) => transitionJob(orderId, toStatus),
+    mutationFn: async (toStatus: string) => {
+      const payload = await buildTransitionPayload(toStatus)
+      return transitionJob(orderId, payload)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['technician', 'job', orderId] })
       queryClient.invalidateQueries({ queryKey: ['technician', 'jobs', 'today'] })
@@ -237,7 +257,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
         {canonicalStatus === 'IN_PROGRESS' && (
           <Button
-            onClick={() => router.push(`/technician/job/${orderId}/complete`)}
+              onClick={() => router.push(`/technician/job/${encodeURIComponent(orderId)}/complete`)}
             className="w-full h-12 text-base font-medium"
             size="lg"
           >

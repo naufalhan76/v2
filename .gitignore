@@ -48,3 +48,12 @@ update_page.py
 # Brainstorming companion artifacts
 .superpowers/
 .env.staging
+
+# Playwright artifacts
+/test-results/
+/playwright-report/
+/playwright/.cache/
+.env.test.local
+
+# Agent evidence (regenerated on every run)
+.omo/evidence/

@@ -37,11 +37,12 @@ export async function middleware(req: NextRequest) {
     request: req,
   })
 
-  // Skip middleware for static files and API routes to reduce rate limit usage
+  // Skip middleware for static files, API routes, and dev-only test harness
   const pathname = req.nextUrl.pathname
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
+    pathname.startsWith('/__test') ||
     pathname.includes('.') // Skip files with extensions
   ) {
     return res

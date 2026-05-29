@@ -41,7 +41,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
 
   return (
     <Link
-      href={`/technician/job/${job.order_id}`}
+      href={`/technician/job/${encodeURIComponent(job.order_id)}`}
       className={cn(
         'block rounded-xl border p-4 transition-colors active:bg-accent/50',
         isActive

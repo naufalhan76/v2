@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { Camera, X, Loader2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase-browser'
+import { compressImage } from '@/lib/utils/image-compression'
 
 interface PhotoUploadProps {
   /** Label for the photo group */
@@ -22,66 +23,6 @@ interface PhotoUploadProps {
   max?: number
   /** Disable interaction */
   disabled?: boolean
-}
-
-/**
- * Compress an image file using canvas.
- * Target: JPEG quality 0.7, max dimension 1200px, ~500KB result.
- */
-async function compressImage(file: File): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-
-      // Calculate target dimensions (max 1200px on longest side)
-      const MAX_DIM = 1200
-      let { width, height } = img
-
-      if (width > MAX_DIM || height > MAX_DIM) {
-        if (width > height) {
-          height = Math.round((height * MAX_DIM) / width)
-          width = MAX_DIM
-        } else {
-          width = Math.round((width * MAX_DIM) / height)
-          height = MAX_DIM
-        }
-      }
-
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        reject(new Error('Canvas context not available'))
-        return
-      }
-
-      ctx.drawImage(img, 0, 0, width, height)
-
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            resolve(blob)
-          } else {
-            reject(new Error('Compression failed'))
-          }
-        },
-        'image/jpeg',
-        0.7
-      )
-    }
-
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      reject(new Error('Failed to load image'))
-    }
-
-    img.src = url
-  })
 }
 
 export function PhotoUpload({
@@ -131,7 +72,7 @@ export function PhotoUpload({
           }
 
           // Compress
-          const compressed = await compressImage(file)
+          const { blob } = await compressImage(file, { maxBytes: 1_000_000, maxDimension: 1600 })
 
           // Generate unique filename
           const timestamp = Date.now()
@@ -140,8 +81,8 @@ export function PhotoUpload({
           // Upload to Supabase Storage
           const { data, error: uploadError } = await supabase.storage
             .from(bucket)
-            .upload(filename, compressed, {
-              contentType: 'image/jpeg',
+            .upload(filename, blob, {
+              contentType: blob.type,
               upsert: false,
             })
 

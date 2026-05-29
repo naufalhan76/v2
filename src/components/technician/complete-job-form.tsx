@@ -215,7 +215,7 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
       const signaturePath = sigData.path
 
       // 2. Submit report via API
-      const res = await fetch(`/api/technician/jobs/${orderId}/report`, {
+      const res = await fetch(`/api/technician/jobs/${encodeURIComponent(orderId)}/report`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -270,7 +270,7 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
       {/* Header */}
       <div className="flex items-center gap-2">
         <Link
-          href={`/technician/job/${orderId}`}
+          href={`/technician/job/${encodeURIComponent(orderId)}`}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground h-11 px-1"
         >
           <ArrowLeft className="h-4 w-4" />

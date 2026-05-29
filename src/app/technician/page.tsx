@@ -4,7 +4,7 @@ import { TodayJobsSkeleton } from '@/components/technician/today-jobs-skeleton'
 
 export default function TechnicianTodayPage() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="technician-home">
       {/* Header */}
       <div className="pt-2">
         <h1 className="text-xl font-semibold">Pekerjaan Hari Ini</h1>

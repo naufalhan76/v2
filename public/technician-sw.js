@@ -1,8 +1,15 @@
 // MSN Tech Service Worker
 // Phase 2: app shell + offline fallback
 // Phase 4: push notifications
+// Phase 6: offline sync (Background Sync API + online-event fallback)
+//
+// IMPORTANT: bump CACHE_NAME on every change to this file. Existing push
+// handlers must remain intact — push notifications are a P0 regression risk
+// when this SW updates.
 
-const CACHE_NAME = 'msn-tech-v2'
+const CACHE_NAME = 'msn-tech-v3'
+const SYNC_TAG_REPORTS = 'msn-tech-sync-reports'
+const SYNC_TAG_TRANSITIONS = 'msn-tech-sync-transitions'
 
 const PRECACHE_URLS = [
   '/technician',
@@ -140,6 +147,47 @@ self.addEventListener('notificationclick', (event) => {
   )
 })
 
+// =========================================================================
+// Background sync (Phase 6)
+//
+// On `sync` events the SW only nudges open clients to drain their queues —
+// the actual upload logic lives in `src/lib/offline/sync-manager.ts` so it
+// can share TypeScript types with the rest of the app and use the
+// authenticated supabase-js client (refresh token flow).
+//
+// iOS Safari does NOT support Background Sync. The client-side
+// `useOnlineSync` hook is the primary trigger; this SW path is an
+// enhancement on Chromium / Android.
+// =========================================================================
+
+async function notifyClientsToSync(reason) {
+  const clientsList = await self.clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true,
+  })
+  for (const client of clientsList) {
+    client.postMessage({ type: 'SYNC_REQUEST', reason })
+  }
+}
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === SYNC_TAG_REPORTS || event.tag === SYNC_TAG_TRANSITIONS) {
+    event.waitUntil(notifyClientsToSync(event.tag))
+  }
+})
+
+self.addEventListener('message', (event) => {
+  // Allow the client to ask the SW to register a one-shot background sync.
+  if (event.data && event.data.type === 'REGISTER_SYNC') {
+    const tag = event.data.tag || SYNC_TAG_REPORTS
+    if ('sync' in self.registration) {
+      // Best-effort — failure (e.g. permission policy) is silent; the client
+      // online-event listener still drives the queue.
+      self.registration.sync.register(tag).catch(() => {})
+    }
+  }
+})
+
 self.addEventListener('pushsubscriptionchange', (event) => {
   event.waitUntil(
     self.clients.matchAll({ type: 'window' }).then((clients) => {
@@ -150,15 +198,4 @@ self.addEventListener('pushsubscriptionchange', (event) => {
   )
 })
 
-// Inline copy of urlBase64ToUint8Array — duplicated from src/lib/push.ts
-// because the SW cannot import from app code.
-function urlBase64ToUint8Array(base64) {
-  const padding = '='.repeat((4 - (base64.length % 4)) % 4)
-  const normalized = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const raw = atob(normalized)
-  const out = new Uint8Array(raw.length)
-  for (let i = 0; i < raw.length; i++) {
-    out[i] = raw.charCodeAt(i)
-  }
-  return out
-}
+// Subscribe-side utilities live in src/lib/push.ts

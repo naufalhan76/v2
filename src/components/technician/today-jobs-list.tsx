@@ -68,7 +68,7 @@ export function TodayJobsList() {
   })
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-testid="today-jobs-section">
       {sorted.map((job) => (
         <TodayJobCard key={job.order_id} job={job} />
       ))}

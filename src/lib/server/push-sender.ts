@@ -211,7 +211,7 @@ export async function sendJobAssignedNotification(
     body: date
       ? `${customerName} • jadwal ${date}`
       : `${customerName}`,
-    url: `/technician/job/${orderId}`,
+    url: `/technician/job/${encodeURIComponent(orderId)}`,
     tag: `job-assigned:${orderId}`,
     orderId,
   }).catch((err) => log.error('sendJobAssignedNotification failed', err))
@@ -237,7 +237,7 @@ export async function sendJobRescheduledNotification(
   await sendPushToUser(userId, {
     title: 'Job dijadwal ulang',
     body: `Jadwal baru: ${formatted}. Tap untuk detail.`,
-    url: `/technician/job/${orderId}`,
+    url: `/technician/job/${encodeURIComponent(orderId)}`,
     tag: `job-rescheduled:${orderId}`,
     orderId,
   }).catch((err) => log.error('sendJobRescheduledNotification failed', err))

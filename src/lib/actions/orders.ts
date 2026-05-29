@@ -573,6 +573,26 @@ export async function cancelOrder(orderId: string, reason?: string) {
       transition_date: new Date().toISOString(),
     })
     
+    // Cascade-cancel any PROFORMA invoices for this order (best-effort)
+    try {
+      const { data: proformas } = await supabase
+        .from('invoices')
+        .select('invoice_id')
+        .eq('order_id', orderId)
+        .eq('invoice_type', 'PROFORMA')
+        .neq('status', 'CANCELLED')
+
+      if (proformas?.length) {
+        await supabase
+          .from('invoices')
+          .update({ status: 'CANCELLED', updated_at: new Date().toISOString() })
+          .in('invoice_id', proformas.map(p => p.invoice_id))
+        logger.info(`cancelOrder cascaded ${proformas.length} PROFORMA invoices for ${orderId}`)
+      }
+    } catch (cascadeError) {
+      logger.warn('cancelOrder: failed to cascade-cancel PROFORMA invoices:', cascadeError)
+    }
+
     revalidatePath('/orders')
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/operasional/accept-order')

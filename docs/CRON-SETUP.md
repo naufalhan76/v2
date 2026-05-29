@@ -177,3 +177,45 @@ A "Generate Reminder Sekarang" button is available at `/dashboard/reminders`
 for SUPERADMIN/ADMIN users. It calls the same endpoint with the current
 session, bypassing the cron secret. Useful for backfilling after schema
 changes or testing the generator output.
+
+---
+
+## Reminder rule prerequisite
+
+The reminder generator only creates `customer_reminders` rows for AC units
+that match an active row in `reminder_rules`. If no active rules exist, the
+endpoint returns successfully but generates zero reminders.
+
+### Default rule (migration 015)
+
+`migrations/015_default_reminder_rule.sql` seeds one rule named
+`'Default same-day'` with `days_before_due = 0`. This rule causes the
+generator to produce a reminder on the exact day `ac_units.next_service_due_date`
+equals today. The migration is idempotent — running it more than once will
+not create duplicate rows.
+
+To apply the migration, run it against your Supabase project:
+
+```bash
+psql "$DATABASE_URL" -f migrations/015_default_reminder_rule.sql
+```
+
+To roll it back:
+
+```bash
+psql "$DATABASE_URL" -f migrations/015_rollback_default_reminder_rule.sql
+```
+
+### Inspecting active rules
+
+```sql
+SELECT * FROM reminder_rules WHERE is_active = true ORDER BY days_before_due;
+```
+
+Each row with `is_active = true` defines one reminder trigger. The
+`days_before_due` value controls how many days before `next_service_due_date`
+the reminder is queued. A value of `0` means the reminder fires on the same
+day the service is due. A value of `7` means it fires seven days in advance.
+
+If you need reminders at multiple lead times (e.g. same-day and three days
+prior), insert additional rules with the appropriate `days_before_due` values.

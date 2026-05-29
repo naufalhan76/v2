@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Eraser } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-interface SignaturePadProps {
+export interface SignaturePadProps {
   /** Called with base64 PNG data URL when signature changes */
   onChange: (dataUrl: string | null) => void
+  /** Called with a PNG Blob when the user finishes a stroke; null when cleared */
+  onBlobChange?: (blob: Blob | null) => void
   /** Initial value (base64 data URL) to restore from draft */
   value?: string | null
   /** Disable interaction */
@@ -17,12 +19,23 @@ interface SignaturePadProps {
   className?: string
 }
 
-export function SignaturePad({ onChange, value, disabled = false, className }: SignaturePadProps) {
+export function SignaturePad({ onChange, onBlobChange, value, disabled = false, className }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const padRef = useRef<SignaturePadLib | null>(null)
   const [isEmpty, setIsEmpty] = useState(true)
 
-  // Initialize signature pad
+  // Keep callback refs current on every render — prevents stale closures in event listeners
+  const onChangeRef = useRef(onChange)
+  const onBlobChangeRef = useRef(onBlobChange)
+  useEffect(() => {
+    onChangeRef.current = onChange
+    onBlobChangeRef.current = onBlobChange
+  })
+
+  // Guards so the init block only runs once; re-runs on disabled toggle are fine
+  const initializedRef = useRef(false)
+
+  // Initialize signature pad — re-runs only when disabled changes
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -45,20 +58,25 @@ export function SignaturePad({ onChange, value, disabled = false, className }: S
 
     padRef.current = pad
 
-    // Restore value if provided
-    if (value) {
+    // Restore initial value only on first mount — subsequent value changes
+    // are handled by the dedicated value-sync effect below
+    if (!initializedRef.current && value) {
       pad.fromDataURL(value, {
         width: canvas.offsetWidth,
         height: canvas.offsetHeight,
       })
       setIsEmpty(false)
     }
+    initializedRef.current = true
 
-    // Listen for end of stroke
+    // Listen for end of stroke — reads refs so we always call the latest callbacks
     pad.addEventListener('endStroke', () => {
       setIsEmpty(pad.isEmpty())
       if (!pad.isEmpty()) {
-        onChange(pad.toDataURL('image/png'))
+        onChangeRef.current?.(pad.toDataURL('image/png'))
+        if (onBlobChangeRef.current) {
+          canvas.toBlob((blob) => onBlobChangeRef.current?.(blob), 'image/png')
+        }
       }
     })
 
@@ -69,8 +87,35 @@ export function SignaturePad({ onChange, value, disabled = false, className }: S
     return () => {
       pad.off()
     }
+    // onChange/onBlobChange intentionally omitted — accessed via refs
+    // value intentionally omitted — initial restore handled above; post-mount changes below
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disabled])
+
+  // Sync value prop changes after mount (e.g. external clear or draft restore)
+  useEffect(() => {
+    const pad = padRef.current
+    const canvas = canvasRef.current
+    // Skip until the pad has been initialised by the effect above
+    if (!pad || !canvas || !initializedRef.current) return
+
+    if (value) {
+      // Only re-apply when the value actually differs to avoid redundant redraws
+      if (value !== pad.toDataURL('image/png')) {
+        pad.fromDataURL(value, {
+          width: canvas.offsetWidth,
+          height: canvas.offsetHeight,
+        })
+        setIsEmpty(false)
+      }
+    } else {
+      // null / undefined — clear if the pad still has content
+      if (!pad.isEmpty()) {
+        pad.clear()
+        setIsEmpty(true)
+      }
+    }
+  }, [value])
 
   // Handle resize
   useEffect(() => {
@@ -95,13 +140,15 @@ export function SignaturePad({ onChange, value, disabled = false, className }: S
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // Reads refs so the clear button always calls the latest callbacks
   const handleClear = useCallback(() => {
     const pad = padRef.current
     if (!pad) return
     pad.clear()
     setIsEmpty(true)
-    onChange(null)
-  }, [onChange])
+    onChangeRef.current?.(null)
+    onBlobChangeRef.current?.(null)
+  }, []) // onChange/onBlobChange intentionally omitted — accessed via refs
 
   return (
     <div className={cn('space-y-2', className)}>
