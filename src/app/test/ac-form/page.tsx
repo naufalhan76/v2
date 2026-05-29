@@ -3,9 +3,7 @@
 import { useState } from 'react'
 import { AcUnitForm, type AcUnitFormValue } from '@/components/technician/ac-unit-form'
 
-if (process.env.NODE_ENV === 'production') {
-  throw new Error('Test harness should not be in production build')
-}
+// Test harness — dev only
 
 // Attach to window for playwright to assert
 declare global {

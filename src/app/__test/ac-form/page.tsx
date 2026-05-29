@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import { AcFormHarness } from './harness'
 
+export const dynamic = 'force-dynamic'
+
 export default function AcFormTestPage() {
   if (process.env.NODE_ENV === 'production') {
     notFound()
