@@ -363,24 +363,54 @@ qaTest.describe.serial('G12 — Invoice cancel/void + status guard', () => {
   qaTest.fail(
     'KNOWN-BUG — PAID invoice can be set to CANCELLED without state-machine guard',
     async () => {
-      // Direct DB update bypasses updateInvoiceStatus server action —
-      // demonstrates that no guard prevents PAID → CANCELLED jump.
-      const { error } = await SUPABASE.from('invoices')
-        .update({
-          status: 'CANCELLED',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('invoice_id', paidInvoiceId)
+      await financePage.goto(
+        `/dashboard/keuangan/invoices/${paidInvoiceId}`,
+        { waitUntil: 'networkidle' },
+      )
 
-      expect(error).toBeNull()
+      // Attempt PAID → CANCELLED through the same app surface as void-revert.
+      const cancelBtn = financePage.getByRole('button', {
+        name: /batalkan|cancel|void/i,
+      })
+      const uiVisible = await cancelBtn
+        .isVisible({ timeout: 5_000 })
+        .catch(() => false)
+
+      if (uiVisible) {
+        await cancelBtn.click()
+        const confirm = financePage.getByRole('button', {
+          name: /ya|konfirmasi|confirm|lanjutkan/i,
+        })
+        if (await confirm.isVisible({ timeout: 3_000 }).catch(() => false)) {
+          await confirm.click()
+        }
+      } else {
+        const r = await financePage.request.patch(
+          `/api/invoices/${paidInvoiceId}/status`,
+          { data: { status: 'CANCELLED' } },
+        )
+        if (!r.ok()) {
+          await financePage.request.post(
+            `/api/invoices/${paidInvoiceId}/status`,
+            { data: { status: 'CANCELLED' } },
+          )
+        }
+      }
+
+      await financePage
+        .getByText(/berhasil|sukses|dibatalkan|cancelled/i)
+        .first()
+        .waitFor({ timeout: 10_000 })
+        .catch(() => {})
 
       const snap = await getFullOrderSnapshot(paidOrderId)
       const inv = snap.invoices.find((i) => i.invoiceId === paidInvoiceId)
-      expect(inv?.status).toBe('CANCELLED')
 
-      // KNOWN-BUG: PAID→CANCELLED succeeds — missing guard in
-      // updateInvoiceStatus. When fixed, this test will start failing.
-      // Remove qaTest.fail() + KNOWN-BUG comment.
+      // DESIRED post-fix behaviour: a PAID invoice must NOT be cancellable.
+      // Bug present → status flips to CANCELLED → assertion fails →
+      // qaTest.fail() turns this green. When the guard lands the assertion
+      // passes → run goes red → remove qaTest.fail() + KNOWN-BUG.
+      expect(inv?.status).toBe('PAID')
 
       // Evidence
       writeFileSync(

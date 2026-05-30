@@ -459,18 +459,17 @@ qaTest.describe.serial('G05 — Payment modal', () => {
     await amountInput.fill('150000')
     await dialog.getByRole('button', { name: /catat pembayaran/i }).click()
 
-    // KNOWN-BUG: current behavior allows payment on DRAFT invoice.
-    // The qaTest.fail() annotation marks this as expected-to-fail.
-    // When the bug is fixed (DRAFT guard added to recordPayment), this
-    // test will start failing — remove .fail() + KNOWN-BUG comment.
+    // Allow server action to settle before DB check.
+    await financePage.waitForTimeout(2000)
 
-    await expect(financePage.getByText('Pembayaran dicatat').first()).toBeVisible({ timeout: 10_000 })
-
-    // DB: payment was recorded
     const snap = await getFullOrderSnapshot(draftOrderId)
     const inv = snap.invoices.find((i) => i.invoiceId === draftInvoiceId)
-    expect(inv?.paymentStatus).toBe('PARTIAL')
-    expect(snap.payments).toHaveLength(1)
+
+    // DESIRED post-fix: a DRAFT invoice must reject payment.
+    // Bug present → payment succeeds → assertion fails → test.fail() green.
+    // Bug fixed → payment blocked → assertion passes → red → remove anotasi.
+    expect(inv?.paymentStatus).toBe('UNPAID')
+    expect(snap.payments).toHaveLength(0)
 
     // Evidence
     writeFileSync(
