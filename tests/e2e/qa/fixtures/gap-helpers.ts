@@ -76,7 +76,6 @@ export async function seedOrderToState(
 
   // 3. Tech transitions through the state machine via API.
   const transitions: OrderStatus[] = [
-    'ASSIGNED',
     'EN_ROUTE',
     'IN_PROGRESS',
     'COMPLETED',

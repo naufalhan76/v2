@@ -292,7 +292,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 3. G1 — Order-create UI spec (`tests/e2e/qa/G01-order-create-ui.spec.ts`)
+- [x] 3. G1 — Order-create UI spec (`tests/e2e/qa/G01-order-create-ui.spec.ts`)
 
   **What to do**:
   - Drive the real Create Order form at `/dashboard/orders/new` as ADMIN: search/select an existing seeded customer, expand sections, select location + AC unit(s), pick a service type (assert catalog price autofill), set schedule, submit WITHOUT proforma.
@@ -353,7 +353,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 4. G2 — Proforma-at-create spec (`tests/e2e/qa/G02-proforma-create.spec.ts`)
+- [x] 4. G2 — Proforma-at-create spec (`tests/e2e/qa/G02-proforma-create.spec.ts`)
 
   **What to do**:
   - As ADMIN, create an order via UI with the "Buat Proforma Invoice otomatis" checkbox CHECKED. Assert submit button reads "Buat Order + Proforma", success toast "Order dan Proforma berhasil dibuat", and redirect to `/dashboard/keuangan/invoices/{id}?proforma=true`.
@@ -408,7 +408,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 5. G3 — Master-data CRUD UI spec (`tests/e2e/qa/G03-master-data-crud.spec.ts`)
+- [x] 5. G3 — Master-data CRUD UI spec (`tests/e2e/qa/G03-master-data-crud.spec.ts`)
 
   **What to do**:
   - As ADMIN, exercise the dashboard CRUD UI for the three master-data entities, one happy create+edit+soft-delete per entity (scope lock — NOT exhaustive field validation):
@@ -468,7 +468,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 6. G4 — Invoice-from-order spec (`tests/e2e/qa/G04-invoice-from-order.spec.ts`)
+- [x] 6. G4 — Invoice-from-order spec (`tests/e2e/qa/G04-invoice-from-order.spec.ts`)
 
   **What to do**:
   - Seed an order to COMPLETED **with** a service report (via `seedOrderToState` from Task 2). As ADMIN (or FINANCE), trigger invoice creation from the order: click "Buat Invoice" on the order detail panel (COMPLETED state) which navigates to `/dashboard/keuangan/invoices/create/from-order/{orderId}`.
@@ -525,7 +525,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 7. G5 — Payment-modal spec (`tests/e2e/qa/G05-payment-modal.spec.ts`)
+- [x] 7. G5 — Payment-modal spec (`tests/e2e/qa/G05-payment-modal.spec.ts`)
 
   **What to do**:
   - Seed an order to INVOICED with a FINAL invoice (via `seedOrderToState`). As FINANCE, open the invoice detail and record payments through the real `RecordPaymentModal`.
@@ -596,7 +596,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 8. G6 — PDF-export spec (`tests/e2e/qa/G06-pdf-export.spec.ts`)
+- [x] 8. G6 — PDF-export spec (`tests/e2e/qa/G06-pdf-export.spec.ts`)
 
   **What to do**:
   - Seed an order to INVOICED with a FINAL invoice. As FINANCE, open invoice detail and click "Export PDF" (client-side jsPDF → browser download).
@@ -651,7 +651,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 9. G7 — Email-send graceful-fail spec (`tests/e2e/qa/G07-email-send.spec.ts`)
+- [x] 9. G7 — Email-send graceful-fail spec (`tests/e2e/qa/G07-email-send.spec.ts`)
 
   **What to do**:
   - Runtime guard FIRST: `resendKeyAbsentOrSkip()` (Task 2) — if `RESEND_API_KEY` is present on staging, `test.skip` with a clear message (don't hardcode failure expectation).
@@ -707,7 +707,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 10. G8 — RBAC negatives + redirects spec (`tests/e2e/qa/G08-rbac-redirects.spec.ts`)
+- [x] 10. G8 — RBAC negatives + redirects spec (`tests/e2e/qa/G08-rbac-redirects.spec.ts`)
 
   **What to do**:
   - SUPERADMIN guard first: `superAdminAccountOrSkip()` (Task 2) — if `superadmin@test.com` absent on staging, `test.skip` SUPERADMIN cases with a clear message.
@@ -776,7 +776,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 11. G9 — Service-catalog CRUD UI spec (`tests/e2e/qa/G09-service-catalog-crud.spec.ts`)
+- [x] 11. G9 — Service-catalog CRUD UI spec (`tests/e2e/qa/G09-service-catalog-crud.spec.ts`)
 
   **What to do**:
   - As ADMIN, exercise `/dashboard/settings/service-catalog`: create a catalog entry (4-dimensional: unit_type + capacity + service_type + unique `msn_code`, with `base_price`), toggle it active/inactive, and edit its `base_price`.
@@ -832,7 +832,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 12. G10 — Reminder-rules CRUD + mark-as-sent spec (`tests/e2e/qa/G10-reminder-rules.spec.ts`)
+- [x] 12. G10 — Reminder-rules CRUD + mark-as-sent spec (`tests/e2e/qa/G10-reminder-rules.spec.ts`)
 
   **What to do**:
   - As ADMIN, exercise `/dashboard/settings/reminder-rules`: create a rule (name, `days_before_due` 1–90, channel WHATSAPP/EMAIL, message_template with vars), edit it, soft-delete it (sets `is_active=false`). Assert DB `reminder_rules` rows.
@@ -891,7 +891,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 13. G11 — Push-subscribe endpoint spec (`tests/e2e/qa/G11-push-subscribe.spec.ts`)
+- [x] 13. G11 — Push-subscribe endpoint spec (`tests/e2e/qa/G11-push-subscribe.spec.ts`)
 
   **What to do** (reduced scope — no real push delivery):
   - As TECHNICIAN, assert the subscription persistence contract, NOT browser push delivery.
@@ -947,7 +947,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 14. G12 — Invoice cancel/void + delete-guard spec (`tests/e2e/qa/G12-invoice-cancel-void.spec.ts`)
+- [x] 14. G12 — Invoice cancel/void + delete-guard spec (`tests/e2e/qa/G12-invoice-cancel-void.spec.ts`)
 
   **What to do**:
   - Seed an order to INVOICED with a FINAL invoice. As FINANCE, cancel/void the invoice via the UI (`updateInvoiceStatus('CANCELLED')`). Assert invoice `status=CANCELLED` and the order reverts `INVOICED→COMPLETED` (via `getOrderStatus`).
@@ -1009,7 +1009,7 @@ All implementing agents load `load_skills=["playwright"]` where they drive the b
 
 ---
 
-- [ ] 15. G13 — Board-modal + list-view spec (`tests/e2e/qa/G13-board-list-views.spec.ts`)
+- [x] 15. G13 — Board-modal + list-view spec (`tests/e2e/qa/G13-board-list-views.spec.ts`)
 
   **What to do** (reframed — drag opens modals/callbacks, it does NOT transition status directly):
   - As ADMIN, on `/dashboard/orders?view=board`: drag a PENDING order card toward the ASSIGNED column → assert the **Assign modal opens** (not a silent status change); complete assignment in the modal → assert order becomes ASSIGNED in DB. Then drag an ASSIGNED card toward PENDING → assert **Reschedule modal opens**.
