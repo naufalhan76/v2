@@ -21,6 +21,14 @@ export {
 export { openDualContexts, waitForRealtimeUpdate } from './realtime'
 export { synthJpegBlob, synthSignaturePng } from './synth'
 export { getSupabaseAdmin, makePrefix, evidenceDir, loadQaAccounts } from './env'
+export {
+  seedOrderToState,
+  assertStagingHost,
+  superAdminAccountOrSkip,
+  resendKeyAbsentOrSkip,
+  scenarioPrefix,
+} from './gap-helpers'
+export type { SeedToStateOpts } from './gap-helpers'
 export type {
   QaPrefix,
   SeedScenario,

@@ -48,6 +48,7 @@ update_page.py
 # Brainstorming companion artifacts
 .superpowers/
 .env.staging
+.env
 
 # Playwright artifacts
 /test-results/
