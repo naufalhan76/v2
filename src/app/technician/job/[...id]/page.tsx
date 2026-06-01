@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { JobDetailContent } from '@/components/technician/job-detail-content'
 import { CompleteJobForm } from '@/components/technician/complete-job-form'
-import { CompleteJobFormV2 } from '@/components/technician/complete-job-form-v2'
+import { JobCompletionWizard } from '@/components/technician/job-completion-wizard'
 import { JobDetailSkeleton } from '@/components/technician/job-detail-skeleton'
 
 interface JobDetailPageProps {
@@ -24,7 +24,7 @@ export default async function JobDetailPage({ params, searchParams }: JobDetailP
   return (
     <Suspense fallback={<JobDetailSkeleton />}>
       {isComplete ? (
-        !isV1 ? <CompleteJobFormV2 orderId={id} /> : <CompleteJobForm orderId={id} />
+        !isV1 ? <JobCompletionWizard orderId={id} /> : <CompleteJobForm orderId={id} />
       ) : (
         <JobDetailContent orderId={id} />
       )}

@@ -54,10 +54,10 @@ export function getUrgencyLevel(order: OrderForDisplay): Urgency {
  * Tailwind border classes per urgency.
  */
 export const URGENCY_BORDER: Record<Urgency, string> = {
-  overdue: 'border-l-4 border-l-red-500',
-  today: 'border-l-4 border-l-orange-500',
-  future: 'border-l-4 border-l-green-500',
-  terminal: 'border-l-4 border-l-muted-foreground/30',
+  overdue: 'border-t-2 border-t-red-500',
+  today: 'border-t-2 border-t-orange-500',
+  future: 'border-t-2 border-t-green-500',
+  terminal: 'border-t-2 border-t-muted-foreground/30',
 }
 
 /**

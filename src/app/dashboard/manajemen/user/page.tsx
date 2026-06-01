@@ -80,7 +80,7 @@ export default function ManajemenUserPage() {
     full_name: '',
     email: '',
     password: '',
-    role: 'TECHNICIAN',
+    role: 'ADMIN',
   })
 
   const { toast } = useToast()
@@ -119,7 +119,7 @@ export default function ManajemenUserPage() {
       full_name: '',
       email: '',
       password: '',
-      role: 'TECHNICIAN',
+      role: 'ADMIN',
     })
     setEditingUser(null)
   }
@@ -321,7 +321,6 @@ export default function ManajemenUserPage() {
                     options={[
                       { id: 'SUPERADMIN', label: 'Super Admin' },
                       { id: 'ADMIN', label: 'Admin' },
-                      { id: 'TECHNICIAN', label: 'Technician' },
                       { id: 'FINANCE', label: 'Finance' },
                     ]}
                     value={formData.role}
@@ -329,6 +328,11 @@ export default function ManajemenUserPage() {
                     placeholder="Pilih role"
                     searchPlaceholder="Cari role..."
                   />
+                  {!editingUser && (
+                    <p className="text-sm text-muted-foreground">
+                      Untuk menambah teknisi, gunakan halaman Technicians.
+                    </p>
+                  )}
                 </div>
               </div>
 

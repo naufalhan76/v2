@@ -77,7 +77,6 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
   const queryClient = useQueryClient()
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Form state
   const [photosBefore, setPhotosBefore] = useState<string[]>([])
   const [photosAfter, setPhotosAfter] = useState<string[]>([])
   const [materials, setMaterials] = useState<MaterialItem[]>([])
@@ -89,7 +88,6 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
   const [nextServiceDate, setNextServiceDate] = useState<string>(getDefaultNextServiceDate())
   const [nextServiceNotes, setNextServiceNotes] = useState('')
 
-  // UI state
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isOnline, setIsOnline] = useState(true)
@@ -270,7 +268,7 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
       {/* Header */}
       <div className="flex items-center gap-2">
         <Link
-          href={`/technician/job/${encodeURIComponent(orderId)}`}
+          href={`/technician/job/${orderId}`}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground h-11 px-1"
         >
           <ArrowLeft className="h-4 w-4" />

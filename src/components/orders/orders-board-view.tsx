@@ -8,9 +8,30 @@ interface OrdersBoardViewProps {
   orders: OrderForDisplay[]
   isLoading: boolean
   onCardClick: (orderId: string) => void
+  isSelectionMode?: boolean
+  selectedOrderIds?: Set<string>
+  onSelectToggle?: (orderId: string) => void
+  onColumnSelectToggle?: (orderIds: string[], select: boolean) => void
 }
 
-export function OrdersBoardView({ orders, isLoading, onCardClick }: OrdersBoardViewProps) {
+export function OrdersBoardView({
+  orders,
+  isLoading,
+  onCardClick,
+  isSelectionMode,
+  selectedOrderIds,
+  onSelectToggle,
+  onColumnSelectToggle,
+}: OrdersBoardViewProps) {
   if (isLoading) return <BoardSkeleton />
-  return <KanbanBoard orders={orders} onCardClick={onCardClick} />
+  return (
+    <KanbanBoard
+      orders={orders}
+      onCardClick={onCardClick}
+      isSelectionMode={isSelectionMode}
+      selectedOrderIds={selectedOrderIds}
+      onSelectToggle={onSelectToggle}
+      onColumnSelectToggle={onColumnSelectToggle}
+    />
+  )
 }

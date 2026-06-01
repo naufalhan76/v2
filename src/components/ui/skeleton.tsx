@@ -30,7 +30,6 @@ export function CardSkeleton({ className }: { className?: string }) {
   )
 }
 
-// Table Skeleton untuk mencegah layout shift
 export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
   return (
     <div className="w-full">
@@ -67,25 +66,24 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
   )
 }
 
-// Dashboard KPI Card Skeleton
 export function KpiCardSkeleton() {
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg transition-all">
-      <div className="p-6 space-y-4">
-        <div className="flex items-center justify-between space-y-0 pb-2">
-          <Skeleton className="h-4 w-[120px]" />
-          <Skeleton className="h-4 w-4 rounded-full" />
+    <div className="relative overflow-hidden rounded-xl border-0 bg-amber-50/50 dark:bg-amber-950/10 p-5">
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-200 dark:bg-amber-800" />
+      <div className="flex items-center justify-between pl-3">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[120px]" />
+            <Skeleton className="h-5 w-[80px]" />
+          </div>
         </div>
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-[100px]" />
-          <Skeleton className="h-3 w-[140px]" />
-        </div>
+        <Skeleton className="h-6 w-[60px] rounded-full" />
       </div>
     </div>
   )
 }
 
-// Chart Skeleton
 export function ChartSkeleton({ height = 400 }: { height?: number }) {
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
@@ -102,7 +100,6 @@ export function ChartSkeleton({ height = 400 }: { height?: number }) {
   )
 }
 
-// Form Skeleton
 export function FormSkeleton({ fields = 4 }: { fields?: number }) {
   return (
     <div className="space-y-6">
@@ -126,7 +123,6 @@ export function FormSkeleton({ fields = 4 }: { fields?: number }) {
   )
 }
 
-// List Skeleton
 export function ListSkeleton({ items = 5 }: { items?: number }) {
   return (
     <div className="space-y-4">

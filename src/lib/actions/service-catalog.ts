@@ -100,6 +100,23 @@ export async function getCatalog(
   }
 }
 
+export async function getCatalogGrouped(
+  filters?: CatalogFilters
+): Promise<CatalogActionResult<Record<string, ServiceCatalogEntry[]>>> {
+  const result = await getCatalog(filters)
+  if (!result.success || !result.data) {
+    return { success: false, error: result.error }
+  }
+
+  const grouped: Record<string, ServiceCatalogEntry[]> = {}
+  for (const entry of result.data) {
+    const key = entry.unit_types?.name ?? 'Uncategorized'
+    ;(grouped[key] ??= []).push(entry)
+  }
+
+  return { success: true, data: grouped }
+}
+
 // ==========================================
 // MUTATIONS
 // ==========================================

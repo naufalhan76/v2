@@ -2,9 +2,15 @@
 
 import * as React from 'react'
 import { useOnlineSync } from '@/hooks/use-online-sync'
-import { CloudOff, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { CloudOff, RefreshCw, AlertCircle, CheckCircle2, FileText, Image as ImageIcon, ArrowRightLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 export type SyncStatusProps = {
   /** Optional className for layout overrides. */
@@ -78,13 +84,13 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
   }
 
   if (hasPending) {
-    return (
-      <button 
+    const trigger = (
+      <button
         onClick={() => void syncNow()}
         className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
       >
-        <Badge 
-          variant="outline" 
+        <Badge
+          variant="outline"
           className={cn("bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors border-amber-500/20 h-10 min-w-[2.5rem] gap-2 cursor-pointer px-3", className)}
         >
           <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
@@ -97,6 +103,30 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
           )}
         </Badge>
       </button>
+    )
+
+    return (
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+          <TooltipContent side="bottom" align="end" className="space-y-1.5">
+            <p className="text-xs font-semibold">Detail Tertunda</p>
+            <div className="flex items-center gap-2 text-xs">
+              <FileText className="h-3 w-3 text-muted-foreground" />
+              <span>{pending.reports} laporan</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <ImageIcon className="h-3 w-3 text-muted-foreground" />
+              <span>{pending.photos} foto</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
+              <span>{pending.transitions} transisi</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground pt-1 border-t border-border/50">Klik untuk sinkronkan sekarang</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     )
   }
 

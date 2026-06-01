@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import { CalendarIcon, Loader2 } from 'lucide-react'
+import { CalendarIcon, Loader2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   Dialog,
@@ -26,6 +26,7 @@ import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
 import { useToast } from '@/hooks/use-toast'
 import { getTechnicians } from '@/lib/actions/technicians'
 import { useAssignTechnician } from '@/hooks/use-order-mutation'
+import { logger } from '@/lib/logger'
 
 const schema = z
   .object({
@@ -66,16 +67,30 @@ export function AssignModal({
 
   const isReassign = Boolean(currentTechnicianId)
 
-  const { data: techResp, isLoading: techLoading } = useQuery({
+  const { data: techResp, isLoading: techLoading, isError: techQueryError, error: techQueryErr } = useQuery({
     queryKey: ['technicians', 'all'],
     queryFn: () => getTechnicians({ limit: 200 }),
     enabled: open,
   })
 
+  useEffect(() => {
+    if (techQueryError && techQueryErr) {
+      logger.error('AssignModal: failed to load technicians', {
+        error: techQueryErr instanceof Error ? techQueryErr.message : String(techQueryErr),
+      })
+    }
+  }, [techQueryError, techQueryErr])
+
   const technicians = (techResp?.data ?? []) as Array<{
     technician_id: string
     technician_name: string
   }>
+
+  // Detect technicians with null names (would crash MultiSelectDropdown/SearchableSelect)
+  const safeTechnicians = technicians.map((t) => ({
+    ...t,
+    technician_name: t.technician_name ?? 'Teknisi Tidak Diketahui',
+  }))
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -101,14 +116,25 @@ export function AssignModal({
       toast({ variant: 'destructive', title: 'Tidak ada order yang dipilih' })
       return
     }
-    await mutation.mutateAsync({
-      orderIds,
-      technicianId: values.technicianId,
-      helperTechnicianIds: values.helperIds.filter((id) => id !== values.technicianId),
-      scheduledDate: format(values.scheduledDate, 'yyyy-MM-dd'),
-    })
-    onOpenChange(false)
-    onSuccess?.()
+    try {
+      await mutation.mutateAsync({
+        orderIds,
+        technicianId: values.technicianId,
+        helperTechnicianIds: values.helperIds.filter((id) => id !== values.technicianId),
+        scheduledDate: format(values.scheduledDate, 'yyyy-MM-dd'),
+      })
+      onOpenChange(false)
+      onSuccess?.()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Terjadi kesalahan saat assign/reassign teknisi'
+      logger.error('AssignModal: mutation failed', {
+        orderIds,
+        technicianId: values.technicianId,
+        helperCount: values.helperIds.length,
+        error: message,
+      })
+      form.setError('root', { message })
+    }
   }
 
   const technicianId = form.watch('technicianId')
@@ -137,7 +163,7 @@ export function AssignModal({
             <SearchableSelect
               value={technicianId}
               onValueChange={(v) => form.setValue('technicianId', v, { shouldValidate: true })}
-              options={technicians.map((t) => ({
+              options={safeTechnicians.map((t) => ({
                 id: t.technician_id,
                 label: t.technician_name,
               }))}
@@ -154,7 +180,7 @@ export function AssignModal({
           <div className="space-y-2">
             <Label>Helper (opsional)</Label>
             <MultiSelectDropdown
-              options={technicians
+              options={safeTechnicians
                 .filter((t) => t.technician_id !== technicianId)
                 .map((t) => ({ id: t.technician_id, label: t.technician_name }))}
               selected={helperIds}
@@ -202,6 +228,22 @@ export function AssignModal({
               </p>
             )}
           </div>
+
+          {/* Server/submission errors */}
+          {form.formState.errors.root && (
+            <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{form.formState.errors.root.message}</span>
+            </div>
+          )}
+
+          {/* Technician query error */}
+          {techQueryError && (
+            <div className="flex items-center gap-2 rounded-lg border border-amber-500/50 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-700 dark:text-amber-400">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>Gagal memuat daftar teknisi. Silakan coba lagi.</span>
+            </div>
+          )}
 
           <DialogFooter className="flex-col gap-2 sm:flex-row">
             <Button

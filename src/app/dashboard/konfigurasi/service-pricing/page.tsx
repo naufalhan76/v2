@@ -119,26 +119,23 @@ export default function ServicePricingPage() {
       
       // Ensure includes is properly parsed as array
       const normalizedData = data.map(service => {
-        let includes = service.includes
-        logger.debug('Processing service:', service.service_type, 'includes:', includes, 'type:', typeof includes)
-        
-        // If includes is a string, try to parse it
-        if (includes && typeof includes === 'string') {
+        const rawIncludes: unknown = service.includes
+        let includes: string[] | null = null
+
+        if (Array.isArray(rawIncludes)) {
+          includes = rawIncludes
+        } else if (typeof rawIncludes === 'string') {
+          const raw = rawIncludes.trim()
           try {
-            includes = JSON.parse(includes)
-            logger.debug('Parsed includes:', includes)
-          } catch (e) {
-            logger.error('Failed to parse includes:', e)
-            includes = null
+            const parsed = JSON.parse(raw)
+            includes = Array.isArray(parsed) ? parsed.map(String) : [String(parsed)]
+          } catch {
+            includes = raw
+              ? raw.split(',').map((s) => s.trim()).filter(Boolean)
+              : null
           }
         }
-        
-        // Ensure it's an array or null
-        if (includes && !Array.isArray(includes)) {
-          logger.debug('includes is not an array, setting to null')
-          includes = null
-        }
-        
+
         return {
           ...service,
           includes
@@ -267,32 +264,24 @@ export default function ServicePricingPage() {
   }
 
   const getIncludesArray = (includes: unknown): string[] => {
-    logger.debug('getIncludesArray input:', includes, 'type:', typeof includes, 'isArray:', Array.isArray(includes))
-    
-    // Always return a NEW array, never the original reference
     if (!includes) return []
-    
+
     if (Array.isArray(includes)) {
-      // Return a NEW array copy to ensure it has all array methods
-      return [...includes]
+      return includes.map(String)
     }
-    
+
     if (typeof includes === 'string') {
+      const raw = includes.trim()
+      if (!raw) return []
       try {
-        const parsed = JSON.parse(includes)
-        logger.debug('Parsed includes:', parsed, 'isArray:', Array.isArray(parsed))
-        if (Array.isArray(parsed)) {
-          // Return a NEW array copy
-          return [...parsed]
-        }
-        return []
-      } catch (e) {
-        logger.error('Failed to parse includes:', e)
-        return []
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) return parsed.map(String)
+        return [String(parsed)]
+      } catch {
+        return raw.split(',').map((s) => s.trim()).filter(Boolean)
       }
     }
-    
-    logger.debug('Includes is neither array nor string, returning empty')
+
     return []
   }
 

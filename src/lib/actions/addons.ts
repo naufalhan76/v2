@@ -395,3 +395,87 @@ export async function bulkUpdateStock(
 
   revalidatePath('/dashboard/konfigurasi/addons-catalog')
 }
+
+export async function bulkUpdateAddons(csvText: string) {
+  const supabase = await createClient()
+  const lines = csvText.split('\n').filter(l => l.trim().length > 0)
+  if (lines.length < 2) return { success: false, error: 'CSV kosong atau format tidak valid. Pastikan ada header dan minimal 1 baris data.' }
+
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/^["']|["']$/g, ''))
+  const records = lines.slice(1).map(l => l.split(',').map(c => c.trim().replace(/^["']|["']$/g, '')))
+
+  const findIdx = (names: string[]) => {
+    for (const name of names) {
+      const idx = headers.indexOf(name.toLowerCase())
+      if (idx !== -1) return idx
+    }
+    return -1
+  }
+
+  const addonIdIdx = findIdx(['addon_id', 'addonid', 'id'])
+  const itemCodeIdx = findIdx(['item_code', 'itemcode', 'code', 'kode'])
+  const itemNameIdx = findIdx(['item_name', 'itemname', 'nama', 'name'])
+  const categoryIdx = findIdx(['category', 'kategori'])
+  const unitPriceIdx = findIdx(['unit_price', 'unitprice', 'price', 'harga'])
+  const unitMeasureIdx = findIdx(['unit_of_measure', 'unitofmeasure', 'uom', 'satuan'])
+  const stockQtyIdx = findIdx(['stock_quantity', 'stockquantity', 'stock', 'stok'])
+  const minStockIdx = findIdx(['minimum_stock', 'minimumstock', 'minstock'])
+  const descriptionIdx = findIdx(['description', 'desc', 'deskripsi'])
+  const isActiveIdx = findIdx(['is_active', 'isactive', 'active', 'status'])
+
+  if (addonIdIdx === -1 && itemCodeIdx === -1) {
+    return { success: false, error: 'CSV harus memiliki kolom addon_id atau item_code untuk matching.' }
+  }
+
+  try {
+    let updatedCount = 0
+    let skippedCount = 0
+    const errors: string[] = []
+
+    for (const record of records) {
+      const addonId = addonIdIdx !== -1 ? record[addonIdIdx] : ''
+      const itemCode = itemCodeIdx !== -1 ? record[itemCodeIdx] : ''
+      if (!addonId && !itemCode) { skippedCount++; continue }
+
+      const payload: Record<string, unknown> = {}
+      if (itemNameIdx !== -1 && record[itemNameIdx]) payload.item_name = record[itemNameIdx]
+      if (categoryIdx !== -1 && record[categoryIdx]) payload.category = record[categoryIdx]
+      if (unitPriceIdx !== -1 && record[unitPriceIdx]) {
+        const price = parseFloat(record[unitPriceIdx].replace(/[^0-9.-]+/g, ''))
+        if (!isNaN(price)) payload.unit_price = price
+      }
+      if (unitMeasureIdx !== -1 && record[unitMeasureIdx]) payload.unit_of_measure = record[unitMeasureIdx]
+      if (stockQtyIdx !== -1 && record[stockQtyIdx]) {
+        const qty = parseFloat(record[stockQtyIdx].replace(/[^0-9.-]+/g, ''))
+        if (!isNaN(qty)) payload.stock_quantity = qty
+      }
+      if (minStockIdx !== -1 && record[minStockIdx]) {
+        const min = parseFloat(record[minStockIdx].replace(/[^0-9.-]+/g, ''))
+        if (!isNaN(min)) payload.minimum_stock = min
+      }
+      if (descriptionIdx !== -1) payload.description = record[descriptionIdx] || null
+      if (isActiveIdx !== -1) {
+        const val = record[isActiveIdx].toLowerCase()
+        payload.is_active = val === 'true' || val === '1' || val === 'yes' || val === 'aktif'
+      }
+
+      if (Object.keys(payload).length === 0) { skippedCount++; continue }
+
+      let query = supabase.from('addon_catalog').update({ ...payload, updated_at: new Date().toISOString() })
+      if (addonId) query = query.eq('addon_id', addonId)
+      else query = query.eq('item_code', itemCode)
+      const { error } = await query
+      if (error) errors.push(`${itemCode || addonId}: ${error.message}`)
+      else updatedCount++
+    }
+
+    revalidatePath('/dashboard/konfigurasi/addons-catalog')
+    const parts: string[] = []
+    if (updatedCount > 0) parts.push(`${updatedCount} diupdate`)
+    if (skippedCount > 0) parts.push(`${skippedCount} dilewati`)
+    if (errors.length > 0) parts.push(`${errors.length} error`)
+    return { success: true, message: parts.join(', ') || 'Tidak ada perubahan', updatedCount, skippedCount, errors: errors.length > 0 ? errors : undefined }
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Gagal memproses update' }
+  }
+}

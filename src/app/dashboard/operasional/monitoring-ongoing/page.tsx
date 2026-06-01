@@ -56,7 +56,6 @@ import { id } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
 import { StatusBadge } from '@/components/orders/status-badge'
 
-// Helper functions for multi-location orders
 function getLocationsSummary(orderItems: unknown[]) {
   if (!orderItems || orderItems.length === 0) return { text: 'No locations', count: 0, locations: [] }
 
@@ -90,7 +89,6 @@ function getServicesGrouped(orderItems: unknown[]) {
   return { count: orderItems.length, types: serviceTypes }
 }
 
-// Helper: get rich service label from an order item
 function getServiceLabel(item: unknown): string {
   const it = item as Record<string, unknown>
   if (it.msn_code) {
@@ -104,7 +102,6 @@ function getServiceLabel(item: unknown): string {
   return (it.service_type as string) || '-'
 }
 
-// Helper function to get unique service display info for badges
 function getUniqueServiceLabels(orderItems: unknown[]): string[] {
   if (!orderItems || orderItems.length === 0) return []
 
@@ -305,12 +302,10 @@ function MonitoringOngoingContent() {
     direction: 'desc'
   })
 
-  // Calculate stats
   const nonAssignedCount = ongoingOrders.filter((o: unknown) => STATUS_GROUPS.NON_ASSIGNED.includes((o as Record<string, unknown>).status as string)).length
   const assignedCount = ongoingOrders.filter((o: unknown) => STATUS_GROUPS.ASSIGNED.includes((o as Record<string, unknown>).status as string)).length
   const invoicedCount = ongoingOrders.filter((o: unknown) => STATUS_GROUPS.INVOICED.includes((o as Record<string, unknown>).status as string)).length
 
-  // Helper management functions
   const handleOpenAddHelper = () => {
     setSelectedHelpers([])
     setShowAddHelperDialog(true)
@@ -473,7 +468,6 @@ function MonitoringOngoingContent() {
         // Continue even if deletion fails, but log the error
       }
       
-      // Update order with new dates, reset assigned_technician_id, and set status to RESCHEDULE
       const { error } = await supabase
         .from('orders')
         .update({
@@ -770,7 +764,7 @@ function MonitoringOngoingContent() {
                       <TableRow
                         key={o.order_id as string}
                         className={cn(
-                          o.status === 'PENDING' && 'bg-amber-50 border-l-4 border-l-amber-500 hover:bg-amber-100'
+                          o.status === 'PENDING' && 'bg-amber-50 border-t-2 border-t-amber-500 hover:bg-amber-100'
                         )}
                       >
                         <TableCell className='font-mono text-sm'>{o.order_id as string}</TableCell>
@@ -888,7 +882,6 @@ function MonitoringOngoingContent() {
       <Dialog open={!!detailOrderId} onOpenChange={(open) => {
         if (!open) {
           setDetailOrderId(null)
-          // Reset redirect handler untuk allow future notifications
           hasHandledRedirect.current = false
         }
       }}>

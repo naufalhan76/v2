@@ -4,6 +4,7 @@ import { useDroppable } from '@dnd-kit/core'
 import { Inbox } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { EmptyState } from '@/components/ui/empty-state'
 import { OrderCard } from '@/components/orders/order-card'
@@ -21,6 +22,9 @@ interface KanbanColumnProps {
   renderCard?: (order: OrderForDisplay) => React.ReactNode
   /** Default-collapsed terminal columns (e.g. PAID) */
   defaultCollapsed?: boolean
+  isSelectionMode?: boolean
+  selectedOrderIds?: Set<string>
+  onColumnSelectToggle?: (orderIds: string[], select: boolean) => void
 }
 
 /**
@@ -35,16 +39,37 @@ export function KanbanColumn({
   acceptsDrops,
   renderCard,
   defaultCollapsed,
+  isSelectionMode,
+  selectedOrderIds,
+  onColumnSelectToggle,
 }: KanbanColumnProps) {
   const { isOver, setNodeRef } = useDroppable({
     id,
     disabled: !acceptsDrops,
   })
 
+  const columnOrderIds = orders.map((o) => o.order_id)
+  const allSelected =
+    columnOrderIds.length > 0 && columnOrderIds.every((oid) => selectedOrderIds?.has(oid))
+
+  function handleHeaderCheckboxClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    onColumnSelectToggle?.(columnOrderIds, !allSelected)
+  }
+
   return (
     <div className="flex flex-col w-[280px] sm:w-72 shrink-0 snap-start sm:snap-none bg-muted/40 rounded-lg border border-border/50">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <div className="flex items-center gap-2">
+          {isSelectionMode && (
+            <Checkbox
+              checked={allSelected}
+              onClick={handleHeaderCheckboxClick}
+              aria-label={`Pilih semua order di kolom ${title}`}
+            />
+          )}
+          <h3 className="text-sm font-semibold">{title}</h3>
+        </div>
         <Badge variant="secondary" className="text-xs">
           {orders.length}
         </Badge>

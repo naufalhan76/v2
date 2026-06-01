@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Send, Loader2 } from 'lucide-react'
 import Link from 'next/link'
@@ -85,7 +85,6 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
   const [technicianId, setTechnicianId] = useState<string>('')
   const [loadingContext, setLoadingContext] = useState(true)
 
-  // Form state
   const [actualPrice, setActualPrice] = useState<number>(0)
   const [customerNameSigned, setCustomerNameSigned] = useState('')
   const [notes, setNotes] = useState('')
@@ -98,6 +97,9 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
   const [initialAcUnits, setInitialAcUnits] = useState<AcUnitReportItem[]>([])
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null)
   const [signatureBlob, setSignatureBlob] = useState<Blob | null>(null)
+
+  // Track photoIds from AcUnitForm for enqueueReport
+  const acUnitPhotoIdsRef = useRef<string[]>([])
 
   useEffect(() => {
     async function fetchContext() {
@@ -178,6 +180,7 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
       const idempotencyKey = newIdempotencyKey()
       const photoIds: string[] = []
 
+      // Enqueue signature blob
       if (signatureBlob) {
         const sigRecord = await enqueuePhoto({
           orderId,
@@ -192,32 +195,29 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
         photoIds.push(sigRecord.id)
       }
 
+      // Include all AC unit photo IDs (already enqueued by PhotoUploadOffline)
+      photoIds.push(...acUnitPhotoIdsRef.current)
+
       // Aggregate materials from all AC units
       const allMaterials = acUnits.flatMap(unit => unit.materials_used || [])
 
-      // Map AC units and queue photos
-      const mappedAcUnits = await Promise.all(
-        acUnits.map(async (unit) => {
-          // Note: The prompt says: "For each AC unit photo (before/after)... enqueue via enqueuePhoto"
-          // However, we just set them to empty arrays for IDB, and sync-manager patches them.
-          return {
-            ...unit,
-            photos_before: [],
-            photos_after: []
-          }
-        })
-      )
+      // Photos will be patched by sync-manager at drain time using photoIds metadata
+      const mappedAcUnits = acUnits.map((unit) => ({
+        ...unit,
+        photos_before: [],
+        photos_after: [],
+      }))
 
       const payload: TechnicianReportPayload = {
         idempotency_key: idempotencyKey,
-        photos_before: [], 
-        photos_after: [], 
-        materials: allMaterials, 
+        photos_before: [],
+        photos_after: [],
+        materials: allMaterials,
         actual_total_price: actualPrice,
-        customer_signature_url: '', 
+        customer_signature_url: '',
         customer_name_signed: customerNameSigned,
         notes: notes,
-        work_started_at: null, 
+        work_started_at: null,
         work_completed_at: new Date().toISOString(),
         next_service_recommendation_date: nextServiceDate || null,
         next_service_recommendation_notes: nextServiceNotes || null,
@@ -228,7 +228,7 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
         orderId,
         technicianId,
         payload,
-        photoIds: photoIds
+        photoIds
       })
 
       toast({
@@ -244,7 +244,7 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
         description: err.message || 'Gagal menyimpan laporan',
         variant: 'destructive',
       })
-      setSubmitting(false) 
+      setSubmitting(false)
     }
   }
 
@@ -263,7 +263,7 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
     <div className="mx-auto max-w-2xl space-y-6 pb-24">
       <div className="flex items-center justify-between">
         <Link
-          href={`/technician/job/${encodeURIComponent(orderId)}`}
+          href={`/technician/job/${orderId}`}
           className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -284,7 +284,12 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Data Unit AC</h2>
           </div>
-          <AcUnitForm orderId={orderId} initialUnits={initialAcUnits} onChange={setAcUnits} />
+          <AcUnitForm
+            orderId={orderId}
+            initialUnits={initialAcUnits}
+            onChange={setAcUnits}
+            onPhotoIdsChange={(ids) => { acUnitPhotoIdsRef.current = ids }}
+          />
         </section>
 
         <Separator />

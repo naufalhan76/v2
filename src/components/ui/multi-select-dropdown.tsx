@@ -32,7 +32,6 @@ export function MultiSelectDropdown({
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -46,11 +45,12 @@ export function MultiSelectDropdown({
     }
   }, [isOpen])
 
-  // Filter options based on search
-  const filteredOptions = options.filter(option =>
-    option.label?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (option.secondaryLabel?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
-  )
+  const filteredOptions = options.filter(option => {
+    const label = option.label ?? ''
+    const secondaryLabel = option.secondaryLabel ?? ''
+    return label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      secondaryLabel.toLowerCase().includes(searchQuery.toLowerCase())
+  })
 
   const handleToggleOption = (optionId: string) => {
     const newSelected = selected.includes(optionId)

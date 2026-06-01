@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { Calendar, MapPin, User as UserIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Checkbox } from '@/components/ui/checkbox'
 import { StatusBadge } from '@/components/orders/status-badge'
 import { ServiceTypeBadge } from '@/components/orders/service-type-badge'
 import {
@@ -23,6 +24,10 @@ interface OrderCardProps {
   /** When true, hide status badge (e.g. inside a column already labeled by status) */
   hideStatusBadge?: boolean
   className?: string
+  isSelectionMode?: boolean
+  isSelected?: boolean
+  onSelectToggle?: (orderId: string) => void
+  isFocused?: boolean
 }
 
 /**
@@ -33,7 +38,7 @@ interface OrderCardProps {
  * - Click opens the OrderDetailPanel
  */
 export const OrderCard = forwardRef<HTMLDivElement, OrderCardProps>(function OrderCard(
-  { order, onClick, isDragging, hideStatusBadge, className, ...rest },
+  { order, onClick, isDragging, hideStatusBadge, className, isSelectionMode, isSelected, onSelectToggle, isFocused, ...rest },
   ref
 ) {
   const urgency = getUrgencyLevel(order)
@@ -42,33 +47,60 @@ export const OrderCard = forwardRef<HTMLDivElement, OrderCardProps>(function Ord
   const location = getPrimaryLocation(order)
   const dateStr = order.scheduled_visit_date ?? order.req_visit_date
 
+  function handleClick() {
+    if (isSelectionMode) {
+      onSelectToggle?.(order.order_id)
+    } else {
+      onClick?.(order.order_id)
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleClick()
+    }
+  }
+
+  function handleCheckboxClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    onSelectToggle?.(order.order_id)
+  }
+
   return (
     <div
       ref={ref}
       role="button"
       tabIndex={0}
-      onClick={() => onClick?.(order.order_id)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onClick?.(order.order_id)
-        }
-      }}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
       className={cn(
         'rounded-lg bg-card border border-border/50 p-3 shadow-sm cursor-pointer',
         'hover:shadow-md hover:border-border transition-shadow',
         URGENCY_BORDER[urgency],
         isDragging && 'opacity-50 ring-2 ring-primary',
+        isSelectionMode && isSelected && 'ring-2 ring-primary bg-primary/5',
+        isFocused && 'ring-2 ring-primary/70',
         className
       )}
       {...rest}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold truncate">
-            {order.customers?.customer_name ?? 'Customer'}
-          </p>
-          <p className="text-xs text-muted-foreground truncate">{order.order_id}</p>
+        <div className="flex items-start gap-2 min-w-0">
+          {isSelectionMode && (
+            <div className="mt-0.5 shrink-0" onClick={handleCheckboxClick}>
+              <Checkbox
+                checked={isSelected}
+                aria-label={`Pilih order ${order.order_id}`}
+              />
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate">
+              {order.customers?.customer_name ?? 'Customer'}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">{order.order_id}</p>
+          </div>
         </div>
         {!hideStatusBadge && <StatusBadge status={order.status} size="sm" />}
       </div>

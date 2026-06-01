@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { PhotoUpload } from '@/components/technician/photo-upload'
+import { PhotoUploadOffline } from '@/components/technician/photo-upload-offline'
 import { MaterialInput, type MaterialItem } from '@/components/technician/material-input'
 import { type AcUnitReportItem } from '@/app/api/schemas/technician'
 import { cn } from '@/lib/utils'
@@ -27,6 +27,8 @@ export type AcUnitFormProps = {
   orderId: string
   initialUnits: AcUnitFormValue[]
   onChange: (units: AcUnitFormValue[]) => void
+  /** Called with flat array of all photo IDs across all AC units */
+  onPhotoIdsChange?: (photoIds: string[]) => void
 }
 
 const AC_TYPES = [
@@ -38,7 +40,7 @@ const AC_TYPES = [
   'Ceiling',
 ]
 
-export function AcUnitForm({ orderId, initialUnits, onChange }: AcUnitFormProps) {
+export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }: AcUnitFormProps) {
   const { control, watch, setValue, register } = useForm<{ units: AcUnitFormValue[] }>({
     defaultValues: {
       units: initialUnits.length > 0 ? initialUnits : [],
@@ -51,6 +53,16 @@ export function AcUnitForm({ orderId, initialUnits, onChange }: AcUnitFormProps)
   })
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Track photoIds per AC unit per kind. Key: `${index}-before` or `${index}-after`
+  const photoIdsRef = useRef<Record<string, string[]>>({})
+
+  const notifyPhotoIds = () => {
+    if (onPhotoIdsChange) {
+      const allIds = Object.values(photoIdsRef.current).flat()
+      onPhotoIdsChange(allIds)
+    }
+  }
 
   // Keep formValues for rendering (local re-renders only, does not call parent)
   const formValues = watch('units')
@@ -71,7 +83,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange }: AcUnitFormProps)
 
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {}
-    fields.forEach((f, i) => {
+    fields.forEach((f, _i) => {
       init[f.id] = true
     })
     return init
@@ -263,24 +275,32 @@ export function AcUnitForm({ orderId, initialUnits, onChange }: AcUnitFormProps)
                     </div>
 
                     <div className="space-y-6 pt-2">
-                      <PhotoUpload
-                        label="Foto Sebelum"
-                        bucket="service-photos"
-                        pathPrefix={`orders/${orderId}/ac-${index}/before`}
+                      <PhotoUploadOffline
+                        orderId={orderId}
+                        acUnitIdx={index}
+                        kind="before"
                         value={formValues[index]?.photos_before || []}
-                        onChange={(urls) => setValue(`units.${index}.photos_before`, urls)}
+                        onChange={(urls, photoIds) => {
+                          setValue(`units.${index}.photos_before`, urls)
+                          photoIdsRef.current[`${index}-before`] = photoIds
+                          notifyPhotoIds()
+                        }}
                         min={1}
-                        max={4}
+                        max={3}
                       />
 
-                      <PhotoUpload
-                        label="Foto Sesudah"
-                        bucket="service-photos"
-                        pathPrefix={`orders/${orderId}/ac-${index}/after`}
+                      <PhotoUploadOffline
+                        orderId={orderId}
+                        acUnitIdx={index}
+                        kind="after"
                         value={formValues[index]?.photos_after || []}
-                        onChange={(urls) => setValue(`units.${index}.photos_after`, urls)}
+                        onChange={(urls, photoIds) => {
+                          setValue(`units.${index}.photos_after`, urls)
+                          photoIdsRef.current[`${index}-after`] = photoIds
+                          notifyPhotoIds()
+                        }}
                         min={1}
-                        max={4}
+                        max={3}
                       />
 
                       <MaterialInput

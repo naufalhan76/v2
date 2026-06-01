@@ -71,6 +71,7 @@ export default function TechniciansPage() {
     technician_name: '',
     contact_number: '',
     email: '',
+    password: '',
     company: '',
   })
 
@@ -106,6 +107,7 @@ export default function TechniciansPage() {
       technician_name: '',
       contact_number: '',
       email: '',
+      password: '',
       company: '',
     })
     setIsCreateOpen(true)
@@ -117,6 +119,7 @@ export default function TechniciansPage() {
       technician_name: technician.technician_name,
       contact_number: technician.contact_number,
       email: technician.email || '',
+      password: '',
       company: technician.company || '',
     })
     setIsEditOpen(true)
@@ -199,7 +202,8 @@ export default function TechniciansPage() {
 
     setIsSubmitting(true)
     try {
-      const result = await updateTechnician(selectedTechnician.technician_id, formData)
+      const { technician_name, contact_number, email, company } = formData
+      const result = await updateTechnician(selectedTechnician.technician_id, { technician_name, contact_number, email, company })
       
       if (result.success) {
         toast({
@@ -413,13 +417,25 @@ export default function TechniciansPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-email">Email</Label>
+              <Label htmlFor="create-email">Email *</Label>
               <Input
                 id="create-email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-password">Password *</Label>
+              <Input
+                id="create-password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+              />
+              <p className="text-xs text-muted-foreground">Teknisi login pakai email & password ini di aplikasi teknisi.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="create-company">Company</Label>

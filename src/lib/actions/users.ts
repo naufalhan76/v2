@@ -54,15 +54,15 @@ export async function getUsers() {
 
 /**
  * Create a new user (auth + user_management)
- * Uses database trigger to auto-populate user_management table
+ * Explicit insert — no database trigger. If user_management insert fails,
+ * the auth user is deleted (compensating action / saga pattern).
  */
 export async function createUser(input: CreateUserInput) {
   try {
     const supabaseAdmin = createAdminClient()
-    const supabase = await createClient()
 
     // 1. Check if email already exists in user_management
-    const { data: existingUser } = await supabase
+    const { data: existingUser } = await supabaseAdmin
       .from('user_management')
       .select('email')
       .eq('email', input.email)
@@ -73,7 +73,6 @@ export async function createUser(input: CreateUserInput) {
     }
 
     // 2. Create auth user using admin client
-    // The database trigger will automatically create the user_management record
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: input.email,
       password: input.password,
@@ -93,10 +92,26 @@ export async function createUser(input: CreateUserInput) {
       return { success: false, error: 'Failed to create user' }
     }
 
-    // 3. The database trigger automatically creates the user_management record
-    // with user_id (MSN format), full_name, and role from metadata
-    // Just wait a moment for the trigger to complete
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // 3. Explicitly insert into user_management (no trigger)
+    const { error: insertError } = await supabaseAdmin
+      .from('user_management')
+      .insert({
+        auth_user_id: authData.user.id,
+        email: input.email,
+        full_name: input.full_name,
+        role: input.role,
+        is_active: true,
+      })
+
+    if (insertError) {
+      logger.error('Error inserting user_management record, rolling back auth user:', insertError)
+      // Compensating action: delete the orphaned auth user
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      if (deleteError) {
+        logger.error('CRITICAL: Failed to delete orphaned auth user after insert failure:', deleteError)
+      }
+      return { success: false, error: insertError.message }
+    }
 
     revalidatePath('/dashboard/manajemen/user')
     return { success: true, error: null }

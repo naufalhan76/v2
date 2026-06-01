@@ -6,6 +6,7 @@ import { Navbar } from '@/components/navbar'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Menu } from 'lucide-react'
+import { CommandPalette } from '@/components/command-palette'
 
 export function DashboardShell({
   children,
@@ -14,9 +15,12 @@ export function DashboardShell({
 }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
 
   return (
     <div className="h-dvh w-full overflow-hidden" data-testid="dashboard-shell">
+      <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
+
       {/* Mobile Layout */}
       <div className="md:hidden h-full min-h-0 flex flex-col">
         {/* Mobile Header with Hamburger */}
@@ -32,7 +36,7 @@ export function DashboardShell({
               <Sidebar onCollapse={setIsSidebarCollapsed} />
             </SheetContent>
           </Sheet>
-          <Navbar />
+          <Navbar onOpenCommandPalette={() => setCommandPaletteOpen(true)} />
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
           {children}
@@ -49,7 +53,7 @@ export function DashboardShell({
         </aside>
         <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
           <header className="flex-none">
-            <Navbar />
+            <Navbar onOpenCommandPalette={() => setCommandPaletteOpen(true)} />
           </header>
           <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 lg:p-6">
             {children}

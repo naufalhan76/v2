@@ -92,7 +92,7 @@
 
 @layer components {
   .kpi-card {
-    @apply bg-card rounded-xl border border-border/50 shadow-sm p-6 transition-all hover:shadow-md;
+    @apply relative overflow-hidden rounded-xl border-0 p-5 transition-all hover:shadow-md;
   }
   
   .data-table-container {

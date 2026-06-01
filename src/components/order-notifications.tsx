@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
-import { createClient } from '@/lib/supabase-browser'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Max entries kept in localStorage to prevent unbounded growth
 const MAX_READ_NOTIFICATIONS = 100
@@ -36,10 +36,12 @@ export function OrderNotifications() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
-  const supabaseRef = useRef(createClient())
+  const supabaseRef = useRef<Awaited<ReturnType<typeof import('@/lib/supabase-browser').createClient>> | null>(null)
 
   useEffect(() => {
-    const getUserId = async () => {
+    const init = async () => {
+      const { createClient } = await import('@/lib/supabase-browser')
+      supabaseRef.current = createClient()
       try {
         const { data: { user } } = await supabaseRef.current.auth.getUser()
         if (user) {
@@ -49,15 +51,15 @@ export function OrderNotifications() {
         logger.error('Error getting user ID:', error)
       }
     }
-    getUserId()
+    init()
   }, [])
 
   const fetchNotifications = useCallback(async () => {
     if (!userId) return
+    const supabase = supabaseRef.current
+    if (!supabase) return
 
     try {
-      const supabase = supabaseRef.current
-      
       // Get notifications from last 7 days untuk catch more notifications
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
       
@@ -133,8 +135,8 @@ export function OrderNotifications() {
     // Close popover
     setOpen(false)
     
-    // Navigate to monitoring ongoing with the order detail
-    router.push(`/dashboard/operasional/monitoring-ongoing?orderId=${orderId}`)
+    // Navigate to orders page with order detail highlighted
+    router.push(`/dashboard/orders?view=board&orderId=${orderId}`)
   }
 
   const markAsRead = (orderId: string) => {

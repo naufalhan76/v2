@@ -47,7 +47,7 @@ export function HistoryJobCard({ job }: HistoryJobCardProps) {
 
   return (
     <Link
-      href={`/technician/job/${encodeURIComponent(job.order_id)}`}
+      href={`/technician/job/${job.order_id}`}
       className="block rounded-xl border bg-card p-4 transition-colors active:bg-accent/50 hover:bg-accent/30"
     >
       {/* Top row: customer + status */}

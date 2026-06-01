@@ -13,9 +13,13 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { LoadingOverlay } from '@/components/ui/loading-state'
 import { logger } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
 function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
+  const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>({})
   const [isLoading, setIsLoading] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -24,7 +28,27 @@ function LoginForm() {
   const redirectTo = searchParams.get('redirectTo') || '/dashboard'
   const { toast } = useToast()
 
-  // Reset loading state when component mounts (e.g., user navigates back)
+  const validateEmail = (value: string): string | undefined => {
+    if (!value) return 'Email wajib diisi'
+    if (!value.includes('@')) return 'Masukkan alamat email yang valid'
+    return undefined
+  }
+
+  const validatePassword = (value: string): string | undefined => {
+    if (!value) return 'Kata sandi wajib diisi'
+    if (value.length < 6) return 'Kata sandi minimal 6 karakter'
+    return undefined
+  }
+
+  const handleBlur = (field: 'email' | 'password') => {
+    setTouched(prev => ({ ...prev, [field]: true }))
+    if (field === 'email') {
+      setFieldErrors(prev => ({ ...prev, email: validateEmail(email) }))
+    } else {
+      setFieldErrors(prev => ({ ...prev, password: validatePassword(password) }))
+    }
+  }
+
   useEffect(() => {
     setIsLoading(false)
     setLoadingMessage('')
@@ -32,37 +56,18 @@ function LoginForm() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validate inputs
-    if (!email || !password) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter both email and password",
-        variant: "destructive"
-      })
-      return
-    }
 
-    if (!email.includes('@')) {
-      toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address",
-        variant: "destructive"
-      })
-      return
-    }
+    setTouched({ email: true, password: true })
+    const emailError = validateEmail(email)
+    const passwordError = validatePassword(password)
+    setFieldErrors({ email: emailError, password: passwordError })
 
-    if (password.length < 6) {
-      toast({
-        title: "Invalid Password",
-        description: "Password must be at least 6 characters",
-        variant: "destructive"
-      })
+    if (emailError || passwordError) {
       return
     }
 
     setIsLoading(true)
-    setLoadingMessage('Authenticating...')
+        setLoadingMessage('Mengautentikasi...')
 
     try {
       const supabase = createClient()
@@ -77,18 +82,17 @@ function LoginForm() {
         
         // Better error messages
         if (error.message.includes('Invalid login credentials')) {
-          throw new Error('Invalid email or password')
+          throw new Error('Email atau kata sandi salah')
         }
         if (error.message.includes('Email not confirmed')) {
-          throw new Error('Please verify your email before logging in')
+          throw new Error('Verifikasi email terlebih dahulu sebelum masuk')
         }
         
         throw error
       }
 
-      setLoadingMessage('Verifying permissions...')
+      setLoadingMessage('Memverifikasi izin...')
 
-      // Fetch user role from user_management table using auth_user_id
       const { data: userData, error: userError } = await supabase
         .from('user_management')
         .select('role, email, full_name')
@@ -102,19 +106,18 @@ function LoginForm() {
         
         // More helpful error message
         if (userError.code === 'PGRST116') {
-          throw new Error('User not found in the system. Please contact an administrator to set up your account.')
+          throw new Error('Pengguna tidak ditemukan. Hubungi administrator untuk menyiapkan akun Anda.')
         }
         
-        throw new Error(`Error fetching user permissions: ${userError.message}`)
+        throw new Error(`Gagal mengambil izin pengguna: ${userError.message}`)
       }
 
-      // Check if user has appropriate role
       if (!userData) {
-        throw new Error('User not found in the system. Please contact an administrator to set up your account.')
+        throw new Error('Pengguna tidak ditemukan. Hubungi administrator untuk menyiapkan akun Anda.')
       }
 
       if (!['SUPERADMIN', 'ADMIN', 'FINANCE', 'TECHNICIAN'].includes(userData.role)) {
-        throw new Error('Invalid user role. Please contact an administrator.')
+        throw new Error('Peran pengguna tidak valid. Hubungi administrator.')
       }
 
       let targetRoute = redirectTo
@@ -124,14 +127,13 @@ function LoginForm() {
         targetRoute = '/dashboard'
       }
 
-      setLoadingMessage('Login successful! Loading...')
+      setLoadingMessage('Berhasil masuk! Memuat...')
 
       toast({
-        title: "Login successful",
-        description: `Welcome back, ${userData.full_name || userData.role}!`,
+        title: "Berhasil masuk",
+        description: `Selamat datang kembali, ${userData.full_name || userData.role}!`,
       })
 
-      // Refresh router to update server-side session
       router.refresh()
       
       // Small delay to ensure cookie is set and show success message
@@ -146,21 +148,21 @@ function LoginForm() {
       logger.error('Login error:', error)
       setLoadingMessage('')
       setIsLoading(false)
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "An error occurred during login",
-        variant: "destructive"
-      })
+        toast({
+          title: "Gagal masuk",
+          description: error instanceof Error ? error.message : "Terjadi kesalahan saat masuk",
+          variant: "destructive"
+        })
     }
     // Note: Don't set isLoading to false in finally block
     // Let it stay true until page navigation completes
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <LoadingOverlay
         isLoading={isLoading}
-        message={loadingMessage || 'Loading...'}
+        message={loadingMessage || 'Memuat...'}
         className="w-full max-w-md"
       >
         <Card className="w-full max-w-md">
@@ -175,7 +177,7 @@ function LoginForm() {
               />
             </div>
             <CardDescription className="text-center">
-              Login to access the application
+              Masuk ke MSN ERP
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -187,20 +189,37 @@ function LoginForm() {
                   type="email"
                   placeholder="name@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    if (touched.email) {
+                      setFieldErrors(prev => ({ ...prev, email: validateEmail(e.target.value) }))
+                    }
+                  }}
+                  onBlur={() => handleBlur('email')}
+                  aria-invalid={!!fieldErrors.email}
+                  aria-describedby={fieldErrors.email ? 'email-error' : undefined}
                   disabled={isLoading}
                 />
+                {touched.email && fieldErrors.email && (
+                  <p id="email-error" className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Kata Sandi</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      if (touched.password) {
+                        setFieldErrors(prev => ({ ...prev, password: validatePassword(e.target.value) }))
+                      }
+                    }}
+                    onBlur={() => handleBlur('password')}
+                    aria-invalid={!!fieldErrors.password}
+                    aria-describedby={fieldErrors.password ? 'password-error' : undefined}
                     className="pr-10"
                     disabled={isLoading}
                   />
@@ -213,6 +232,9 @@ function LoginForm() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {touched.password && fieldErrors.password && (
+                  <p id="password-error" className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
+                )}
               </div>
               <Button
                 type="submit"
@@ -222,10 +244,10 @@ function LoginForm() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Logging in...
+                    Sedang masuk...
                   </>
                 ) : (
-                  'Login'
+                  'Masuk'
                 )}
               </Button>
             </form>
@@ -241,8 +263,8 @@ export default function LoginPage() {
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <p className="mt-4 text-muted-foreground">Memuat...</p>
         </div>
       </div>
     }>

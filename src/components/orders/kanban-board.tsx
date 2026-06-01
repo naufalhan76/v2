@@ -36,17 +36,25 @@ interface KanbanBoardProps {
   onCreateInvoice?: (orderId: string) => void
   /** When provided, called when admin drags INVOICED → PAID to open payment modal. */
   onRecordPayment?: (orderId: string) => void
+  isSelectionMode?: boolean
+  selectedOrderIds?: Set<string>
+  onSelectToggle?: (orderId: string) => void
+  onColumnSelectToggle?: (orderIds: string[], select: boolean) => void
 }
 
 interface DraggableCardProps {
   order: OrderForDisplay
   onClick: (orderId: string) => void
+  isSelectionMode?: boolean
+  isSelected?: boolean
+  onSelectToggle?: (orderId: string) => void
 }
 
-function DraggableCard({ order, onClick }: DraggableCardProps) {
+function DraggableCard({ order, onClick, isSelectionMode, isSelected, onSelectToggle }: DraggableCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: order.order_id,
     data: { order },
+    disabled: isSelectionMode,
   })
 
   const style = {
@@ -55,7 +63,15 @@ function DraggableCard({ order, onClick }: DraggableCardProps) {
 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      <OrderCard order={order} onClick={onClick} isDragging={isDragging} hideStatusBadge />
+      <OrderCard
+        order={order}
+        onClick={onClick}
+        isDragging={isDragging}
+        hideStatusBadge
+        isSelectionMode={isSelectionMode}
+        isSelected={isSelected}
+        onSelectToggle={onSelectToggle}
+      />
     </div>
   )
 }
@@ -65,9 +81,13 @@ export function KanbanBoard({
   onCardClick,
   onCreateInvoice,
   onRecordPayment,
+  isSelectionMode,
+  selectedOrderIds,
+  onSelectToggle,
+  onColumnSelectToggle,
 }: KanbanBoardProps) {
   const { toast } = useToast()
-  const transition = useTransitionOrder()
+  useTransitionOrder()
 
   const [activeOrder, setActiveOrder] = useState<OrderForDisplay | null>(null)
   const [assignTarget, setAssignTarget] = useState<{ orderId: string; defaultDate?: string | null } | null>(null)
@@ -172,8 +192,18 @@ export function KanbanBoard({
               onCardClick={onCardClick}
               acceptsDrops={col.acceptsDrops}
               defaultCollapsed={col.id === 'PAID'}
+              isSelectionMode={isSelectionMode}
+              selectedOrderIds={selectedOrderIds}
+              onColumnSelectToggle={onColumnSelectToggle}
               renderCard={(o) => (
-                <DraggableCard key={o.order_id} order={o} onClick={onCardClick} />
+                <DraggableCard
+                  key={o.order_id}
+                  order={o}
+                  onClick={onCardClick}
+                  isSelectionMode={isSelectionMode}
+                  isSelected={selectedOrderIds?.has(o.order_id)}
+                  onSelectToggle={onSelectToggle}
+                />
               )}
             />
           ))}

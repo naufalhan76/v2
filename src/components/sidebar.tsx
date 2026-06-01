@@ -18,7 +18,13 @@ import {
   Moon,
   Sun,
   Wrench,
-  FileText
+  FileText,
+  Lightbulb,
+  History,
+  Bell,
+  Tag,
+  DollarSign,
+  Clock,
 } from 'lucide-react'
 
 const sidebarItems = [
@@ -31,6 +37,11 @@ const sidebarItems = [
     title: 'Orders',
     href: '/dashboard/orders',
     icon: ClipboardList,
+  },
+  {
+    title: 'History',
+    href: '/dashboard/orders/history',
+    icon: History,
   },
   {
     title: 'Invoices',
@@ -48,11 +59,17 @@ const sidebarItems = [
     icon: Wrench,
   },
   {
+    title: 'Reminders',
+    href: '/dashboard/reminders',
+    icon: Bell,
+  },
+  {
     title: 'Settings',
     href: '/dashboard/settings',
     icon: Settings,
     children: [
-      { title: 'Service Catalog', href: '/dashboard/settings/service-catalog' },
+      { title: 'Service Config', href: '/dashboard/konfigurasi/service-config' },
+      { title: 'Service Pricing', href: '/dashboard/konfigurasi/service-pricing' },
       { title: 'Addons', href: '/dashboard/konfigurasi/addons-catalog' },
       { title: 'Reminder Rules', href: '/dashboard/settings/reminder-rules' },
       { title: 'Invoice Settings', href: '/dashboard/konfigurasi/invoice-config' },
@@ -315,6 +332,17 @@ function ProfileSection() {
               <User className="h-4 w-4" />
               Profile Settings
             </Link>
+            <button
+              onClick={() => {
+                localStorage.removeItem('msn-erp-dashboard-onboarded')
+                setIsOpen(false)
+                window.location.href = '/dashboard'
+              }}
+              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors w-full text-left"
+            >
+              <Lightbulb className="h-4 w-4" />
+              Tampilkan Panduan
+            </button>
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors w-full text-left text-destructive hover:text-destructive"

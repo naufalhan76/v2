@@ -1,10 +1,30 @@
 'use client'
 
-import { useCallback } from 'react'
-import { Plus, Trash2, Package } from 'lucide-react'
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
+import { Plus, Trash2, Package, Search, FilePlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { getActiveAddons } from '@/lib/actions/addons'
+import { createAddonRequest } from '@/lib/actions/addon-requests'
+import { useToast } from '@/hooks/use-toast'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 
 export interface MaterialItem {
   addon_id?: string | null
@@ -20,6 +40,17 @@ interface MaterialInputProps {
   disabled?: boolean
 }
 
+interface AddonOption {
+  addon_id: string
+  item_name: string
+  category: string
+  unit_price: number
+  unit_of_measure: string
+}
+
+const CATEGORIES = ['PARTS', 'FREON', 'LABOR', 'TRANSPORTATION', 'OTHER'] as const
+const UNITS = ['pcs', 'kg', 'hour', 'visit', 'meter', 'set', 'unit', 'liter'] as const
+
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -29,7 +60,132 @@ function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
+function AddonSearchInput({
+  value,
+  addons,
+  onSelect,
+  disabled,
+  placeholder,
+}: {
+  value: string
+  addons: AddonOption[]
+  onSelect: (addon: AddonOption) => void
+  disabled?: boolean
+  placeholder?: string
+}) {
+  const [query, setQuery] = useState(value)
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setQuery(value)
+  }, [value])
+
+  useEffect(() => {
+    if (!open) return
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
+  const grouped = useMemo(() => {
+    if (!query.trim()) return {} as Record<string, AddonOption[]>
+    const q = query.toLowerCase()
+    const filtered = addons.filter(
+      (a) =>
+        a.item_name.toLowerCase().includes(q) ||
+        a.category.toLowerCase().includes(q)
+    )
+    const groups: Record<string, AddonOption[]> = {}
+    filtered.forEach((a) => {
+      if (!groups[a.category]) groups[a.category] = []
+      groups[a.category].push(a)
+    })
+    return groups
+  }, [addons, query])
+
+  const totalMatches = Object.values(grouped).reduce((s, arr) => s + arr.length, 0)
+
+  return (
+    <div ref={ref} className="relative flex-1">
+      <Input
+        placeholder={placeholder || 'Nama material'}
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          setOpen(true)
+        }}
+        onFocus={() => { if (query.trim()) setOpen(true) }}
+        disabled={disabled}
+        className="h-10 flex-1 text-sm pr-8"
+      />
+      <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+
+      {open && totalMatches > 0 && !disabled && (
+        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-card border rounded-lg shadow-lg max-h-56 overflow-y-auto">
+          {Object.entries(grouped).map(([category, items]) => (
+            <div key={category}>
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50 sticky top-0">
+                {category}
+              </div>
+              {items.map((addon) => (
+                <button
+                  key={addon.addon_id}
+                  type="button"
+                  onClick={() => {
+                    onSelect(addon)
+                    setQuery(addon.item_name)
+                    setOpen(false)
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-muted/70 transition-colors flex items-center justify-between gap-2"
+                >
+                  <span className="font-medium">{addon.item_name}</span>
+                  <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                    {formatCurrency(addon.unit_price)}/{addon.unit_of_measure}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function MaterialInput({ value, onChange, disabled = false }: MaterialInputProps) {
+  const [addons, setAddons] = useState<AddonOption[]>([])
+  const [addonsLoading, setAddonsLoading] = useState(true)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [requestCategory, setRequestCategory] = useState<string>('PARTS')
+  const [requestName, setRequestName] = useState('')
+  const [requestUnit, setRequestUnit] = useState<string>('pcs')
+  const [requestPrice, setRequestPrice] = useState('')
+  const [requestDescription, setRequestDescription] = useState('')
+  const [requestSubmitting, setRequestSubmitting] = useState(false)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    getActiveAddons()
+      .then((data) => {
+        setAddons(data.map((a) => ({
+          addon_id: a.addon_id,
+          item_name: a.item_name,
+          category: a.category,
+          unit_price: a.unit_price,
+          unit_of_measure: a.unit_of_measure,
+        })))
+      })
+      .catch(() => {
+        // Silently fail — free-form input still works
+      })
+      .finally(() => setAddonsLoading(false))
+  }, [])
+
   const grandTotal = value.reduce((sum, item) => sum + item.total, 0)
 
   const addRow = useCallback(() => {
@@ -56,7 +212,6 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
         row.unit_price = Math.max(0, Number(fieldValue) || 0)
       }
 
-      // Recalculate total
       row.total = row.qty * row.unit_price
       updated[index] = row
       onChange(updated)
@@ -64,28 +219,100 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
     [onChange, value]
   )
 
+  const handleAddonSelect = useCallback(
+    (index: number, addon: AddonOption) => {
+      const updated = [...value]
+      updated[index] = {
+        addon_id: addon.addon_id,
+        name: addon.item_name,
+        qty: Math.max(value[index]?.qty || 1),
+        unit_price: addon.unit_price,
+        total: (value[index]?.qty || 1) * addon.unit_price,
+      }
+      onChange(updated)
+    },
+    [onChange, value]
+  )
+
+  const handleRequestSubmit = async () => {
+    if (!requestName.trim()) return
+    setRequestSubmitting(true)
+    const result = await createAddonRequest({
+      category: requestCategory,
+      item_name: requestName.trim(),
+      unit_of_measure: requestUnit,
+      proposed_unit_price: requestPrice ? Number(requestPrice) : null,
+      description: requestDescription.trim() || null,
+    })
+    setRequestSubmitting(false)
+    if (result.success) {
+      toast({
+        title: 'Berhasil',
+        description: 'Permintaan part dikirim. Menunggu persetujuan admin.',
+      })
+      setRequestCategory('PARTS')
+      setRequestName('')
+      setRequestUnit('pcs')
+      setRequestPrice('')
+      setRequestDescription('')
+      setDialogOpen(false)
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Gagal',
+        description: result.error || 'Gagal mengajukan part',
+      })
+    }
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">Material &amp; Sparepart</label>
         {!disabled && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addRow}
-            className="h-8 text-xs"
-          >
-            <Plus className="mr-1 h-3.5 w-3.5" />
-            Tambah
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setDialogOpen(true)}
+              className="h-8 text-xs"
+            >
+              <FilePlus className="mr-1 h-3.5 w-3.5" />
+              Request Part Baru
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addRow}
+              className="h-8 text-xs"
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              Tambah
+            </Button>
+          </div>
         )}
       </div>
 
-      {value.length === 0 ? (
+      {addonsLoading && value.length === 0 && (
+        <div className="flex items-center justify-center py-6 text-center border rounded-lg border-dashed">
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            <p className="text-sm text-muted-foreground">Memuat katalog material...</p>
+          </div>
+        </div>
+      )}
+
+      {!addonsLoading && value.length === 0 && (
         <div className="flex flex-col items-center justify-center py-6 text-center border rounded-lg border-dashed">
           <Package className="h-8 w-8 text-muted-foreground/50 mb-2" />
           <p className="text-sm text-muted-foreground">Belum ada material</p>
+          {addons.length > 0 && (
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              Cari dari katalog atau ketik manual
+            </p>
+          )}
           {!disabled && (
             <Button
               type="button"
@@ -99,22 +326,34 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
             </Button>
           )}
         </div>
-      ) : (
+      )}
+
+      {value.length > 0 && (
         <div className="space-y-2">
           {value.map((item, index) => (
             <div
               key={index}
               className="rounded-lg border bg-card p-3 space-y-2"
             >
-              {/* Row 1: Name + delete */}
+              {/* Row 1: Name (with addon search) + delete */}
               <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Nama material"
-                  value={item.name}
-                  onChange={(e) => updateRow(index, 'name', e.target.value)}
-                  disabled={disabled}
-                  className="h-10 flex-1 text-sm"
-                />
+                {addons.length > 0 && !disabled ? (
+                  <AddonSearchInput
+                    value={item.name}
+                    addons={addons}
+                    onSelect={(addon) => handleAddonSelect(index, addon)}
+                    disabled={disabled}
+                    placeholder="Cari material dari katalog..."
+                  />
+                ) : (
+                  <Input
+                    placeholder="Nama material"
+                    value={item.name}
+                    onChange={(e) => updateRow(index, 'name', e.target.value)}
+                    disabled={disabled}
+                    className="h-10 flex-1 text-sm"
+                  />
+                )}
                 {!disabled && (
                   <Button
                     type="button"
@@ -128,6 +367,12 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                   </Button>
                 )}
               </div>
+
+              {item.addon_id && (
+                <p className="text-[10px] text-primary/70 font-medium">
+                  Dari katalog — harga otomatis
+                </p>
+              )}
 
               {/* Row 2: Qty + Unit Price */}
               <div className="grid grid-cols-2 gap-2">
@@ -173,6 +418,107 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
           </div>
         </div>
       )}
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request Part Baru</DialogTitle>
+            <DialogDescription>
+              Ajukan part yang belum ada di katalog untuk disetujui admin.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="req-category">Kategori</Label>
+              <Select value={requestCategory} onValueChange={setRequestCategory}>
+                <SelectTrigger id="req-category" className="h-10 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="req-name">Nama Item</Label>
+              <Input
+                id="req-name"
+                placeholder="Nama part / material"
+                value={requestName}
+                onChange={(e) => setRequestName(e.target.value)}
+                className="h-10 text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="req-unit">Satuan</Label>
+              <Select value={requestUnit} onValueChange={setRequestUnit}>
+                <SelectTrigger id="req-unit" className="h-10 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {UNITS.map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {u}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="req-price">Perkiraan Harga Satuan (opsional)</Label>
+              <Input
+                id="req-price"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={1000}
+                placeholder="0"
+                value={requestPrice}
+                onChange={(e) => setRequestPrice(e.target.value)}
+                className="h-10 text-sm"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="req-desc">Deskripsi (opsional)</Label>
+              <Textarea
+                id="req-desc"
+                placeholder="Spesifikasi atau catatan tambahan"
+                value={requestDescription}
+                onChange={(e) => setRequestDescription(e.target.value)}
+                className="min-h-[80px] text-sm"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Part yang diajukan akan masuk katalog setelah disetujui admin. Untuk sekarang kamu tetap bisa mengetik material manual di form.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDialogOpen(false)}
+              disabled={requestSubmitting}
+              className="h-9 text-sm"
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleRequestSubmit}
+              disabled={requestSubmitting || !requestName.trim()}
+              className="h-9 text-sm"
+            >
+              {requestSubmitting ? 'Mengirim...' : 'Kirim Permintaan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

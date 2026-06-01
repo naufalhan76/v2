@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Plus, Pencil, Trash2, Search, UploadCloud } from 'lucide-react'
+import { Loader2, Plus, Pencil, Trash2, Search, UploadCloud, Download } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog'
@@ -18,6 +18,7 @@ import {
   updateServiceCatalogEntry, 
   deleteServiceCatalogEntry, 
   bulkImportServiceCatalog,
+  bulkUpdateServiceCatalog,
   getUnitTypes,
   getCapacityRanges,
   getServiceTypes
@@ -57,6 +58,7 @@ export function ServiceCatalogTab() {
   const [isFetching, setIsFetching] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false)
+  const [isBulkUpdateDialogOpen, setIsBulkUpdateDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<ServiceCatalogItem | null>(null)
   const [deletingItem, setDeletingItem] = useState<ServiceCatalogItem | null>(null)
@@ -190,6 +192,39 @@ export function ServiceCatalogTab() {
     setIsLoading(false)
   }
 
+  const handleBulkUpdate = async (csvText: string) => {
+    setIsLoading(true)
+    const res = await bulkUpdateServiceCatalog(csvText)
+    if (res.success) {
+       toast({ title: 'Update Berhasil', description: res.message })
+       setIsBulkUpdateDialogOpen(false)
+       loadData()
+    } else {
+       toast({ variant: 'destructive', title: 'Update Gagal', description: res.error })
+    }
+    setIsLoading(false)
+  }
+
+  const downloadTemplate = () => {
+    const headers = ['catalog_id', 'msn_code', 'service_name', 'base_price', 'description', 'is_active']
+    const rows = items.map(item => [
+      item.catalog_id,
+      item.msn_code,
+      item.service_name,
+      item.base_price,
+      item.description || '',
+      item.is_active ? 'TRUE' : 'FALSE'
+    ])
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'service-catalog-template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount)
   }
@@ -265,6 +300,12 @@ export function ServiceCatalogTab() {
               </div>
             </div>
             <div className="flex gap-2">
+              <Button onClick={downloadTemplate} variant="outline" className="gap-2">
+                <Download className="h-4 w-4" /> Download Template
+              </Button>
+              <Button onClick={() => setIsBulkUpdateDialogOpen(true)} variant="outline" className="gap-2">
+                <UploadCloud className="h-4 w-4" /> Bulk Update
+              </Button>
               <Button onClick={() => setIsBulkDialogOpen(true)} variant="outline" className="gap-2">
                  <UploadCloud className="h-4 w-4" /> Bulk Import
               </Button>
@@ -437,6 +478,16 @@ export function ServiceCatalogTab() {
             description={<span>Paste data CSV dari Excel atau Drop File di atas. Sesuai format: <code>MSN Code, Type AC, Capacity, Tipe Service, Price</code></span>}
             placeholder={"MSN Code,Type AC,Capacity,Tipe Service,Price\nCARERA001P,Room Air,0.5 - 1.5 HP,Jasa Service Room Air (Checking),100000"}
             onImport={handleBulkImport}
+            isLoading={isLoading}
+          />
+
+          <BulkImportDialog 
+            open={isBulkUpdateDialogOpen}
+            onOpenChange={setIsBulkUpdateDialogOpen}
+            title="Bulk Update Service Catalog (CSV)"
+            description={<span>Update data catalog yang sudah ada. Format: <code>catalog_id, msn_code, service_name, base_price, description, is_active</code></span>}
+            placeholder={"catalog_id,msn_code,service_name,base_price,description,is_active\n123e4567,CARERA001,Jasa Service Room Air,100000,Checking AC,TRUE"}
+            onImport={handleBulkUpdate}
             isLoading={isLoading}
           />
 

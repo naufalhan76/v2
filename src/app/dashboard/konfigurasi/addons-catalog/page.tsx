@@ -18,6 +18,8 @@ import {
   Package,
   Search,
   AlertTriangle,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/skeleton'
@@ -66,6 +68,13 @@ import {
   getLowStockAddons,
   type Addon,
 } from '@/lib/actions/addons'
+import {
+  getAddonRequests,
+  getPendingAddonRequestCount,
+  approveAddonRequest,
+  rejectAddonRequest,
+  type AddonRequest,
+} from '@/lib/actions/addon-requests'
 import { logger } from '@/lib/logger'
 
 const addonSchema = z.object({
@@ -112,6 +121,21 @@ export default function AddonsCatalogPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('ALL')
   const { toast } = useToast()
+
+  const [requests, setRequests] = useState<AddonRequest[]>([])
+  const [isLoadingRequests, setIsLoadingRequests] = useState(true)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false)
+  const [approvingRequest, setApprovingRequest] = useState<AddonRequest | null>(null)
+  const [approveItemCode, setApproveItemCode] = useState('')
+  const [approveFinalPrice, setApproveFinalPrice] = useState('')
+  const [approveInitialStock, setApproveInitialStock] = useState('0')
+  const [approveMinStock, setApproveMinStock] = useState('0')
+  const [isApproving, setIsApproving] = useState(false)
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false)
+  const [rejectingRequest, setRejectingRequest] = useState<AddonRequest | null>(null)
+  const [rejectNotes, setRejectNotes] = useState('')
+  const [isRejecting, setIsRejecting] = useState(false)
 
   const {
     register,
@@ -160,6 +184,26 @@ export default function AddonsCatalogPage() {
       logger.error('Error loading low stock add-ons:', error)
     }
   }
+
+  const loadRequests = async () => {
+    try {
+      setIsLoadingRequests(true)
+      const [pendingResult, countResult] = await Promise.all([
+        getAddonRequests('PENDING'),
+        getPendingAddonRequestCount(),
+      ])
+      if (pendingResult.success) setRequests(pendingResult.data)
+      if (countResult.success) setPendingCount(countResult.count)
+    } catch (_error) {
+    } finally {
+      setIsLoadingRequests(false)
+    }
+  }
+
+  useEffect(() => {
+    loadRequests()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleOpenDialog = (addon?: Addon) => {
     if (addon) {
@@ -270,6 +314,95 @@ export default function AddonsCatalogPage() {
       currency: 'IDR',
       minimumFractionDigits: 0,
     }).format(amount)
+  }
+
+  const handleOpenApproveDialog = (request: AddonRequest) => {
+    setApprovingRequest(request)
+    setApproveItemCode(request.item_name || '')
+    setApproveFinalPrice(request.proposed_unit_price?.toString() || '0')
+    setApproveInitialStock('0')
+    setApproveMinStock('0')
+    setIsApproveDialogOpen(true)
+  }
+
+  const handleApprove = async () => {
+    if (!approvingRequest) return
+    const price = parseFloat(approveFinalPrice)
+    if (isNaN(price) || price < 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Harga final tidak valid',
+      })
+      return
+    }
+    try {
+      setIsApproving(true)
+      const result = await approveAddonRequest({
+        request_id: approvingRequest.request_id,
+        item_code: approveItemCode || null,
+        final_unit_price: price,
+        initial_stock: parseInt(approveInitialStock) || 0,
+        minimum_stock: parseInt(approveMinStock) || 0,
+      })
+      if (result.success) {
+        toast({ title: 'Berhasil', description: 'Part disetujui & masuk katalog' })
+        setIsApproveDialogOpen(false)
+        setApprovingRequest(null)
+        loadRequests()
+        loadAddons()
+        loadLowStockAddons()
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: result.error || 'Gagal menyetujui permintaan',
+        })
+      }
+    } catch (error: unknown) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Gagal menyetujui permintaan',
+      })
+    } finally {
+      setIsApproving(false)
+    }
+  }
+
+  const handleOpenRejectDialog = (request: AddonRequest) => {
+    setRejectingRequest(request)
+    setRejectNotes('')
+    setIsRejectDialogOpen(true)
+  }
+
+  const handleReject = async () => {
+    if (!rejectingRequest) return
+    try {
+      setIsRejecting(true)
+      const result = await rejectAddonRequest(rejectingRequest.request_id, rejectNotes || undefined)
+      if (result.success) {
+        toast({ title: 'Berhasil', description: 'Permintaan ditolak' })
+        setIsRejectDialogOpen(false)
+        setRejectingRequest(null)
+        setRejectNotes('')
+        loadRequests()
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: result.error || 'Gagal menolak permintaan',
+        })
+      }
+    } catch (error: unknown) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Gagal menolak permintaan',
+      })
+    } finally {
+      setIsRejecting(false)
+    }
   }
 
   const getCategoryColor = (category: string) => {
@@ -493,6 +626,96 @@ export default function AddonsCatalogPage() {
         </Card>
       )}
 
+      {/* Permintaan Part dari Teknisi */}
+      <Card className="rounded-xl border border-border/50 shadow-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold text-foreground">
+                Permintaan Part dari Teknisi
+              </CardTitle>
+              <CardDescription>
+                {pendingCount} permintaan menunggu persetujuan
+              </CardDescription>
+            </div>
+            {pendingCount > 0 && (
+              <Badge variant="secondary" className="text-sm">
+                {pendingCount}
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoadingRequests ? (
+            <TableSkeleton rows={3} columns={7} />
+          ) : requests.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Tidak ada permintaan part menunggu persetujuan.
+            </p>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-border/50 shadow-sm bg-card">
+              <Table>
+                <TableHeader className="[&_tr]:border-0">
+                  <TableRow className="border-0">
+                    <TableHead>Teknisi</TableHead>
+                    <TableHead>Kategori</TableHead>
+                    <TableHead>Nama Part</TableHead>
+                    <TableHead>Harga Usulan</TableHead>
+                    <TableHead>Satuan</TableHead>
+                    <TableHead className="hidden md:table-cell">Deskripsi</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {requests.map((req) => (
+                    <TableRow key={req.request_id} className="border-0 hover:bg-muted/50">
+                      <TableCell className="font-medium">
+                        {req.technicians?.technician_name || req.requested_by_technician_id}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getCategoryColor(req.category)}>
+                          {getCategoryLabel(req.category)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{req.item_name}</TableCell>
+                      <TableCell>
+                        {req.proposed_unit_price != null
+                          ? formatCurrency(req.proposed_unit_price)
+                          : '-'}
+                      </TableCell>
+                      <TableCell>{req.unit_of_measure || '-'}</TableCell>
+                      <TableCell className="hidden md:table-cell max-w-[200px] truncate">
+                        {req.description || '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1 sm:gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenApproveDialog(req)}
+                            className="min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenRejectDialog(req)}
+                            className="min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 text-destructive border-destructive/30 hover:bg-destructive/10"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Filters */}
       <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardContent className="pt-6">
@@ -637,6 +860,152 @@ export default function AddonsCatalogPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Approve Dialog */}
+      <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:max-w-[500px] max-h-[90vh] overflow-y-auto rounded-xl border border-border/50 shadow-sm">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-foreground">
+              Setujui Permintaan Part
+            </DialogTitle>
+            <DialogDescription>
+              Konfirmasi detail item sebelum menyetujui. Harga final dapat disesuaikan.
+            </DialogDescription>
+          </DialogHeader>
+          {approvingRequest && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+                <p className="text-sm">
+                  <span className="font-medium">Item:</span> {approvingRequest.item_name}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Kategori:</span> {getCategoryLabel(approvingRequest.category)}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Harga Usulan:</span> {formatCurrency(approvingRequest.proposed_unit_price ?? 0)}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="approveItemCode" className="text-sm font-medium text-foreground">Kode Item (opsional)</Label>
+                <Input
+                  id="approveItemCode"
+                  placeholder="CAP-10UF"
+                  value={approveItemCode}
+                  onChange={(e) => setApproveItemCode(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="approveFinalPrice" className="text-sm font-medium text-foreground">
+                  Harga Final <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="approveFinalPrice"
+                  placeholder="50000"
+                  type="number"
+                  value={approveFinalPrice}
+                  onChange={(e) => setApproveFinalPrice(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="approveInitialStock" className="text-sm font-medium text-foreground">Stok Awal</Label>
+                  <Input
+                    id="approveInitialStock"
+                    placeholder="0"
+                    type="number"
+                    value={approveInitialStock}
+                    onChange={(e) => setApproveInitialStock(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="approveMinStock" className="text-sm font-medium text-foreground">Stok Minimum</Label>
+                  <Input
+                    id="approveMinStock"
+                    placeholder="0"
+                    type="number"
+                    value={approveMinStock}
+                    onChange={(e) => setApproveMinStock(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsApproveDialogOpen(false)}
+              disabled={isApproving}
+              className="w-full sm:w-auto"
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              onClick={handleApprove}
+              disabled={isApproving}
+              className="w-full sm:w-auto"
+            >
+              {isApproving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menyetujui...
+                </>
+              ) : (
+                'Setujui & Tambahkan ke Katalog'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Dialog */}
+      <AlertDialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tolak Permintaan Part</AlertDialogTitle>
+            <AlertDialogDescription>
+              {rejectingRequest && (
+                <span>Tolak permintaan <strong>{rejectingRequest.item_name}</strong>? </span>
+              )}
+              Anda dapat memberikan alasan penolakan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="rejectNotes" className="text-sm font-medium text-foreground">
+              Alasan Penolakan (opsional)
+            </Label>
+            <Textarea
+              id="rejectNotes"
+              placeholder="Alasan penolakan..."
+              rows={3}
+              value={rejectNotes}
+              onChange={(e) => setRejectNotes(e.target.value)}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRejecting}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleReject}
+              disabled={isRejecting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isRejecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menolak...
+                </>
+              ) : (
+                'Tolak'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

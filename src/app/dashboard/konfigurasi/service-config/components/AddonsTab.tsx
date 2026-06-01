@@ -18,6 +18,8 @@ import {
   Package,
   Search,
   AlertTriangle,
+  UploadCloud,
+  Download,
 } from 'lucide-react'
 import {
   Dialog,
@@ -25,7 +27,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog'
 import {
@@ -36,13 +37,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -62,9 +56,11 @@ import {
   updateAddon,
   deleteAddon,
   getLowStockAddons,
+  bulkUpdateAddons,
   type Addon,
 } from '@/lib/actions/addons'
 import { logger } from '@/lib/logger'
+import { BulkImportDialog } from './BulkImportDialog'
 
 const addonSchema = z.object({
   category: z.string().min(1, 'Kategori wajib diisi'),
@@ -104,6 +100,7 @@ export function AddonsTab() {
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isBulkUpdateDialogOpen, setIsBulkUpdateDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [editingAddon, setEditingAddon] = useState<Addon | null>(null)
   const [deletingAddon, setDeletingAddon] = useState<Addon | null>(null)
@@ -282,17 +279,61 @@ export function AddonsTab() {
     return addon.stock_quantity < addon.minimum_stock
   }
 
+  const handleBulkUpdate = async (csvText: string) => {
+    setIsLoading(true)
+    const res = await bulkUpdateAddons(csvText)
+    if (res.success) {
+       toast({ title: 'Update Berhasil', description: res.message })
+       setIsBulkUpdateDialogOpen(false)
+       loadAddons()
+       loadLowStockAddons()
+    } else {
+       toast({ variant: 'destructive', title: 'Update Gagal', description: res.error })
+    }
+    setIsLoading(false)
+  }
+
+  const downloadTemplate = () => {
+    const headers = ['addon_id', 'item_code', 'item_name', 'category', 'unit_price', 'unit_of_measure', 'stock_quantity', 'minimum_stock', 'description', 'is_active']
+    const rows = addons.map(addon => [
+      addon.addon_id,
+      addon.item_code || '',
+      addon.item_name,
+      addon.category,
+      addon.unit_price,
+      addon.unit_of_measure,
+      addon.stock_quantity,
+      addon.minimum_stock,
+      addon.description || '',
+      addon.is_active ? 'TRUE' : 'FALSE'
+    ])
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'addons-template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Tambah Add-on
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] rounded-xl border border-border/50 shadow-sm">
+        <div className="flex gap-2">
+          <Button onClick={downloadTemplate} variant="outline" className="gap-2">
+            <Download className="h-4 w-4" /> Download Template
+          </Button>
+          <Button onClick={() => setIsBulkUpdateDialogOpen(true)} variant="outline" className="gap-2">
+            <UploadCloud className="h-4 w-4" /> Bulk Update
+          </Button>
+          <Button onClick={() => handleOpenDialog()} className="gap-2">
+            <Plus className="h-4 w-4" /> Tambah Add-on
+          </Button>
+        </div>
+      </div>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] rounded-xl border border-border/50 shadow-sm">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold text-foreground">
                 {editingAddon ? 'Edit Add-on' : 'Tambah Add-on'}
@@ -447,7 +488,6 @@ export function AddonsTab() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
 
       {/* Low Stock Alert */}
       {lowStockAddons.length > 0 && (
@@ -643,6 +683,16 @@ export function AddonsTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkImportDialog
+        open={isBulkUpdateDialogOpen}
+        onOpenChange={setIsBulkUpdateDialogOpen}
+        title="Bulk Update Add-ons (CSV)"
+        description={<span>Update data add-ons yang sudah ada. Format: <code>addon_id, item_code, item_name, category, unit_price, unit_of_measure, stock_quantity, minimum_stock, description, is_active</code></span>}
+        placeholder={"addon_id,item_code,item_name,category,unit_price,unit_of_measure,stock_quantity,minimum_stock,description,is_active\n123e4567,CAP-001,Capacitor 10uF,PARTS,50000,pcs,10,5,Electrolytic capacitor,TRUE"}
+        onImport={handleBulkUpdate}
+        isLoading={isLoading}
+      />
     </div>
   )
 }

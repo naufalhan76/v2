@@ -2,9 +2,8 @@ import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
 import { jsonSuccess, jsonError, handleApiError } from '@/app/api/utils'
 import { authenticateTechnician, isTechnicianContext } from '../../helpers'
-import { toCanonical, canTransition, type OrderStatus, getNextStates } from '@/lib/order-status'
+import { toCanonical, canTransition, type OrderStatus } from '@/lib/order-status'
 import { TechnicianTransitionSchema, TechnicianReportSchema } from '@/app/api/schemas/technician'
-import { PostgrestError } from '@supabase/supabase-js'
 
 export async function GET(
   request: NextRequest,
@@ -33,7 +32,6 @@ export async function GET(
       return jsonError('Order not found or not assigned to you', 404)
     }
 
-    // Fetch full order detail
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select(`
@@ -90,7 +88,6 @@ export async function GET(
       return jsonError('Order not found', 404)
     }
 
-    // Check if service report already exists
     const { data: report } = await supabase
       .from('service_reports')
       .select('report_id, submitted_at')
@@ -122,7 +119,6 @@ export async function POST(
     const resolvedParams = await params
     const rawId = Array.isArray(resolvedParams.id) ? resolvedParams.id : [resolvedParams.id]
     
-    // Check if the last segment is an action
     const lastSegment = rawId[rawId.length - 1]
     let action: 'transition' | 'report' | null = null
     let idSegments = rawId
@@ -142,7 +138,12 @@ export async function POST(
         return jsonError(`Invalid input: ${parsed.error.issues[0].message}`, 400)
       }
 
-      const { to_status, idempotency_key, gps } = parsed.data
+      const { to_status, idempotency_key, gps, arrival_photos } = parsed.data
+
+      // Arrival photos required for EN_ROUTE → IN_PROGRESS transition
+      if (to_status === 'IN_PROGRESS' && (!arrival_photos || arrival_photos.length < 1)) {
+        return jsonError('arrival_photos required for Mulai Kerja (min 1, max 3)', 400)
+      }
 
       const { data: assignment, error: assignError } = await supabase
         .from('order_technicians')
@@ -234,6 +235,7 @@ export async function POST(
           accuracy_m: gps?.accuracy_m ?? null,
           captured_at: gps?.captured_at ?? null,
           gps_error: gps?.gps_error ?? null,
+          arrival_photos: arrival_photos ?? null,
         })
         .select('to_status')
         .single()

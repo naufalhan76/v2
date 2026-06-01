@@ -93,7 +93,6 @@ export default function AssignOrderPage() {
     return acc
   }, {} as Record<string, number>)
 
-  // Count orders by status
   const acceptedCount = orders.filter((o: unknown) => (o as Record<string, unknown>).status === 'ACCEPTED').length
   const rescheduleCount = orders.filter((o: unknown) => (o as Record<string, unknown>).status === 'RESCHEDULE').length
 
@@ -233,7 +232,7 @@ export default function AssignOrderPage() {
           </div>
           <div className='grid gap-4'>{ordersLoading ? <p>Loading orders...</p> : filteredOrders.length === 0 ? (<Card><CardContent className='p-8 text-center text-muted-foreground'>No orders found for assignment</CardContent></Card>) : (
             filteredOrders.map((order: unknown) => {const o = order as Record<string, unknown> & { customers?: { customer_name?: string }; order_id: string; order_date?: string; req_visit_date?: string; order_type?: string; status: string }; const isSelected = selectedOrders.includes(o.order_id)
-            return (<Card key={o.order_id} className={cn('transition-all', isSelected && 'ring-2 ring-primary', o.status === 'RESCHEDULE' && 'bg-amber-50 border-l-4 border-l-amber-500')}><CardContent className='p-4'><div className='flex items-start gap-4'>
+            return (<Card key={o.order_id} className={cn('transition-all', isSelected && 'ring-2 ring-primary', o.status === 'RESCHEDULE' && 'bg-amber-50 border-t-2 border-t-amber-500')}><CardContent className='p-4'><div className='flex items-start gap-4'>
               <Checkbox checked={isSelected} onCheckedChange={(checked) => {if (checked) {setSelectedOrders([...selectedOrders, o.order_id])} else {setSelectedOrders(selectedOrders.filter(id => id !== o.order_id))}}} className='mt-1' />
               <div className='flex-1 grid grid-cols-2 md:grid-cols-6 gap-4'><div><div className='text-xs text-muted-foreground'>Order ID</div><div className='font-semibold'>{o.order_id}</div></div>
               <div><div className='text-xs text-muted-foreground'>Customer</div><div className='font-medium'>{o.customers?.customer_name}</div></div>

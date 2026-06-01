@@ -344,8 +344,9 @@ export default function NewOrderAccordionPage() {
   const [selectedAcs, setSelectedAcs] = useState<Record<string, string[]>>({})
   const [showNewLocationForm, setShowNewLocationForm] = useState(false)
 
-  // Section 3: Service items derived from selected ACs
+  // Section 3: Service items derived from selected ACs + new AC placeholders
   const [serviceLines, setServiceLines] = useState<SelectedAcLine[]>([])
+  const [newAcCounter, setNewAcCounter] = useState(0)
 
   // Section 4: Schedule & assignment
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>()
@@ -482,6 +483,32 @@ export default function NewOrderAccordionPage() {
     })
   }
 
+  // Add a placeholder AC line for a new AC (details filled by technician)
+  const addNewAcLine = (locationId: string) => {
+    setNewAcCounter((c) => c + 1)
+    const loc = customer?.locations?.find((l) => l.location_id === locationId)
+    if (!loc) return
+    const now = Date.now()
+    const lineId = `${locationId}:__new__:${now}:${newAcCounter}`
+    setServiceLines((prev) => [
+      ...prev,
+      {
+        line_id: lineId,
+        location_id: locationId,
+        ac_unit_id: '__new__',
+        location_label: formatLocationLabel(loc),
+        ac_label: 'AC Baru (diisi teknisi)',
+        service_type_id: '',
+        service_type_code: '',
+        service_name: '',
+        estimated_price: 0,
+        manual_price: false,
+        description: '',
+        quantity: 1,
+      },
+    ])
+  }
+
   // When a service is picked for a line, try to auto-fill price
   const updateServiceLine = (lineId: string, patch: Partial<SelectedAcLine>) => {
     setServiceLines((prev) => prev.map((l) => (l.line_id === lineId ? { ...l, ...patch } : l)))
@@ -583,7 +610,8 @@ export default function NewOrderAccordionPage() {
     try {
       const items = serviceLines.map((l) => ({
         location_id: l.location_id,
-        ac_unit_id: l.ac_unit_id,
+        ac_unit_id: l.ac_unit_id === '__new__' ? null : l.ac_unit_id,
+        ...(l.ac_unit_id === '__new__' ? { new_ac_data: { brand: 'TBD', model_number: 'TBD' } } : {}),
         service_type_id: l.service_type_id,
         service_type: normalizeOrderServiceType(l.service_type_code),
         quantity: l.quantity,
@@ -827,9 +855,21 @@ export default function NewOrderAccordionPage() {
                       </div>
 
                       {acUnits.length === 0 ? (
-                        <p className="text-sm italic text-muted-foreground">
-                          Belum ada AC terdaftar di lokasi ini.
-                        </p>
+                        <div className="space-y-3">
+                          <p className="text-sm italic text-muted-foreground">
+                            Belum ada AC terdaftar di lokasi ini.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addNewAcLine(loc.location_id)}
+                            className="h-9 text-xs"
+                          >
+                            <Plus className="mr-1.5 h-3.5 w-3.5" />
+                            Tambah AC Baru
+                          </Button>
+                        </div>
                       ) : (
                         <div className="space-y-2">
                           <Label className="text-xs text-muted-foreground">
@@ -868,6 +908,16 @@ export default function NewOrderAccordionPage() {
                               )
                             })}
                           </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addNewAcLine(loc.location_id)}
+                            className="h-9 text-xs mt-2"
+                          >
+                            <Plus className="mr-1.5 h-3.5 w-3.5" />
+                            Tambah AC Baru
+                          </Button>
                         </div>
                       )}
                     </div>

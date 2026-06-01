@@ -2,12 +2,20 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, MapPin, Phone, User, Wrench, FileText, Timer } from 'lucide-react'
+import { ArrowLeft, Clock, MapPin, Phone, User, Wrench, FileText, Timer, Camera, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/orders/status-badge'
 import { JobDetailSkeleton } from './job-detail-skeleton'
-import { cn } from '@/lib/utils'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { PhotoUpload } from '@/components/technician/photo-upload'
 import { useState, useEffect } from 'react'
 import type { OrderStatus } from '@/lib/order-status'
 import { captureGps } from '@/lib/utils/geolocation'
@@ -31,6 +39,17 @@ type TransitionPayload = {
   to_status: string
   idempotency_key: string
   gps: GpsResult
+  arrival_photos?: string[]
+}
+
+async function buildTransitionPayload(toStatus: string, arrivalPhotos?: string[]): Promise<TransitionPayload> {
+  const gps = await captureGps({ timeoutMs: 5_000 })
+  return {
+    to_status: toStatus,
+    idempotency_key: crypto.randomUUID(),
+    gps,
+    arrival_photos: arrivalPhotos,
+  }
 }
 
 async function transitionJob(orderId: string, payload: TransitionPayload) {
@@ -47,19 +66,12 @@ async function transitionJob(orderId: string, payload: TransitionPayload) {
   return res.json()
 }
 
-async function buildTransitionPayload(toStatus: string): Promise<TransitionPayload> {
-  const gps = await captureGps({ timeoutMs: 5_000 })
-  return {
-    to_status: toStatus,
-    idempotency_key: crypto.randomUUID(),
-    gps,
-  }
-}
-
 export function JobDetailContent({ orderId }: JobDetailContentProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [workTimer, setWorkTimer] = useState<number>(0)
+  const [showArrivalModal, setShowArrivalModal] = useState(false)
+  const [arrivalPhotos, setArrivalPhotos] = useState<string[]>([])
 
   const { data: job, isLoading, isError, error } = useQuery({
     queryKey: ['technician', 'job', orderId],
@@ -68,8 +80,8 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
   })
 
   const transitionMutation = useMutation({
-    mutationFn: async (toStatus: string) => {
-      const payload = await buildTransitionPayload(toStatus)
+    mutationFn: async (params: { toStatus: string; arrivalPhotos?: string[] }) => {
+      const payload = await buildTransitionPayload(params.toStatus, params.arrivalPhotos)
       return transitionJob(orderId, payload)
     },
     onSuccess: () => {
@@ -225,7 +237,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
               Waktu Kerja
             </span>
           </div>
-          <p className="text-2xl font-mono font-bold text-violet-900 dark:text-violet-100">
+          <p className="text-2xl font-mono font-bold text-foreground">
             {formatTimer(workTimer)}
           </p>
         </div>
@@ -235,7 +247,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
       <div className="pt-2 pb-4">
         {canonicalStatus === 'ASSIGNED' && (
           <Button
-            onClick={() => transitionMutation.mutate('EN_ROUTE')}
+            onClick={() => transitionMutation.mutate({ toStatus: 'EN_ROUTE' })}
             disabled={transitionMutation.isPending}
             className="w-full h-12 text-base font-medium"
             size="lg"
@@ -246,7 +258,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
         {canonicalStatus === 'EN_ROUTE' && (
           <Button
-            onClick={() => transitionMutation.mutate('IN_PROGRESS')}
+            onClick={() => setShowArrivalModal(true)}
             disabled={transitionMutation.isPending}
             className="w-full h-12 text-base font-medium"
             size="lg"
@@ -257,7 +269,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
         {canonicalStatus === 'IN_PROGRESS' && (
           <Button
-              onClick={() => router.push(`/technician/job/${encodeURIComponent(orderId)}/complete`)}
+              onClick={() => router.push(`/technician/job/${orderId}/complete`)}
             className="w-full h-12 text-base font-medium"
             size="lg"
           >
@@ -280,6 +292,67 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
           </p>
         )}
       </div>
+
+      {/* Arrival photo modal — shown before Mulai Kerja */}
+      <Dialog open={showArrivalModal} onOpenChange={setShowArrivalModal}>
+        <DialogContent className="sm:max-w-md max-w-[calc(100vw-2rem)]">
+          <DialogHeader>
+            <DialogTitle>Foto Kedatangan</DialogTitle>
+            <DialogDescription>
+              Ambil foto sebagai bukti sudah tiba di lokasi pelanggan. Wajib minimal 1 foto, maksimal 3.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2">
+            <PhotoUpload
+              label="Foto Lokasi"
+              bucket="service-photos"
+              pathPrefix={`orders/${orderId}/arrival`}
+              value={arrivalPhotos}
+              onChange={setArrivalPhotos}
+              min={1}
+              max={3}
+              disabled={transitionMutation.isPending}
+            />
+          </div>
+
+          {arrivalPhotos.length === 0 && (
+            <p className="text-xs text-destructive">Minimal 1 foto wajib diupload</p>
+          )}
+
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowArrivalModal(false)
+                setArrivalPhotos([])
+              }}
+              disabled={transitionMutation.isPending}
+              className="h-11 w-full sm:h-9 sm:w-auto"
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                if (arrivalPhotos.length === 0) return
+                setShowArrivalModal(false)
+                transitionMutation.mutate({ toStatus: 'IN_PROGRESS', arrivalPhotos })
+              }}
+              disabled={arrivalPhotos.length === 0 || transitionMutation.isPending}
+              className="h-11 w-full sm:h-9 sm:w-auto"
+            >
+              {transitionMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Camera className="mr-2 h-4 w-4" />
+              )}
+              Konfirmasi & Mulai Kerja
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,11 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react'
 import { Button } from './button'
 import { Alert, AlertDescription } from './alert'
-import { Skeleton } from './skeleton'
 
 interface LoadingStateProps {
   isLoading: boolean
@@ -199,95 +197,6 @@ export function LoadingOverlay({
   )
 }
 
-// Komponen Progressive Loading untuk gambar dan konten berat
-interface ProgressiveLoadingProps {
-  src: string
-  alt: string
-  className?: string
-  priority?: boolean
-  fetchPriority?: 'high' | 'low' | 'auto'
-  onLoad?: () => void
-  onError?: () => void
-  placeholder?: 'blur' | 'empty'
-  blurDataURL?: string
-}
-
-export function ProgressiveLoading({
-  src,
-  alt,
-  className = '',
-  priority = false,
-  fetchPriority: _fetchPriority = 'auto',
-  onLoad,
-  onError,
-  placeholder: _placeholder = 'empty',
-  blurDataURL: _blurDataURL
-}: ProgressiveLoadingProps) {
-  const [isLoading, setIsLoading] = useState(true)
-  const [hasError, setHasError] = useState(false)
-  const [showFallback, setShowFallback] = useState(false)
-
-  useEffect(() => {
-    if (isLoading) {
-      const timer = setTimeout(() => {
-        setShowFallback(true)
-      }, 5000) // 5 detik timeout
-
-      return () => clearTimeout(timer)
-    }
-  }, [isLoading])
-
-  const handleLoad = () => {
-    setIsLoading(false)
-    onLoad?.()
-  }
-
-  const handleError = () => {
-    setIsLoading(false)
-    setHasError(true)
-    onError?.()
-  }
-
-  return (
-    <div className={`relative ${className}`}>
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
-          {showFallback ? (
-            <div className="text-center p-4">
-              <AlertCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Image loading...</p>
-            </div>
-          ) : (
-            <Skeleton className="h-full w-full" />
-          )}
-        </div>
-      )}
-      
-      {hasError ? (
-        <div className="flex items-center justify-center h-full bg-muted/20">
-          <div className="text-center p-4">
-            <AlertCircle className="h-8 w-8 mx-auto mb-2 text-destructive" />
-            <p className="text-sm text-muted-foreground">Failed to load image</p>
-          </div>
-        </div>
-      ) : (
-        <Image
-          src={src}
-          alt={alt}
-          width={800}
-          height={600}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${
-            isLoading ? 'opacity-0' : 'opacity-100'
-          }`}
-          onLoad={handleLoad}
-          onError={handleError}
-          priority={priority}
-        />
-      )}
-    </div>
-  )
-}
-
 // Komponen Loading Dots untuk indikator loading yang lebih ringan
 export function LoadingDots({ 
   size = 'md', 
@@ -304,9 +213,9 @@ export function LoadingDots({
 
   return (
     <div className={`flex space-x-1 ${className}`}>
-      <div className={`${sizeClasses[size]} bg-primary rounded-full animate-bounce`} style={{ animationDelay: '0ms' }}></div>
-      <div className={`${sizeClasses[size]} bg-primary rounded-full animate-bounce`} style={{ animationDelay: '150ms' }}></div>
-      <div className={`${sizeClasses[size]} bg-primary rounded-full animate-bounce`} style={{ animationDelay: '300ms' }}></div>
+      <div className={`${sizeClasses[size]} bg-primary rounded-full animate-pulse`} style={{ animationDelay: '0ms' }}></div>
+      <div className={`${sizeClasses[size]} bg-primary rounded-full animate-pulse`} style={{ animationDelay: '150ms' }}></div>
+      <div className={`${sizeClasses[size]} bg-primary rounded-full animate-pulse`} style={{ animationDelay: '300ms' }}></div>
     </div>
   )
 }

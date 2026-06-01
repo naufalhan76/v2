@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase-server'
+import { createAdminClient } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
 
@@ -82,30 +83,57 @@ export async function getTechnicianById(technicianId: string) {
 export async function createTechnician(technicianData: {
   technician_name: string
   contact_number: string
-  email?: string
+  email: string
+  password: string
   company?: string
 }) {
+  const supabaseAdmin = createAdminClient()
+  const supabase = await createClient()
+
   try {
-    const supabase = await createClient()
-    
-    const { data, error } = await supabase
-      .from('technicians')
-      .insert({
-        ...technicianData,
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single()
-    
-    if (error) throw error
-    
-    revalidatePath('/technicians')
-    revalidatePath('/dashboard')
-    
-    return {
-      success: true,
-      data,
+    const { data: existing } = await supabase
+      .from('user_management')
+      .select('email')
+      .eq('email', technicianData.email)
+      .maybeSingle()
+
+    if (existing) {
+      return { success: false, error: 'Email sudah terdaftar' }
     }
+
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: technicianData.email,
+      password: technicianData.password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: technicianData.technician_name,
+        role: 'TECHNICIAN',
+      },
+    })
+
+    if (authError || !authData.user) {
+      logger.error('Error creating auth user for technician:', authError)
+      return { success: false, error: authError?.message || 'Gagal membuat akun login teknisi' }
+    }
+
+    const { data, error } = await supabaseAdmin.rpc('create_technician_identity', {
+      p_auth_id: authData.user.id,
+      p_name: technicianData.technician_name,
+      p_email: technicianData.email,
+      p_contact: technicianData.contact_number || null,
+      p_company: technicianData.company || null,
+    })
+
+    if (error) {
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      logger.error('Error creating technician identity, auth rolled back:', error)
+      return { success: false, error: 'Gagal membuat data teknisi' }
+    }
+
+    revalidatePath('/dashboard/manajemen/teknisi')
+    revalidatePath('/dashboard')
+
+    return { success: true, data }
   } catch (error: unknown) {
     logger.error('Error creating technician:', error)
     return {

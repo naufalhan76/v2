@@ -6,65 +6,73 @@ import { CapacityTab } from './components/CapacityTab'
 import { BrandTab } from './components/BrandTab'
 import { ServiceTypeTab } from './components/ServiceTypeTab'
 import { ServiceCatalogTab } from './components/ServiceCatalogTab'
-import { AddonsTab } from './components/AddonsTab'
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Info } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Info, Settings } from 'lucide-react'
+
+const TABS = [
+  { value: 'catalog', label: 'Katalog Service', description: 'Harga & kombinasi service' },
+  { value: 'unit', label: 'Tipe Unit', description: 'Jenis AC (Split, Cassette, dll)' },
+  { value: 'capacity', label: 'Kapasitas', description: 'PK & BTU ranges' },
+  { value: 'servicetype', label: 'Jenis Service', description: 'Standar, Deep Clean, dll' },
+  { value: 'brand', label: 'Merk AC', description: 'Daftar merek' },
+]
 
 export default function ServiceConfigPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Konfigurasi Service</h1>
-        <p className="text-muted-foreground">
-          Kelola master data harga service, spesifikasi AC, dan katalog addons
-        </p>
-      </div>
-      
-      <div className="rounded-xl border border-border/50 bg-muted/50 p-4 text-sm text-foreground shadow-sm flex gap-3">
-          <Info className="h-5 w-5 shrink-0" />
-          <div>
-             <span className="font-semibold">Informasi Hierarki Harga:</span> Harga service ditentukan dari kombinasi <span className="font-mono rounded bg-background px-1">Unit Type &rarr; Capacity &rarr; Tipe Service</span>. Fitur <b>Bulk Import</b> dengan format Excel tersedia di tab Service Catalog.
-          </div>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Konfigurasi Service</h1>
+          <p className="text-muted-foreground mt-1">
+            Kelola master data harga service, spesifikasi AC, dan katalog addons
+          </p>
+        </div>
+        <Settings className="h-5 w-5 text-muted-foreground" />
       </div>
 
+      <Alert className="rounded-xl border border-border/50 bg-muted/30 shadow-none">
+        <Info className="h-4 w-4 mt-0.5" />
+        <AlertTitle className="text-sm font-semibold">Hierarki Harga</AlertTitle>
+        <AlertDescription className="text-sm leading-relaxed">
+          Harga service ditentukan dari kombinasi{' '}
+          <span className="font-mono rounded bg-background px-1.5 py-0.5 text-xs border border-border/50">
+            Tipe Unit → Kapasitas → Jenis Service
+          </span>
+          . Fitur <strong>Bulk Import</strong> dan <strong>Bulk Update</strong> tersedia di tab Katalog Service.
+        </AlertDescription>
+      </Alert>
+
       <Tabs defaultValue="catalog" className="w-full">
-        <TabsList className="mb-4 flex w-full justify-start overflow-x-auto overflow-y-hidden rounded-xl border border-border/50 bg-muted/50 p-1">
-          <TabsTrigger value="catalog" className="flex-1 max-w-[200px] rounded-lg">Service Catalog</TabsTrigger>
-          <TabsTrigger value="unit" className="flex-1 max-w-[150px] rounded-lg">Unit Type</TabsTrigger>
-          <TabsTrigger value="capacity" className="flex-1 max-w-[150px] rounded-lg">Capacity</TabsTrigger>
-          <TabsTrigger value="servicetype" className="flex-1 max-w-[150px] rounded-lg">Master Service</TabsTrigger>
-          <TabsTrigger value="brand" className="flex-1 max-w-[150px] rounded-lg">Merk AC</TabsTrigger>
-          <TabsTrigger value="addons" className="flex-1 max-w-[150px] rounded-lg">Add-Ons</TabsTrigger>
+        <TabsList className="mb-4 flex w-full justify-start overflow-x-auto overflow-y-hidden rounded-xl border border-border/50 bg-muted/50 p-1 gap-1">
+          {TABS.map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="flex-1 max-w-[180px] rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground"
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value="catalog" className="mt-0">
           <ServiceCatalogTab />
         </TabsContent>
-        
+
         <TabsContent value="unit" className="mt-0">
           <UnitTypeTab />
         </TabsContent>
-        
+
         <TabsContent value="capacity" className="mt-0">
           <CapacityTab />
         </TabsContent>
-        
+
         <TabsContent value="servicetype" className="mt-0">
           <ServiceTypeTab />
         </TabsContent>
 
         <TabsContent value="brand" className="mt-0">
           <BrandTab />
-        </TabsContent>
-
-        <TabsContent value="addons" className="mt-0 pt-2">
-          <Card className="rounded-xl border border-border/50 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-foreground">Master Data Add-ons</CardTitle>
-                <CardDescription>Kelola parts, freon, labor terpisah dari Jasa Service</CardDescription>
-              </CardHeader>
-           </Card>
-          <div className="mt-4"><AddonsTab /></div>
         </TabsContent>
       </Tabs>
     </div>

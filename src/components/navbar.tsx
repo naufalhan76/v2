@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { Clock } from 'lucide-react'
+import { Clock, Command } from 'lucide-react'
 import { OrderNotifications } from '@/components/order-notifications'
 
 function JakartaTime() {
@@ -49,7 +49,7 @@ function JakartaTime() {
   )
 }
 
-export function Navbar() {
+export function Navbar({ onOpenCommandPalette }: { onOpenCommandPalette?: () => void } = {}) {
   const pathname = usePathname()
 
   const getPageTitle = () => {
@@ -73,6 +73,16 @@ export function Navbar() {
           
           {/* Notifications and Jakarta Time */}
           <div className="flex items-center gap-3">
+            {/* Command Palette Hint */}
+            <button
+              type="button"
+              onClick={onOpenCommandPalette}
+              className="hidden md:flex items-center gap-1.5 rounded-md border border-border/60 bg-background px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+            >
+              <Command className="h-3 w-3" />
+              <span className="font-medium">K</span>
+            </button>
+
             {/* Order Notifications */}
             <OrderNotifications />
             
