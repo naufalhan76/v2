@@ -8,6 +8,10 @@ node_modules/
 /test-results/
 /playwright-report/
 /playwright/.cache/
+# Playwright MCP server output (snapshots, console logs, screenshots)
+/.playwright-mcp/
+*-state.png
+*-snapshot.png
 
 # Next.js
 /.next/
