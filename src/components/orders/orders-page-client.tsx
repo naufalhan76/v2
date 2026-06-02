@@ -14,7 +14,6 @@ import { OrdersListView } from '@/components/orders/orders-list-view'
 import { OrderDetailPanel } from '@/components/orders/order-detail-panel'
 import { AssignModal } from '@/components/orders/assign-modal'
 import { BulkAssignBar } from '@/components/orders/bulk-assign-bar'
-import { getOrders } from '@/lib/actions/orders'
 import { subscribeOrders } from '@/lib/realtime'
 import {
   filterOrders,
@@ -70,16 +69,20 @@ export function OrdersPageClient() {
 
   useEffect(() => {
     const fetchUserRole = async () => {
-      const { createClient } = await import('@/lib/supabase-browser')
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        const { data: userData } = await supabase
-          .from('user_management')
-          .select('role')
-          .eq('auth_user_id', session.user.id)
-          .single()
-        setUserRole(userData?.role || null)
+      try {
+        const { createClient } = await import('@/lib/supabase-browser')
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          const { data: userData } = await supabase
+            .from('user_management')
+            .select('role')
+            .eq('auth_user_id', session.user.id)
+            .single()
+          setUserRole(userData?.role || null)
+        }
+      } catch {
+        // role stays null → canBulkAssign stays false
       }
     }
     fetchUserRole()
@@ -89,7 +92,18 @@ export function OrdersPageClient() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['orders', 'all'],
-    queryFn: () => getOrders({ limit: 500 }),
+    // Workaround: Next.js 15.5.15 RSC parser hangs on binding -fgmEOMwAVFyW1GZ_8n7i
+    // (missing from client-reference-manifest). Revert to getOrders() when framework fixed.
+    queryFn: async () => {
+      const res = await fetch('/api/orders?limit=100', { credentials: 'same-origin' })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`HTTP ${res.status} ${res.statusText}: ${text.slice(0, 200)}`)
+      }
+      return res.json()
+    },
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   })
 
   const allOrders = (data?.data ?? []) as unknown as OrderForDisplay[]
@@ -242,6 +256,7 @@ export function OrdersPageClient() {
   }, [view, filters.search, filters.status])
 
   useEffect(() => {
+    if (!data) return
     const unsub = subscribeOrders(queryClient, (payload) => {
       const newRow = payload.new as { order_id?: string; status?: string } | null
       const oldRow = payload.old as { status?: string } | null
@@ -258,7 +273,7 @@ export function OrdersPageClient() {
       }
     })
     return unsub
-  }, [queryClient, toast])
+  }, [queryClient, toast, !!data])
 
   function setView(next: 'board' | 'list') {
     const params = new URLSearchParams(searchParams.toString())

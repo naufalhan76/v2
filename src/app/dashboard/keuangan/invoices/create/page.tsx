@@ -189,8 +189,8 @@ export default function CreateInvoicePage() {
       if (error) throw error
       return new Set(
         (data || [])
-          .map((row) => row.order_id as string | null)
-          .filter((id): id is string => Boolean(id))
+          .map((row: { order_id: string | null }) => row.order_id)
+          .filter((id: string | null): id is string => Boolean(id))
       )
     } catch (error) {
       logger.error('Error checking invoiced order ids:', error)

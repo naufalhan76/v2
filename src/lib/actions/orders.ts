@@ -25,7 +25,7 @@ export async function getOrders(filters?: {
     const limit = filters?.limit || 20
     const from = (page - 1) * limit
     const to = from + limit - 1
-    
+
     let query = supabase
       .from('orders')
       .select(`
@@ -65,48 +65,47 @@ export async function getOrders(filters?: {
       .order('created_at', { ascending: false })
       .is('deleted_at', null)
       .range(from, to)
-    
+
     if (filters?.status) {
       query = query.eq('status', filters.status)
     }
-    
+
     if (filters?.statusIn) {
       const statuses = filters.statusIn.split(',')
       query = query.in('status', statuses)
     }
-    
+
     if (filters?.customerId) {
       query = query.eq('customer_id', filters.customerId)
     }
-    
+
     if (filters?.dateFrom) {
       query = query.gte('created_at', `${filters.dateFrom}T00:00:00.000Z`)
     }
-    
+
     if (filters?.dateTo) {
       query = query.lte('created_at', `${filters.dateTo}T23:59:59.999Z`)
     }
-    
+
     if (filters?.dateTo) {
       query = query.lte('created_at', `${filters.dateTo}T23:59:59.999Z`)
     }
-    
+
     const { data, error, count } = await query
-    
+
     if (error) throw error
-    
+
     return {
       success: true,
       data: data || [],
       pagination: {
-        total: count || 0,
+        total: count ?? 0,
         page,
         limit,
-        totalPages: Math.ceil((count || 0) / limit),
+        totalPages: Math.ceil((count ?? 0) / limit),
       },
     }
   } catch (error: unknown) {
-    logger.error('Error fetching orders:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch orders',

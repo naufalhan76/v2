@@ -1,10 +1,22 @@
 import { createBrowserClient } from '@supabase/ssr'
 
+/**
+ * Singleton browser Supabase client.
+ *
+ * `createBrowserClient` from `@supabase/ssr` caches the GoTrueClient instance
+ * internally, but explicit module-level caching guarantees a single instance
+ * across the browser context. This avoids the "Multiple GoTrueClient instances
+ * detected" warning, which causes session-storage fragmentation and
+ * inconsistent auth state between components.
+ */
+let _client: ReturnType<typeof createBrowserClient> | null = null
+
 export function createClient() {
-  // Ensure we're in the browser and env vars are available
   if (typeof window === 'undefined') {
     throw new Error('createClient should only be called in the browser')
   }
+
+  if (_client) return _client
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -13,5 +25,6 @@ export function createClient() {
     throw new Error('Missing Supabase environment variables')
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey)
+  _client = createBrowserClient(supabaseUrl, supabaseAnonKey)
+  return _client
 }

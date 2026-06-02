@@ -15,29 +15,42 @@ export type ApiRequest = NextRequest & {
 }
 
 /**
- * Verify JWT token from Authorization header. Returns the Supabase user on
- * success or an `unauthorizedResponse()` on failure.
+ * Verify user identity from Authorization Bearer header OR session cookie.
+ *
+ * Browser clients calling API routes from same-origin automatically send the
+ * Supabase auth cookie. The cookie is read via `createClient().auth.getUser()`
+ * (no token arg), which delegates to the request cookie store. Bearer tokens
+ * still take precedence for programmatic / cross-origin clients.
+ *
+ * Returns the Supabase user on success, or `unauthorizedResponse()` on failure.
  */
 export async function verifyAuth(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return unauthorizedResponse()
-    }
-
-    const token = authHeader.substring(7)
     const supabase = await createClient()
+    const authHeader = request.headers.get('authorization')
 
+    // 1. Bearer token path (programmatic / cross-origin clients)
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7)
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(token)
+
+      if (!error && user) return user
+    }
+
+    // 2. Cookie session fallback (browser clients, same-origin fetch)
     const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser(token)
+      data: { user: cookieUser },
+      error: cookieError,
+    } = await supabase.auth.getUser()
 
-    if (error || !user) {
+    if (cookieError || !cookieUser) {
       return unauthorizedResponse()
     }
 
-    return user
+    return cookieUser
   } catch (error) {
     log.error('verifyAuth failed', error)
     return unauthorizedResponse()
@@ -45,7 +58,10 @@ export async function verifyAuth(request: NextRequest) {
 }
 
 /**
- * Resolve a user from the Authorization header (JWT only).
+ * Resolve a user from the Authorization Bearer header OR session cookie.
+ *
+ * Mirrors `verifyAuth` but returns the user (or `null`) instead of a response
+ * object, so callers can branch on authentication without short-circuiting.
  *
  * NOTE: API key authentication is intentionally not supported here. The legacy
  * implementation accepted any string matching `sk_<64 chars>` as SUPERADMIN
@@ -54,19 +70,25 @@ export async function verifyAuth(request: NextRequest) {
  */
 export async function getUserFromRequest(request: NextRequest) {
   try {
+    const supabase = await createClient()
     const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return null
+
+    // 1. Bearer token path
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser(token)
+
+      if (user) return user
     }
 
-    const token = authHeader.substring(7)
-    const supabase = await createClient()
-
+    // 2. Cookie session fallback
     const {
-      data: { user },
-    } = await supabase.auth.getUser(token)
+      data: { user: cookieUser },
+    } = await supabase.auth.getUser()
 
-    return user ?? null
+    return cookieUser ?? null
   } catch (error) {
     log.error('getUserFromRequest failed', error)
     return null
