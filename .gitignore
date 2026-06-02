@@ -70,3 +70,34 @@ temp/
 diff_files.txt
 tsc_output.txt
 tsc_output_2.txt
+
+# AI / dev tooling scratch (opencode, sisyphus, claude code, etc.)
+.omo/
+.opencode/
+.claude/
+.superpowers/
+.impeccable/
+.aider*
+.continue/
+.cursor/
+.sisyphus/
+
+# V1 / superseded docs (kept locally for reference, not pushed)
+/docs/V1-vs-V2-comparison.md
+/docs/plan-restructure-v2.md
+
+# AI tool scratch nested in docs/ (Matt Pocock skills, etc.)
+/docs/superpowers/
+/docs/agents/
+
+# Non-production code (test, dev tools, staging helpers)
+# All staging/dev utilities (bootstrap, seed, qa-cleanup, etc.)
+/scripts/
+# SQL validation tests (not run in prod)
+/supabase/tests/
+# All test code (E2E specs, fixtures, dev harnesses) - not part of prod runtime
+/tests/
+
+# Stray / backup files
+...
+*.save
