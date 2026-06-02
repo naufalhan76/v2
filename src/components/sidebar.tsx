@@ -25,6 +25,7 @@ import {
   Tag,
   DollarSign,
   Clock,
+  BookOpen,
 } from 'lucide-react'
 
 const sidebarItems = [
@@ -62,6 +63,11 @@ const sidebarItems = [
     title: 'Reminders',
     href: '/dashboard/reminders',
     icon: Bell,
+  },
+  {
+    title: 'Panduan',
+    href: '/dashboard/docs',
+    icon: BookOpen,
   },
   {
     title: 'Settings',
