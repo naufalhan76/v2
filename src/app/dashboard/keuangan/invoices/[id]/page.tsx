@@ -540,7 +540,7 @@ export default function InvoiceDetailPage() {
       await loadInvoice()
 
       toast({
-        title: 'WhatsApp Dibuka ✅',
+        title: 'WhatsApp Dibuka',
         description: 'Pesan invoice siap dikirim ke customer',
       })
     } catch (error: unknown) {
@@ -583,7 +583,7 @@ export default function InvoiceDetailPage() {
       }
 
       toast({
-        title: 'Email Terkirim! ✅',
+        title: 'Email Terkirim',
         description: `Invoice berhasil dikirim ke ${invoice.customers.email}`,
       })
 

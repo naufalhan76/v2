@@ -613,7 +613,7 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
 
       {/* Bulk action bar — sticky bottom on mobile */}
       {selectedIds.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-4 py-3 backdrop-blur sm:static sm:rounded-lg sm:border sm:bg-muted/40 sm:px-3 sm:py-2 sm:backdrop-blur-none">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background px-4 py-3 sm:static sm:rounded-lg sm:border sm:bg-muted/40 sm:px-3 sm:py-2">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">
               {selectedIds.length} reminder dipilih

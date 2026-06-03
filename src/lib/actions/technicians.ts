@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase-server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { sanitizeSearchTerm } from '@/lib/utils'
 
 export async function getTechnicians(filters?: {
   search?: string
@@ -24,7 +25,8 @@ export async function getTechnicians(filters?: {
       .range(from, to)
     
     if (filters?.search) {
-      query = query.or(`technician_name.ilike.%${filters.search}%,contact_number.ilike.%${filters.search}%,email.ilike.%${filters.search}%,company.ilike.%${filters.search}%`)
+      const sanitized = sanitizeSearchTerm(filters.search)
+      query = query.or(`technician_name.ilike.%${sanitized}%,contact_number.ilike.%${sanitized}%,email.ilike.%${sanitized}%,company.ilike.%${sanitized}%`)
     }
     
     

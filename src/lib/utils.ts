@@ -40,3 +40,12 @@ export function formatPhone(phone: string | number | null | undefined): string {
 
   return BigInt(Math.trunc(phone)).toString()
 }
+
+export function sanitizeSearchTerm(term: string): string {
+  if (!term) return ''
+  return term
+    .replace(/[\\,():.]/g, '') // remove PostgREST special chars
+    .replace(/%/g, '\\%')      // escape LIKE wildcards
+    .replace(/_/g, '\\_')
+}
+

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { sanitizeSearchTerm } from '@/lib/utils'
 
 // ==========================================
 // TYPES
@@ -84,7 +85,7 @@ export async function getCatalog(
     if (filters?.serviceTypeId) query = query.eq('service_type_id', filters.serviceTypeId)
     if (typeof filters?.isActive === 'boolean') query = query.eq('is_active', filters.isActive)
     if (filters?.search?.trim()) {
-      const term = filters.search.trim()
+      const term = sanitizeSearchTerm(filters.search.trim())
       query = query.or(`msn_code.ilike.%${term}%,service_name.ilike.%${term}%`)
     }
 

@@ -276,19 +276,19 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
               variant="ghost"
               size="sm"
               onClick={() => setDialogOpen(true)}
-              className="h-8 text-xs"
+              className="h-10 px-3 text-xs sm:text-sm transition-colors active:bg-muted/80"
             >
-              <FilePlus className="mr-1 h-3.5 w-3.5" />
-              Request Part Baru
+              <FilePlus className="mr-1.5 h-4 w-4" />
+              Request Part
             </Button>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={addRow}
-              className="h-8 text-xs"
+              className="h-10 px-3 text-xs sm:text-sm transition-all duration-200 active:scale-[0.96]"
             >
-              <Plus className="mr-1 h-3.5 w-3.5" />
+              <Plus className="mr-1.5 h-4 w-4" />
               Tambah
             </Button>
           </div>
@@ -305,23 +305,23 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
       )}
 
       {!addonsLoading && value.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-6 text-center border rounded-lg border-dashed">
-          <Package className="h-8 w-8 text-muted-foreground/50 mb-2" />
-          <p className="text-sm text-muted-foreground">Belum ada material</p>
+        <div className="flex flex-col items-center justify-center py-8 text-center border rounded-xl border-dashed bg-muted/10">
+          <Package className="h-10 w-10 text-muted-foreground/40 mb-3" />
+          <p className="text-sm font-medium text-foreground">Belum ada material</p>
           {addons.length > 0 && (
-            <p className="text-xs text-muted-foreground/60 mt-1">
-              Cari dari katalog atau ketik manual
+            <p className="text-xs text-muted-foreground/70 mt-1 max-w-[200px]">
+              Cari dari katalog atau ketik nama material secara manual
             </p>
           )}
           {!disabled && (
             <Button
               type="button"
-              variant="ghost"
+              variant="secondary"
               size="sm"
               onClick={addRow}
-              className="mt-2 h-9 text-xs"
+              className="mt-4 h-10 px-4 text-sm font-medium transition-all duration-200 active:scale-[0.96]"
             >
-              <Plus className="mr-1 h-3.5 w-3.5" />
+              <Plus className="mr-2 h-4 w-4" />
               Tambah Material
             </Button>
           )}
@@ -333,7 +333,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
           {value.map((item, index) => (
             <div
               key={index}
-              className="rounded-lg border bg-card p-3 space-y-2"
+              className="rounded-xl border bg-card/90 shadow-sm p-4 space-y-3"
             >
               {/* Row 1: Name (with addon search) + delete */}
               <div className="flex items-center gap-2">
@@ -351,7 +351,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                     value={item.name}
                     onChange={(e) => updateRow(index, 'name', e.target.value)}
                     disabled={disabled}
-                    className="h-10 flex-1 text-sm"
+                    className="h-11 sm:h-10 flex-1 text-sm focus-visible:ring-primary"
                   />
                 )}
                 {!disabled && (
@@ -360,7 +360,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                     variant="ghost"
                     size="icon"
                     onClick={() => removeRow(index)}
-                    className="h-10 w-10 shrink-0 text-destructive hover:text-destructive"
+                    className="h-11 w-11 sm:h-10 sm:w-10 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10 active:scale-[0.96] transition-transform"
                     aria-label={`Hapus material ${index + 1}`}
                   >
                     <Trash2 className="h-4 w-4" />

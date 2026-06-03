@@ -28,7 +28,7 @@ Required:
 - `NEXT_PUBLIC_SUPABASE_URL` — same as V1
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — same as V1
 - `SUPABASE_SERVICE_ROLE_KEY` — same as V1
-- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` — if push enabled. Generate via `npm run vapid:gen` if not yet.
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` — if push enabled. Generate via `bun run vapid:gen` if not yet.
 - `VAPID_SUBJECT` — `mailto:admin@nufnh.my.id`
 
 ### 2. Apply database migrations (only once, shared with V1)

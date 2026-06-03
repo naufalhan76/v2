@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { sanitizeSearchTerm } from '@/lib/utils'
 
 export async function getCustomers(filters?: {
   search?: string
@@ -38,7 +39,8 @@ export async function getCustomers(filters?: {
       // Search in customer fields AND locations
       // Note: Supabase doesn't support OR across joined tables directly,
       // so we'll do client-side filtering for location addresses after fetch
-      query = query.or(`customer_name.ilike.%${filters.search}%,primary_contact_person.ilike.%${filters.search}%,phone_number.ilike.%${filters.search}%,email.ilike.%${filters.search}%,billing_address.ilike.%${filters.search}%`)
+      const sanitized = sanitizeSearchTerm(filters.search)
+      query = query.or(`customer_name.ilike.%${sanitized}%,primary_contact_person.ilike.%${sanitized}%,phone_number.ilike.%${sanitized}%,email.ilike.%${sanitized}%,billing_address.ilike.%${sanitized}%`)
     }
     
     const { data, error, count } = await query

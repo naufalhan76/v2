@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import { X, ChevronDown } from 'lucide-react'
 
 export interface MultiSelectOption {
@@ -136,10 +135,12 @@ export function MultiSelectDropdown({
                   className="flex items-center gap-2 px-3 py-3 sm:py-2 min-h-[44px] sm:min-h-0 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                   onClick={() => handleToggleOption(option.id)}
                 >
-                  <Checkbox
+                  <input
+                    type="checkbox"
                     checked={selected.includes(option.id)}
-                    onCheckedChange={() => handleToggleOption(option.id)}
-                    className="cursor-pointer"
+                    onChange={() => handleToggleOption(option.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-4 w-4 shrink-0 rounded border-input border text-primary focus:ring-ring focus:ring-1 focus-visible:outline-none cursor-pointer accent-blue-600"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{option.label}</div>

@@ -1,17 +1,21 @@
 # syntax=docker/dockerfile:1
 # MSN ERP V2 — Multi-stage build for staging deployment
 # NEXT_PUBLIC_* vars must be baked at build time (Next.js client-side bundle)
+# Uses Bun as package manager, Node.js as runtime
 
+# ============================================================
+# 0. base — shared Alpine image with Node.js (for Next.js runtime)
+# ============================================================
 FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat
 
 # ============================================================
-# 1. deps — install node_modules only (cached when package.json unchanged)
+# 1. deps — install node_modules with Bun (faster)
 # ============================================================
-FROM base AS deps
+FROM oven/bun:1-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci --no-audit --no-fund
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
 # ============================================================
 # 2. builder — compile Next.js with NEXT_PUBLIC_* baked in

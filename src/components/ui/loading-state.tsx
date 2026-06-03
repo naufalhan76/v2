@@ -171,8 +171,8 @@ export function LoadingOverlay({
   }, [showOverlay, autoFocus])
 
   const overlayClassName = fullscreen
-    ? 'fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[100]'
-    : 'absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50'
+    ? 'fixed inset-0 bg-foreground/40 flex items-center justify-center z-[100]'
+    : 'absolute inset-0 bg-foreground/40 flex items-center justify-center z-50'
 
   return (
     <div className={`relative ${className}`}>

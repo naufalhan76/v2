@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+package-lock.json
 /.pnp
 .pnp.js
 
@@ -85,6 +86,8 @@ tsc_output_2.txt
 .continue/
 .cursor/
 .sisyphus/
+.agents/
+skills-lock.json
 
 # V1 / superseded docs (kept locally for reference, not pushed)
 /docs/V1-vs-V2-comparison.md

@@ -5,7 +5,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { HistoryJobCard } from './history-job-card'
 import { TodayJobsSkeleton } from './today-jobs-skeleton'
 import { Button } from '@/components/ui/button'
-import { AlertCircle, RefreshCw, Loader2, History } from 'lucide-react'
+import { AlertCircle, RefreshCw, Loader2, History, ListChecks } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type FilterTab = 'all' | 'completed' | 'cancelled'
@@ -64,6 +64,7 @@ export function HistoryList() {
   })
 
   const allJobs = data?.pages.flatMap((page) => page.data) ?? []
+  const totalCount = data?.pages?.[0]?.pagination?.total ?? null
 
   return (
     <div className="space-y-4">
@@ -75,8 +76,8 @@ export function HistoryList() {
             type="button"
             onClick={() => setActiveTab(tab.key)}
             className={cn(
-              'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-              'min-h-[40px]', // touch target
+              'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer',
+              'min-h-[40px]',
               activeTab === tab.key
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -86,6 +87,21 @@ export function HistoryList() {
           </button>
         ))}
       </div>
+
+      {/* Total count chip (only when data loaded) */}
+      {!isLoading && !isError && totalCount !== null && (
+        <div
+          className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs"
+          role="status"
+        >
+          <ListChecks className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+          <span className="text-muted-foreground">Total:</span>
+          <span className="font-semibold tabular-nums text-foreground">{totalCount}</span>
+          <span className="text-muted-foreground">
+            pekerjaan{activeTab !== 'all' ? ` (${currentFilter.label.toLowerCase()})` : ''}
+          </span>
+        </div>
+      )}
 
       {/* Content */}
       {isLoading && <TodayJobsSkeleton />}

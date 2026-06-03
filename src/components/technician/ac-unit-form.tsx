@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
-import { Plus, Trash2, Snowflake, ChevronDown, ChevronUp } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Snowflake, ChevronDown, ChevronUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -47,7 +46,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
     },
   })
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields } = useFieldArray({
     control,
     name: 'units',
   })
@@ -93,23 +92,8 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
     setExpandedCards((prev) => ({ ...prev, [id]: !prev[id] }))
   }
 
-  const handleAddAc = () => {
-    append({
-      ac_unit_id: null,
-      brand: '',
-      capacity_pk: '',
-      room_location: '',
-      model_number: '',
-      serial_number: '',
-      ac_type: '',
-      skipped: false,
-      skip_reason: '',
-      photos_before: [],
-      photos_after: [],
-      notes: '',
-      materials_used: [],
-    })
-  }
+  // AC count is locked to the order. Tech cannot add or remove units.
+  // See JobCompletionWizard for the count source of truth.
 
   return (
     <div className="space-y-4">
@@ -119,10 +103,10 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
         const isExpanded = expandedCards[field.id] !== false
 
         return (
-          <Card key={field.id} className="overflow-hidden">
+          <Card key={field.id} className="overflow-hidden shadow-sm">
             <CardHeader 
               className={cn(
-                "p-4 flex flex-row items-center justify-between cursor-pointer transition-colors hover:bg-muted/50",
+                "p-4 flex flex-row items-center justify-between cursor-pointer transition-colors hover:bg-muted/50 active:bg-muted/80",
                 !isExpanded && "pb-4"
               )}
               onClick={() => toggleExpand(field.id)}
@@ -143,20 +127,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {!isExisting && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      remove(index)
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
+                {/* Trash button hidden: AC count is locked to the order. Tech cannot remove units. */}
                 {isExpanded ? (
                   <ChevronUp className="h-5 w-5 text-muted-foreground" />
                 ) : (
@@ -326,15 +297,11 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
         )
       })}
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full h-12 border-dashed"
-        onClick={handleAddAc}
-      >
-        <Plus className="mr-2 h-5 w-5" />
-        Tambah AC Baru
-      </Button>
+      {fields.length === 0 && (
+        <div className="rounded-lg border border-dashed bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+          Tidak ada unit AC untuk order ini.
+        </div>
+      )}
     </div>
   )
 }

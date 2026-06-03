@@ -70,6 +70,7 @@ export type OrderItem = {
 export type CreateOrderItemInput = {
   location_id: string;
   ac_unit_id?: string | null;
+  new_ac_temp_id?: string;
   unit_type_id?: string;
   capacity_id?: string;
   brand_id?: string;
@@ -195,6 +196,8 @@ export type CustomerSearchResult = {
       brand: string;
       model_number: string;
       serial_number: string | null;
+      unit_type_id?: string | null;
+      capacity_id?: string | null;
       ac_type: string | null;
       capacity_btu: number | null;
       status: string;

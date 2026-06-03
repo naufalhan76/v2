@@ -813,7 +813,7 @@ CRON_SECRET=xxx
 
 ```bash
 # Build
-npm run build    # output: standalone
+bun run build    # output: standalone
 
 # Vercel
 # Connect repo → set env vars → deploy

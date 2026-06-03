@@ -5,11 +5,11 @@ This file provides development guidelines and conventions for this project.
 ## Commands
 
 ```bash
-npm run dev          # Start dev server
-npm run build        # Production build
-npm run lint         # ESLint check
-npm run lint:fix     # ESLint auto-fix
-npm run type-check   # TypeScript check (no emit)
+bun run dev          # Start dev server
+bun run build        # Production build
+bun run lint         # ESLint check
+bun run lint:fix     # ESLint auto-fix
+bun run type-check   # TypeScript check (no emit)
 ```
 
 No test framework is configured.
@@ -77,7 +77,7 @@ Optional checkbox in Create Order form (`/dashboard/orders/new`). When checked, 
 - Path alias `@/*` maps to `src/*`
 - Soft deletes — records are never hard-deleted
 - Zod schemas for all API inputs live in `src/app/api/schemas/`
-- shadcn components live in `src/components/ui/` — add new ones via `npx shadcn@latest add <component>`
+- shadcn components live in `src/components/ui/` — add new ones via `bunx shadcn@latest add <component>`
 - Dashboard pages are under `src/app/dashboard/`. Primary route: `orders/` (replaces `operasional/*` for order lifecycle). Other groups: `manajemen/` (customer, teknisi), `keuangan/` (invoices), `settings/` (service-catalog), `admin/`. Legacy `operasional/`, `konfigurasi/`, and `manajemen/lokasi`, `manajemen/ac-units` remain accessible via direct URL until Phase 5 cleanup.
 - Order workflow primarily lives at `/dashboard/orders` with `?view=board` (Kanban) or `?view=list` (table). State machine transitions enforced server-side in `src/lib/actions/orders.ts`. Optimistic mutations via hooks in `src/hooks/use-order-mutation.ts`.
 

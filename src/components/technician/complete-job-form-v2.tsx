@@ -53,9 +53,9 @@ type JobContext = {
       model_number?: string | null
       serial_number?: string | null
       installation_date?: string | null
-      // Fields not in the current DB select but accessed with || '' fallback
       ac_type?: string | null
-      capacity_pk?: string | null
+      capacity_id?: string | null
+      capacity_btu?: number | null
       room_location?: string | null
     } | null
   }>
@@ -142,7 +142,6 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
                     ac_type: acUnitData?.ac_type || '',
                     model_number: acUnitData?.model_number || '',
                     serial_number: acUnitData?.serial_number || '',
-                    capacity_pk: acUnitData?.capacity_pk || '',
                     room_location: acUnitData?.room_location || '',
                     skipped: false,
                     skip_reason: '',

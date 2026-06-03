@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { sanitizeSearchTerm } from '@/lib/utils'
 
 export async function getLocations(filters?: {
   search?: string
@@ -33,7 +34,8 @@ export async function getLocations(filters?: {
       .range(from, to)
     
     if (filters?.search) {
-      query = query.or(`full_address.ilike.%${filters.search}%,city.ilike.%${filters.search}%`)
+      const sanitized = sanitizeSearchTerm(filters.search)
+      query = query.or(`full_address.ilike.%${sanitized}%,city.ilike.%${sanitized}%`)
     }
     
     if (filters?.customerId) {

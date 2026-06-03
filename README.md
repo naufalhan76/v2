@@ -89,7 +89,7 @@ scripts/                   # Seed scripts, utilities
 ## Deployment
 
 ### Prerequisites
-- Node.js 18+, npm
+- Bun 1.1+ (or Node.js with Bun 1.1+)
 - Supabase project (URL + anon key + service role key)
 - Docker (optional, for container deployment)
 
@@ -124,8 +124,8 @@ psql $POSTGRES_URL -f supabase/migrations/01_rls_policies.sql
 ### 3. Run (Development)
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 Open http://localhost:3000.
@@ -147,11 +147,11 @@ Connect repo to Vercel, set environment variables, deploy. Configure Vercel Cron
 
 | Command | Purpose |
 |---------|---------|
-| `npm run dev` | Development server |
-| `npm run build` | Production build |
-| `npm run lint` | ESLint |
-| `npm run type-check` | TypeScript check |
-| `npm run clean` | Remove `.next` cache |
+| `bun run dev` | Development server |
+| `bun run build` | Production build |
+| `bun run lint` | ESLint |
+| `bun run type-check` | TypeScript check |
+| `bun run clean` | Remove `.next` cache |
 
 ## Documentation
 

@@ -65,7 +65,10 @@ export async function GET(
             brand,
             model_number,
             serial_number,
-            installation_date
+            installation_date,
+            ac_type,
+            capacity_id,
+            capacity_btu
           )
         ),
         order_technicians (

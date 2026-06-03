@@ -41,15 +41,16 @@ export async function isFinance(): Promise<boolean> {
 export function hasAccess(userRole: UserRole | null, requiredRole: UserRole): boolean {
   if (!userRole) return false
   
-  const roleHierarchy = {
-    SUPERADMIN: 4,
-    ADMIN: 3,
-    TECHNICIAN: 2,
-    FINANCE: 2
+  const allowedRoles: Record<UserRole, UserRole[]> = {
+    SUPERADMIN: ['SUPERADMIN'],
+    ADMIN: ['SUPERADMIN', 'ADMIN'],
+    TECHNICIAN: ['SUPERADMIN', 'ADMIN', 'TECHNICIAN'],
+    FINANCE: ['SUPERADMIN', 'ADMIN', 'FINANCE'],
   }
   
-  return roleHierarchy[userRole] >= roleHierarchy[requiredRole]
+  return allowedRoles[requiredRole].includes(userRole)
 }
+
 
 export function canManageUsers(userRole: UserRole | null): boolean {
   if (!userRole) return false

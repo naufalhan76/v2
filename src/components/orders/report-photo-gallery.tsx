@@ -6,6 +6,7 @@ import { Camera, ImageOff } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -66,6 +67,9 @@ export function ReportPhotoGallery({ title, photos, className }: ReportPhotoGall
             <DialogTitle>
               {title} {activeIndex !== null && `— ${activeIndex + 1}/${photos.length}`}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Menampilkan detail foto dokumentasi.
+            </DialogDescription>
           </DialogHeader>
           {activePhoto && (
             <div className="relative h-[70vh] w-full overflow-hidden rounded-md bg-black">

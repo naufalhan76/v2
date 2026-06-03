@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -9,9 +10,12 @@ import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import {
+  AlertTriangle,
   Building2,
   Calendar as CalendarIcon,
   CheckCircle2,
+  ChevronRight,
+  ClipboardList,
   Loader2,
   MapPin,
   Package,
@@ -63,6 +67,7 @@ import {
   createLocation as createLocationAction,
   createOrderWithItems,
   getOrderConfigMasterData,
+  getServiceTypesForCatalog,
   getTechnicians,
 } from '@/lib/actions/create-order'
 import { createProformaInvoice } from '@/lib/actions/invoices'
@@ -86,6 +91,7 @@ type AcUnitLite = NonNullable<LocationLite['ac_units']>[number]
 type SelectedAcLine = {
   // unique row id within the order
   line_id: string
+  unit_instance_id: string
   location_id: string
   ac_unit_id: string
   // For UI display
@@ -99,6 +105,11 @@ type SelectedAcLine = {
   manual_price: boolean
   description?: string
   quantity: number
+  // Service config matching fields
+  unit_type_id?: string
+  capacity_id?: string
+  catalog_id?: string
+  msn_code?: string
 }
 
 const idrFmt = (n: number) => `Rp ${n.toLocaleString('id-ID')}`
@@ -347,6 +358,10 @@ export default function NewOrderAccordionPage() {
   // Section 3: Service items derived from selected ACs + new AC placeholders
   const [serviceLines, setServiceLines] = useState<SelectedAcLine[]>([])
   const [newAcCounter, setNewAcCounter] = useState(0)
+  // Per-line filtered service types from service_catalog for (unit_type, capacity) combo
+  const [lineServiceTypes, setLineServiceTypes] = useState<Record<string, Array<Record<string, unknown>>>>({})
+  const [lineServiceTypesLoading, setLineServiceTypesLoading] = useState<Record<string, boolean>>({})
+  const [lineCatalogMissing, setLineCatalogMissing] = useState<Record<string, boolean>>({})
 
   // Section 4: Schedule & assignment
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>()
@@ -444,43 +459,54 @@ export default function NewOrderAccordionPage() {
 
   // Toggle AC unit selection
   const toggleAc = (locationId: string, acUnitId: string) => {
+    const exists = serviceLines.some((l) => l.location_id === locationId && l.ac_unit_id === acUnitId)
+
     setSelectedAcs((prev) => {
       const current = prev[locationId] || []
-      const exists = current.includes(acUnitId)
-      const next = exists ? current.filter((id) => id !== acUnitId) : [...current, acUnitId]
+      const isCurrentlySelected = current.includes(acUnitId)
+      const next = isCurrentlySelected ? current.filter((id) => id !== acUnitId) : [...current, acUnitId]
       const out = { ...prev, [locationId]: next }
       if (next.length === 0) delete out[locationId]
       return out
     })
 
-    // Sync serviceLines: add new line if newly selected, remove if deselected
-    setServiceLines((prev) => {
-      const exists = prev.find((l) => l.location_id === locationId && l.ac_unit_id === acUnitId)
-      if (exists) {
-        return prev.filter((l) => !(l.location_id === locationId && l.ac_unit_id === acUnitId))
-      }
-      // Build new line — need labels
+    if (exists) {
+      // Remove service lines for this AC
+      setServiceLines((prev) => prev.filter((l) => !(l.location_id === locationId && l.ac_unit_id === acUnitId)))
+    } else {
+      // Add service line for this AC
       const loc = customer?.locations?.find((l) => l.location_id === locationId)
       const ac = loc?.ac_units?.find((a) => a.ac_unit_id === acUnitId)
-      if (!loc || !ac) return prev
-      return [
-        ...prev,
-        {
-          line_id: `${locationId}:${acUnitId}:${Date.now()}`,
-          location_id: locationId,
-          ac_unit_id: acUnitId,
-          location_label: formatLocationLabel(loc),
-          ac_label: formatAcLabel(ac),
-          service_type_id: '',
-          service_type_code: '',
-          service_name: '',
-          estimated_price: 0,
-          manual_price: false,
-          description: '',
-          quantity: 1,
-        },
-      ]
-    })
+      if (loc && ac) {
+        const newLineId = `${locationId}:${acUnitId}:${Date.now()}`
+        
+        // Auto-load available service types immediately on selection if config exists
+        if (ac.unit_type_id && ac.capacity_id) {
+          void fetchServiceTypesForLine(newLineId, ac.unit_type_id, ac.capacity_id)
+        }
+        
+        setServiceLines((prev) => [
+          ...prev,
+          {
+            line_id: newLineId,
+            unit_instance_id: acUnitId,
+            location_id: locationId,
+            ac_unit_id: acUnitId,
+            location_label: formatLocationLabel(loc),
+            ac_label: formatAcLabel(ac),
+            service_type_id: '',
+            service_type_code: '',
+            service_name: '',
+            estimated_price: 0,
+            manual_price: false,
+            description: '',
+            quantity: 1,
+            unit_type_id: ac.unit_type_id || '',
+            capacity_id: ac.capacity_id || '',
+          },
+        ])
+      }
+    }
   }
 
   // Add a placeholder AC line for a new AC (details filled by technician)
@@ -489,15 +515,26 @@ export default function NewOrderAccordionPage() {
     const loc = customer?.locations?.find((l) => l.location_id === locationId)
     if (!loc) return
     const now = Date.now()
+    const newAcTempId = `new-ac-${locationId}-${now}-${newAcCounter}`
     const lineId = `${locationId}:__new__:${now}:${newAcCounter}`
+    
+    // Count how many new ACs are already added for this location
+    const uniqueNewAcs = Array.from(new Set(
+      serviceLines
+        .filter((l) => l.location_id === locationId && l.ac_unit_id === '__new__')
+        .map((l) => l.unit_instance_id)
+    ))
+    const count = uniqueNewAcs.length
+
     setServiceLines((prev) => [
       ...prev,
       {
         line_id: lineId,
+        unit_instance_id: newAcTempId,
         location_id: locationId,
         ac_unit_id: '__new__',
         location_label: formatLocationLabel(loc),
-        ac_label: 'AC Baru (diisi teknisi)',
+        ac_label: `AC Baru #${count + 1}`,
         service_type_id: '',
         service_type_code: '',
         service_name: '',
@@ -505,13 +542,236 @@ export default function NewOrderAccordionPage() {
         manual_price: false,
         description: '',
         quantity: 1,
+        unit_type_id: '',
+        capacity_id: '',
       },
     ])
   }
 
-  // When a service is picked for a line, try to auto-fill price
+  // Fetch service types available in service_catalog for a given (unit_type, capacity) combo
+  const fetchServiceTypesForLine = async (
+    lineId: string,
+    unitTypeId: string,
+    capacityId: string
+  ) => {
+    if (!unitTypeId || !capacityId) {
+      setLineServiceTypes((prev) => ({ ...prev, [lineId]: [] }))
+      setLineCatalogMissing((prev) => ({ ...prev, [lineId]: false }))
+      return
+    }
+    setLineServiceTypesLoading((prev) => ({ ...prev, [lineId]: true }))
+    try {
+      const res = await getServiceTypesForCatalog(unitTypeId, capacityId)
+      if (res.success) {
+        setLineServiceTypes((prev) => ({ ...prev, [lineId]: (res.data || []) as Array<Record<string, unknown>> }))
+        setLineCatalogMissing((prev) => ({ ...prev, [lineId]: (res.data || []).length === 0 }))
+      } else {
+        setLineServiceTypes((prev) => ({ ...prev, [lineId]: [] }))
+        setLineCatalogMissing((prev) => ({ ...prev, [lineId]: true }))
+      }
+    } finally {
+      setLineServiceTypesLoading((prev) => ({ ...prev, [lineId]: false }))
+    }
+  }
+
+  // When a service is picked or details change, dynamically compute the catalog price
   const updateServiceLine = (lineId: string, patch: Partial<SelectedAcLine>) => {
-    setServiceLines((prev) => prev.map((l) => (l.line_id === lineId ? { ...l, ...patch } : l)))
+    let nextUnitType = ''
+    let nextCapacity = ''
+    let configChanged = false
+    let noCatalogMatch = false
+
+    let updatedLines: SelectedAcLine[] = []
+    setServiceLines((prev) => {
+      updatedLines = prev.map((l) => {
+        if (l.line_id !== lineId) return l
+
+        const updated = { ...l, ...patch }
+        nextUnitType = updated.unit_type_id || ''
+        nextCapacity = updated.capacity_id || ''
+
+        // If config changed (unit type, capacity, or service type), recalculate price if not manually locked
+        const isConfigChanging =
+          'unit_type_id' in patch || 'capacity_id' in patch || 'service_type_id' in patch
+        configChanged = isConfigChanging
+        const shouldRecalculate = isConfigChanging && !updated.manual_price
+
+        if (shouldRecalculate) {
+          let price = 0
+          let catalogId = ''
+          let msnCode = ''
+          let matchFound = false
+
+          if (updated.service_type_id && updated.unit_type_id && updated.capacity_id) {
+            const catalog = (masterData?.serviceCatalog || []) as Array<Record<string, unknown>>
+            const match = catalog.find(
+              (c) =>
+                c.is_active !== false &&
+                c.service_type_id === updated.service_type_id &&
+                c.unit_type_id === updated.unit_type_id &&
+                c.capacity_id === updated.capacity_id
+            )
+            if (match) {
+              price = Number(match.base_price) || 0
+              catalogId = (match.catalog_id as string) || ''
+              msnCode = (match.msn_code as string) || ''
+              matchFound = true
+            }
+          }
+
+          updated.estimated_price = price
+          updated.catalog_id = catalogId
+          updated.msn_code = msnCode
+
+          // Mark catalog as missing if all 3 keys set but no active match
+          noCatalogMatch =
+            !!updated.service_type_id && !!updated.unit_type_id && !!updated.capacity_id && !matchFound
+        }
+
+        return updated
+      })
+      return updatedLines
+    })
+
+    // Sync catalog-missing flag for this line
+    if (configChanged) {
+      setLineCatalogMissing((prev) => ({ ...prev, [lineId]: noCatalogMatch }))
+    }
+
+    // Refetch cascading service types when unit_type or capacity changes
+    if ('unit_type_id' in patch || 'capacity_id' in patch) {
+      void fetchServiceTypesForLine(lineId, nextUnitType, nextCapacity)
+    }
+  }
+
+  // When unit type/capacity changes, update all lines in the group
+  const updateServiceLineForGroup = (unitInstanceId: string, patch: Partial<SelectedAcLine>) => {
+    const nextUnitType = patch.unit_type_id || ''
+    const nextCapacity = patch.capacity_id || ''
+    const configChanged = 'unit_type_id' in patch || 'capacity_id' in patch
+
+    // Update the service lines state
+    let updatedLines: SelectedAcLine[] = []
+    setServiceLines((prev) => {
+      updatedLines = prev.map((l) => {
+        if (l.unit_instance_id !== unitInstanceId) return l
+
+        const updated = { ...l, ...patch }
+
+        // Recalculate price if config changed and not manual price
+        if (configChanged && !updated.manual_price) {
+          let price = 0
+          let catalogId = ''
+          let msnCode = ''
+
+          if (updated.service_type_id && nextUnitType && nextCapacity) {
+            const catalog = (masterData?.serviceCatalog || []) as Array<Record<string, unknown>>
+            const match = catalog.find(
+              (c) =>
+                c.is_active !== false &&
+                c.service_type_id === updated.service_type_id &&
+                c.unit_type_id === nextUnitType &&
+                c.capacity_id === nextCapacity
+            )
+            if (match) {
+              price = Number(match.base_price) || 0
+              catalogId = (match.catalog_id as string) || ''
+              msnCode = (match.msn_code as string) || ''
+            }
+          }
+
+          updated.estimated_price = price
+          updated.catalog_id = catalogId
+          updated.msn_code = msnCode
+        }
+
+        return updated
+      })
+      return updatedLines
+    })
+
+    // Perform side effects outside the state updater callback using computed lines
+    if (configChanged) {
+      // Find the updated group lines in our freshly calculated updatedLines
+      const linesInGroup = updatedLines.filter((l) => l.unit_instance_id === unitInstanceId)
+      
+      linesInGroup.forEach((l) => {
+        let matchFound = false
+        if (l.service_type_id && nextUnitType && nextCapacity) {
+          const catalog = (masterData?.serviceCatalog || []) as Array<Record<string, unknown>>
+          matchFound = catalog.some(
+            (c) =>
+              c.is_active !== false &&
+              c.service_type_id === l.service_type_id &&
+              c.unit_type_id === nextUnitType &&
+              c.capacity_id === nextCapacity
+          )
+        }
+        const noCatalogMatch = !!l.service_type_id && !!nextUnitType && !!nextCapacity && !matchFound
+        
+        setLineCatalogMissing((prev) => ({ ...prev, [l.line_id]: noCatalogMatch }))
+        void fetchServiceTypesForLine(l.line_id, nextUnitType, nextCapacity)
+      })
+    }
+  }
+
+  const addServiceLineToGroup = (unitInstanceId: string) => {
+    const groupLines = serviceLines.filter((l) => l.unit_instance_id === unitInstanceId)
+    if (groupLines.length === 0) return
+    const firstLine = groupLines[0]
+    
+    const newLineId = `${firstLine.location_id}:${firstLine.ac_unit_id}:${Date.now()}:${Math.random().toString(36).substr(2, 9)}`
+    
+    // Call fetchServiceTypesForLine if group already has unit type & capacity
+    if (firstLine.unit_type_id && firstLine.capacity_id) {
+      void fetchServiceTypesForLine(newLineId, firstLine.unit_type_id, firstLine.capacity_id)
+    }
+
+    setServiceLines((prev) => [
+      ...prev,
+      {
+        line_id: newLineId,
+        unit_instance_id: unitInstanceId,
+        location_id: firstLine.location_id,
+        ac_unit_id: firstLine.ac_unit_id,
+        location_label: firstLine.location_label,
+        ac_label: firstLine.ac_label,
+        service_type_id: '',
+        service_type_code: '',
+        service_name: '',
+        estimated_price: 0,
+        manual_price: false,
+        description: '',
+        quantity: 1,
+        unit_type_id: firstLine.unit_type_id || '',
+        capacity_id: firstLine.capacity_id || '',
+      },
+    ])
+  }
+
+  const deleteServiceLine = (lineId: string) => {
+    const lineToRemove = serviceLines.find((l) => l.line_id === lineId)
+    if (!lineToRemove) return
+
+    const remainingInGroup = serviceLines.filter(
+      (l) => l.unit_instance_id === lineToRemove.unit_instance_id && l.line_id !== lineId
+    )
+
+    // If no lines remain in the group, we deselect the AC unit in Section 2
+    if (remainingInGroup.length === 0) {
+      const locationId = lineToRemove.location_id
+      const acUnitId = lineToRemove.ac_unit_id
+      
+      setSelectedAcs((prevSelected) => {
+        const current = prevSelected[locationId] || []
+        const next = current.filter((id) => id !== acUnitId)
+        const out = { ...prevSelected, [locationId]: next }
+        if (next.length === 0) delete out[locationId]
+        return out
+      })
+    }
+
+    setServiceLines((prev) => prev.filter((l) => l.line_id !== lineId))
   }
 
   const pickServiceForLine = (lineId: string, serviceTypeId: string) => {
@@ -522,47 +782,46 @@ export default function NewOrderAccordionPage() {
     const code = String(st.code || '')
     const name = String(st.name || code)
 
-    // Try to match a service_catalog entry first (newer pricing source)
-    const line = serviceLines.find((l) => l.line_id === lineId)
-    if (!line) return
-    const ac = customer?.locations
-      ?.find((l) => l.location_id === line.location_id)
-      ?.ac_units?.find((a) => a.ac_unit_id === line.ac_unit_id)
-
-    let estimatedPrice = 0
-    const catalog = (masterData?.serviceCatalog || []) as Array<Record<string, unknown>>
-    const acRecord = ac as unknown as Record<string, unknown> | undefined
-    const acUnitTypeId = acRecord?.unit_type_id as string | undefined
-    const acCapacityId = acRecord?.capacity_id as string | undefined
-
-    const catalogMatch = catalog.find(
-      (c) =>
-        c.service_type_id === serviceTypeId &&
-        (acUnitTypeId ? c.unit_type_id === acUnitTypeId : true) &&
-        (acCapacityId ? c.capacity_id === acCapacityId : true)
-    )
-    if (catalogMatch) {
-      estimatedPrice = Number(catalogMatch.base_price) || 0
-    }
-
-    // Fallback: try service_pricing legacy by canonical code
-    if (estimatedPrice === 0) {
-      // service_pricing not loaded here; will leave 0 and let user override
-    }
-
     updateServiceLine(lineId, {
       service_type_id: serviceTypeId,
       service_type_code: code,
       service_name: name,
-      estimated_price: estimatedPrice,
-      manual_price: false,
     })
   }
+
+  const uniqueUnitInstanceIds = useMemo(() => {
+    const ids: string[] = []
+    serviceLines.forEach((line) => {
+      if (!ids.includes(line.unit_instance_id)) {
+        ids.push(line.unit_instance_id)
+      }
+    })
+    return ids
+  }, [serviceLines])
 
   const totalEstimatedPrice = useMemo(
     () => serviceLines.reduce((sum, l) => sum + l.estimated_price * l.quantity, 0),
     [serviceLines]
   )
+
+  // Counters for AC visibility (unique unit instances)
+  const newAcCount = useMemo(() => {
+    const newAcIds = new Set(
+      serviceLines
+        .filter((l) => l.ac_unit_id === '__new__')
+        .map((l) => l.unit_instance_id)
+    )
+    return newAcIds.size
+  }, [serviceLines])
+
+  const existingAcCount = useMemo(() => {
+    const existingAcIds = new Set(
+      serviceLines
+        .filter((l) => l.ac_unit_id !== '__new__')
+        .map((l) => l.unit_instance_id)
+    )
+    return existingAcIds.size
+  }, [serviceLines])
 
   // ---------------------------------------------------------------------
   // Section validation
@@ -570,8 +829,11 @@ export default function NewOrderAccordionPage() {
   const isCustomerFilled = !!customer
   const isLocationsFilled = serviceLines.length > 0
   const isServicesFilled =
-    serviceLines.length > 0 && serviceLines.every((l) => !!l.service_type_id)
+    serviceLines.length > 0 &&
+    serviceLines.every((l) => !!l.service_type_id && !!l.unit_type_id && !!l.capacity_id)
   const isScheduleFilled = !!scheduledDate && (skipAssignment || !!leadTechnicianId)
+  const completedSections = [isCustomerFilled, isLocationsFilled, isServicesFilled, isScheduleFilled].filter(Boolean).length
+  const progressPct = (completedSections / 4) * 100
 
   // ---------------------------------------------------------------------
   // Submit
@@ -611,12 +873,17 @@ export default function NewOrderAccordionPage() {
       const items = serviceLines.map((l) => ({
         location_id: l.location_id,
         ac_unit_id: l.ac_unit_id === '__new__' ? null : l.ac_unit_id,
+        new_ac_temp_id: l.ac_unit_id === '__new__' ? l.unit_instance_id : undefined,
         ...(l.ac_unit_id === '__new__' ? { new_ac_data: { brand: 'TBD', model_number: 'TBD' } } : {}),
         service_type_id: l.service_type_id,
         service_type: normalizeOrderServiceType(l.service_type_code),
         quantity: l.quantity,
         description: l.description || undefined,
         estimated_price: l.estimated_price,
+        unit_type_id: l.unit_type_id || undefined,
+        capacity_id: l.capacity_id || undefined,
+        catalog_id: l.catalog_id || undefined,
+        msn_code: l.msn_code || undefined,
       }))
 
       const orderRes = await createOrderWithItems({
@@ -677,11 +944,47 @@ export default function NewOrderAccordionPage() {
   return (
     <div className="p-4 md:p-6">
       <LoadingOverlay isLoading={submitting} message="Menyimpan order..." fullscreen autoFocus>
-        <div className="mb-4 sm:mb-6">
-          <h1 className="text-xl font-bold sm:text-2xl md:text-3xl">Buat Order Baru</h1>
-          <p className="text-sm text-muted-foreground">
-            Isi setiap section secara berurutan. Section yang sudah lengkap akan menampilkan ringkasan.
-          </p>
+        <div className="mb-4 sm:mb-6 space-y-3">
+          {/* Breadcrumb */}
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Link
+              href="/dashboard/orders"
+              className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+            >
+              <ClipboardList className="h-3.5 w-3.5" />
+              Orders
+            </Link>
+            <ChevronRight className="h-3 w-3" />
+            <span className="text-foreground font-medium">Buat Order Baru</span>
+          </nav>
+
+          {/* Title + progress */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 className="text-xl font-bold sm:text-2xl md:text-3xl tracking-tight">Buat Order Baru</h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Isi setiap section secara berurutan. Section yang sudah lengkap akan menampilkan ringkasan.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground tabular-nums">
+                {completedSections}/4 section
+              </span>
+              <div
+                className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"
+                role="progressbar"
+                aria-valuenow={completedSections}
+                aria-valuemin={0}
+                aria-valuemax={4}
+                aria-label="Progres pengisian order"
+              >
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <Accordion
@@ -824,7 +1127,7 @@ export default function NewOrderAccordionPage() {
                   isLocationsFilled
                     ? `${serviceLines.length} unit AC dari ${
                         new Set(serviceLines.map((l) => l.location_id)).size
-                      } lokasi`
+                      } lokasi • ${newAcCount} baru • ${existingAcCount} existing`
                     : 'Pilih lokasi dan unit AC yang akan diservice'
                 }
               />
@@ -842,18 +1145,34 @@ export default function NewOrderAccordionPage() {
                 {customerLocations.map((loc) => {
                   const acUnits = loc.ac_units || []
                   const selected = selectedAcs[loc.location_id] || []
+                  const uniqueAddedNewAcs = serviceLines.reduce((acc, current) => {
+                    if (current.location_id === loc.location_id && current.ac_unit_id === '__new__') {
+                      if (!acc.some(item => item.unit_instance_id === current.unit_instance_id)) {
+                        acc.push(current)
+                      }
+                    }
+                    return acc
+                  }, [] as SelectedAcLine[])
                   return (
                     <div key={loc.location_id} className="rounded-md border p-4">
-                      <div className="mb-3 flex items-start gap-2">
-                        <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{formatLocationLabel(loc)}</p>
-                          {loc.landmarks && (
-                            <p className="text-xs text-muted-foreground">{loc.landmarks}</p>
-                          )}
+                      <div className="mb-3 flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2">
+                          <Building2 className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="font-medium">{formatLocationLabel(loc)}</p>
+                            {loc.landmarks && (
+                              <p className="text-xs text-muted-foreground">{loc.landmarks}</p>
+                            )}
+                          </div>
                         </div>
+                        {uniqueAddedNewAcs.length > 0 && (
+                          <Badge variant="secondary" className="shrink-0 gap-1 bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                            <Plus className="h-3 w-3" />
+                            {uniqueAddedNewAcs.length} AC Baru
+                          </Badge>
+                        )}
                       </div>
-
+ 
                       {acUnits.length === 0 ? (
                         <div className="space-y-3">
                           <p className="text-sm italic text-muted-foreground">
@@ -883,23 +1202,36 @@ export default function NewOrderAccordionPage() {
                                   key={ac.ac_unit_id}
                                   type="button"
                                   onClick={() => toggleAc(loc.location_id, ac.ac_unit_id)}
+                                  aria-pressed={isSelected}
                                   className={cn(
-                                    'flex items-start gap-2 rounded-md border p-3 text-left transition-colors',
+                                    'group flex items-start gap-3 rounded-lg border p-3 text-left transition-all duration-200 cursor-pointer',
+                                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                                    'active:scale-[0.99]',
                                     isSelected
-                                      ? 'border-primary bg-primary/5'
-                                      : 'hover:bg-muted/50'
+                                      ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
+                                      : 'border-border hover:border-primary/40 hover:bg-muted/40'
                                   )}
                                 >
-                                  <Checkbox
-                                    checked={isSelected}
-                                    onCheckedChange={() => {}}
-                                    className="mt-0.5"
-                                  />
-                                  <div className="flex-1 text-sm">
-                                    <p className="font-medium">
+                                  <div
+                                    className={cn(
+                                      'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors',
+                                      isSelected
+                                        ? 'border-primary bg-primary text-primary-foreground'
+                                        : 'border-input bg-background group-hover:border-primary/60'
+                                    )}
+                                    aria-hidden="true"
+                                  >
+                                    {isSelected && (
+                                      <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3">
+                                        <path d="M3 8l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0 text-sm">
+                                    <p className="font-medium truncate">
                                       {ac.brand} {ac.model_number}
                                     </p>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground truncate">
                                       {ac.serial_number || 'Tanpa SN'}
                                       {ac.capacity_btu ? ` • ${ac.capacity_btu} BTU` : ''}
                                     </p>
@@ -918,6 +1250,34 @@ export default function NewOrderAccordionPage() {
                             <Plus className="mr-1.5 h-3.5 w-3.5" />
                             Tambah AC Baru
                           </Button>
+                        </div>
+                      )}
+ 
+                      {/* List added new ACs */}
+                      {uniqueAddedNewAcs.length > 0 && (
+                        <div className="mt-3 space-y-2 border-t pt-3">
+                          <Label className="text-xs text-muted-foreground">AC Baru yang Ditambahkan:</Label>
+                          <div className="space-y-1.5">
+                            {uniqueAddedNewAcs.map((line) => (
+                              <div key={line.unit_instance_id} className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">NEW</span>
+                                  <span>{line.ac_label}</span>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setServiceLines((prev) => prev.filter((l) => l.unit_instance_id !== line.unit_instance_id))
+                                  }}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -982,23 +1342,247 @@ export default function NewOrderAccordionPage() {
               />
             </AccordionTrigger>
             <AccordionContent>
-              <div className="space-y-3 pt-2">
-                {serviceLines.length === 0 ? (
+              <div className="space-y-4 pt-2">
+                {uniqueUnitInstanceIds.length === 0 ? (
                   <Alert>
                     <AlertDescription>
                       Pilih AC pada section sebelumnya terlebih dahulu.
                     </AlertDescription>
                   </Alert>
                 ) : (
-                  serviceLines.map((line) => (
-                    <ServiceLineRow
-                      key={line.line_id}
-                      line={line}
-                      serviceTypes={(masterData?.serviceTypes || []) as Array<Record<string, unknown>>}
-                      onPickService={(stId) => pickServiceForLine(line.line_id, stId)}
-                      onPatch={(p) => updateServiceLine(line.line_id, p)}
-                    />
-                  ))
+                  uniqueUnitInstanceIds.map((unitInstanceId) => {
+                    const groupLines = serviceLines.filter((l) => l.unit_instance_id === unitInstanceId)
+                    const firstLine = groupLines[0]
+                    if (!firstLine) return null
+
+                    return (
+                      <div key={unitInstanceId} className="space-y-4 rounded-lg border p-4 shadow-sm bg-card/50">
+                        {/* Group Header */}
+                        <div className="flex items-start justify-between border-b pb-3">
+                          <div>
+                            <p className="font-semibold text-base text-primary">{firstLine.ac_label}</p>
+                            <p className="text-xs text-muted-foreground">{firstLine.location_label}</p>
+                          </div>
+                          {firstLine.ac_unit_id === '__new__' && (
+                            <Badge className="bg-blue-600 hover:bg-blue-700 text-white border-none text-[10px]">AC Baru</Badge>
+                          )}
+                        </div>
+
+                        {/* Shared Specs: Tipe Unit & Kapasitas */}
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 bg-muted/20 p-3 rounded-md">
+                          <div>
+                            <Label className="text-xs font-semibold">Tipe Unit *</Label>
+                            <Select 
+                              value={firstLine.unit_type_id || ''} 
+                              onValueChange={(val) => {
+                                updateServiceLineForGroup(unitInstanceId, { 
+                                  unit_type_id: val, 
+                                  capacity_id: '', 
+                                  estimated_price: 0,
+                                  catalog_id: '',
+                                  msn_code: '',
+                                  service_type_id: ''
+                                })
+                              }}
+                            >
+                              <SelectTrigger className="h-9 bg-background">
+                                <SelectValue placeholder="Pilih tipe unit..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {((masterData?.unitTypes || []) as Array<Record<string, unknown>>).map((ut) => (
+                                  <SelectItem key={ut.unit_type_id as string} value={ut.unit_type_id as string}>
+                                    {ut.name as string}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label className="text-xs font-semibold">Kapasitas *</Label>
+                            <Select 
+                              value={firstLine.capacity_id || ''} 
+                              disabled={!firstLine.unit_type_id}
+                              onValueChange={(val) => {
+                                updateServiceLineForGroup(unitInstanceId, { 
+                                  capacity_id: val, 
+                                  estimated_price: 0,
+                                  catalog_id: '',
+                                  msn_code: '',
+                                  service_type_id: ''
+                                })
+                              }}
+                            >
+                              <SelectTrigger className="h-9 bg-background">
+                                <SelectValue placeholder={firstLine.unit_type_id ? "Pilih kapasitas..." : "Pilih tipe unit dulu"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(((masterData?.capacityRanges || []) as Array<Record<string, unknown>>).filter((c) => c.unit_type_id === firstLine.unit_type_id)).map((cr) => (
+                                  <SelectItem key={cr.capacity_id as string} value={cr.capacity_id as string}>
+                                    {cr.capacity_label as string}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {/* Service Items for this AC */}
+                        <div className="space-y-4 pt-2">
+                          <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Service Items</Label>
+                          {groupLines.map((line, idx) => (
+                            <div key={line.line_id} className="relative pl-4 border-l-2 border-primary/20 space-y-3 pb-4 last:pb-0 last:border-b-0">
+                              {/* Header for service item row */}
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-muted-foreground">Item #{idx + 1}</span>
+                                {groupLines.length > 1 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteServiceLine(line.line_id)}
+                                    className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10 gap-1 text-xs"
+                                  >
+                                    <X className="h-3 w-3" />
+                                    Hapus
+                                  </Button>
+                                )}
+                              </div>
+
+                              {/* Service Type Selection */}
+                              <div>
+                                <Label className="text-[11px] font-medium">Jenis Service *</Label>
+                                <Select
+                                  value={line.service_type_id || ''}
+                                  disabled={!line.capacity_id || !!lineServiceTypesLoading[line.line_id]}
+                                  onValueChange={(stId) => pickServiceForLine(line.line_id, stId)}
+                                >
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue
+                                      placeholder={
+                                        !line.capacity_id
+                                          ? 'Pilih tipe unit & kapasitas dulu'
+                                          : lineServiceTypesLoading[line.line_id]
+                                            ? 'Memuat...'
+                                            : 'Pilih jenis service...'
+                                      }
+                                    />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {(!line.unit_type_id || !line.capacity_id
+                                      ? []
+                                      : (lineServiceTypes[line.line_id] || [])).length === 0 ? (
+                                      <SelectItem value="no_service_type" disabled className="text-[11px] text-amber-600 dark:text-amber-400">
+                                        Tidak ada jenis service untuk tipe unit + kapasitas ini.
+                                      </SelectItem>
+                                    ) : (
+                                      (lineServiceTypes[line.line_id] || []).map((st) => (
+                                        <SelectItem key={st.service_type_id as string} value={st.service_type_id as string}>
+                                          {(st.name as string) || (st.code as string)}
+                                        </SelectItem>
+                                      ))
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Qty, Price, Subtotal */}
+                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                <div>
+                                  <Label className="text-[11px] font-medium">Quantity</Label>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    value={line.quantity}
+                                    className="h-9"
+                                    onChange={(e) =>
+                                      updateServiceLine(line.line_id, { quantity: Math.max(1, parseInt(e.target.value, 10) || 1) })
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-[11px] font-medium">Estimasi Harga (Rp)</Label>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    value={line.estimated_price}
+                                    className="h-9 font-medium"
+                                    disabled={!line.service_type_id}
+                                    onChange={(e) =>
+                                      updateServiceLine(line.line_id, {
+                                        estimated_price: Math.max(0, parseInt(e.target.value, 10) || 0),
+                                        manual_price: true,
+                                      })
+                                    }
+                                  />
+                                  {!line.manual_price && line.estimated_price > 0 && (
+                                    <p className="mt-1 flex items-center gap-1 text-[9px] text-emerald-600 dark:text-emerald-400 font-medium">
+                                      <CheckCircle2 className="h-2.5 w-2.5" aria-hidden="true" />
+                                      Sesuai harga katalog
+                                    </p>
+                                  )}
+                                  {lineCatalogMissing[line.line_id] && !line.manual_price && (
+                                    <p className="mt-1 flex items-center gap-1 text-[9px] text-amber-600 dark:text-amber-400 font-medium">
+                                      <AlertTriangle className="h-2.5 w-2.5" aria-hidden="true" />
+                                      Belum ada harga katalog. Isi manual.
+                                    </p>
+                                  )}
+                                  {line.manual_price && (
+                                    <div className="mt-1 flex items-center justify-between text-[9px] font-medium">
+                                      <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+                                        <AlertTriangle className="h-2.5 w-2.5" aria-hidden="true" />
+                                        Manual
+                                      </span>
+                                      <button
+                                        type="button"
+                                        className="text-primary hover:underline"
+                                        onClick={() => {
+                                          updateServiceLine(line.line_id, { manual_price: false })
+                                        }}
+                                      >
+                                        Reset
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <Label className="text-[11px] font-medium text-muted-foreground/80">Subtotal</Label>
+                                  <div className="flex h-9 items-center rounded-md border bg-muted/40 px-3 text-sm font-bold tracking-tight">
+                                    {idrFmt(line.estimated_price * line.quantity)}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Item Description */}
+                              <div>
+                                <Label className="text-[11px] font-medium">Catatan Item (opsional)</Label>
+                                <Textarea
+                                  rows={1}
+                                  value={line.description || ''}
+                                  onChange={(e) => updateServiceLine(line.line_id, { description: e.target.value })}
+                                  placeholder="Ruangan/posisi unit AC (misal: R. Tamu, Lt. 2) atau keluhan..."
+                                  className="text-xs"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Add service button for this AC */}
+                        <div className="flex justify-start border-t pt-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addServiceLineToGroup(unitInstanceId)}
+                            className="h-8 text-xs gap-1.5"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Tambah Service
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })
                 )}
 
                 {serviceLines.length > 0 && (
@@ -1322,90 +1906,3 @@ function SummaryRow({ label, children }: { label: string; children: React.ReactN
   )
 }
 
-function ServiceLineRow({
-  line,
-  serviceTypes,
-  onPickService,
-  onPatch,
-}: {
-  line: SelectedAcLine
-  serviceTypes: Array<Record<string, unknown>>
-  onPickService: (serviceTypeId: string) => void
-  onPatch: (patch: Partial<SelectedAcLine>) => void
-}) {
-  return (
-    <div className="space-y-3 rounded-md border p-4">
-      <div>
-        <p className="text-sm font-medium">{line.ac_label}</p>
-        <p className="text-xs text-muted-foreground">{line.location_label}</p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="md:col-span-2">
-          <Label className="text-xs">Jenis Service *</Label>
-          <Select value={line.service_type_id} onValueChange={onPickService}>
-            <SelectTrigger>
-              <SelectValue placeholder="Pilih jenis service..." />
-            </SelectTrigger>
-            <SelectContent>
-              {serviceTypes.map((st) => (
-                <SelectItem key={st.service_type_id as string} value={st.service_type_id as string}>
-                  {(st.name as string) || (st.code as string)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label className="text-xs">Quantity</Label>
-          <Input
-            type="number"
-            min={1}
-            value={line.quantity}
-            onChange={(e) =>
-              onPatch({ quantity: Math.max(1, parseInt(e.target.value, 10) || 1) })
-            }
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div>
-          <Label className="text-xs">Estimasi Harga (Rp)</Label>
-          <Input
-            type="number"
-            min={0}
-            value={line.estimated_price}
-            onChange={(e) =>
-              onPatch({
-                estimated_price: Math.max(0, parseInt(e.target.value, 10) || 0),
-                manual_price: true,
-              })
-            }
-          />
-          {!line.manual_price && line.estimated_price > 0 && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Dari katalog • bisa diubah manual
-            </p>
-          )}
-        </div>
-        <div>
-          <Label className="text-xs">Subtotal</Label>
-          <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 text-sm font-medium">
-            {idrFmt(line.estimated_price * line.quantity)}
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <Label className="text-xs">Catatan Item (opsional)</Label>
-        <Textarea
-          rows={2}
-          value={line.description || ''}
-          onChange={(e) => onPatch({ description: e.target.value })}
-          placeholder="Catatan untuk item service ini..."
-        />
-      </div>
-    </div>
-  )
-}

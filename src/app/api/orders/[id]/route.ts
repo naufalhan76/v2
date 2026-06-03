@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { cancelOrder, assignOrdersToTechnician, rescheduleOrder, updateOrderStatus } from '@/lib/actions/orders'
+import type { TransitionRole } from '@/lib/order-status'
 import { jsonSuccess, jsonError, handleValidationError, handleApiError } from '@/app/api/utils'
 import { requireAuth } from '@/app/api/middleware/auth'
 import { logRequest, logResponse, measureDuration, createAuditLog } from '@/app/api/middleware/logging'
@@ -121,6 +122,7 @@ export async function PATCH(
         undefined,
         data.req_visit_date ?? undefined,
         true, // useAdminClient — bypass RLS for API route callers
+        role as TransitionRole,
       )
     } else {
       return jsonError('No actionable fields provided', 400)

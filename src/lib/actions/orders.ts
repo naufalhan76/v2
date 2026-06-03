@@ -87,10 +87,6 @@ export async function getOrders(filters?: {
       query = query.lte('created_at', `${filters.dateTo}T23:59:59.999Z`)
     }
 
-    if (filters?.dateTo) {
-      query = query.lte('created_at', `${filters.dateTo}T23:59:59.999Z`)
-    }
-
     const { data, error, count } = await query
 
     if (error) throw error
@@ -200,7 +196,6 @@ export async function createOrder(orderData: {
       .insert({
         ...orderData,
         status: 'PENDING',
-        created_at: new Date().toISOString(),
       })
       .select()
       .single()
@@ -223,7 +218,14 @@ export async function createOrder(orderData: {
   }
 }
 
-export async function updateOrderStatus(orderId: string, newStatus: string, notes?: string, reqVisitDate?: string, useAdminClient = false) {
+export async function updateOrderStatus(
+  orderId: string,
+  newStatus: string,
+  notes?: string,
+  reqVisitDate?: string,
+  useAdminClient = false,
+  callerRole?: TransitionRole
+) {
   try {
     // Use admin client if specified (for API routes that bypass RLS)
     const supabase = useAdminClient 
@@ -239,9 +241,14 @@ export async function updateOrderStatus(orderId: string, newStatus: string, note
     
     if (fetchError) throw fetchError
 
-    if (!useAdminClient) {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return { success: false, error: 'Tidak terautentikasi' }
+    // Enforce transition validation for all callers
+    let resolvedRole = callerRole
+    if (!resolvedRole) {
+      const userClient = await createClient()
+      const { data: { user } } = await userClient.auth.getUser()
+      if (!user) {
+        return { success: false, error: 'Tidak terautentikasi' }
+      }
 
       const { data: userMgmt } = await supabase
         .from('user_management')
@@ -249,14 +256,19 @@ export async function updateOrderStatus(orderId: string, newStatus: string, note
         .eq('auth_user_id', user.id)
         .single()
 
-      const callerRole = (userMgmt?.role ?? 'ADMIN') as TransitionRole
-      const canonicalNew = toCanonical(newStatus)
+      resolvedRole = userMgmt?.role as TransitionRole | undefined
+    }
 
-      if (!canTransition(currentOrder.status, canonicalNew, callerRole)) {
-        return {
-          success: false,
-          error: `Transisi dari ${currentOrder.status} ke ${newStatus} tidak diizinkan untuk role ${callerRole}`,
-        }
+    if (!resolvedRole) {
+      return { success: false, error: 'Role pengguna tidak ditemukan' }
+    }
+
+    const canonicalNew = toCanonical(newStatus)
+
+    if (!canTransition(currentOrder.status, canonicalNew, resolvedRole)) {
+      return {
+        success: false,
+        error: `Transisi dari ${currentOrder.status} ke ${newStatus} tidak diizinkan untuk role ${resolvedRole}`,
       }
     }
 

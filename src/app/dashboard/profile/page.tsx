@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { Separator } from '@/components/ui/separator'
-import { Camera, Loader2, Mail, User, Lock, Eye, EyeOff } from 'lucide-react'
+import { AlertTriangle, Camera, Loader2, Mail, User, Lock, Eye, EyeOff } from 'lucide-react'
 import { getUserProfile, updateUserProfile, updateUserPassword, updateProfilePhoto } from '@/lib/actions/profile'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ApiKeysManagement } from '@/components/api-keys-management'
@@ -390,8 +390,9 @@ export default function ProfilePage() {
                 />
               </div>
               {email !== profile.email && (
-                <p className="text-sm text-amber-600">
-                  ⚠️ Changing your email will require verification
+                <p className="flex items-center gap-1.5 text-sm text-amber-600">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  Changing your email will require verification
                 </p>
               )}
             </div>

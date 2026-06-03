@@ -16,20 +16,15 @@ function getCachedUser(userId: string) {
 }
 
 function setCachedUser(userId: string, data: unknown) {
+  // If cache exceeds limit, clear it completely to avoid unbounded growth / memory leak
+  if (userCache.size >= 100) {
+    userCache.clear()
+  }
+  
   userCache.set(userId, {
     data,
     expiry: Date.now() + CACHE_DURATION,
   })
-
-  // Clean up old entries
-  if (userCache.size > 100) {
-    const now = Date.now()
-    userCache.forEach((value, key) => {
-      if (value.expiry < now) {
-        userCache.delete(key)
-      }
-    })
-  }
 }
 
 export async function middleware(req: NextRequest) {

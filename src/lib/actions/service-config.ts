@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
+import { sanitizeSearchTerm } from '@/lib/utils'
 
 // ==========================================
 // SERVICE TYPES
@@ -188,7 +189,8 @@ export async function getServiceCatalog(filters?: {
   if (filters?.capacityId) query = query.eq('capacity_id', filters.capacityId)
   if (filters?.serviceTypeId) query = query.eq('service_type_id', filters.serviceTypeId)
   if (filters?.search) {
-     query = query.or(`msn_code.ilike.%${filters.search}%,service_name.ilike.%${filters.search}%`)
+     const sanitized = sanitizeSearchTerm(filters.search)
+     query = query.or(`msn_code.ilike.%${sanitized}%,service_name.ilike.%${sanitized}%`)
   }
 
   const { data, error } = await query

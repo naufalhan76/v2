@@ -156,22 +156,22 @@ export function SignaturePad({ onChange, onBlobChange, value, disabled = false, 
         <label className="text-sm font-medium">Tanda Tangan Customer</label>
         <Button
           type="button"
-          variant="ghost"
+          variant="secondary"
           size="sm"
           onClick={handleClear}
           disabled={disabled || isEmpty}
-          className="h-8 text-xs"
+          className="h-9 px-3 text-xs font-medium text-destructive hover:text-destructive hover:bg-destructive/10 transition-all duration-200 active:scale-[0.96]"
         >
-          <Eraser className="mr-1 h-3.5 w-3.5" />
+          <Eraser className="mr-1.5 h-3.5 w-3.5" />
           Hapus
         </Button>
       </div>
 
       <div
         className={cn(
-          'relative rounded-lg border-2 border-dashed',
-          disabled ? 'opacity-50 pointer-events-none' : 'border-muted-foreground/30',
-          !isEmpty && 'border-solid border-primary/30'
+          'relative rounded-xl border-2 border-dashed bg-card overflow-hidden shadow-sm ring-1 ring-inset ring-black/5 dark:ring-white/5',
+          disabled ? 'opacity-50 pointer-events-none' : 'border-muted-foreground/30 hover:border-primary/50 transition-colors duration-200',
+          !isEmpty && 'border-solid border-primary/40'
         )}
       >
         <canvas

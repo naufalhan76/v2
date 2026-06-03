@@ -155,7 +155,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
       {/* Customer info card */}
       <div className="rounded-xl border bg-card p-4 space-y-3">
-        <h2 className="font-semibold text-lg">{customer?.customer_name ?? 'Customer'}</h2>
+        <h2 className="font-semibold text-lg text-balance">{customer?.customer_name ?? 'Customer'}</h2>
 
         {customer?.primary_contact_person && (
           <div className="flex items-center gap-2 text-sm">
@@ -224,7 +224,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
           <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-2">
             Catatan
           </h3>
-          <p className="text-sm whitespace-pre-wrap">{job.notes}</p>
+          <p className="text-sm text-pretty whitespace-pre-wrap leading-relaxed">{job.notes}</p>
         </div>
       )}
 
@@ -237,7 +237,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
               Waktu Kerja
             </span>
           </div>
-          <p className="text-2xl font-mono font-bold text-foreground">
+          <p className="text-2xl font-mono font-bold text-foreground tabular-nums tracking-tight">
             {formatTimer(workTimer)}
           </p>
         </div>
@@ -249,7 +249,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
           <Button
             onClick={() => transitionMutation.mutate({ toStatus: 'EN_ROUTE' })}
             disabled={transitionMutation.isPending}
-            className="w-full h-12 text-base font-medium"
+            className="w-full h-12 text-base font-medium transition-all duration-200 active:scale-[0.98]"
             size="lg"
           >
             {transitionMutation.isPending ? 'Memproses...' : 'Berangkat'}
@@ -260,7 +260,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
           <Button
             onClick={() => setShowArrivalModal(true)}
             disabled={transitionMutation.isPending}
-            className="w-full h-12 text-base font-medium"
+            className="w-full h-12 text-base font-medium transition-all duration-200 active:scale-[0.98]"
             size="lg"
           >
             {transitionMutation.isPending ? 'Memproses...' : 'Mulai Kerja'}
@@ -270,7 +270,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
         {canonicalStatus === 'IN_PROGRESS' && (
           <Button
               onClick={() => router.push(`/technician/job/${orderId}/complete`)}
-            className="w-full h-12 text-base font-medium"
+            className="w-full h-12 text-base font-medium transition-all duration-200 active:scale-[0.98]"
             size="lg"
           >
             Selesai Kerja
@@ -329,7 +329,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
                 setArrivalPhotos([])
               }}
               disabled={transitionMutation.isPending}
-              className="h-11 w-full sm:h-9 sm:w-auto"
+              className="h-11 w-full sm:h-9 sm:w-auto transition-all duration-200 active:scale-[0.98]"
             >
               Batal
             </Button>
@@ -341,7 +341,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
                 transitionMutation.mutate({ toStatus: 'IN_PROGRESS', arrivalPhotos })
               }}
               disabled={arrivalPhotos.length === 0 || transitionMutation.isPending}
-              className="h-11 w-full sm:h-9 sm:w-auto"
+              className="h-11 w-full sm:h-9 sm:w-auto transition-all duration-200 active:scale-[0.98]"
             >
               {transitionMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

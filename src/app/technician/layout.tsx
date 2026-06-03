@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { BottomTabBar } from '@/components/technician/bottom-tab-bar'
+import { TechnicianShell } from '@/components/technician/technician-shell'
 import { ServiceWorkerRegister } from './sw-register'
 
 export const metadata: Metadata = {
@@ -26,17 +27,13 @@ export default function TechnicianLayout({
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-background">
-      {/* Service worker registration */}
       <ServiceWorkerRegister />
 
-      {/* Main content area — scrollable, padded for bottom bar */}
+      {/* Main content area — bottom bar auto-hides on /complete routes */}
       <main className="flex-1 overflow-y-auto pb-20">
-        <div className="mx-auto max-w-md px-4 py-4">
-          {children}
-        </div>
+        <TechnicianShell>{children}</TechnicianShell>
       </main>
 
-      {/* Fixed bottom tab bar */}
       <BottomTabBar />
     </div>
   )

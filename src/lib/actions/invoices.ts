@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase-server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { sanitizeSearchTerm } from '@/lib/utils'
 import { canAccessCustomer, requireFinanceRole, type UserRole } from '@/lib/rbac'
 import { isOverdue, type InvoiceStatus } from '@/lib/invoice-status'
 import { canReviseInvoice, getInvoiceSource, type InvoiceSource, REVISABLE_STATUSES } from '@/lib/invoice-utils'
@@ -560,8 +561,9 @@ export async function getInvoices(filters?: {
   }
 
   if (filters?.search) {
+    const sanitized = sanitizeSearchTerm(filters.search)
     query = query.or(
-      `invoice_number.ilike.%${filters.search}%,customers.customer_name.ilike.%${filters.search}%`
+      `invoice_number.ilike.%${sanitized}%,customers.customer_name.ilike.%${sanitized}%`
     )
   }
 

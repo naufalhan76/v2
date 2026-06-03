@@ -13,7 +13,7 @@ interface BulkAssignBarProps {
 export function BulkAssignBar({ selectedCount, onAssign, onClear }: BulkAssignBarProps) {
   return (
     <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
-      <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/95 px-4 py-3 shadow-lg backdrop-blur-sm">
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
         <Badge variant="secondary" className="h-7 px-2.5 text-sm font-medium">
           {selectedCount} dipilih
         </Badge>

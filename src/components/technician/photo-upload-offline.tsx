@@ -51,7 +51,7 @@ export function PhotoUploadOffline({
   min = 1,
   max = 5,
   disabled = false,
-}: PhotoUploadOfflineProps): JSX.Element {
+}: PhotoUploadOfflineProps): React.JSX.Element {
   const { toast } = useToast()
   const [entries, setEntries] = useState<PhotoEntry[]>(() =>
     value.map((url) => ({ url, photoId: '', synced: false }))

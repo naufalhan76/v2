@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase-server'
 import { getUser, getUserRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { sanitizeSearchTerm } from '@/lib/utils'
 
 const WRITE_ROLES = ['SUPERADMIN', 'ADMIN'] as const
 
@@ -88,7 +89,8 @@ export async function getAcUnits(filters?: {
       .range(from, to)
     
     if (filters?.search) {
-      query = query.or(`brand.ilike.%${filters.search}%,model_number.ilike.%${filters.search}%,serial_number.ilike.%${filters.search}%`)
+      const sanitized = sanitizeSearchTerm(filters.search)
+      query = query.or(`brand.ilike.%${sanitized}%,model_number.ilike.%${sanitized}%,serial_number.ilike.%${sanitized}%`)
     }
     
     if (filters?.locationId) {

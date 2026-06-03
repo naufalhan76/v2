@@ -155,7 +155,7 @@ export async function createApiKey(
       created_at: createdAt.toISOString(),
       is_active: true,
       expires_at: expiresAt.toISOString(),
-      warning: '⚠️ Save this API key in a secure location. You won\'t be able to see it again!',
+      warning: 'Save this API key in a secure location. You won\'t be able to see it again!',
     }
 
     return {
@@ -206,7 +206,7 @@ export async function regenerateApiKey(keyId: string) {
       created_at: createdAt.toISOString(),
       is_active: true,
       expires_at: expiresAt.toISOString(),
-      warning: '⚠️ Your old API key is now invalid. This is your new key. Save it securely!',
+      warning: 'Your old API key is now invalid. This is your new key. Save it securely!',
     }
 
     return {

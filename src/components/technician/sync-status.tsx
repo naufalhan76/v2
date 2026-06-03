@@ -2,9 +2,16 @@
 
 import * as React from 'react'
 import { useOnlineSync } from '@/hooks/use-online-sync'
-import { CloudOff, RefreshCw, AlertCircle, CheckCircle2, FileText, Image as ImageIcon, ArrowRightLeft } from 'lucide-react'
+import {
+  CloudOff,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle2,
+  FileText,
+  Image as ImageIcon,
+  ArrowRightLeft,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import {
   Tooltip,
   TooltipContent,
@@ -35,73 +42,90 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
   }, [isOnline, syncing, pendingCount, lastResult])
 
   const isCompact = variant === 'compact'
+  const baseClass = cn(
+    'inline-flex items-center h-9 gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors cursor-default',
+    className
+  )
 
   if (!isOnline) {
     return (
-      <Badge 
-        variant="outline" 
-        className={cn("bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors border-destructive/20 h-10 min-w-[2.5rem] gap-2 cursor-default px-3", className)}
+      <div
+        className={cn(
+          baseClass,
+          'border-destructive bg-destructive text-destructive-foreground'
+        )}
+        role="status"
+        aria-label="Tidak ada koneksi"
       >
-        <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />
-        <CloudOff className="h-4 w-4 shrink-0" />
+        <span className="relative flex h-2 w-2 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+        </span>
+        <CloudOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         {!isCompact && <span>Offline</span>}
         {hasPending && (
-          <span className="flex h-5 items-center justify-center rounded-full bg-destructive/20 px-1.5 text-xs font-bold">
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white text-destructive px-1.5 text-[10px] font-bold tabular-nums">
             {pendingCount}
           </span>
         )}
-      </Badge>
+      </div>
     )
   }
 
   if (lastError) {
     return (
-      <button 
+      <button
+        type="button"
         onClick={() => void syncNow()}
-        className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
+        className={cn(
+          baseClass,
+          'border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer'
+        )}
+        aria-label={`Sinkronisasi gagal: ${lastError}. Ketuk untuk coba lagi.`}
       >
-        <Badge 
-          variant="outline" 
-          className={cn("bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors border-destructive/20 h-10 min-w-[2.5rem] gap-2 cursor-pointer px-3", className)}
-        >
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          {!isCompact && <span className="max-w-[150px] truncate">Gagal: {lastError}</span>}
-        </Badge>
+        <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        {!isCompact && (
+          <span className="max-w-[150px] truncate">Gagal: {lastError}</span>
+        )}
       </button>
     )
   }
 
   if (syncing) {
     return (
-      <Badge 
-        variant="outline" 
-        className={cn("bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors border-blue-500/20 h-10 min-w-[2.5rem] gap-2 cursor-default px-3", className)}
+      <div
+        className={cn(baseClass, 'border-primary bg-primary text-primary-foreground')}
+        role="status"
+        aria-label="Sedang menyinkronkan"
       >
-        <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
+        <RefreshCw className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden="true" />
         {!isCompact && <span>Mensinkronkan&hellip;</span>}
-      </Badge>
+      </div>
     )
   }
 
   if (hasPending) {
     const trigger = (
       <button
+        type="button"
         onClick={() => void syncNow()}
-        className="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
+        className={cn(
+          baseClass,
+          'border-amber-500 bg-amber-500 text-white hover:bg-amber-600 cursor-pointer'
+        )}
+        aria-label={`${pendingCount} item tertunda. Ketuk untuk sinkronkan sekarang.`}
       >
-        <Badge
-          variant="outline"
-          className={cn("bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors border-amber-500/20 h-10 min-w-[2.5rem] gap-2 cursor-pointer px-3", className)}
-        >
-          <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
-          <RefreshCw className="h-4 w-4 shrink-0" />
-          {!isCompact && <span>{pendingCount} tertunda</span>}
-          {isCompact && (
-            <span className="flex h-5 items-center justify-center rounded-full bg-amber-500/20 px-1.5 text-xs font-bold">
-              {pendingCount}
-            </span>
-          )}
-        </Badge>
+        <span className="relative flex h-2 w-2 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+        </span>
+        <RefreshCw className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        {!isCompact && <span className="tabular-nums">{pendingCount} tertunda</span>}
+        {isCompact && (
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white text-amber-600 px-1.5 text-[10px] font-bold tabular-nums">
+            {pendingCount}
+          </span>
+        )}
       </button>
     )
 
@@ -123,7 +147,9 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
               <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
               <span>{pending.transitions} transisi</span>
             </div>
-            <p className="text-[10px] text-muted-foreground pt-1 border-t border-border/50">Klik untuk sinkronkan sekarang</p>
+            <p className="text-[10px] text-muted-foreground pt-1 border-t">
+              Klik untuk sinkronkan sekarang
+            </p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -132,24 +158,32 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
 
   if (showSuccess) {
     return (
-      <Badge 
-        variant="outline" 
-        className={cn("bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors border-emerald-500/20 h-10 min-w-[2.5rem] gap-2 cursor-default px-3", className)}
+      <div
+        className={cn(
+          baseClass,
+          'border-emerald-600 bg-emerald-600 text-white'
+        )}
+        role="status"
+        aria-label="Sinkronisasi berhasil"
       >
-        <CheckCircle2 className="h-4 w-4 shrink-0" />
+        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         {!isCompact && <span>Tersinkron</span>}
-      </Badge>
+      </div>
     )
   }
 
   // default state: online, nothing pending, no recent result
   return (
-    <Badge 
-      variant="outline" 
-      className={cn("bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors border-emerald-500/20 h-10 min-w-[2.5rem] gap-2 cursor-default px-3", className)}
+    <div
+      className={cn(
+        baseClass,
+        'border-emerald-600 bg-emerald-600 text-white'
+      )}
+      role="status"
+      aria-label="Online dan tersinkron"
     >
-      <CheckCircle2 className="h-4 w-4 shrink-0" />
+      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       {!isCompact && <span>Online</span>}
-    </Badge>
+    </div>
   )
 }

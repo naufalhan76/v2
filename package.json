@@ -1,7 +1,7 @@
 {
   "name": "ac-service-dashboard",
   "version": "1.0.0",
-  "description": "AC Service Management Dashboard with Next.js 14, TypeScript, and Supabase",
+  "description": "AC Service Management Dashboard with Next.js 15, TypeScript, and Supabase",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,10 +10,10 @@
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf .next node_modules/.cache",
-    "reinstall": "rm -rf node_modules package-lock.json && npm install",
-    "setup": "npm ci && npx shadcn@latest add button calendar card input label popover",
-    "vapid:gen": "tsx scripts/generate-vapid-keys.ts",
+    "clean": "rimraf .next node_modules/.cache",
+    "reinstall": "rimraf node_modules bun.lock && bun install",
+    "setup": "bun install && bunx shadcn@latest add button calendar card input label popover",
+    "vapid:gen": "bun scripts/generate-vapid-keys.ts",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
@@ -21,8 +21,8 @@
     "test:e2e:headed": "playwright test --headed",
     "test:qa": "playwright test --project=qa --reporter=list",
     "test:qa:happy": "playwright test --project=qa tests/e2e/qa/R01-happy-path.spec.ts --reporter=list",
-    "test:qa:cleanup": "tsx scripts/qa-cleanup.ts",
-    "qa:seed": "tsx scripts/seed-qa-accounts.ts"
+    "test:qa:cleanup": "bun scripts/qa-cleanup.ts",
+    "qa:seed": "bun scripts/seed-qa-accounts.ts"
   },
   "keywords": [
     "nextjs",
@@ -95,8 +95,8 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "@types/three": "^0.181.0",
     "@types/web-push": "^3.6.4",
     "@vitejs/plugin-react": "^6.0.2",
@@ -108,12 +108,18 @@
     "postcss": "^8",
     "prettier": "^3.1.0",
     "tailwindcss": "^3.3.0",
-    "tsx": "^4.22.3",
+    "rimraf": "^6.0.0",
     "typescript": "^5",
     "vitest": "^4.1.7"
   },
   "overrides": {
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
-  }
+  },
+  "trustedDependencies": [
+    "@playwright/test",
+    "core-js",
+    "sharp",
+    "unrs-resolver"
+  ]
 }

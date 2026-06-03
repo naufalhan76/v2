@@ -33,7 +33,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Separator } from '@/components/ui/separator'
-import { Copy, Eye, EyeOff, Loader2, Plus, RefreshCw, Trash2, AlertCircle } from 'lucide-react'
+import { AlertTriangle, Copy, Eye, EyeOff, Loader2, Plus, RefreshCw, Trash2, AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   getUserApiKeys,
@@ -445,9 +445,10 @@ export function ApiKeysManagement() {
                 </div>
               </div>
 
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-xs text-yellow-800">
-                  ⚠️ Store this key securely. You won&apos;t be able to see it again. If you lose it, you&apos;ll need to regenerate a new one.
+              <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" aria-hidden="true" />
+                <p className="text-xs text-amber-800">
+                  Store this key securely. You won&apos;t be able to see it again. If you lose it, you&apos;ll need to regenerate a new one.
                 </p>
               </div>
 

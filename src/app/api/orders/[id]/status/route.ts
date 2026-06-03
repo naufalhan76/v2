@@ -4,6 +4,8 @@ import { UpdateOrderStatusSchema } from '@/app/api/schemas'
 import { jsonSuccess, jsonError, handleValidationError, handleApiError } from '@/app/api/utils'
 import { requireAuth } from '@/app/api/middleware/auth'
 import { logRequest, logResponse, measureDuration, createAuditLog } from '@/app/api/middleware/logging'
+import { createClient } from '@/lib/supabase-server'
+import type { TransitionRole } from '@/lib/order-status'
 
 /**
  * POST /api/orders/[id]/status
@@ -53,12 +55,21 @@ export async function POST(
 
     const { newStatus, req_visit_date } = validation.data
 
-    // Get current order to check transition validity
-    // Note: This is simplified - in production, fetch current status from DB
-    // For now, we'll rely on the server action to validate
+    // Fetch caller's role to validate status transition rules
+    const supabase = await createClient()
+    const { data: userMgmt } = await supabase
+      .from('user_management')
+      .select('role')
+      .eq('auth_user_id', user.id)
+      .maybeSingle()
+
+    const role = userMgmt?.role as TransitionRole | undefined
+    if (!role) {
+      return jsonError('Role pengguna tidak ditemukan', 403)
+    }
     
-    // Call server action to update status (use admin client for API routes)
-    const result = await updateOrderStatus(orderId, newStatus, undefined, req_visit_date, true)
+    // Call server action to update status (use admin client for API routes but validate role transition)
+    const result = await updateOrderStatus(orderId, newStatus, undefined, req_visit_date, true, role)
 
     const duration = getDuration()
 

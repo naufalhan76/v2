@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { sanitizeSearchTerm } from '@/lib/utils'
 
 export interface Addon {
   addon_id: string
@@ -87,8 +88,9 @@ export async function getAddons(filters?: GetAddonsFilters): Promise<{
 
   // Search by item name or code
   if (filters?.search) {
+    const sanitized = sanitizeSearchTerm(filters.search)
     query = query.or(
-      `item_name.ilike.%${filters.search}%,item_code.ilike.%${filters.search}%`
+      `item_name.ilike.%${sanitized}%,item_code.ilike.%${sanitized}%`
     )
   }
 

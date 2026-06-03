@@ -58,8 +58,12 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
           {isLoading || !order ? (
             <>
               <SheetHeader>
-                <Skeleton className="h-6 w-40" />
-                <Skeleton className="h-4 w-24" />
+                <SheetTitle>
+                  <Skeleton className="h-6 w-40" />
+                </SheetTitle>
+                <SheetDescription>
+                  <Skeleton className="h-4 w-24" />
+                </SheetDescription>
               </SheetHeader>
               <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

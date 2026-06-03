@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   Check,
   AlertCircle,
+  CheckCircle2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 import { createClient } from '@/lib/supabase-browser'
 import { enqueueReport, enqueuePhoto, newIdempotencyKey } from '@/lib/offline/sync-manager'
@@ -67,7 +78,8 @@ type JobContext = {
       serial_number?: string | null
       installation_date?: string | null
       ac_type?: string | null
-      capacity_pk?: string | null
+      capacity_id?: string | null
+      capacity_btu?: number | null
       room_location?: string | null
     } | null
   }>
@@ -120,6 +132,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   const [initialAcUnits, setInitialAcUnits] = useState<AcUnitReportItem[]>([])
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null)
   const [signatureBlob, setSignatureBlob] = useState<Blob | null>(null)
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false)
 
   // Track photoIds from AcUnitForm for enqueueReport
   const acUnitPhotoIdsRef = useRef<string[]>([])
@@ -217,7 +230,6 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
                     ac_type: acUnitData?.ac_type || '',
                     model_number: acUnitData?.model_number || '',
                     serial_number: acUnitData?.serial_number || '',
-                    capacity_pk: acUnitData?.capacity_pk || '',
                     room_location: acUnitData?.room_location || '',
                     skipped: false,
                     skip_reason: '',
@@ -254,8 +266,15 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       const errors: string[] = []
 
       if (step === 1) {
-        if (acUnits.length === 0) {
-          errors.push('Minimal 1 unit AC wajib diisi')
+        // Order with 0 ACs: skip AC validation, nothing to inspect
+        if (initialAcUnits.length === 0) {
+          return errors
+        }
+        // Order has N ACs: count must match exactly (locked by AcUnitForm)
+        if (acUnits.length !== initialAcUnits.length) {
+          errors.push(
+            `Jumlah unit AC harus ${initialAcUnits.length} (sesuai order), saat ini ${acUnits.length}`
+          )
           return errors
         }
         acUnits.forEach((unit, idx) => {
@@ -294,7 +313,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
 
       return errors
     },
-    [acUnits, customerNameSigned, signatureBlob, actualPrice]
+    [acUnits, initialAcUnits.length, customerNameSigned, signatureBlob, actualPrice]
   )
 
   // ---------------------------------------------------------------------------
@@ -345,7 +364,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   // ---------------------------------------------------------------------------
   // Submit (identical payload construction to CompleteJobFormV2)
   // ---------------------------------------------------------------------------
-  const handleSubmit = async () => {
+  const handleSubmitClick = () => {
     // Final validation across all steps
     const allErrors: string[] = []
     for (let s = 1; s <= 3; s++) {
@@ -360,7 +379,11 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       })
       return
     }
+    setShowSubmitDialog(true)
+  }
 
+  const performSubmit = async () => {
+    setShowSubmitDialog(false)
     setSubmitting(true)
     try {
       const idempotencyKey = newIdempotencyKey()
@@ -459,8 +482,20 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       case 1:
         return (
           <section className="space-y-4" data-testid="ac-units-section">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Data Unit AC</h2>
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold">
+                Data Unit AC
+                {initialAcUnits.length > 0 && (
+                  <span className="ml-2 text-sm font-normal text-muted-foreground tabular-nums">
+                    ({initialAcUnits.length})
+                  </span>
+                )}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {initialAcUnits.length > 0
+                  ? `Isi data untuk ${initialAcUnits.length} unit AC sesuai order. Tidak bisa tambah atau hapus.`
+                  : 'Order ini tidak memiliki unit AC yang perlu diinspeksi.'}
+              </p>
             </div>
             <AcUnitForm
               orderId={orderId}
@@ -687,7 +722,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 pb-32">
+    <div className="mx-auto max-w-2xl space-y-6 p-4 pb-32">
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link
@@ -766,14 +801,19 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       </div>
 
       {/* Step content */}
-      <div className="min-h-[300px]">{renderStepContent()}</div>
+      <div 
+        key={currentStep} // Forces re-render for animation on step change
+        className="min-h-[300px] animate-in fade-in slide-in-from-bottom-2 duration-300"
+      >
+        {renderStepContent()}
+      </div>
 
       {/* Step errors (non-review steps) */}
       {stepErrors[currentStep] && stepErrors[currentStep].length > 0 && currentStep !== 4 && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 space-y-2">
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 space-y-2">
           <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <span className="text-sm font-medium">Perbaiki data berikut:</span>
+            <AlertCircle className="h-5 w-5" />
+            <span className="text-sm font-semibold">Perbaiki data berikut:</span>
           </div>
           <ul className="list-disc list-inside text-sm text-destructive space-y-0.5">
             {stepErrors[currentStep].map((err, i) => (
@@ -784,13 +824,13 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       )}
 
       {/* Navigation buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 safe-area-pb">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 safe-area-pb">
         <div className="mx-auto max-w-2xl flex items-center gap-3">
           {currentStep > 1 && (
             <Button
               type="button"
               variant="outline"
-              className="flex-1 h-12"
+              className="flex-1 h-12 transition-all duration-200 active:scale-[0.98]"
               onClick={goBack}
               disabled={submitting}
             >
@@ -815,7 +855,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
               className="flex-1 h-12"
               size="lg"
               disabled={submitting}
-              onClick={handleSubmit}
+              onClick={handleSubmitClick}
               data-testid="submit-button"
             >
               {submitting ? (
@@ -828,6 +868,45 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
           )}
         </div>
       </div>
+
+      <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <CheckCircle2 className="h-6 w-6" />
+            </div>
+            <AlertDialogTitle className="text-center">
+              Selesaikan Pekerjaan?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              Pastikan semua data, foto, dan tanda tangan pelanggan sudah benar. Laporan yang sudah disimpan akan dikirim ke sistem.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center">
+            <AlertDialogCancel className="flex-1 sm:flex-none sm:min-w-[140px]">Periksa Lagi</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault()
+                performSubmit()
+              }}
+              disabled={submitting}
+              className="flex-1 sm:flex-none sm:min-w-[140px]"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menyimpan...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Ya, Simpan
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

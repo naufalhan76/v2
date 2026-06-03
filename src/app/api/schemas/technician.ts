@@ -130,9 +130,11 @@ export const TechnicianReportSchema = z.object({
   idempotency_key: z.string().uuid(),
 
   // Aggregate fields (kept for backward compat with existing service_reports
-  // columns).
-  photos_before: z.array(z.string()).min(1, 'Minimal 1 foto sebelum'),
-  photos_after: z.array(z.string()).min(1, 'Minimal 1 foto sesudah'),
+  // columns). Per-AC photos in ac_units[] are the source of truth — these
+  // top-level arrays are only populated when there are job-level photos
+  // (signature, etc). The sync manager patches them after upload.
+  photos_before: z.array(z.string()).default([]),
+  photos_after: z.array(z.string()).default([]),
   materials: z.array(MaterialItemSchema).default([]),
   actual_total_price: z.number().min(0, 'Harga aktual wajib diisi'),
   customer_signature_url: z.string().min(1, 'Signature path wajib diisi'),

@@ -9,6 +9,7 @@ import type {
   ServicePricing 
 } from '@/types/create-order'
 import { logger } from '@/lib/logger'
+import { sanitizeSearchTerm } from '@/lib/utils'
 
 /**
  * Search customers by name or phone number (for autocomplete)
@@ -20,10 +21,11 @@ export async function searchCustomers(query: string): Promise<{
 }> {
   try {
     const supabase = await createClient()
+    const sanitized = sanitizeSearchTerm(query)
     const { data, error } = await supabase
       .from('customers')
       .select('customer_id, customer_name, phone_number, email')
-      .or(`customer_name.ilike.%${query}%,phone_number.ilike.%${query}%`)
+      .or(`customer_name.ilike.%${sanitized}%,phone_number.ilike.%${sanitized}%`)
       .limit(7)
     if (error) throw error
     return { success: true, data: data || [] }
@@ -83,6 +85,8 @@ export async function searchCustomerByPhone(phone: string): Promise<{
           brand,
           model_number,
           serial_number,
+          unit_type_id,
+          capacity_id,
           ac_type,
           capacity_btu,
           status
@@ -91,6 +95,40 @@ export async function searchCustomerByPhone(phone: string): Promise<{
       .eq('customer_id', customer.customer_id)
     
     if (locationsError) throw locationsError
+
+    // Fetch recent order items for these AC units to autofill unit_type_id and capacity_id if missing
+    const acUnitIds = locations?.flatMap(l => l.ac_units?.map(ac => ac.ac_unit_id) || []) || []
+    if (acUnitIds.length > 0) {
+      const { data: recentItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select('ac_unit_id, unit_type_id, capacity_id')
+        .in('ac_unit_id', acUnitIds)
+        .not('unit_type_id', 'is', null)
+        .not('capacity_id', 'is', null)
+        .order('created_at', { ascending: false })
+      
+      if (!itemsError && recentItems && recentItems.length > 0) {
+        const historyMap = new Map<string, { unit_type_id: string; capacity_id: string }>()
+        for (const item of recentItems) {
+          if (item.ac_unit_id && !historyMap.has(item.ac_unit_id)) {
+            historyMap.set(item.ac_unit_id, {
+              unit_type_id: item.unit_type_id!,
+              capacity_id: item.capacity_id!
+            })
+          }
+        }
+        
+        locations?.forEach(loc => {
+          loc.ac_units?.forEach(ac => {
+            if ((!ac.unit_type_id || !ac.capacity_id) && historyMap.has(ac.ac_unit_id)) {
+              const hist = historyMap.get(ac.ac_unit_id)!
+              ac.unit_type_id = ac.unit_type_id || hist.unit_type_id
+              ac.capacity_id = ac.capacity_id || hist.capacity_id
+            }
+          })
+        })
+      }
+    }
     
     return {
       success: true,
@@ -153,6 +191,8 @@ export async function getCustomerWithLocationsById(customerId: string): Promise<
           brand,
           model_number,
           serial_number,
+          unit_type_id,
+          capacity_id,
           ac_type,
           capacity_btu,
           status
@@ -161,6 +201,40 @@ export async function getCustomerWithLocationsById(customerId: string): Promise<
       .eq('customer_id', customer.customer_id)
 
     if (locationsError) throw locationsError
+
+    // Fetch recent order items for these AC units to autofill unit_type_id and capacity_id if missing
+    const acUnitIds = locations?.flatMap(l => l.ac_units?.map(ac => ac.ac_unit_id) || []) || []
+    if (acUnitIds.length > 0) {
+      const { data: recentItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select('ac_unit_id, unit_type_id, capacity_id')
+        .in('ac_unit_id', acUnitIds)
+        .not('unit_type_id', 'is', null)
+        .not('capacity_id', 'is', null)
+        .order('created_at', { ascending: false })
+      
+      if (!itemsError && recentItems && recentItems.length > 0) {
+        const historyMap = new Map<string, { unit_type_id: string; capacity_id: string }>()
+        for (const item of recentItems) {
+          if (item.ac_unit_id && !historyMap.has(item.ac_unit_id)) {
+            historyMap.set(item.ac_unit_id, {
+              unit_type_id: item.unit_type_id!,
+              capacity_id: item.capacity_id!
+            })
+          }
+        }
+        
+        locations?.forEach(loc => {
+          loc.ac_units?.forEach(ac => {
+            if ((!ac.unit_type_id || !ac.capacity_id) && historyMap.has(ac.ac_unit_id)) {
+              const hist = historyMap.get(ac.ac_unit_id)!
+              ac.unit_type_id = ac.unit_type_id || hist.unit_type_id
+              ac.capacity_id = ac.capacity_id || hist.capacity_id
+            }
+          })
+        })
+      }
+    }
 
     return {
       success: true,
@@ -296,43 +370,49 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
     if (orderError) throw orderError
     
     // 2. Create AC units for new units (where ac_unit_id is null)
-    const newAcUnits: Array<{
-      location_id: string;
-      brand_id?: string;
-      unit_type_id?: string;
-      capacity_id?: string;
-      brand: string;
-      model_number: string;
-      capacity_btu: number | null;
-      status: string;
+    // We group by new_ac_temp_id if available, or just index if not, to avoid duplicate AC unit creation
+    const tempIdToAcId = new Map<string, string>()
+    const newAcUnitsToInsert: Array<{
+      temp_id: string;
+      data: {
+        location_id: string;
+        brand_id?: string;
+        unit_type_id?: string;
+        capacity_id?: string;
+        brand: string;
+        model_number: string;
+        capacity_btu: number | null;
+        status: string;
+      }
     }> = []
-    
-    const itemIndexMapping: number[] = [] // Track which item index each AC belongs to
 
     input.items.forEach((item, index) => {
       if (!item.ac_unit_id && item.new_ac_data) {
-        // This is a new AC unit, prepare for insertion
-        newAcUnits.push({
-          location_id: item.location_id,
-          brand_id: item.brand_id,
-          unit_type_id: item.unit_type_id,
-          capacity_id: item.capacity_id,
-          brand: item.new_ac_data.brand,
-          model_number: item.new_ac_data.model_number,
-          capacity_btu: item.new_ac_data.capacity_btu || null,
-          status: 'PENDING' // Waiting for technician to verify
-        })
-        itemIndexMapping.push(index)
+        const tempId = item.new_ac_temp_id || `temp-index-${index}`
+        
+        if (!newAcUnitsToInsert.some(u => u.temp_id === tempId)) {
+          newAcUnitsToInsert.push({
+            temp_id: tempId,
+            data: {
+              location_id: item.location_id,
+              brand_id: item.brand_id,
+              unit_type_id: item.unit_type_id,
+              capacity_id: item.capacity_id,
+              brand: item.new_ac_data.brand || 'TBD',
+              model_number: item.new_ac_data.model_number || 'TBD',
+              capacity_btu: item.new_ac_data.capacity_btu || null,
+              status: 'ACTIVE'
+            }
+          })
+        }
       }
     })
 
     // Insert new AC units if any
-    const createdAcUnitIds: Map<number, string> = new Map()
-    
-    if (newAcUnits.length > 0) {
+    if (newAcUnitsToInsert.length > 0) {
       const { data: insertedAcUnits, error: acUnitsError } = await supabase
         .from('ac_units')
-        .insert(newAcUnits)
+        .insert(newAcUnitsToInsert.map(u => u.data))
         .select('ac_unit_id')
       
       if (acUnitsError) {
@@ -345,31 +425,39 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
         throw acUnitsError
       }
       
-      // Map created AC unit IDs to their original item indices
-      itemIndexMapping.forEach((itemIndex, idx) => {
+      // Map the inserted AC IDs back to temp_id
+      newAcUnitsToInsert.forEach((u, idx) => {
         if (insertedAcUnits && insertedAcUnits[idx]) {
-          createdAcUnitIds.set(itemIndex, insertedAcUnits[idx].ac_unit_id)
+          tempIdToAcId.set(u.temp_id, insertedAcUnits[idx].ac_unit_id)
         }
       })
     }
 
     // 3. Create order items (same status as parent order)
-    const orderItems = input.items.map((item, index) => ({
-      order_id: order.order_id,
-      location_id: item.location_id,
-      ac_unit_id: item.ac_unit_id || createdAcUnitIds.get(index) || null,
-      unit_type_id: item.unit_type_id,
-      capacity_id: item.capacity_id,
-      brand_id: item.brand_id,
-      service_type_id: item.service_type_id,
-      catalog_id: item.catalog_id,
-      msn_code: item.msn_code,
-      service_type: normalizeOrderServiceType(item.service_type),
-      quantity: item.quantity || 1,
-      description: item.description,
-      estimated_price: item.estimated_price || 0,
-      status: orderStatus // Match parent order status
-    }))
+    const orderItems = input.items.map((item, index) => {
+      let finalAcUnitId = item.ac_unit_id || null
+      if (!finalAcUnitId && item.new_ac_data) {
+        const tempId = item.new_ac_temp_id || `temp-index-${index}`
+        finalAcUnitId = tempIdToAcId.get(tempId) || null
+      }
+
+      return {
+        order_id: order.order_id,
+        location_id: item.location_id,
+        ac_unit_id: finalAcUnitId,
+        unit_type_id: item.unit_type_id,
+        capacity_id: item.capacity_id,
+        brand_id: item.brand_id,
+        service_type_id: item.service_type_id,
+        catalog_id: item.catalog_id,
+        msn_code: item.msn_code,
+        service_type: normalizeOrderServiceType(item.service_type),
+        quantity: item.quantity || 1,
+        description: item.description,
+        estimated_price: item.estimated_price || 0,
+        status: orderStatus
+      }
+    })
     
     const { error: itemsError } = await supabase
       .from('order_items')
@@ -377,11 +465,11 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
     
     if (itemsError) {
       // Rollback: delete AC units and order if items failed
-      if (createdAcUnitIds.size > 0) {
+      if (tempIdToAcId.size > 0) {
         await supabase
           .from('ac_units')
           .delete()
-          .in('ac_unit_id', Array.from(createdAcUnitIds.values()))
+          .in('ac_unit_id', Array.from(tempIdToAcId.values()))
       }
       
       await supabase
@@ -585,5 +673,62 @@ export async function getOrderConfigMasterData() {
     }
   } catch (error: unknown) {
     return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch master data' }
+  }
+}
+
+/**
+ * Get service types that have at least one active catalog entry
+ * matching the given (unitType, capacity) combination.
+ * Used to populate the cascading service type dropdown on the new order page.
+ */
+export async function getServiceTypesForCatalog(
+  unitTypeId: string,
+  capacityId: string
+): Promise<{
+  success: boolean;
+  data?: Array<{ service_type_id: string; code: string; name: string; display_order: number }>;
+  error?: string;
+}> {
+  try {
+    if (!unitTypeId || !capacityId) {
+      return { success: true, data: [] }
+    }
+
+    const supabase = await createClient()
+
+    const { data: catalogRows, error: catalogError } = await supabase
+      .from('service_catalog')
+      .select('service_type_id')
+      .eq('is_active', true)
+      .eq('unit_type_id', unitTypeId)
+      .eq('capacity_id', capacityId)
+
+    if (catalogError) throw catalogError
+
+    const serviceTypeIds = Array.from(
+      new Set((catalogRows || []).map((r) => r.service_type_id).filter(Boolean) as string[])
+    )
+
+    if (serviceTypeIds.length === 0) {
+      return { success: true, data: [] }
+    }
+
+    const { data: serviceTypes, error: serviceTypesError } = await supabase
+      .from('service_types')
+      .select('service_type_id, code, name, display_order')
+      .eq('is_active', true)
+      .in('service_type_id', serviceTypeIds)
+      .order('display_order', { ascending: true })
+      .order('name', { ascending: true })
+
+    if (serviceTypesError) throw serviceTypesError
+
+    return { success: true, data: serviceTypes || [] }
+  } catch (error: unknown) {
+    logger.error('[getServiceTypesForCatalog] Error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch service types for catalog',
+    }
   }
 }
