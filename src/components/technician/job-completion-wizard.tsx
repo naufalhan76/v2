@@ -261,6 +261,30 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
                     notes: '',
                     materials_used: [],
                   })
+                } else {
+                  const qty = item.quantity || 1
+                  for (let i = 0; i < qty; i++) {
+                    units.push({
+                      ac_unit_id: '',
+                      brand: '',
+                      brand_id: null,
+                      ac_type: '',
+                      unit_type_id: null,
+                      capacity_id: null,
+                      capacity_label: null,
+                      model_number: '',
+                      serial_number: '',
+                      room_location: '',
+                      floor_level: '',
+                      position_detail: '',
+                      skipped: false,
+                      skip_reason: '',
+                      photos_before: [],
+                      photos_after: [],
+                      notes: '',
+                      materials_used: [],
+                    })
+                  }
                 }
               })
             }

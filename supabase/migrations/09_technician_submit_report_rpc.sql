@@ -17,6 +17,7 @@ DECLARE
   v_ac_unit JSONB;
   v_ac_unit_id TEXT;
   v_next_service_date DATE;
+  v_location_id TEXT;
 BEGIN
   -- 1. Extract and check idempotency
   v_idempotency_key := p_payload->>'idempotency_key';
@@ -39,6 +40,9 @@ BEGIN
   ELSE
     v_next_service_date := NULL;
   END IF;
+
+  -- Get location_id from orders for new AC units
+  SELECT location_id INTO v_location_id FROM public.orders WHERE order_id = p_order_id;
 
   -- 2. Insert into service_reports
   INSERT INTO public.service_reports (
@@ -99,6 +103,39 @@ BEGIN
         next_service_due_date = COALESCE(v_next_service_date, next_service_due_date),
         updated_at = NOW()
       WHERE ac_unit_id = v_ac_unit_id;
+    ELSE
+      -- Insert new AC unit
+      INSERT INTO public.ac_units (
+        location_id,
+        brand,
+        brand_id,
+        unit_type_id,
+        capacity_id,
+        model_number,
+        serial_number,
+        ac_type,
+        room_location,
+        floor_level,
+        position_detail,
+        last_service_date,
+        next_service_due_date,
+        status
+      ) VALUES (
+        v_location_id,
+        NULLIF(v_ac_unit->>'brand', ''),
+        NULLIF(v_ac_unit->>'brand_id', '')::uuid,
+        NULLIF(v_ac_unit->>'unit_type_id', '')::uuid,
+        NULLIF(v_ac_unit->>'capacity_id', '')::uuid,
+        NULLIF(v_ac_unit->>'model_number', ''),
+        NULLIF(v_ac_unit->>'serial_number', ''),
+        NULLIF(v_ac_unit->>'ac_type', ''),
+        NULLIF(v_ac_unit->>'room_location', ''),
+        NULLIF(v_ac_unit->>'floor_level', ''),
+        NULLIF(v_ac_unit->>'position_detail', ''),
+        CURRENT_DATE,
+        v_next_service_date,
+        'ACTIVE'
+      ) RETURNING ac_unit_id INTO v_ac_unit_id;
     END IF;
   END LOOP;
 

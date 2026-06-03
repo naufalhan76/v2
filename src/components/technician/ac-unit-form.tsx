@@ -373,7 +373,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
 
       {fields.length === 0 && (
         <div className="rounded-lg border border-dashed bg-muted/20 p-6 text-center text-sm text-muted-foreground">
-          Tidak ada unit AC untuk order ini.
+          Order ini tidak memiliki unit AC yang perlu diinspeksi.
         </div>
       )}
     </div>
