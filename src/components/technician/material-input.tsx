@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import { Plus, Trash2, Package, Search, FilePlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
 import { getActiveAddons } from '@/lib/actions/addons'
 import { createAddonRequest } from '@/lib/actions/addon-requests'
 import { useToast } from '@/hooks/use-toast'
@@ -32,6 +31,10 @@ export interface MaterialItem {
   qty: number
   unit_price: number
   total: number
+  category?: string | null
+  unit_of_measure?: string | null
+  description?: string | null
+  is_manual?: boolean
 }
 
 interface MaterialInputProps {
@@ -189,7 +192,20 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
   const grandTotal = value.reduce((sum, item) => sum + item.total, 0)
 
   const addRow = useCallback(() => {
-    onChange([...value, { addon_id: null, name: '', qty: 1, unit_price: 0, total: 0 }])
+    onChange([
+      ...value,
+      {
+        addon_id: null,
+        name: '',
+        qty: 1,
+        unit_price: 0,
+        total: 0,
+        category: 'PARTS',
+        unit_of_measure: 'pcs',
+        description: '',
+        is_manual: true,
+      },
+    ])
   }, [onChange, value])
 
   const removeRow = useCallback(
@@ -200,7 +216,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
   )
 
   const updateRow = useCallback(
-    (index: number, field: keyof MaterialItem, fieldValue: string | number) => {
+    (index: number, field: keyof MaterialItem, fieldValue: any) => {
       const updated = [...value]
       const row = { ...updated[index] }
 
@@ -210,6 +226,14 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
         row.qty = Math.max(1, Number(fieldValue) || 1)
       } else if (field === 'unit_price') {
         row.unit_price = Math.max(0, Number(fieldValue) || 0)
+      } else if (field === 'category') {
+        row.category = fieldValue as string
+      } else if (field === 'unit_of_measure') {
+        row.unit_of_measure = fieldValue as string
+      } else if (field === 'description') {
+        row.description = fieldValue as string
+      } else if (field === 'is_manual') {
+        row.is_manual = fieldValue as boolean
       }
 
       row.total = row.qty * row.unit_price
@@ -225,9 +249,13 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
       updated[index] = {
         addon_id: addon.addon_id,
         name: addon.item_name,
-        qty: Math.max(value[index]?.qty || 1),
+        qty: Math.max(value[index]?.qty || 1, 1),
         unit_price: addon.unit_price,
         total: (value[index]?.qty || 1) * addon.unit_price,
+        category: addon.category,
+        unit_of_measure: addon.unit_of_measure,
+        description: null,
+        is_manual: false,
       }
       onChange(updated)
     },
@@ -289,7 +317,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
               className="h-10 px-3 text-xs sm:text-sm transition-all duration-200 active:scale-[0.96]"
             >
               <Plus className="mr-1.5 h-4 w-4" />
-              Tambah
+              Tambah Manual
             </Button>
           </div>
         )}
@@ -310,7 +338,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
           <p className="text-sm font-medium text-foreground">Belum ada material</p>
           {addons.length > 0 && (
             <p className="text-xs text-muted-foreground/70 mt-1 max-w-[200px]">
-              Cari dari katalog atau ketik nama material secara manual
+              Cari dari katalog atau tambah manual part penawaran
             </p>
           )}
           {!disabled && (
@@ -322,7 +350,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
               className="mt-4 h-10 px-4 text-sm font-medium transition-all duration-200 active:scale-[0.96]"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Tambah Material
+              Tambah Manual
             </Button>
           )}
         </div>
@@ -335,78 +363,191 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
               key={index}
               className="rounded-xl border bg-card/90 shadow-sm p-4 space-y-3"
             >
-              {/* Row 1: Name (with addon search) + delete */}
-              <div className="flex items-center gap-2">
-                {addons.length > 0 && !disabled ? (
-                  <AddonSearchInput
-                    value={item.name}
-                    addons={addons}
-                    onSelect={(addon) => handleAddonSelect(index, addon)}
-                    disabled={disabled}
-                    placeholder="Cari material dari katalog..."
-                  />
-                ) : (
-                  <Input
-                    placeholder="Nama material"
-                    value={item.name}
-                    onChange={(e) => updateRow(index, 'name', e.target.value)}
-                    disabled={disabled}
-                    className="h-11 sm:h-10 flex-1 text-sm focus-visible:ring-primary"
-                  />
-                )}
-                {!disabled && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeRow(index)}
-                    className="h-11 w-11 sm:h-10 sm:w-10 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10 active:scale-[0.96] transition-transform"
-                    aria-label={`Hapus material ${index + 1}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+              {!item.is_manual ? (
+                // Catalog Row Layout (Read Only values, except qty)
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    {addons.length > 0 && !disabled ? (
+                      <AddonSearchInput
+                        value={item.name}
+                        addons={addons}
+                        onSelect={(addon) => handleAddonSelect(index, addon)}
+                        disabled={disabled}
+                        placeholder="Cari material dari katalog..."
+                      />
+                    ) : (
+                      <Input
+                        placeholder="Nama material"
+                        value={item.name}
+                        onChange={(e) => updateRow(index, 'name', e.target.value)}
+                        disabled={disabled}
+                        className="h-11 sm:h-10 flex-1 text-sm focus-visible:ring-primary font-medium"
+                      />
+                    )}
+                    {!disabled && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeRow(index)}
+                        className="h-11 w-11 sm:h-10 sm:w-10 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10 active:scale-[0.96] transition-transform"
+                        aria-label={`Hapus material ${index + 1}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
 
-              {item.addon_id && (
-                <p className="text-[10px] text-primary/70 font-medium">
-                  Dari katalog — harga otomatis
-                </p>
+                  <p className="text-[10px] text-primary/70 font-medium flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    Katalog: {item.category || 'PARTS'} ({formatCurrency(item.unit_price)}/{item.unit_of_measure || 'pcs'})
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Qty</label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        value={item.qty}
+                        onChange={(e) => updateRow(index, 'qty', e.target.value)}
+                        disabled={disabled}
+                        className="h-10 text-sm font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Harga Satuan</label>
+                      <Input
+                        type="text"
+                        value={formatCurrency(item.unit_price)}
+                        disabled
+                        className="h-10 text-sm bg-muted/50 font-medium"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Manual/Custom Row Layout (Full customizable proposed inputs)
+                <div className="space-y-3 border-l-2 border-amber-500 pl-3">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                      ⏳ Harga Menunggu Review Admin
+                    </span>
+                    {!disabled && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeRow(index)}
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        aria-label={`Hapus material ${index + 1}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Kategori *</label>
+                      <Select
+                        value={item.category || 'PARTS'}
+                        onValueChange={(val) => updateRow(index, 'category', val)}
+                        disabled={disabled}
+                      >
+                        <SelectTrigger className="h-10 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CATEGORIES.map((cat) => (
+                            <SelectItem key={cat} value={cat}>
+                              {cat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Nama Part/Material *</label>
+                      <Input
+                        placeholder="Nama material baru..."
+                        value={item.name}
+                        onChange={(e) => updateRow(index, 'name', e.target.value)}
+                        disabled={disabled}
+                        className="h-10 text-sm font-medium"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-0.5 block">Qty *</label>
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          value={item.qty}
+                          onChange={(e) => updateRow(index, 'qty', e.target.value)}
+                          disabled={disabled}
+                          className="h-10 text-sm font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-0.5 block">Satuan *</label>
+                        <Select
+                          value={item.unit_of_measure || 'pcs'}
+                          onValueChange={(val) => updateRow(index, 'unit_of_measure', val)}
+                          disabled={disabled}
+                        >
+                          <SelectTrigger className="h-10 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {UNITS.map((u) => (
+                              <SelectItem key={u} value={u}>
+                                {u}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Proposed Harga Satuan *</label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        step={1000}
+                        placeholder="Harga penawaran..."
+                        value={item.unit_price}
+                        onChange={(e) => updateRow(index, 'unit_price', e.target.value)}
+                        disabled={disabled}
+                        className="h-10 text-sm font-medium"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Deskripsi/Spesifikasi (Opsional)</label>
+                      <Input
+                        placeholder="Keterangan tambahan..."
+                        value={item.description || ''}
+                        onChange={(e) => updateRow(index, 'description', e.target.value)}
+                        disabled={disabled}
+                        className="h-10 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
               )}
 
-              {/* Row 2: Qty + Unit Price */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-0.5 block">Qty</label>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    value={item.qty}
-                    onChange={(e) => updateRow(index, 'qty', e.target.value)}
-                    disabled={disabled}
-                    className="h-10 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-0.5 block">Harga Satuan</label>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    step={1000}
-                    value={item.unit_price}
-                    onChange={(e) => updateRow(index, 'unit_price', e.target.value)}
-                    disabled={disabled}
-                    className="h-10 text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Row 3: Subtotal */}
-              <div className="text-right text-sm">
-                <span className="text-muted-foreground">Subtotal: </span>
-                <span className="font-medium">{formatCurrency(item.total)}</span>
+              {/* Subtotal */}
+              <div className="text-right text-sm border-t pt-2 flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Subtotal item {index + 1}:</span>
+                <span className="font-semibold">{formatCurrency(item.total)}</span>
               </div>
             </div>
           ))}
@@ -414,7 +555,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
           {/* Grand total */}
           <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
             <span className="text-sm font-medium">Total Material</span>
-            <span className="text-sm font-bold">{formatCurrency(grandTotal)}</span>
+            <span className="text-sm font-bold text-primary">{formatCurrency(grandTotal)}</span>
           </div>
         </div>
       )}
@@ -493,7 +634,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
               />
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Part yang diajukan akan masuk katalog setelah disetujui admin. Untuk sekarang kamu tetap bisa mengetik material manual di form.
+              Part yang diajukan akan masuk katalog setelah disetujui admin. Untuk sekarang kamu bisa memakai tombol &quot;Tambah Manual&quot; di form.
             </p>
           </div>
           <DialogFooter>

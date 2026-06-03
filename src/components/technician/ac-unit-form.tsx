@@ -30,16 +30,31 @@ export type AcUnitFormProps = {
   onPhotoIdsChange?: (photoIds: string[]) => void
 }
 
-const AC_TYPES = [
-  'Split',
-  'Cassette',
-  'Standing',
-  'Window',
-  'Floor',
-  'Ceiling',
-]
+type DimensionData = {
+  unit_types: Array<{ unit_type_id: string; name: string }>
+  capacity_ranges: Array<{ capacity_id: string; unit_type_id: string; capacity_label: string }>
+  ac_brands: Array<{ brand_id: string; name: string }>
+}
 
 export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }: AcUnitFormProps) {
+  const [dimensions, setDimensions] = useState<DimensionData>({
+    unit_types: [],
+    capacity_ranges: [],
+    ac_brands: [],
+  })
+
+  // Fetch active dimensions on mount
+  useEffect(() => {
+    fetch('/api/technician/dimensions')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          setDimensions(data.data)
+        }
+      })
+      .catch((err) => console.error('Failed to load dimensions:', err))
+  }, [])
+
   const { control, watch, setValue, register } = useForm<{ units: AcUnitFormValue[] }>({
     defaultValues: {
       units: initialUnits.length > 0 ? initialUnits : [],
@@ -101,6 +116,11 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
         const isExisting = !!field.ac_unit_id
         const isSkipped = formValues[index]?.skipped ?? false
         const isExpanded = expandedCards[field.id] !== false
+        
+        const selectedUnitTypeId = formValues[index]?.unit_type_id || undefined
+        const filteredCapacities = dimensions.capacity_ranges.filter(
+          (cap) => cap.unit_type_id === selectedUnitTypeId
+        )
 
         return (
           <Card key={field.id} className="overflow-hidden shadow-sm">
@@ -122,12 +142,12 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                   </CardTitle>
                   <p className="text-xs text-muted-foreground">
                     {formValues[index]?.brand || 'Merk belum diisi'} 
+                    {formValues[index]?.capacity_label ? ` (${formValues[index]?.capacity_label})` : ''}
                     {formValues[index]?.room_location ? ` • ${formValues[index]?.room_location}` : ''}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {/* Trash button hidden: AC count is locked to the order. Tech cannot remove units. */}
                 {isExpanded ? (
                   <ChevronUp className="h-5 w-5 text-muted-foreground" />
                 ) : (
@@ -176,38 +196,72 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <Label htmlFor={`brand-${index}`}>Merk</Label>
-                        <Input
-                          id={`brand-${index}`}
-                          placeholder="Daikin, Panasonic..."
-                          className="h-11"
-                          {...register(`units.${index}.brand`)}
-                          disabled={isExisting && !!initialUnits[index]?.brand}
-                        />
-                      </div>
-                      
-                      <div className="space-y-1.5">
-                        <Label htmlFor={`capacity-${index}`}>Kapasitas (PK)</Label>
-                        <Input
-                          id={`capacity-${index}`}
-                          placeholder="1/2 PK, 1 PK..."
-                          className="h-11"
-                          {...register(`units.${index}.capacity_pk`)}
-                        />
+                        <Select
+                          value={formValues[index]?.brand_id || undefined}
+                          onValueChange={(val) => {
+                            const matched = dimensions.ac_brands.find((b) => b.brand_id === val)
+                            setValue(`units.${index}.brand_id`, val)
+                            setValue(`units.${index}.brand`, matched ? matched.name : null)
+                          }}
+                          disabled={isExisting && !!initialUnits[index]?.brand_id}
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder="Pilih Merk AC..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {dimensions.ac_brands.map((b) => (
+                              <SelectItem key={b.brand_id} value={b.brand_id}>
+                                {b.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label>Tipe AC</Label>
+                        <Label>Jenis AC</Label>
                         <Select
-                          value={formValues[index]?.ac_type || undefined}
-                          onValueChange={(val) => setValue(`units.${index}.ac_type`, val)}
+                          value={formValues[index]?.unit_type_id || undefined}
+                          onValueChange={(val) => {
+                            const matched = dimensions.unit_types.find((ut) => ut.unit_type_id === val)
+                            setValue(`units.${index}.unit_type_id`, val)
+                            setValue(`units.${index}.ac_type`, matched ? matched.name : null)
+                            // Reset capacity when unit type changes
+                            setValue(`units.${index}.capacity_id`, null)
+                            setValue(`units.${index}.capacity_label`, null)
+                          }}
                         >
                           <SelectTrigger className="h-11">
-                            <SelectValue placeholder="Pilih tipe..." />
+                            <SelectValue placeholder="Pilih Jenis AC..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {AC_TYPES.map((t) => (
-                              <SelectItem key={t} value={t}>
-                                {t}
+                            {dimensions.unit_types.map((ut) => (
+                              <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>
+                                {ut.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Kapasitas</Label>
+                        <Select
+                          value={formValues[index]?.capacity_id || undefined}
+                          disabled={!selectedUnitTypeId}
+                          onValueChange={(val) => {
+                            const matched = dimensions.capacity_ranges.find((cap) => cap.capacity_id === val)
+                            setValue(`units.${index}.capacity_id`, val)
+                            setValue(`units.${index}.capacity_label`, matched ? matched.capacity_label : null)
+                          }}
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue placeholder={selectedUnitTypeId ? "Pilih Kapasitas..." : "Pilih Jenis AC terlebih dahulu"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {filteredCapacities.map((cap) => (
+                              <SelectItem key={cap.capacity_id} value={cap.capacity_id}>
+                                {cap.capacity_label}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -223,7 +277,27 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                           {...register(`units.${index}.room_location`)}
                         />
                       </div>
-                      
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`floor-${index}`}>Lantai</Label>
+                        <Input
+                          id={`floor-${index}`}
+                          placeholder="Lantai 1, Lantai 2..."
+                          className="h-11"
+                          {...register(`units.${index}.floor_level`)}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`posdetail-${index}`}>Posisi Detail</Label>
+                        <Input
+                          id={`posdetail-${index}`}
+                          placeholder="Dekat jendela, sebelah lemari..."
+                          className="h-11"
+                          {...register(`units.${index}.position_detail`)}
+                        />
+                      </div>
+
                       <div className="space-y-1.5">
                         <Label htmlFor={`model-${index}`}>Nomor Model</Label>
                         <Input
@@ -305,3 +379,4 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
     </div>
   )
 }
+

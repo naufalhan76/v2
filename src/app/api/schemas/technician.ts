@@ -56,6 +56,11 @@ export const MaterialItemSchema = z.object({
   qty: z.number().min(1, 'Qty minimal 1'),
   unit_price: z.number().min(0, 'Harga tidak boleh negatif'),
   total: z.number().min(0),
+  // NEW fields for manual addon request
+  category: z.string().optional().nullable(),          // PARTS, FREON, etc.
+  unit_of_measure: z.string().optional().nullable(),    // pcs, kg, etc.
+  description: z.string().optional().nullable(),
+  is_manual: z.boolean().optional().default(false),     // Flag for admin review
 })
 
 export type MaterialItem = z.infer<typeof MaterialItemSchema>
@@ -72,12 +77,18 @@ export type MaterialItem = z.infer<typeof MaterialItemSchema>
 
 const AcUnitNewFieldsSchema = z.object({
   brand: z.string().min(1).optional().nullable(),
-  capacity_pk: z.string().optional().nullable(),
-  capacity_btu: z.number().int().positive().optional().nullable(),
+  brand_id: z.string().uuid().optional().nullable(),        // NEW: FK to ac_brands
+  unit_type_id: z.string().uuid().optional().nullable(),     // NEW: FK to unit_types
+  capacity_id: z.string().uuid().optional().nullable(),      // NEW: FK to capacity_ranges  
+  capacity_label: z.string().optional().nullable(),          // NEW: display label (e.g. "0.5-1.5 HP")
   room_location: z.string().optional().nullable(),
+  floor_level: z.string().optional().nullable(),             // NEW
+  position_detail: z.string().optional().nullable(),         // NEW
   model_number: z.string().optional().nullable(),
   serial_number: z.string().optional().nullable(),
-  ac_type: z.string().optional().nullable(),
+  ac_type: z.string().optional().nullable(),                 // Keep for backward compat
+  capacity_pk: z.string().optional().nullable(),             // Keep for backward compat
+  capacity_btu: z.number().int().positive().optional().nullable(),
 })
 
 export const AcUnitReportItemSchema = AcUnitNewFieldsSchema.extend({
@@ -136,7 +147,7 @@ export const TechnicianReportSchema = z.object({
   photos_before: z.array(z.string()).default([]),
   photos_after: z.array(z.string()).default([]),
   materials: z.array(MaterialItemSchema).default([]),
-  actual_total_price: z.number().min(0, 'Harga aktual wajib diisi'),
+  actual_total_price: z.number().min(0, 'Harga aktual wajib diisi').optional().default(0),
   customer_signature_url: z.string().min(1, 'Signature path wajib diisi'),
   customer_name_signed: z.string().min(1, 'Nama penandatangan wajib diisi'),
   notes: z.string().optional().default(''),

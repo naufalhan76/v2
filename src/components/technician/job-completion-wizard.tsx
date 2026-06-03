@@ -41,6 +41,7 @@ import { AcUnitForm } from '@/components/technician/ac-unit-form'
 import { SignaturePad } from '@/components/technician/signature-pad'
 import { SyncStatus } from '@/components/technician/sync-status'
 import { cn } from '@/lib/utils'
+import { createAddonRequest } from '@/lib/actions/addon-requests'
 
 // Shape returned by GET /api/technician/jobs/[id]
 type JobContext = {
@@ -74,13 +75,19 @@ type JobContext = {
     ac_units?: {
       ac_unit_id: string
       brand?: string | null
+      brand_id?: string | null
       model_number?: string | null
       serial_number?: string | null
       installation_date?: string | null
       ac_type?: string | null
+      unit_type_id?: string | null
       capacity_id?: string | null
-      capacity_btu?: number | null
       room_location?: string | null
+      floor_level?: string | null
+      position_detail?: string | null
+      capacity_ranges?: {
+        capacity_label?: string | null
+      } | Array<{ capacity_label?: string | null }> | null
     } | null
   }>
   order_technicians?: Array<{
@@ -103,7 +110,7 @@ interface JobCompletionWizardProps {
 const STEPS = [
   { id: 1, label: 'Inspeksi AC', icon: Snowflake },
   { id: 2, label: 'Tanda Tangan', icon: PenLine },
-  { id: 3, label: 'Jadwal & Biaya', icon: CalendarDays },
+  { id: 3, label: 'Jadwal & Catatan', icon: CalendarDays },
   { id: 4, label: 'Review', icon: ClipboardCheck },
 ] as const
 
@@ -119,9 +126,8 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   const [loadingContext, setLoadingContext] = useState(true)
 
   // ---------------------------------------------------------------------------
-  // Form state (mirrors CompleteJobFormV2)
+  // Form state
   // ---------------------------------------------------------------------------
-  const [actualPrice, setActualPrice] = useState<number>(0)
   const [customerNameSigned, setCustomerNameSigned] = useState('')
   const [notes, setNotes] = useState('')
   const [nextServiceDate, setNextServiceDate] = useState<string>('')
@@ -146,9 +152,14 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
 
   const draftKey = `msn-erp-wizard-draft-${orderId}`
 
+  // Calculate actualPrice automatically based on materials total sum
+  const actualPrice = acUnits.reduce((sum, unit) => {
+    if (unit.skipped) return sum
+    return sum + (unit.materials_used || []).reduce((s, m) => s + m.total, 0)
+  }, 0)
+
   const saveDraft = useCallback(() => {
     const draft = {
-      actualPrice,
       customerNameSigned,
       notes,
       nextServiceDate,
@@ -161,7 +172,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
     } catch {
       // localStorage quota exceeded or private mode — silently skip
     }
-  }, [actualPrice, customerNameSigned, notes, nextServiceDate, nextServiceNotes, acUnits, currentStep, draftKey])
+  }, [customerNameSigned, notes, nextServiceDate, nextServiceNotes, acUnits, currentStep, draftKey])
 
   useEffect(() => {
     const timer = setTimeout(saveDraft, 3000)
@@ -173,7 +184,6 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       const raw = localStorage.getItem(draftKey)
       if (raw) {
         const draft = JSON.parse(raw)
-        if (draft.actualPrice !== undefined) setActualPrice(draft.actualPrice)
         if (draft.customerNameSigned !== undefined) setCustomerNameSigned(draft.customerNameSigned)
         if (draft.notes !== undefined) setNotes(draft.notes)
         if (draft.nextServiceDate !== undefined) setNextServiceDate(draft.nextServiceDate)
@@ -190,7 +200,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   }, [draftKey])
 
   // ---------------------------------------------------------------------------
-  // Fetch job context (identical to CompleteJobFormV2)
+  // Fetch job context
   // ---------------------------------------------------------------------------
   useEffect(() => {
     async function fetchContext() {
@@ -224,13 +234,26 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
               jobContext.order_items.forEach((item) => {
                 if (item.ac_unit_id) {
                   const acUnitData = item.ac_units
+                  const rawCapRange = acUnitData?.capacity_ranges
+                  const capLabel = rawCapRange
+                    ? (Array.isArray(rawCapRange)
+                        ? rawCapRange[0]?.capacity_label
+                        : rawCapRange.capacity_label)
+                    : null
+
                   units.push({
                     ac_unit_id: item.ac_unit_id,
                     brand: acUnitData?.brand || '',
+                    brand_id: acUnitData?.brand_id || null,
                     ac_type: acUnitData?.ac_type || '',
+                    unit_type_id: acUnitData?.unit_type_id || null,
+                    capacity_id: acUnitData?.capacity_id || null,
+                    capacity_label: capLabel || null,
                     model_number: acUnitData?.model_number || '',
                     serial_number: acUnitData?.serial_number || '',
                     room_location: acUnitData?.room_location || '',
+                    floor_level: acUnitData?.floor_level || '',
+                    position_detail: acUnitData?.position_detail || '',
                     skipped: false,
                     skip_reason: '',
                     photos_before: [],
@@ -266,11 +289,9 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       const errors: string[] = []
 
       if (step === 1) {
-        // Order with 0 ACs: skip AC validation, nothing to inspect
         if (initialAcUnits.length === 0) {
           return errors
         }
-        // Order has N ACs: count must match exactly (locked by AcUnitForm)
         if (acUnits.length !== initialAcUnits.length) {
           errors.push(
             `Jumlah unit AC harus ${initialAcUnits.length} (sesuai order), saat ini ${acUnits.length}`
@@ -283,8 +304,14 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
               errors.push(`AC ${idx + 1}: alasan tidak diservis wajib diisi`)
             }
           } else {
-            if (!unit.brand || unit.brand.trim().length === 0) {
-              errors.push(`AC ${idx + 1}: merk wajib diisi`)
+            if (!unit.brand_id) {
+              errors.push(`AC ${idx + 1}: merk wajib dipilih`)
+            }
+            if (!unit.unit_type_id) {
+              errors.push(`AC ${idx + 1}: jenis AC wajib dipilih`)
+            }
+            if (!unit.capacity_id) {
+              errors.push(`AC ${idx + 1}: kapasitas wajib dipilih`)
             }
             if (!unit.photos_before || unit.photos_before.length === 0) {
               errors.push(`AC ${idx + 1}: minimal 1 foto sebelum wajib diunggah`)
@@ -306,14 +333,12 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       }
 
       if (step === 3) {
-        if (actualPrice <= 0) {
-          errors.push('Total biaya aktual wajib diisi dan lebih besar dari 0')
-        }
+        // No price input validation required as actualPrice is auto-calculated
       }
 
       return errors
     },
-    [acUnits, initialAcUnits.length, customerNameSigned, signatureBlob, actualPrice]
+    [acUnits, initialAcUnits.length, customerNameSigned, signatureBlob]
   )
 
   // ---------------------------------------------------------------------------
@@ -321,7 +346,6 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   // ---------------------------------------------------------------------------
   const goToStep = useCallback(
     (step: number) => {
-      // Only allow going to visited steps or the immediate next step if current is valid
       if (step < currentStep) {
         setCurrentStep(step)
         setVisitedSteps((prev) => new Set(prev).add(step))
@@ -362,10 +386,9 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   }, [currentStep])
 
   // ---------------------------------------------------------------------------
-  // Submit (identical payload construction to CompleteJobFormV2)
+  // Submit
   // ---------------------------------------------------------------------------
   const handleSubmitClick = () => {
-    // Final validation across all steps
     const allErrors: string[] = []
     for (let s = 1; s <= 3; s++) {
       allErrors.push(...validateStep(s))
@@ -406,6 +429,22 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       photoIds.push(...acUnitPhotoIdsRef.current)
 
       const allMaterials = acUnits.flatMap((unit) => unit.materials_used || [])
+
+      // Auto-submit addon requests for manual materials
+      const manualMaterials = allMaterials.filter((m) => !m.addon_id && m.is_manual)
+      for (const mat of manualMaterials) {
+        try {
+          await createAddonRequest({
+            category: mat.category || 'PARTS',
+            item_name: mat.name,
+            unit_of_measure: mat.unit_of_measure || 'pcs',
+            proposed_unit_price: mat.unit_price,
+            description: mat.description || `Auto-submitted dari order ${orderId}`,
+          })
+        } catch (err) {
+          console.error('Failed to auto-submit addon request:', err)
+        }
+      }
 
       const mappedAcUnits = acUnits.map((unit) => ({
         ...unit,
@@ -539,20 +578,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       case 3:
         return (
           <section className="space-y-6">
-            <h2 className="text-lg font-semibold">Jadwal & Biaya</h2>
-
-            <div className="space-y-2">
-              <Label htmlFor="actualPrice">Total Biaya Aktual (Rp)</Label>
-              <Input
-                id="actualPrice"
-                type="number"
-                min="0"
-                required
-                value={actualPrice === 0 ? '' : actualPrice}
-                onChange={(e) => setActualPrice(Number(e.target.value))}
-                placeholder="Contoh: 150000"
-              />
-            </div>
+            <h2 className="text-lg font-semibold">Jadwal &amp; Catatan</h2>
 
             <div className="space-y-2">
               <Label htmlFor="notes">Catatan Tambahan</Label>
@@ -617,8 +643,10 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
                     </div>
                     <div className="text-sm text-muted-foreground space-y-0.5">
                       {unit.room_location && <p>Lokasi: {unit.room_location}</p>}
-                      {unit.ac_type && <p>Tipe: {unit.ac_type}</p>}
-                      {unit.capacity_pk && <p>Kapasitas: {unit.capacity_pk}</p>}
+                      {unit.floor_level && <p>Lantai: {unit.floor_level}</p>}
+                      {unit.position_detail && <p>Posisi Detail: {unit.position_detail}</p>}
+                      {unit.ac_type && <p>Tipe/Jenis AC: {unit.ac_type}</p>}
+                      {unit.capacity_label && <p>Kapasitas: {unit.capacity_label}</p>}
                       {unit.skipped && unit.skip_reason && (
                         <p className="text-destructive">Alasan: {unit.skip_reason}</p>
                       )}
@@ -627,9 +655,18 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
                           <p>Foto sebelum: {unit.photos_before?.length || 0} foto</p>
                           <p>Foto sesudah: {unit.photos_after?.length || 0} foto</p>
                           {unit.materials_used && unit.materials_used.length > 0 && (
-                            <p>Material: {unit.materials_used.length} item</p>
+                            <div className="mt-1 pt-1 border-t text-xs">
+                              <p className="font-medium text-muted-foreground">Material yang digunakan:</p>
+                              <ul className="list-disc list-inside space-y-0.5 mt-1">
+                                {unit.materials_used.map((mat, mIdx) => (
+                                  <li key={mIdx}>
+                                    {mat.name} x{mat.qty} {mat.is_manual ? '(Proposed)' : ''}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
                           )}
-                          {unit.notes && <p>Catatan: {unit.notes}</p>}
+                          {unit.notes && <p>Catatan AC: {unit.notes}</p>}
                         </>
                       )}
                     </div>
@@ -666,18 +703,18 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
             {/* Schedule & Cost Summary */}
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Jadwal & Biaya
+                Ringkasan Biaya &amp; Jadwal
               </h3>
               <div className="text-sm space-y-1">
                 <p>
-                  <span className="text-muted-foreground">Biaya aktual:</span>{' '}
-                  <span className="font-medium">
+                  <span className="text-muted-foreground">Total Biaya (Terhitung):</span>{' '}
+                  <span className="font-bold text-primary">
                     Rp {actualPrice.toLocaleString('id-ID')}
                   </span>
                 </p>
                 {notes && (
                   <p>
-                    <span className="text-muted-foreground">Catatan:</span> {notes}
+                    <span className="text-muted-foreground">Catatan Laporan:</span> {notes}
                   </p>
                 )}
                 {nextServiceDate && (

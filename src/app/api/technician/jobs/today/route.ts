@@ -68,14 +68,22 @@ export async function GET(request: NextRequest) {
           ac_units (
             ac_unit_id,
             brand,
+            brand_id,
             model_number,
-            serial_number
+            serial_number,
+            installation_date,
+            ac_type,
+            unit_type_id,
+            capacity_id,
+            room_location,
+            floor_level,
+            position_detail
           )
         )
       `)
       .in('order_id', orderIds)
-      .gte('scheduled_visit_date', dateStr)
-      .in('status', ['ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS'])
+      .eq('scheduled_visit_date', dateStr)
+      .in('status', ['ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS', 'COMPLETED'])
       .order('scheduled_visit_date', { ascending: true })
 
     if (orderError) throw orderError

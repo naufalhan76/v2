@@ -63,12 +63,19 @@ export async function GET(
           ac_units (
             ac_unit_id,
             brand,
+            brand_id,
             model_number,
             serial_number,
             installation_date,
             ac_type,
+            unit_type_id,
             capacity_id,
-            capacity_btu
+            room_location,
+            floor_level,
+            position_detail,
+            capacity_ranges (
+              capacity_label
+            )
           )
         ),
         order_technicians (
@@ -293,7 +300,7 @@ export async function POST(
       }
 
       const { data: existingReport } = await supabase
-        .from('service_records')
+        .from('service_reports')
         .select('report_id')
         .eq('order_id', orderId)
         .eq('idempotency_key', payload.idempotency_key)
@@ -317,7 +324,7 @@ export async function POST(
       const currentCanonical = toCanonical(order.status)
       if (currentCanonical === 'COMPLETED' || currentCanonical === 'INVOICED' || currentCanonical === 'PAID') {
         const { data: completedReport } = await supabase
-          .from('service_records')
+          .from('service_reports')
           .select('report_id')
           .eq('order_id', orderId)
           .maybeSingle()
@@ -344,7 +351,7 @@ export async function POST(
       if (rpcError) {
         if (rpcError.code === '23505' || rpcError.message?.includes('duplicate key')) {
           const { data: racedReport } = await supabase
-            .from('service_records')
+            .from('service_reports')
             .select('report_id')
             .eq('order_id', orderId)
             .eq('idempotency_key', payload.idempotency_key)
