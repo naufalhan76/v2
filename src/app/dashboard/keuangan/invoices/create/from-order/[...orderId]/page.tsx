@@ -16,11 +16,13 @@ import { ServiceReportMissingError } from '@/lib/invoice-errors'
 import { logger } from '@/lib/logger'
 
 interface PageProps {
-  params: Promise<{ orderId: string }>
+  params: Promise<{ orderId: string | string[] }>
 }
 
 export default async function CreateInvoiceFromOrderPage({ params }: PageProps) {
-  const { orderId } = await params
+  const resolvedParams = await params
+  const rawId = Array.isArray(resolvedParams.orderId) ? resolvedParams.orderId : [resolvedParams.orderId]
+  const orderId = rawId.map(decodeURIComponent).join('/')
 
   let result: Awaited<ReturnType<typeof createInvoiceFromOrder>> | null = null
   let errorMessage: string | null = null

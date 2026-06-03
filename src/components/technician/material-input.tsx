@@ -208,6 +208,23 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
     ])
   }, [onChange, value])
 
+  const addCatalogRow = useCallback(() => {
+    onChange([
+      ...value,
+      {
+        addon_id: null,
+        name: '',
+        qty: 1,
+        unit_price: 0,
+        total: 0,
+        category: 'PARTS',
+        unit_of_measure: 'pcs',
+        description: '',
+        is_manual: false,
+      },
+    ])
+  }, [onChange, value])
+
   const removeRow = useCallback(
     (index: number) => {
       onChange(value.filter((_, i) => i !== index))
@@ -301,13 +318,13 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
           <div className="flex items-center gap-2">
             <Button
               type="button"
-              variant="ghost"
+              variant="default"
               size="sm"
-              onClick={() => setDialogOpen(true)}
-              className="h-10 px-3 text-xs sm:text-sm transition-colors active:bg-muted/80"
+              onClick={addCatalogRow}
+              className="h-10 px-3 text-xs sm:text-sm transition-all duration-200 active:scale-[0.96]"
             >
-              <FilePlus className="mr-1.5 h-4 w-4" />
-              Request Part
+              <Search className="mr-1.5 h-4 w-4" />
+              Katalog
             </Button>
             <Button
               type="button"
@@ -317,7 +334,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
               className="h-10 px-3 text-xs sm:text-sm transition-all duration-200 active:scale-[0.96]"
             >
               <Plus className="mr-1.5 h-4 w-4" />
-              Tambah Manual
+              Manual
             </Button>
           </div>
         )}
@@ -342,16 +359,28 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
             </p>
           )}
           {!disabled && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={addRow}
-              className="mt-4 h-10 px-4 text-sm font-medium transition-all duration-200 active:scale-[0.96]"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Tambah Manual
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 mt-4">
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={addCatalogRow}
+                className="h-10 px-4 text-sm font-medium transition-all duration-200 active:scale-[0.96]"
+              >
+                <Search className="mr-2 h-4 w-4" />
+                Dari Katalog
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={addRow}
+                className="h-10 px-4 text-sm font-medium transition-all duration-200 active:scale-[0.96]"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Tambah Manual
+              </Button>
+            </div>
           )}
         </div>
       )}

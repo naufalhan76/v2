@@ -22,7 +22,7 @@ interface InvoiceRow {
   invoice_number?: string | null
   status: string
   total_amount: number
-  amount_paid?: number | null
+  paid_amount?: number | null
   payment_status?: string | null
   due_date?: string | null
   created_at: string
@@ -35,7 +35,7 @@ export function OrderInvoiceTab({ orderId, orderStatus, onCreateInvoice }: Order
       const supabase = createClient()
       const { data, error } = await supabase
         .from('invoices')
-        .select('invoice_id, invoice_number, status, total_amount, amount_paid, payment_status, due_date, created_at')
+        .select('invoice_id, invoice_number, status, total_amount, paid_amount, payment_status, due_date, created_at')
         .eq('order_id', orderId)
         .order('created_at', { ascending: false })
       if (error) throw error
@@ -84,9 +84,9 @@ export function OrderInvoiceTab({ orderId, orderStatus, onCreateInvoice }: Order
                 <p className="text-xs text-muted-foreground">
                   Total: Rp {Number(inv.total_amount).toLocaleString('id-ID')}
                 </p>
-                {inv.amount_paid != null && Number(inv.amount_paid) > 0 && (
+                {inv.paid_amount != null && Number(inv.paid_amount) > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    Dibayar: Rp {Number(inv.amount_paid).toLocaleString('id-ID')}
+                    Dibayar: Rp {Number(inv.paid_amount).toLocaleString('id-ID')}
                   </p>
                 )}
               </div>
