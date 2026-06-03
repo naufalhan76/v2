@@ -87,6 +87,8 @@ tsc_output_2.txt
 .cursor/
 .sisyphus/
 .agents/
+.next/
+.opencode/
 skills-lock.json
 
 # V1 / superseded docs (kept locally for reference, not pushed)
@@ -102,6 +104,7 @@ skills-lock.json
 /scripts/
 # SQL validation tests (not run in prod)
 /supabase/tests/
+/supabase/.temp/
 # All test code (E2E specs, fixtures, dev harnesses) - not part of prod runtime
 /tests/
 
