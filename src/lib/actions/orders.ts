@@ -102,9 +102,10 @@ export async function getOrders(filters?: {
       },
     }
   } catch (error: unknown) {
+    logger.error('Supabase getOrders error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch orders',
+      error: error instanceof Error ? error.message : JSON.stringify(error),
       data: [],
       pagination: { total: 0, page: 1, limit: 20, totalPages: 0 },
     }

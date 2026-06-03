@@ -244,7 +244,7 @@ async function assertCustomerIsVisibleOrThrow(
 
   const { data: customer, error } = await supabase
     .from('customers')
-    .select('customer_id, created_by')
+    .select('customer_id')
     .eq('customer_id', customerId)
     .maybeSingle()
 
@@ -847,7 +847,11 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     }
   }
 
-  revalidatePath('/dashboard/keuangan/invoices')
+  try {
+    revalidatePath('/dashboard/keuangan/invoices')
+  } catch (error) {
+    logger.warn('Skipping revalidatePath because it was called during rendering:', error)
+  }
   return { ...invoice, source: getInvoiceSource(invoice) }
 }
 
@@ -1796,6 +1800,22 @@ export async function createInvoiceFromOrder(
     data: { user },
   } = await supabase.auth.getUser()
   await requireFinanceRole(user)
+
+  // Check if an invoice already exists for this order_id
+  const { data: existingInvoice } = await supabase
+    .from('invoices')
+    .select('invoice_id, invoice_number, total_amount')
+    .eq('order_id', orderId)
+    .maybeSingle()
+
+  if (existingInvoice) {
+    return {
+      invoice_id: existingInvoice.invoice_id,
+      invoice_number: existingInvoice.invoice_number,
+      total_amount: existingInvoice.total_amount,
+      source: 'SERVICE_REPORT',
+    }
+  }
 
   // Fetch order and verify state
   const { data: order, error: orderError } = await supabase

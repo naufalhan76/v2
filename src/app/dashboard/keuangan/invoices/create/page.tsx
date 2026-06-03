@@ -142,10 +142,10 @@ export default function CreateInvoicePage() {
   const loadCompletedOrders = async (): Promise<InvoiceOrder[]> => {
     try {
       // Single roundtrip via statusIn (replaces 5 parallel getOrders).
-      // PROFORMA: ASSIGNED / EN ROUTE / ARRIVED / IN_PROGRESS
-      // FINAL: DONE
+      // PROFORMA: ASSIGNED / EN_ROUTE / IN_PROGRESS
+      // FINAL: COMPLETED
       const result = await getOrders({
-        statusIn: 'ASSIGNED,EN ROUTE,ARRIVED,IN_PROGRESS,DONE',
+        statusIn: 'ASSIGNED,EN_ROUTE,IN_PROGRESS,COMPLETED',
         limit: 200,
       })
 
@@ -404,8 +404,8 @@ export default function CreateInvoicePage() {
         : ((baseService as Record<string, unknown>)?.service_name as string || baseServiceNames[0] || 'Service')
 
       // Determine invoice type strictly from order status — ignore URL param on submit
-      // to prevent a crafted URL from forcing FINAL on a non-DONE order.
-      const invoiceType: InvoiceType = selectedOrder.status === 'DONE' ? 'FINAL' : 'PROFORMA'
+      // to prevent a crafted URL from forcing FINAL on a non-COMPLETED order.
+      const invoiceType: InvoiceType = selectedOrder.status === 'COMPLETED' ? 'FINAL' : 'PROFORMA'
 
       // Get selected bank account details
       const selectedBankAccount = bankAccounts.find(acc => acc.id === data.paymentAccountId)
@@ -501,7 +501,7 @@ export default function CreateInvoicePage() {
               <CardDescription>
                 Pilih order untuk dibuatkan invoice (Proforma atau Final)
                 <Badge variant="outline" className="ml-2">ONGOING = Proforma</Badge>
-                <Badge variant="outline" className="ml-2">DONE = Final</Badge>
+                <Badge variant="outline" className="ml-2">COMPLETED = Final</Badge>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -541,7 +541,7 @@ export default function CreateInvoicePage() {
                           {orders.map((order) => (
                             <SelectItem key={order.order_id} value={order.order_id}>
                               {order.order_id} - {order.customers?.customer_name} ({order.order_type}) - 
-                              <Badge className="ml-2" variant={order.status === 'DONE' ? 'default' : 'secondary'}>
+                              <Badge className="ml-2" variant={order.status === 'COMPLETED' ? 'default' : 'secondary'}>
                                 {order.status}
                               </Badge>
                             </SelectItem>
@@ -560,8 +560,8 @@ export default function CreateInvoicePage() {
                 <div className="rounded-lg border p-4 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Invoice Type:</span>
-                    <Badge variant={(requestedInvoiceType || (selectedOrder.status === 'DONE' ? 'FINAL' : 'PROFORMA')) === 'FINAL' ? 'default' : 'secondary'}>
-                      {(requestedInvoiceType || (selectedOrder.status === 'DONE' ? 'FINAL' : 'PROFORMA')) === 'FINAL' ? 'FINAL INVOICE' : 'PROFORMA INVOICE'}
+                    <Badge variant={(requestedInvoiceType || (selectedOrder.status === 'COMPLETED' ? 'FINAL' : 'PROFORMA')) === 'FINAL' ? 'default' : 'secondary'}>
+                      {(requestedInvoiceType || (selectedOrder.status === 'COMPLETED' ? 'FINAL' : 'PROFORMA')) === 'FINAL' ? 'FINAL INVOICE' : 'PROFORMA INVOICE'}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
