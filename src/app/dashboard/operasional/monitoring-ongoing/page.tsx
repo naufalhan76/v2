@@ -172,6 +172,10 @@ function MonitoringOngoingContent() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false)
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false)
   const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null)
+  const [today, setToday] = useState<Date>()
+  useEffect(() => {
+    setToday(new Date(new Date().setHours(0, 0, 0, 0)))
+  }, [])
   
   // Handle notification redirect - open order detail automatically (ONLY ONCE)
   useEffect(() => {
@@ -1375,7 +1379,7 @@ function MonitoringOngoingContent() {
                     mode='single'
                     selected={rescheduleDate || undefined}
                     onSelect={setRescheduleDate}
-                    disabled={(date) => date < new Date()}
+                    disabled={today ? (date) => date < today : undefined}
                     initialFocus
                     required
                   />

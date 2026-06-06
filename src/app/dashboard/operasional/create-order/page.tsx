@@ -126,6 +126,10 @@ function CreateOrderPage() {
   
   const [locations, setLocations] = useState<LocationFormData[]>([])
   const [scheduledDate, setScheduledDate] = useState<Date>()
+  const [today, setToday] = useState<Date>()
+  useEffect(() => {
+    setToday(new Date(new Date().setHours(0, 0, 0, 0)))
+  }, [])
   const [technicianId, setTechnicianId] = useState<string>('')
   const [helperTechnicianIds, setHelperTechnicianIds] = useState<string[]>([])
   const [notes, setNotes] = useState('')
@@ -1011,7 +1015,7 @@ function CreateOrderPage() {
                             mode="single"
                             selected={scheduledDate}
                             onSelect={setScheduledDate}
-                            disabled={(date) => { const today = new Date(); today.setHours(0, 0, 0, 0); return date < today }}
+                            disabled={today ? (date) => date < today : undefined}
                             initialFocus
                           />
                         </div>
