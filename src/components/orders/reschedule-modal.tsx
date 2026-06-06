@@ -51,7 +51,7 @@ export function RescheduleModal({
     resolver: zodResolver(schema),
     defaultValues: {
       reason: '',
-      newScheduledDate: defaultDate ? new Date(defaultDate) : new Date(),
+      newScheduledDate: defaultDate ? new Date(defaultDate) : undefined,
     },
   })
 

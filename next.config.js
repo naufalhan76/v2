@@ -8,6 +8,8 @@ const nextConfig = {
       : false,
   },
 
+  transpilePackages: ['@tanstack/query-core', '@tanstack/query-devtools', '@tanstack/react-query-devtools'],
+
   experimental: {
     optimizePackageImports: [
       'lucide-react',

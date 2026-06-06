@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -28,22 +28,13 @@ import { getTechnicians } from '@/lib/actions/technicians'
 import { useAssignTechnician } from '@/hooks/use-order-mutation'
 import { logger } from '@/lib/logger'
 
-const schema = z
-  .object({
-    technicianId: z.string().min(1, 'Teknisi wajib dipilih'),
-    helperIds: z.array(z.string()).default([]),
-    scheduledDate: z.date({ required_error: 'Tanggal wajib diisi' }),
-  })
-  .refine(
-    (data) => {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      return data.scheduledDate >= today
-    },
-    { path: ['scheduledDate'], message: 'Tanggal tidak boleh di masa lalu' }
-  )
+const baseSchema = z.object({
+  technicianId: z.string().min(1, 'Teknisi wajib dipilih'),
+  helperIds: z.array(z.string()).default([]),
+  scheduledDate: z.date({ required_error: 'Tanggal wajib diisi' }),
+})
 
-type FormValues = z.infer<typeof schema>
+type FormValues = z.infer<typeof baseSchema>
 
 interface AssignModalProps {
   open: boolean
@@ -66,6 +57,19 @@ export function AssignModal({
   const mutation = useAssignTechnician()
 
   const isReassign = Boolean(currentTechnicianId)
+
+  const todayRef = useRef<Date | null>(null)
+  if (!todayRef.current) {
+    todayRef.current = new Date()
+    todayRef.current.setHours(0, 0, 0, 0)
+  }
+
+  const fullSchema = baseSchema.refine(
+    (data) => {
+      return data.scheduledDate >= todayRef.current!
+    },
+    { path: ['scheduledDate'], message: 'Tanggal tidak boleh di masa lalu' }
+  )
 
   const { data: techResp, isLoading: techLoading, isError: techQueryError, error: techQueryErr } = useQuery({
     queryKey: ['technicians', 'all'],
@@ -93,11 +97,11 @@ export function AssignModal({
   }))
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(fullSchema),
     defaultValues: {
       technicianId: currentTechnicianId ?? '',
       helperIds: [],
-      scheduledDate: defaultDate ? new Date(defaultDate) : new Date(),
+      scheduledDate: defaultDate ? new Date(defaultDate) : undefined,
     },
   })
 
@@ -212,11 +216,7 @@ export function AssignModal({
                   mode="single"
                   selected={scheduledDate}
                   onSelect={(d) => d && form.setValue('scheduledDate', d, { shouldValidate: true })}
-                  disabled={(date) => {
-                    const today = new Date()
-                    today.setHours(0, 0, 0, 0)
-                    return date < today
-                  }}
+                  disabled={(date) => date < todayRef.current!}
                   locale={localeId as unknown as Record<string, unknown>}
                   initialFocus
                 />

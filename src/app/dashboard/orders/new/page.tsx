@@ -368,6 +368,11 @@ export default function NewOrderAccordionPage() {
   const [skipAssignment, setSkipAssignment] = useState(true)
   const [leadTechnicianId, setLeadTechnicianId] = useState<string>('')
   const [helperTechnicianIds, setHelperTechnicianIds] = useState<string[]>([])
+
+  const [today, setToday] = useState<Date | undefined>()
+  useEffect(() => {
+    setToday(new Date(new Date().setHours(0, 0, 0, 0)))
+  }, [])
   const [orderNotes, setOrderNotes] = useState('')
 
   // Section 5: Submit
@@ -1661,7 +1666,7 @@ export default function NewOrderAccordionPage() {
                         mode="single"
                         selected={scheduledDate}
                         onSelect={setScheduledDate}
-                        disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                        disabled={today ? (d) => d < today : undefined}
                         locale={localeId as unknown as Record<string, unknown>}
                         initialFocus
                       />
