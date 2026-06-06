@@ -49,14 +49,6 @@ interface CustomerOption {
   billing_address?: string | null
 }
 
-const todayISO = () => new Date().toISOString().split('T')[0]
-
-const defaultDueISO = () => {
-  const d = new Date()
-  d.setDate(d.getDate() + 14)
-  return d.toISOString().split('T')[0]
-}
-
 export default function CreateBlankInvoicePage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -65,6 +57,13 @@ export default function CreateBlankInvoicePage() {
   const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null)
   const [customers, setCustomers] = useState<CustomerOption[]>([])
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
+
+  const getTodayISO = () => new Date().toISOString().split('T')[0]
+  const getDefaultDueISO = () => {
+    const d = new Date()
+    d.setDate(d.getDate() + 14)
+    return d.toISOString().split('T')[0]
+  }
 
   const {
     register,
@@ -76,16 +75,16 @@ export default function CreateBlankInvoicePage() {
   } = useForm<CreateBlankInvoiceInput>({
     resolver: zodResolver(CreateBlankInvoiceSchema),
     defaultValues: {
-      invoice_type: 'FINAL',
+      invoice_type: 'FINAL' as const,
       customer_id: undefined,
       customer_name: '',
       customer_phone: '',
       customer_email: '',
       customer_address: '',
-      invoice_date: todayISO(),
-      due_date: defaultDueISO(),
+      invoice_date: '',
+      due_date: '',
       items: [
-        { item_type: 'BASE_SERVICE', description: '', quantity: 1, unit_price: 0 },
+        { item_type: 'BASE_SERVICE' as const, description: '', quantity: 1, unit_price: 0 },
       ],
       discount_amount: 0,
       discount_percentage: 0,
@@ -95,6 +94,12 @@ export default function CreateBlankInvoicePage() {
       payment_account_id: undefined,
     },
   })
+
+  // Set real date values client-side to avoid SSR/CLS mismatch
+  useEffect(() => {
+    setValue('invoice_date', getTodayISO())
+    setValue('due_date', getDefaultDueISO())
+  }, [setValue])
 
   const { fields, append, remove } = useFieldArray({
     control,

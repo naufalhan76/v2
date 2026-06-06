@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase-browser'
 import { Briefcase, Clock, Sparkles } from 'lucide-react'
@@ -11,24 +12,27 @@ interface TodayJob {
   canonical_status: OrderStatus
 }
 
-function timeOfDayGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour < 11) return 'Selamat pagi'
-  if (hour < 15) return 'Selamat siang'
-  if (hour < 18) return 'Selamat sore'
-  return 'Selamat malam'
-}
-
-function formatLongDate(): string {
-  return new Date().toLocaleDateString('id-ID', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-}
-
 export function HomeHeader() {
+  const [greeting, setGreeting] = useState('')
+  const [longDate, setLongDate] = useState('')
+
+  useEffect(() => {
+    const hour = new Date().getHours()
+    if (hour < 11) setGreeting('Selamat pagi')
+    else if (hour < 15) setGreeting('Selamat siang')
+    else if (hour < 18) setGreeting('Selamat sore')
+    else setGreeting('Selamat malam')
+
+    setLongDate(
+      new Date().toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    )
+  }, [])
+
   const { data: profile } = useQuery({
     queryKey: ['technician', 'profile', 'header'],
     queryFn: async () => {
@@ -88,12 +92,12 @@ export function HomeHeader() {
         </div>
         <div className="min-w-0 flex-1">
           <h1 className="text-lg sm:text-xl font-semibold tracking-tight">
-            {timeOfDayGreeting()}
+            {greeting || '...'}
             {firstName ? <span className="text-foreground">, {firstName}</span> : null}
             <span className="text-muted-foreground">.</span>
           </h1>
           <p className="text-xs text-muted-foreground capitalize tabular-nums">
-            {formatLongDate()}
+            {longDate}
           </p>
         </div>
         <SyncStatus variant="compact" className="shrink-0 mt-0.5" />
