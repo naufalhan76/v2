@@ -52,23 +52,23 @@ export function RevenueVsOrdersChart({
 
   if (loading) {
     return (
-      <Card className="border-0 shadow-sm bg-background animate-pulse">
+      <Card className="border-hairline shadow-none bg-background animate-pulse">
         <CardHeader className="pb-2">
-          <div className="h-5 w-48 bg-muted rounded" />
+          <div className="h-5 w-48 bg-canvas-soft rounded" />
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] bg-muted rounded" />
+          <div className="h-[300px] bg-canvas-soft rounded" />
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <Card className="border-0 shadow-sm bg-background transition-shadow hover:shadow-md">
+    <Card className="border-hairline shadow-none bg-background transition-shadow hover:shadow-md">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-primary" />
-          <CardTitle className="text-sm font-semibold text-foreground">
+          <CardTitle className="text-2xl tracking-tight text-foreground">
             Pendapatan vs Order Harian
           </CardTitle>
         </div>
@@ -77,16 +77,16 @@ export function RevenueVsOrdersChart({
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--hairline))" />
               <XAxis
                 dataKey="formattedDate"
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 11, fill: 'hsl(var(--ink-mute))' }}
                 tickLine={false}
                 axisLine={false}
               />
               <YAxis
                 yAxisId="left"
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 11, fill: 'hsl(var(--ink-mute))' }}
                 tickLine={false}
                 axisLine={false}
                 allowDecimals={false}
@@ -94,7 +94,7 @@ export function RevenueVsOrdersChart({
               <YAxis
                 yAxisId="right"
                 orientation="right"
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 11, fill: 'hsl(var(--ink-mute))' }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v: number) => `Rp${(v / 1000000).toFixed(1)}M`}
@@ -102,7 +102,7 @@ export function RevenueVsOrdersChart({
               <Tooltip
                 contentStyle={{
                   backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
+                  border: '1px solid hsl(var(--hairline))',
                   borderRadius: '8px',
                   fontSize: '12px',
                 }}
@@ -113,7 +113,7 @@ export function RevenueVsOrdersChart({
                 }}
               />
               <Legend
-                wrapperStyle={{ fontSize: '12px' }}
+                wrapperStyle={{ fontSize: '14px', color: 'hsl(var(--foreground))' }}
                 formatter={(value: string) => {
                   if (value === 'revenue') return 'Pendapatan Aktual'
                   if (value === 'orders') return 'Jumlah Order'
@@ -123,7 +123,7 @@ export function RevenueVsOrdersChart({
               <Bar
                 yAxisId="left"
                 dataKey="orders"
-                fill="hsl(var(--primary))"
+                fill="hsl(var(--chart-1))"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={32}
               />
@@ -131,7 +131,7 @@ export function RevenueVsOrdersChart({
                 yAxisId="right"
                 type="monotone"
                 dataKey="revenue"
-                stroke="hsl(142.1 76.2% 36.3%)"
+                stroke="hsl(var(--status-completed))"
                 strokeWidth={2.5}
                 dot={false}
                 activeDot={{ r: 4 }}

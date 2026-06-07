@@ -81,7 +81,7 @@ export function TodayJobsList() {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <AlertCircle className="h-10 w-10 text-destructive mb-3" />
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="text-sm text-ink-mute mb-4">
           {error instanceof Error ? error.message : 'Terjadi kesalahan'}
         </p>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="h-11">
@@ -108,14 +108,14 @@ export function TodayJobsList() {
               className={cn(
                 'flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider',
                 group.key === 'active' && 'text-primary',
-                group.key === 'pending' && 'text-muted-foreground',
-                group.key === 'completed' && 'text-emerald-600 dark:text-emerald-400'
+                group.key === 'pending' && 'text-ink-mute',
+                group.key === 'completed' && 'text-status-completed'
               )}
             >
               <group.icon className="h-3.5 w-3.5" aria-hidden="true" />
               {group.title}
             </h2>
-            <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+            <span className="text-[11px] font-medium tabular-nums text-ink-mute">
               {group.jobs.length}
             </span>
           </div>

@@ -91,12 +91,12 @@ export function HomeHeader() {
           <Sparkles className="h-4 w-4" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-xl font-semibold tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-[540] tracking-tight">
             {greeting || '...'}
             {firstName ? <span className="text-foreground">, {firstName}</span> : null}
-            <span className="text-muted-foreground">.</span>
+            <span className="text-ink-mute">.</span>
           </h1>
-          <p className="text-xs text-muted-foreground capitalize tabular-nums">
+          <p className="text-lg text-ink-mute capitalize tabular-nums">
             {longDate}
           </p>
         </div>
@@ -149,8 +149,8 @@ function StatChip({
     tone === 'primary'
       ? 'border-primary bg-primary text-primary-foreground'
       : tone === 'success'
-        ? 'border-emerald-600 bg-emerald-600 text-white'
-        : 'border-border bg-card text-foreground'
+        ? 'border-status-completed bg-status-completed text-white'
+        : 'border-hairline bg-canvas-soft text-foreground'
 
   return (
     <div

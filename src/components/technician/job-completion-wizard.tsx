@@ -529,7 +529,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   if (loadingContext) {
     return (
       <div className="flex h-40 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-8 w-8 animate-spin text-ink-mute" />
       </div>
     )
   }
@@ -549,12 +549,12 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
               <h2 className="text-lg font-semibold">
                 Data Unit AC
                 {initialAcUnits.length > 0 && (
-                  <span className="ml-2 text-sm font-normal text-muted-foreground tabular-nums">
+                  <span className="ml-2 text-sm font-normal text-ink-mute tabular-nums">
                     ({initialAcUnits.length})
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-ink-mute">
                 {initialAcUnits.length > 0
                   ? `Isi data untuk ${initialAcUnits.length} unit AC sesuai order. Tidak bisa tambah atau hapus.`
                   : 'Order ini tidak memiliki unit AC yang perlu diinspeksi.'}
@@ -645,10 +645,10 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
 
             {/* AC Units Summary */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground">
+              <h3 className="text-sm font-medium text-ink-mute">
                 Unit AC ({acUnits.length})
               </h3>
-              <div className="rounded-lg border border-border/60 divide-y divide-border/60">
+              <div className="rounded-lg border border-hairline divide-y divide-hairline">
                 {acUnits.map((unit, idx) => (
                   <div key={unit.ac_unit_id || idx} className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
@@ -660,12 +660,12 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
                           Tidak diservis
                         </span>
                       ) : (
-                        <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+                        <span className="text-xs font-medium text-status-completed bg-status-completed/10 px-2 py-0.5 rounded">
                           Diservis
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-muted-foreground space-y-0.5">
+                    <div className="text-sm text-ink-mute space-y-0.5">
                       {unit.room_location && <p>Lokasi: {unit.room_location}</p>}
                       {unit.floor_level && <p>Lantai: {unit.floor_level}</p>}
                       {unit.position_detail && <p>Posisi Detail: {unit.position_detail}</p>}
@@ -680,7 +680,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
                           <p>Foto sesudah: {unit.photos_after?.length || 0} foto</p>
                           {unit.materials_used && unit.materials_used.length > 0 && (
                             <div className="mt-1 pt-1 border-t text-xs">
-                              <p className="font-medium text-muted-foreground">Material yang digunakan:</p>
+                              <p className="font-medium text-ink-mute">Material yang digunakan:</p>
                               <ul className="list-disc list-inside space-y-0.5 mt-1">
                                 {unit.materials_used.map((mat, mIdx) => (
                                   <li key={mIdx}>
@@ -703,18 +703,18 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
 
             {/* Signature Summary */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              <h3 className="text-sm font-medium text-ink-mute uppercase tracking-wide">
                 Tanda Tangan
               </h3>
               <div className="text-sm space-y-1">
                 <p>
-                  <span className="text-muted-foreground">Nama:</span>{' '}
+                  <span className="text-ink-mute">Nama:</span>{' '}
                   <span className="font-medium">{customerNameSigned || '-'}</span>
                 </p>
                 <p>
-                  <span className="text-muted-foreground">Tanda tangan:</span>{' '}
+                  <span className="text-ink-mute">Tanda tangan:</span>{' '}
                   {signatureBlob ? (
-                    <span className="font-medium text-emerald-600">Sudah ditandatangani</span>
+                    <span className="font-medium text-status-completed">Sudah ditandatangani</span>
                   ) : (
                     <span className="text-destructive">Belum ditandatangani</span>
                   )}
@@ -726,24 +726,24 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
 
             {/* Schedule & Cost Summary */}
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              <h3 className="text-sm font-medium text-ink-mute uppercase tracking-wide">
                 Ringkasan Biaya &amp; Jadwal
               </h3>
               <div className="text-sm space-y-1">
                 <p>
-                  <span className="text-muted-foreground">Total Biaya (Terhitung):</span>{' '}
+                  <span className="text-ink-mute">Total Biaya (Terhitung):</span>{' '}
                   <span className="font-bold text-primary">
                     Rp {actualPrice.toLocaleString('id-ID')}
                   </span>
                 </p>
                 {notes && (
                   <p>
-                    <span className="text-muted-foreground">Catatan Laporan:</span> {notes}
+                    <span className="text-ink-mute">Catatan Laporan:</span> {notes}
                   </p>
                 )}
                 {nextServiceDate && (
                   <p>
-                    <span className="text-muted-foreground">Servis berikutnya:</span>{' '}
+                    <span className="text-ink-mute">Servis berikutnya:</span>{' '}
                     {new Date(nextServiceDate).toLocaleDateString('id-ID', {
                       day: 'numeric',
                       month: 'long',
@@ -753,7 +753,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
                 )}
                 {nextServiceNotes && (
                   <p>
-                    <span className="text-muted-foreground">Catatan servis:</span>{' '}
+                    <span className="text-ink-mute">Catatan servis:</span>{' '}
                     {nextServiceNotes}
                   </p>
                 )}
@@ -786,19 +786,18 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
     <div className="mx-auto max-w-2xl space-y-6 p-4 pb-32">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Link
-          href={`/technician/job/${orderId}`}
-          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Kembali
-        </Link>
+        <Button variant="outline" size="sm" className="rounded-md" asChild>
+          <Link href={`/technician/job/${orderId}`}>
+            <ArrowLeft className="h-4 w-4" />
+            <span className="ml-1">Kembali</span>
+          </Link>
+        </Button>
         <SyncStatus variant="full" className="mb-4" data-testid="sync-status-badge" />
       </div>
 
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Penyelesaian Pekerjaan</h1>
-        <p className="text-muted-foreground">
+        <p className="text-ink-mute">
           Selesaikan pesanan untuk <strong>{customerName}</strong> di {locationAddress}
         </p>
       </div>
@@ -806,7 +805,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       {/* Step Indicator */}
       <div className="relative">
         {/* Progress bar background */}
-        <div className="absolute top-5 left-0 right-0 h-0.5 bg-muted" />
+        <div className="absolute top-5 left-0 right-0 h-0.5 bg-canvas-soft" />
         {/* Progress bar fill */}
         <div
           className="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-300"
@@ -836,7 +835,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
                     'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors duration-200',
                     isActive && 'border-primary bg-primary text-primary-foreground',
                     isCompleted && 'border-primary bg-primary text-primary-foreground',
-                    !isActive && !isCompleted && 'border-muted bg-background text-muted-foreground'
+                    !isActive && !isCompleted && 'border-hairline bg-background text-ink-mute'
                   )}
                 >
                   {isCompleted ? (
@@ -850,7 +849,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
                     'text-xs font-medium transition-colors duration-200',
                     isActive && 'text-foreground',
                     isCompleted && 'text-primary',
-                    !isActive && !isCompleted && 'text-muted-foreground'
+                    !isActive && !isCompleted && 'text-ink-mute'
                   )}
                 >
                   {step.label}

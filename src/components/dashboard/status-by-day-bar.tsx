@@ -31,23 +31,23 @@ export function StatusByDayBar({
 }) {
   if (loading) {
     return (
-      <Card className="border-0 shadow-sm bg-background animate-pulse">
+      <Card className="border-hairline shadow-none bg-background animate-pulse">
         <CardHeader className="pb-2">
-          <div className="h-5 w-48 bg-muted rounded" />
+          <div className="h-5 w-48 bg-canvas-soft rounded" />
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] bg-muted rounded" />
+          <div className="h-[300px] bg-canvas-soft rounded" />
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <Card className="border-0 shadow-sm bg-background transition-shadow hover:shadow-md">
+    <Card className="border-hairline shadow-none bg-background transition-shadow hover:shadow-md">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <BarChart3 className="h-4 w-4 text-primary" />
-          <CardTitle className="text-sm font-semibold text-foreground">
+          <CardTitle className="text-2xl tracking-tight text-foreground">
             Status per Hari
           </CardTitle>
         </div>
@@ -55,7 +55,7 @@ export function StatusByDayBar({
       <CardContent>
         <div className="h-[300px] w-full">
           {data.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+            <div className="flex items-center justify-center h-full text-lg text-ink-mute">
               Tidak ada data
             </div>
           ) : (
@@ -67,16 +67,16 @@ export function StatusByDayBar({
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  stroke="hsl(var(--border))"
+                  stroke="hsl(var(--hairline))"
                 />
                 <XAxis
                   dataKey="formattedDate"
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--ink-mute))' }}
                   tickLine={false}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  axisLine={{ stroke: 'hsl(var(--hairline))' }}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--ink-mute))' }}
                   tickLine={false}
                   axisLine={false}
                   allowDecimals={false}
@@ -84,13 +84,13 @@ export function StatusByDayBar({
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
+                    border: '1px solid hsl(var(--hairline))',
                     borderRadius: '8px',
                     fontSize: '12px',
                   }}
                 />
                 <Legend
-                  wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }}
+                  wrapperStyle={{ fontSize: '14px', color: 'hsl(var(--foreground))', paddingTop: '8px' }}
                 />
                 <Bar
                   dataKey="completed"

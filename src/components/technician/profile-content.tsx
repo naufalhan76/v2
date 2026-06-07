@@ -228,19 +228,19 @@ export function ProfileContent() {
   if (isLoading) {
     return (
       <div className="space-y-4 animate-pulse">
-        <div className="rounded-xl border bg-card p-4 space-y-3">
+        <div className="rounded-lg border border-hairline bg-background p-4 space-y-3">
           <div className="flex items-center gap-3">
-            <div className="h-14 w-14 rounded-full bg-muted" />
+            <div className="h-14 w-14 rounded-full bg-canvas-soft" />
             <div className="space-y-2 flex-1">
-              <div className="h-5 w-40 rounded bg-muted" />
-              <div className="h-3 w-32 rounded bg-muted" />
+              <div className="h-5 w-40 rounded bg-canvas-soft" />
+              <div className="h-3 w-32 rounded bg-canvas-soft" />
             </div>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <div className="h-16 rounded-lg bg-muted" />
-          <div className="h-16 rounded-lg bg-muted" />
-          <div className="h-16 rounded-lg bg-muted" />
+          <div className="h-16 rounded-lg bg-canvas-soft" />
+          <div className="h-16 rounded-lg bg-canvas-soft" />
+          <div className="h-16 rounded-lg bg-canvas-soft" />
         </div>
       </div>
     )
@@ -249,7 +249,7 @@ export function ProfileContent() {
   if (isError || !data || !data.technician) {
     return (
       <div className="text-center py-8">
-        <p className="text-sm text-muted-foreground">Gagal memuat profil</p>
+        <p className="text-sm text-ink-mute">Gagal memuat profil</p>
       </div>
     )
   }
@@ -266,7 +266,7 @@ export function ProfileContent() {
   return (
     <div className="space-y-4">
       {/* Profile info card */}
-      <div className="rounded-xl border bg-card p-4 space-y-4">
+      <div className="rounded-lg border border-hairline bg-background p-4 space-y-4">
         <div className="flex items-center gap-3">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-lg font-semibold">
             {initials}
@@ -274,7 +274,7 @@ export function ProfileContent() {
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold text-base truncate">{technician?.technician_name ?? 'Teknisi'}</h2>
             {technician?.company && (
-              <p className="text-xs text-muted-foreground truncate">{technician.company}</p>
+              <p className="text-xs text-ink-mute truncate">{technician.company}</p>
             )}
           </div>
         </div>
@@ -282,19 +282,19 @@ export function ProfileContent() {
         <div className="space-y-2.5 pt-2 border-t">
           {technician?.contact_number && (
             <div className="flex items-center gap-2 text-sm">
-              <Phone className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+              <Phone className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
               <span className="truncate">{technician.contact_number}</span>
             </div>
           )}
           {technician?.email && (
             <div className="flex items-center gap-2 text-sm">
-              <Mail className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+              <Mail className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
               <span className="truncate">{technician.email}</span>
             </div>
           )}
           {technician?.company && (
             <div className="flex items-center gap-2 text-sm">
-              <Info className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+              <Info className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
               <span className="truncate">{technician.company}</span>
             </div>
           )}
@@ -322,8 +322,8 @@ export function ProfileContent() {
       </div>
 
       {/* Settings card */}
-      <div className="rounded-xl border bg-card p-4 space-y-4">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="rounded-lg border border-hairline bg-background p-4 space-y-4">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-ink-mute">
           Pengaturan
         </h3>
 
@@ -332,11 +332,11 @@ export function ProfileContent() {
             {push.kind === 'enabled' ? (
               <Bell className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
             ) : (
-              <BellOff className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+              <BellOff className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
             )}
             <div className="min-w-0">
               <p className="text-sm font-medium">Notifikasi Push</p>
-              <p className="text-xs text-muted-foreground line-clamp-1">{pushHelpText(push)}</p>
+              <p className="text-xs text-ink-mute line-clamp-1">{pushHelpText(push)}</p>
             </div>
           </div>
           <Switch
@@ -357,7 +357,7 @@ export function ProfileContent() {
           </div>
         )}
         {push.kind === 'unsupported' && (
-          <div className="flex gap-2 rounded-md border bg-muted/50 p-3 text-xs text-muted-foreground">
+          <div className="flex gap-2 rounded-md border border-hairline bg-canvas-soft p-3 text-xs text-ink-mute">
             <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
             <p>
               Browser ini tidak mendukung notifikasi push. Coba pakai Chrome atau Safari versi
@@ -383,7 +383,7 @@ export function ProfileContent() {
         Keluar
       </Button>
 
-      <p className="text-center text-xs text-muted-foreground pt-2">
+      <p className="text-center text-xs text-ink-mute pt-2">
         MSN Tech v2.0.0-beta
       </p>
 
@@ -433,8 +433,8 @@ function StatCard({
 }) {
   const toneClass =
     tone === 'primary'
-      ? 'border-foreground bg-foreground text-background'
-      : 'border-border bg-card text-foreground'
+      ? 'border-primary bg-primary text-primary-foreground'
+      : 'border-hairline bg-background text-foreground'
 
   const display =
     value === null || value === undefined ? (

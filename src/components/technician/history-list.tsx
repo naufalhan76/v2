@@ -68,19 +68,18 @@ export function HistoryList() {
 
   return (
     <div className="space-y-4">
-      {/* Filter tabs */}
-      <div className="flex gap-1 rounded-lg bg-muted p-1">
+      <div className="flex gap-2">
         {FILTER_TABS.map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key)}
             className={cn(
-              'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer',
+              'flex-1 rounded-full px-4 py-2 text-sm font-medium transition-colors',
               'min-h-[40px]',
               activeTab === tab.key
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-background text-foreground hover:bg-canvas-soft'
             )}
           >
             {tab.label}
@@ -91,13 +90,13 @@ export function HistoryList() {
       {/* Total count chip (only when data loaded) */}
       {!isLoading && !isError && totalCount !== null && (
         <div
-          className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs"
+          className="flex items-center gap-2 rounded-md border border-hairline bg-canvas-soft px-3 py-2 text-xs"
           role="status"
         >
-          <ListChecks className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-          <span className="text-muted-foreground">Total:</span>
+          <ListChecks className="h-3.5 w-3.5 text-ink-mute" aria-hidden="true" />
+          <span className="text-ink-mute">Total:</span>
           <span className="font-semibold tabular-nums text-foreground">{totalCount}</span>
-          <span className="text-muted-foreground">
+          <span className="text-ink-mute">
             pekerjaan{activeTab !== 'all' ? ` (${currentFilter.label.toLowerCase()})` : ''}
           </span>
         </div>
@@ -109,7 +108,7 @@ export function HistoryList() {
       {isError && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <AlertCircle className="h-10 w-10 text-destructive mb-3" />
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-ink-mute mb-4">
             {error instanceof Error ? error.message : 'Terjadi kesalahan'}
           </p>
           <Button variant="outline" size="sm" onClick={() => refetch()} className="h-11">
@@ -121,11 +120,11 @@ export function HistoryList() {
 
       {!isLoading && !isError && allJobs.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
-            <History className="h-7 w-7 text-muted-foreground" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-canvas-soft mb-4">
+            <History className="h-7 w-7 text-ink-faint" />
           </div>
-          <h3 className="text-base font-medium mb-1">Belum Ada Riwayat</h3>
-          <p className="text-sm text-muted-foreground max-w-[240px]">
+          <h3 className="text-2xl font-[460] mb-1">Belum Ada Riwayat</h3>
+          <p className="text-lg text-ink-mute max-w-[240px]">
             Riwayat pekerjaan Anda akan muncul di sini setelah menyelesaikan job.
           </p>
         </div>

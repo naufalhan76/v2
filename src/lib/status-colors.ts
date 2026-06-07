@@ -18,14 +18,14 @@ export type InvoiceStatus =
  */
 export const INVOICE_STATUS_COLORS: Record<InvoiceStatus, { bg: string; text: string; border: string }> = {
   DRAFT: {
-    bg: 'bg-gray-100 dark:bg-gray-800/40',
-    text: 'text-gray-700 dark:text-gray-300',
-    border: 'border-gray-200 dark:border-gray-700',
+    bg: 'bg-canvas-soft dark:bg-canvas-soft',
+    text: 'text-ink-mute dark:text-ink-mute',
+    border: 'border-hairline dark:border-hairline',
   },
   SENT: {
-    bg: 'bg-blue-100 dark:bg-blue-950/40',
-    text: 'text-blue-700 dark:text-blue-300',
-    border: 'border-blue-200 dark:border-blue-800',
+    bg: 'bg-indigo-100 dark:bg-indigo-950/40',
+    text: 'text-indigo-700 dark:text-indigo-300',
+    border: 'border-indigo-200 dark:border-indigo-800',
   },
   PARTIAL_PAID: {
     bg: 'bg-amber-100 dark:bg-amber-950/40',
@@ -43,9 +43,9 @@ export const INVOICE_STATUS_COLORS: Record<InvoiceStatus, { bg: string; text: st
     border: 'border-red-200 dark:border-red-800',
   },
   CANCELLED: {
-    bg: 'bg-gray-100 dark:bg-gray-800/40',
-    text: 'text-gray-500 dark:text-gray-400',
-    border: 'border-gray-200 dark:border-gray-700',
+    bg: 'bg-red-100 dark:bg-red-950/40',
+    text: 'text-red-700 dark:text-red-300',
+    border: 'border-red-200 dark:border-red-800',
   },
 }
 

@@ -227,7 +227,7 @@ export function PhotoUploadOffline({
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">
           {kindLabel[kind]}
-          <span className="text-muted-foreground ml-1">
+          <span className="text-ink-mute ml-1">
             ({entries.length}/{max})
           </span>
         </label>
@@ -283,8 +283,8 @@ export function PhotoUploadOffline({
             onClick={() => inputRef.current?.click()}
             disabled={enqueueing}
             className={cn(
-              'flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed',
-              'text-muted-foreground hover:border-primary hover:text-primary transition-colors',
+              'flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-hairline bg-canvas-soft',
+              'text-ink-mute hover:border-primary hover:text-primary transition-colors',
               'min-h-[80px] active:scale-95',
               enqueueing && 'pointer-events-none opacity-50'
             )}

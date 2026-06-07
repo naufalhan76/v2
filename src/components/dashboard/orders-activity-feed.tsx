@@ -54,14 +54,14 @@ const STATUS_INDICATOR_COLOR: Record<
 }
 
 const STATUS_ICON_TINT: Record<OrderStatus, string> = {
-  PENDING: 'text-amber-600 bg-amber-100 dark:text-amber-300 dark:bg-amber-950/40',
-  ASSIGNED: 'text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-950/40',
-  EN_ROUTE: 'text-indigo-600 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-950/40',
-  IN_PROGRESS: 'text-violet-600 bg-violet-100 dark:text-violet-300 dark:bg-violet-950/40',
-  COMPLETED: 'text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-950/40',
-  INVOICED: 'text-cyan-600 bg-cyan-100 dark:text-cyan-300 dark:bg-cyan-950/40',
-  PAID: 'text-emerald-600 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/40',
-  CANCELLED: 'text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-950/40',
+  PENDING: 'text-status-pending bg-status-pending/12',
+  ASSIGNED: 'text-status-assigned bg-status-assigned/12',
+  EN_ROUTE: 'text-status-en-route bg-status-en-route/12',
+  IN_PROGRESS: 'text-status-in-progress bg-status-in-progress/12',
+  COMPLETED: 'text-status-completed bg-status-completed/12',
+  INVOICED: 'text-status-invoiced bg-status-invoiced/12',
+  PAID: 'text-status-paid bg-status-paid/12',
+  CANCELLED: 'text-status-cancelled bg-status-cancelled/12',
 }
 
 function formatTimestamp(value: string): string {
@@ -109,18 +109,18 @@ export function OrdersActivityFeed({ limit = 10 }: { limit?: number }) {
 
   if (loading) {
     return (
-      <Card className="border-0 shadow-sm bg-background animate-pulse">
+      <Card className="border-hairline shadow-none bg-background animate-pulse">
         <CardHeader className="pb-2">
-          <div className="h-5 w-44 bg-muted rounded" />
+          <div className="h-5 w-44 bg-canvas-soft rounded" />
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="h-8 w-8 bg-muted rounded-full" />
+                <div className="h-8 w-8 bg-canvas-soft rounded-full" />
                 <div className="flex-1 space-y-1">
-                  <div className="h-3.5 w-36 bg-muted rounded" />
-                  <div className="h-3 w-24 bg-muted rounded" />
+                  <div className="h-3.5 w-36 bg-canvas-soft rounded" />
+                  <div className="h-3 w-24 bg-canvas-soft rounded" />
                 </div>
               </div>
             ))}
@@ -131,17 +131,17 @@ export function OrdersActivityFeed({ limit = 10 }: { limit?: number }) {
   }
 
   return (
-    <Card className="border-0 shadow-sm bg-background transition-shadow hover:shadow-md">
+    <Card className="border-hairline shadow-none bg-background transition-shadow hover:shadow-md">
       <CardHeader className="pb-2 flex flex-row items-center gap-2">
         <Activity className="h-4 w-4 text-primary" />
-        <CardTitle className="text-sm font-semibold text-foreground">
+        <CardTitle className="text-2xl tracking-tight text-foreground">
           Perlu Perhatian
         </CardTitle>
       </CardHeader>
       <CardContent>
         {needsAttention.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-sm text-muted-foreground gap-2">
-            <Activity className="h-6 w-6 text-muted-foreground/40" />
+          <div className="flex flex-col items-center justify-center py-10 text-lg text-ink-mute gap-2">
+            <Activity className="h-6 w-6 text-ink-faint" />
             <span>Tidak ada order yang perlu perhatian</span>
           </div>
         ) : (
@@ -152,7 +152,7 @@ export function OrdersActivityFeed({ limit = 10 }: { limit?: number }) {
               return (
                 <li
                   key={order.order_id}
-                  className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/50"
+                  className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-canvas-soft"
                 >
                   <span
                     className={cn(
@@ -164,14 +164,14 @@ export function OrdersActivityFeed({ limit = 10 }: { limit?: number }) {
                   </span>
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
+                    <p className="text-lg truncate text-foreground">
                       {order.customer_name}
-                      <span className="mx-1.5 text-muted-foreground/50">·</span>
-                      <span className="text-muted-foreground font-normal">
+                      <span className="mx-1.5 text-ink-faint">·</span>
+                      <span className="text-ink-mute">
                         {getStatusLabel(order.status)}
                       </span>
                     </p>
-                    <p className="text-xs text-muted-foreground tabular-nums">
+                    <p className="text-sm text-ink-faint tabular-nums">
                       {formatTimestamp(order.created_at)}
                     </p>
                   </div>

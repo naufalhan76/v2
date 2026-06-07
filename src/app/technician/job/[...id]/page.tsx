@@ -3,6 +3,7 @@ import { JobDetailContent } from '@/components/technician/job-detail-content'
 import { CompleteJobForm } from '@/components/technician/complete-job-form'
 import { JobCompletionWizard } from '@/components/technician/job-completion-wizard'
 import { JobDetailSkeleton } from '@/components/technician/job-detail-skeleton'
+import { cn } from '@/lib/utils'
 
 interface JobDetailPageProps {
   params: Promise<{ id: string | string[] }>
@@ -22,12 +23,16 @@ export default async function JobDetailPage({ params, searchParams }: JobDetailP
   const isV1 = resolvedSearchParams?.v === '1'
 
   return (
-    <Suspense fallback={<JobDetailSkeleton />}>
-      {isComplete ? (
-        !isV1 ? <JobCompletionWizard orderId={id} /> : <CompleteJobForm orderId={id} />
-      ) : (
-        <JobDetailContent orderId={id} />
-      )}
-    </Suspense>
+    <div className={cn('min-h-full bg-background', !isComplete && '-mx-4 -my-4')}>
+      <Suspense fallback={<JobDetailSkeleton />}>
+        {isComplete ? (
+          !isV1 ? <JobCompletionWizard orderId={id} /> : <CompleteJobForm orderId={id} />
+        ) : (
+          <div className="px-4 py-4">
+            <JobDetailContent orderId={id} />
+          </div>
+        )}
+      </Suspense>
+    </div>
   )
 }

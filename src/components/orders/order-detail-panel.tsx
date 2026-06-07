@@ -54,7 +54,7 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full sm:max-w-xl p-4 sm:p-6 overflow-y-auto flex flex-col">
+        <SheetContent className="w-full sm:max-w-xl p-4 sm:p-6 overflow-y-auto flex flex-col bg-background border-hairline">
           {isLoading || !order ? (
             <>
               <SheetHeader>
@@ -66,7 +66,7 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
                 </SheetDescription>
               </SheetHeader>
               <div className="flex-1 flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <Loader2 className="h-6 w-6 animate-spin text-ink-mute" />
               </div>
             </>
           ) : (
@@ -74,7 +74,7 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
               <SheetHeader>
                 <div className="flex items-start justify-between gap-3 pr-8">
                   <div className="space-y-1">
-                    <SheetTitle className="text-base">{order.order_id}</SheetTitle>
+                    <SheetTitle className="text-2xl font-[460] text-foreground">{order.order_id}</SheetTitle>
                     <SheetDescription>
                       {order.customers?.customer_name ?? 'Customer'}
                     </SheetDescription>
@@ -113,7 +113,7 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
                 </div>
               </Tabs>
 
-              <SheetFooter className="flex-col gap-2 sm:flex-row sm:gap-2 border-t pt-4 mt-2">
+              <SheetFooter className="flex-col gap-2 sm:flex-row sm:gap-2 border-t border-hairline pt-4 mt-2">
                 {canonical === 'PENDING' && (
                   <>
                     <Button onClick={() => setAssignOpen(true)} className="h-11 w-full sm:h-9 sm:flex-1">

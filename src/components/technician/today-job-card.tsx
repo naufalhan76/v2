@@ -147,19 +147,19 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
       onMouseEnter={handleMouseEnter}
       onTouchStart={handleMouseEnter}
       className={cn(
-        'block rounded-xl border transition-colors duration-200 overflow-hidden',
+        'block rounded-lg border border-hairline transition-colors duration-200 overflow-hidden',
         isActive
-          ? 'border-primary bg-card ring-1 ring-primary/20'
-          : 'border-border bg-card hover:border-primary/40'
+          ? 'border-primary bg-background ring-1 ring-primary/20'
+          : 'bg-background hover:border-primary/40'
       )}
     >
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         aria-expanded={isExpanded}
-        className={cn(
-          "group flex w-full text-left p-4 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
-          isExpanded ? (isActive ? 'bg-primary/[0.04]' : 'bg-muted/30') : (isActive ? 'hover:bg-primary/[0.04]' : 'hover:bg-accent/40')
-        )}
+          className={cn(
+            "group flex w-full text-left p-4 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
+            isExpanded ? (isActive ? 'bg-primary/5' : 'bg-canvas-soft') : (isActive ? 'hover:bg-primary/5' : 'hover:bg-canvas-soft')
+          )}
       >
         <div className="flex w-full items-start gap-3">
           {/* Customer avatar */}
@@ -168,7 +168,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
               'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-colors',
               isActive
                 ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                : 'bg-canvas-soft text-ink-mute group-hover:bg-primary/10 group-hover:text-primary'
             )}
             aria-hidden="true"
           >
@@ -177,7 +177,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2 mb-1">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5 text-xs text-ink-mute">
                 <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="tabular-nums tracking-tight font-medium">{scheduledTime}</span>
               </div>
@@ -185,21 +185,21 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
                 <StatusBadge status={job.status} size="sm" />
                 <ChevronDown
                   className={cn(
-                    "h-4 w-4 text-muted-foreground transition-transform duration-300",
+                    "h-4 w-4 text-ink-mute transition-transform duration-300",
                     isExpanded && "rotate-180"
                   )}
                 />
               </div>
             </div>
 
-            <h3 className="font-medium text-sm sm:text-base mb-1 truncate text-balance">{customerName}</h3>
+            <h3 className="font-bold text-xl mb-1 truncate text-balance">{customerName}</h3>
 
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-muted-foreground mb-0.5">
+            <div className="flex items-center gap-1.5 text-lg text-ink-mute mb-0.5">
               <Wrench className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span className="truncate">{serviceType}</span>
             </div>
 
-            <div className="flex items-start gap-1.5 text-xs sm:text-sm text-muted-foreground">
+            <div className="flex items-start gap-1.5 text-lg text-ink-mute">
               <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden="true" />
               <span className="line-clamp-2">{address}</span>
             </div>
@@ -219,30 +219,30 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
 
       {isExpanded && (
         <div className="px-4 pb-4 animate-in slide-in-from-top-2 fade-in duration-200">
-          <div className="pt-3 border-t border-border/50">
+          <div className="pt-3 border-t border-hairline">
             {/* Contact Shortcuts */}
             {phoneRaw && (
               <div className="flex gap-2 mb-4">
-                <Button
-                  variant="outline"
-                  className="flex-1 bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:text-green-800 dark:bg-green-950/30 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/50"
-                  asChild
-                >
-                  <a href={`https://wa.me/${waPhone}?text=${waMessage}`} target="_blank" rel="noopener noreferrer">
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    WhatsApp
-                  </a>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:text-blue-800 dark:bg-blue-950/30 dark:border-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900/50"
-                  asChild
-                >
-                  <a href={`tel:${phoneRaw}`}>
-                    <Phone className="mr-2 h-4 w-4" />
-                    Telepon
-                  </a>
-                </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 bg-status-completed/10 text-status-completed border-status-completed/20 hover:bg-status-completed/20 hover:text-status-completed dark:bg-status-completed/10 dark:border-status-completed/30 dark:text-status-completed dark:hover:bg-status-completed/20"
+                    asChild
+                  >
+                    <a href={`https://wa.me/${waPhone}?text=${waMessage}`} target="_blank" rel="noopener noreferrer">
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      WhatsApp
+                    </a>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 bg-status-assigned/10 text-status-assigned border-status-assigned/20 hover:bg-status-assigned/20 hover:text-status-assigned dark:bg-status-assigned/10 dark:border-status-assigned/30 dark:text-status-assigned dark:hover:bg-status-assigned/20"
+                    asChild
+                  >
+                    <a href={`tel:${phoneRaw}`}>
+                      <Phone className="mr-2 h-4 w-4" />
+                      Telepon
+                    </a>
+                  </Button>
               </div>
             )}
 

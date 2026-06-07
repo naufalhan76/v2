@@ -143,30 +143,29 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
     <div className="space-y-4">
       {/* Back button + status */}
       <div className="flex items-center justify-between">
-        <Link
-          href="/technician"
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground h-11 px-1"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Kembali</span>
-        </Link>
+        <Button variant="outline" size="sm" className="rounded-md" asChild>
+          <Link href="/technician">
+            <ArrowLeft className="h-4 w-4" />
+            <span className="ml-1">Kembali</span>
+          </Link>
+        </Button>
         <StatusBadge status={job.status} />
       </div>
 
       {/* Customer info card */}
-      <div className="rounded-xl border bg-card p-4 space-y-3">
+      <div className="rounded-lg border border-hairline bg-background p-4 space-y-3">
         <h2 className="font-semibold text-lg text-balance">{customer?.customer_name ?? 'Customer'}</h2>
 
         {customer?.primary_contact_person && (
           <div className="flex items-center gap-2 text-sm">
-            <User className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+            <User className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
             <span>{customer.primary_contact_person}</span>
           </div>
         )}
 
         {customer?.phone_number && (
           <div className="flex items-center gap-2 text-sm">
-            <Phone className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+            <Phone className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
             <a
               href={`tel:${customer.phone_number}`}
               className="text-primary underline-offset-2 hover:underline"
@@ -178,41 +177,41 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
         {location && (
           <div className="flex items-start gap-2 text-sm">
-            <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
+            <MapPin className="h-4 w-4 text-ink-mute shrink-0 mt-0.5" aria-hidden="true" />
             <span>{location.full_address}{location.city ? `, ${location.city}` : ''}</span>
           </div>
         )}
 
         <div className="flex items-center gap-2 text-sm">
-          <Clock className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+          <Clock className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
           <span>{scheduledTime}</span>
         </div>
       </div>
 
       {/* Service info card */}
-      <div className="rounded-xl border bg-card p-4 space-y-3">
-        <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+      <div className="rounded-lg border border-hairline bg-background p-4 space-y-3">
+        <h3 className="font-medium text-sm text-ink-mute uppercase tracking-wide">
           Detail Layanan
         </h3>
 
         <div className="flex items-center gap-2 text-sm">
-          <Wrench className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
+          <Wrench className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
           <span className="font-medium">{orderItem?.service_type ?? '-'}</span>
         </div>
 
         {acUnit && (
           <div className="text-sm space-y-1 pl-6">
-            <p><span className="text-muted-foreground">Merk:</span> {acUnit.brand ?? '-'}</p>
-            <p><span className="text-muted-foreground">Model:</span> {acUnit.model_number ?? '-'}</p>
+            <p><span className="text-ink-mute">Merk:</span> {acUnit.brand ?? '-'}</p>
+            <p><span className="text-ink-mute">Model:</span> {acUnit.model_number ?? '-'}</p>
             {acUnit.serial_number && (
-              <p><span className="text-muted-foreground">S/N:</span> {acUnit.serial_number}</p>
+              <p><span className="text-ink-mute">S/N:</span> {acUnit.serial_number}</p>
             )}
           </div>
         )}
 
         {orderItem?.description && (
           <div className="flex items-start gap-2 text-sm">
-            <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" aria-hidden="true" />
+            <FileText className="h-4 w-4 text-ink-mute shrink-0 mt-0.5" aria-hidden="true" />
             <span>{orderItem.description}</span>
           </div>
         )}
@@ -220,8 +219,8 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
       {/* Notes */}
       {job.notes && (
-        <div className="rounded-xl border bg-card p-4">
-          <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-2">
+        <div className="rounded-lg border border-hairline bg-background p-4">
+          <h3 className="font-medium text-sm text-ink-mute uppercase tracking-wide mb-2">
             Catatan
           </h3>
           <p className="text-sm text-pretty whitespace-pre-wrap leading-relaxed">{job.notes}</p>
@@ -230,10 +229,10 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
       {/* Work timer (IN_PROGRESS only) */}
       {canonicalStatus === 'IN_PROGRESS' && (
-        <div className="rounded-xl border border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-950/30 p-4 text-center">
+        <div className="rounded-lg border border-violet-soft/30 bg-canvas-soft dark:border-violet-soft/20 dark:bg-violet-soft/10 p-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <Timer className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden="true" />
-            <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
+            <Timer className="h-4 w-4 text-primary" aria-hidden="true" />
+            <span className="text-sm font-medium text-primary">
               Waktu Kerja
             </span>
           </div>
@@ -278,7 +277,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
         )}
 
         {canonicalStatus === 'COMPLETED' && job.has_report && (
-          <div className="text-center text-sm text-muted-foreground py-2">
+          <div className="text-center text-sm text-ink-mute py-2">
             Laporan sudah disubmit
           </div>
         )}

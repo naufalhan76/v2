@@ -44,10 +44,10 @@ export function BottomTabBar() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 border-t bg-background safe-area-pb"
+      className="fixed inset-x-0 bottom-0 z-50 bg-[#1b1938] pb-safe rounded-t-lg"
       aria-label="Navigasi utama"
     >
-      <div className="mx-auto flex max-w-md items-center justify-around h-16 px-2">
+      <div className="mx-auto flex max-w-md items-center justify-around h-huge px-2">
         {tabs.map((tab) => {
           const active = isActive(tab)
           const Icon = tab.icon
@@ -58,20 +58,22 @@ export function BottomTabBar() {
               className="group flex flex-1 flex-col items-center justify-center gap-1 h-full transition-transform duration-200 active:scale-[0.96]"
               aria-current={active ? 'page' : undefined}
             >
-              <span
-                className={cn(
-                  'flex items-center justify-center h-9 w-16 rounded-full transition-all duration-300',
-                  active
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground group-hover:bg-muted/60'
+              <span className="relative flex items-center justify-center">
+                <Icon
+                  className={cn(
+                    'h-5 w-5 transition-colors duration-200',
+                    active ? 'text-violet-soft' : 'text-white/80'
+                  )}
+                  aria-hidden="true"
+                />
+                {active && (
+                  <span className="absolute -bottom-1.5 h-1 w-1 rounded-full bg-violet-soft" />
                 )}
-              >
-                <Icon className="h-5 w-5" aria-hidden="true" />
               </span>
               <span
                 className={cn(
-                  'text-[10px] font-medium tracking-tight transition-colors',
-                  active ? 'text-foreground' : 'text-muted-foreground'
+                  'text-xs font-[540] transition-colors duration-200',
+                  active ? 'text-violet-soft' : 'text-white/80'
                 )}
               >
                 {tab.label}

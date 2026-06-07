@@ -142,11 +142,11 @@
 
 @layer components {
   .kpi-card {
-    @apply relative overflow-hidden rounded-xl border-0 p-5 transition-all hover:shadow-md;
+    @apply relative overflow-hidden rounded-lg border-0 p-5 transition-all hover:shadow-md;
   }
   
   .data-table-container {
-    @apply bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden;
+    @apply bg-card rounded-lg border border-hairline shadow-none overflow-hidden;
   }
   
   .sidebar-item {

@@ -160,9 +160,9 @@ function GroupTable({ data, onEdit, toggleMutation }: GroupTableProps) {
         header: 'Service Type',
         accessorFn: (row) => row.service_types?.code ?? '-',
         cell: ({ getValue }) => (
-          <Badge variant="secondary" className="font-normal">
-            {getValue<string>()}
-          </Badge>
+            <Badge variant="outline" className="font-normal bg-canvas-soft text-foreground border-hairline">
+              {getValue<string>()}
+            </Badge>
         ),
       },
       {
@@ -179,11 +179,11 @@ function GroupTable({ data, onEdit, toggleMutation }: GroupTableProps) {
         header: 'Status',
         cell: ({ row }) =>
           row.original.is_active ? (
-            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300">
+            <Badge className="bg-status-completed/10 text-status-completed border-status-completed/20 hover:bg-status-completed/10">
               Aktif
             </Badge>
           ) : (
-            <Badge variant="outline" className="text-muted-foreground">
+            <Badge variant="outline" className="text-ink-mute border-hairline">
               Nonaktif
             </Badge>
           ),
@@ -230,7 +230,7 @@ function GroupTable({ data, onEdit, toggleMutation }: GroupTableProps) {
   })
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border/50">
+    <div className="overflow-x-auto rounded-lg border border-hairline">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
@@ -252,7 +252,7 @@ function GroupTable({ data, onEdit, toggleMutation }: GroupTableProps) {
         </TableHeader>
         <TableBody>
           {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id} className="hover:bg-muted/40">
+            <TableRow key={row.id} className="hover:bg-canvas-soft">
               {row.getVisibleCells().map((cell) => {
                 const meta = cell.column.columnDef.meta as
                   | { className?: string }
@@ -460,7 +460,7 @@ export function CatalogGroupAccordion({ defaultExpandedTypes }: CatalogGroupAcco
     return (
       <div className="space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-12 animate-pulse rounded-lg bg-muted" />
+          <div key={i} className="h-12 animate-pulse rounded-lg bg-canvas-soft" />
         ))}
       </div>
     )
@@ -485,7 +485,7 @@ export function CatalogGroupAccordion({ defaultExpandedTypes }: CatalogGroupAcco
       {/* SEARCH */}
       <form onSubmit={handleSearchSubmit} className="w-full sm:max-w-md">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-mute" />
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -524,12 +524,12 @@ export function CatalogGroupAccordion({ defaultExpandedTypes }: CatalogGroupAcco
             <AccordionItem
               key={groupName}
               value={groupName}
-              className="rounded-xl border border-border/50 shadow-sm"
+              className="rounded-xl border border-hairline shadow-sm"
             >
-              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/30 rounded-t-xl [&[data-state=open]]:border-b [&[data-state=open]]:border-border/50">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-canvas-soft rounded-t-xl [&[data-state=open]]:border-b [&[data-state=open]]:border-hairline">
                 <div className="flex items-center gap-3">
-                  <span className="text-base font-semibold">{groupName}</span>
-                  <Badge variant="secondary" className="text-xs font-mono">
+                  <span className="text-2xl font-[460]">{groupName}</span>
+                  <Badge variant="secondary" className="text-sm font-mono">
                     {entryCount}
                   </Badge>
                 </div>
@@ -713,7 +713,7 @@ export function CatalogGroupAccordion({ defaultExpandedTypes }: CatalogGroupAcco
                 placeholder="Cek freon, bersihkan filter, test kebocoran"
                 className="h-10"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-ink-mute">
                 Pisahkan dengan koma untuk multiple item.
               </p>
             </div>
@@ -727,10 +727,10 @@ export function CatalogGroupAccordion({ defaultExpandedTypes }: CatalogGroupAcco
               />
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border/50 p-3">
+            <div className="flex items-center justify-between rounded-lg border border-hairline p-3">
               <div>
                 <Label className="text-sm">Status Aktif</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-ink-mute">
                   Catalog nonaktif tidak akan muncul saat membuat order baru.
                 </p>
               </div>

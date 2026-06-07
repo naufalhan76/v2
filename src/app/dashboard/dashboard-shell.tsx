@@ -24,7 +24,7 @@ export function DashboardShell({
       {/* Mobile Layout */}
       <div className="md:hidden h-full min-h-0 flex flex-col">
         {/* Mobile Header with Hamburger */}
-        <header className="flex-none flex h-14 items-center gap-4 border-b bg-background px-4">
+        <header className="flex-none flex h-14 items-center gap-4 border-b border-hairline bg-background px-4">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="md:hidden">
@@ -38,7 +38,7 @@ export function DashboardShell({
           </Sheet>
           <Navbar onOpenCommandPalette={() => setCommandPaletteOpen(true)} />
         </header>
-        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-canvas-soft p-xl">
           {children}
         </main>
       </div>
@@ -55,7 +55,7 @@ export function DashboardShell({
           <header className="flex-none">
             <Navbar onOpenCommandPalette={() => setCommandPaletteOpen(true)} />
           </header>
-          <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 lg:p-6">
+          <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-canvas-soft p-xl lg:p-huge">
             {children}
           </main>
         </div>

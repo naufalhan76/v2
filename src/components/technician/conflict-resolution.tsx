@@ -73,8 +73,8 @@ export function ConflictResolution({
 }: ConflictResolutionProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] w-full max-h-[100dvh] sm:max-h-[85vh] h-full sm:h-auto flex flex-col p-0 sm:p-6 overflow-hidden bg-zinc-50 dark:bg-zinc-950 border-0 sm:border rounded-none sm:rounded-xl">
-        <div className="flex-none p-6 pb-4 bg-white dark:bg-zinc-900 border-b">
+      <DialogContent className="sm:max-w-[600px] w-full max-h-[100dvh] sm:max-h-[85vh] h-full sm:h-auto flex flex-col p-0 sm:p-6 overflow-hidden bg-canvas-soft dark:bg-primary border-0 sm:border sm:border-hairline rounded-none sm:rounded-xl">
+        <div className="flex-none p-6 pb-4 bg-background dark:bg-primary/90 border-b border-hairline">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-destructive/10 text-destructive rounded-full">
@@ -82,15 +82,15 @@ export function ConflictResolution({
               </div>
               <DialogTitle className="text-xl">Order Berubah Saat Offline</DialogTitle>
             </div>
-            <DialogDescription className="text-base text-zinc-600 dark:text-zinc-400">
+            <DialogDescription className="text-base text-ink-mute">
               Beberapa laporan gagal dikirim karena status order telah berubah di server atau sesi Anda berakhir. Anda dapat mengekspor laporan sebagai PDF sebelum membuangnya.
             </DialogDescription>
           </DialogHeader>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-0 sm:pt-4 sm:px-2 space-y-4 bg-zinc-50/50 dark:bg-zinc-950/50">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-0 sm:pt-4 sm:px-2 space-y-4 bg-canvas-soft dark:bg-canvas-soft">
           {conflicts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
+            <div className="flex flex-col items-center justify-center py-12 text-ink-faint">
               <FileWarning className="w-12 h-12 mb-4 opacity-20" />
               <p>Tidak ada konflik</p>
             </div>
@@ -98,33 +98,33 @@ export function ConflictResolution({
             conflicts.map((conflict) => (
               <div 
                 key={conflict.id} 
-                className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 shadow-sm transition-all hover:shadow-md relative overflow-hidden"
+                className="bg-background dark:bg-primary/90 border border-hairline dark:border-hairline-dark rounded-lg p-5 shadow-sm transition-all hover:shadow-md relative overflow-hidden"
               >
                 {/* Decorative side accent based on kind */}
                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${
                   conflict.kind === 'CANCELLED' ? 'bg-destructive' : 
-                  conflict.kind === 'REASSIGNED' ? 'bg-amber-500' : 
-                  'bg-blue-500'
+                  conflict.kind === 'REASSIGNED' ? 'bg-status-pending' : 
+                  'bg-status-assigned'
                 }`} />
 
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4 pl-2">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-lg text-zinc-900 dark:text-zinc-100 font-mono tracking-tight">
+                      <h3 className="font-bold text-lg text-foreground font-mono tracking-tight">
                         {conflict.orderId}
                       </h3>
                       <Badge 
                         variant={getBadgeVariant(conflict.kind) as any}
                         className={`text-[10px] uppercase tracking-wider ${
-                          conflict.kind === 'REASSIGNED' ? 'bg-amber-100 text-amber-900 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400' : ''
+                          conflict.kind === 'REASSIGNED' ? 'bg-status-pending/10 text-status-pending hover:bg-status-pending/20 dark:bg-status-pending/20 dark:text-status-pending' : ''
                         }`}
                       >
                         {getBadgeLabel(conflict.kind)}
                       </Badge>
                     </div>
                     {conflict.serverMessage && (
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 flex items-start gap-1.5 mt-2 p-3 bg-zinc-50 dark:bg-zinc-950 rounded-lg border border-zinc-100 dark:border-zinc-800">
-                        <ShieldAlert className="w-4 h-4 mt-0.5 text-zinc-400 flex-shrink-0" />
+                      <p className="text-sm text-ink-mute flex items-start gap-1.5 mt-2 p-3 bg-canvas-soft dark:bg-canvas-soft rounded-lg border border-hairline dark:border-hairline-dark">
+                        <ShieldAlert className="w-4 h-4 mt-0.5 text-ink-faint flex-shrink-0" />
                         <span>{conflict.serverMessage}</span>
                       </p>
                     )}
@@ -132,15 +132,15 @@ export function ConflictResolution({
                 </div>
 
                 <div className="pl-2 mb-5">
-                  <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  <p className="text-sm font-medium text-foreground">
                     {getSnapshotSummary(conflict)}
                   </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-2 pl-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                <div className="flex flex-col sm:flex-row gap-2 pl-2 pt-2 border-t border-hairline dark:border-hairline-dark">
                   <Button 
                     variant="outline"
-                    className="flex-1 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    className="flex-1 border-hairline dark:border-hairline-dark hover:bg-canvas-soft"
                     onClick={() => onExport(conflict)}
                     disabled={!conflict.reportSnapshot}
                   >

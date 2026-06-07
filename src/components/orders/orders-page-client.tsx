@@ -349,7 +349,7 @@ export function OrdersPageClient() {
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl font-bold sm:text-2xl">Orders</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-ink-mute">
             Kelola semua order dalam satu dashboard
           </p>
         </div>

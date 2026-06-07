@@ -126,13 +126,13 @@ function AddonSearchInput({
         disabled={disabled}
         className="h-10 flex-1 text-sm pr-8"
       />
-      <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+      <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-mute pointer-events-none" />
 
       {open && totalMatches > 0 && !disabled && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-card border rounded-lg shadow-lg max-h-56 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-background border border-hairline rounded-lg shadow-lg max-h-56 overflow-y-auto">
           {Object.entries(grouped).map(([category, items]) => (
             <div key={category}>
-              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50 sticky top-0">
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-mute bg-canvas-soft sticky top-0">
                 {category}
               </div>
               {items.map((addon) => (
@@ -144,10 +144,10 @@ function AddonSearchInput({
                     setQuery(addon.item_name)
                     setOpen(false)
                   }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-muted/70 transition-colors flex items-center justify-between gap-2"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-canvas-soft transition-colors flex items-center justify-between gap-2"
                 >
                   <span className="font-medium">{addon.item_name}</span>
-                  <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                  <span className="text-xs text-ink-mute tabular-nums shrink-0">
                     {formatCurrency(addon.unit_price)}/{addon.unit_of_measure}
                   </span>
                 </button>
@@ -344,17 +344,17 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
         <div className="flex items-center justify-center py-6 text-center border rounded-lg border-dashed">
           <div className="flex flex-col items-center gap-2">
             <div className="h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            <p className="text-sm text-muted-foreground">Memuat katalog material...</p>
+            <p className="text-sm text-ink-mute">Memuat katalog material...</p>
           </div>
         </div>
       )}
 
       {!addonsLoading && value.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-8 text-center border rounded-xl border-dashed bg-muted/10">
-          <Package className="h-10 w-10 text-muted-foreground/40 mb-3" />
+        <div className="flex flex-col items-center justify-center py-8 text-center border rounded-lg border-dashed border-hairline bg-canvas-soft">
+          <Package className="h-10 w-10 text-ink-faint mb-3" />
           <p className="text-sm font-medium text-foreground">Belum ada material</p>
           {addons.length > 0 && (
-            <p className="text-xs text-muted-foreground/70 mt-1 max-w-[200px]">
+            <p className="text-xs text-ink-mute mt-1 max-w-[200px]">
               Cari dari katalog atau tambah manual part penawaran
             </p>
           )}
@@ -390,7 +390,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
           {value.map((item, index) => (
             <div
               key={index}
-              className="rounded-xl border bg-card/90 shadow-sm p-4 space-y-3"
+              className="rounded-lg border border-hairline bg-background p-4 space-y-3"
             >
               {!item.is_manual ? (
                 // Catalog Row Layout (Read Only values, except qty)
@@ -434,7 +434,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs text-muted-foreground mb-0.5 block">Qty</label>
+                      <label className="text-xs text-ink-mute mb-0.5 block">Qty</label>
                       <Input
                         type="number"
                         inputMode="numeric"
@@ -446,22 +446,22 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-0.5 block">Harga Satuan</label>
+                      <label className="text-xs text-ink-mute mb-0.5 block">Harga Satuan</label>
                       <Input
                         type="text"
                         value={formatCurrency(item.unit_price)}
                         disabled
-                        className="h-10 text-sm bg-muted/50 font-medium"
+                        className="h-10 text-sm bg-canvas-soft font-medium"
                       />
                     </div>
                   </div>
                 </div>
               ) : (
                 // Manual/Custom Row Layout (Full customizable proposed inputs)
-                <div className="space-y-3 border-l-2 border-amber-500 pl-3">
+                <div className="space-y-3 border-l-2 border-status-pending pl-3">
                   <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-status-pending/10 px-2.5 py-0.5 text-[10px] font-semibold text-status-pending dark:text-status-pending">
+                      <span className="h-1.5 w-1.5 rounded-full bg-status-pending" />
                       ⏳ Harga Menunggu Review Admin
                     </span>
                     {!disabled && (
@@ -480,7 +480,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
 
                   <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                     <div>
-                      <label className="text-xs text-muted-foreground mb-0.5 block">Kategori *</label>
+                      <label className="text-xs text-ink-mute mb-0.5 block">Kategori *</label>
                       <Select
                         value={item.category || 'PARTS'}
                         onValueChange={(val) => updateRow(index, 'category', val)}
@@ -500,7 +500,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                     </div>
 
                     <div>
-                      <label className="text-xs text-muted-foreground mb-0.5 block">Nama Part/Material *</label>
+                      <label className="text-xs text-ink-mute mb-0.5 block">Nama Part/Material *</label>
                       <Input
                         placeholder="Nama material baru..."
                         value={item.name}
@@ -512,7 +512,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-xs text-muted-foreground mb-0.5 block">Qty *</label>
+                        <label className="text-xs text-ink-mute mb-0.5 block">Qty *</label>
                         <Input
                           type="number"
                           inputMode="numeric"
@@ -524,7 +524,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-muted-foreground mb-0.5 block">Satuan *</label>
+                        <label className="text-xs text-ink-mute mb-0.5 block">Satuan *</label>
                         <Select
                           value={item.unit_of_measure || 'pcs'}
                           onValueChange={(val) => updateRow(index, 'unit_of_measure', val)}
@@ -545,7 +545,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                     </div>
 
                     <div>
-                      <label className="text-xs text-muted-foreground mb-0.5 block">Proposed Harga Satuan *</label>
+                      <label className="text-xs text-ink-mute mb-0.5 block">Proposed Harga Satuan *</label>
                       <Input
                         type="number"
                         inputMode="numeric"
@@ -560,7 +560,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="text-xs text-muted-foreground mb-0.5 block">Deskripsi/Spesifikasi (Opsional)</label>
+                      <label className="text-xs text-ink-mute mb-0.5 block">Deskripsi/Spesifikasi (Opsional)</label>
                       <Input
                         placeholder="Keterangan tambahan..."
                         value={item.description || ''}
@@ -575,14 +575,14 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
 
               {/* Subtotal */}
               <div className="text-right text-sm border-t pt-2 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Subtotal item {index + 1}:</span>
+                <span className="text-xs text-ink-mute">Subtotal item {index + 1}:</span>
                 <span className="font-semibold">{formatCurrency(item.total)}</span>
               </div>
             </div>
           ))}
 
           {/* Grand total */}
-          <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
+          <div className="flex items-center justify-between rounded-lg bg-canvas-soft px-3 py-2">
             <span className="text-sm font-medium">Total Material</span>
             <span className="text-sm font-bold text-primary">{formatCurrency(grandTotal)}</span>
           </div>
@@ -662,7 +662,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                 className="min-h-[80px] text-sm"
               />
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-xs text-ink-mute leading-relaxed">
               Part yang diajukan akan masuk katalog setelah disetujui admin. Untuk sekarang kamu bisa memakai tombol &quot;Tambah Manual&quot; di form.
             </p>
           </div>

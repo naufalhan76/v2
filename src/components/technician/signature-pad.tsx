@@ -169,8 +169,8 @@ export function SignaturePad({ onChange, onBlobChange, value, disabled = false, 
 
       <div
         className={cn(
-          'relative rounded-xl border-2 border-dashed bg-card overflow-hidden shadow-sm ring-1 ring-inset ring-black/5 dark:ring-white/5',
-          disabled ? 'opacity-50 pointer-events-none' : 'border-muted-foreground/30 hover:border-primary/50 transition-colors duration-200',
+          'relative rounded-lg border-2 border-dashed border-hairline bg-background overflow-hidden',
+          disabled ? 'opacity-50 pointer-events-none' : 'hover:border-primary/50 transition-colors duration-200',
           !isEmpty && 'border-solid border-primary/40'
         )}
       >
@@ -184,7 +184,7 @@ export function SignaturePad({ onChange, onBlobChange, value, disabled = false, 
         {/* Placeholder text when empty */}
         {isEmpty && !disabled && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="text-sm text-muted-foreground/50">
+            <p className="text-sm text-ink-faint">
               Tanda tangan di sini
             </p>
           </div>
@@ -192,7 +192,7 @@ export function SignaturePad({ onChange, onBlobChange, value, disabled = false, 
       </div>
 
       {isEmpty && !disabled && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-ink-mute">
           Minta customer untuk menandatangani di area di atas
         </p>
       )}

@@ -8,9 +8,9 @@ import { getStatusLabel } from '@/lib/order-status'
 import { CheckCircle2, XCircle } from 'lucide-react'
 
 const COLORS = {
-  completed: 'hsl(142.1 76.2% 36.3%)',
-  cancelled: 'hsl(0 84.2% 60.2%)',
-  other: 'hsl(var(--muted-foreground))',
+  completed: 'hsl(var(--status-completed))',
+  cancelled: 'hsl(var(--status-cancelled))',
+  other: 'hsl(var(--ink-mute))',
 }
 
 export function SuccessVsCancelChart({
@@ -63,26 +63,26 @@ export function SuccessVsCancelChart({
 
   if (loading) {
     return (
-      <Card className="border-0 shadow-sm bg-background animate-pulse">
+      <Card className="border-hairline shadow-none bg-background animate-pulse">
         <CardHeader className="pb-2">
-          <div className="h-5 w-40 bg-muted rounded" />
+          <div className="h-5 w-40 bg-canvas-soft rounded" />
         </CardHeader>
         <CardContent>
-          <div className="h-[260px] bg-muted rounded" />
+          <div className="h-[260px] bg-canvas-soft rounded" />
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <Card className="border-0 shadow-sm bg-background transition-shadow hover:shadow-md">
+    <Card className="border-hairline shadow-none bg-background transition-shadow hover:shadow-md">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="flex gap-1">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            <XCircle className="h-4 w-4 text-red-500" />
+            <CheckCircle2 className="h-4 w-4 text-status-completed" />
+            <XCircle className="h-4 w-4 text-status-cancelled" />
           </div>
-          <CardTitle className="text-sm font-semibold text-foreground">
+          <CardTitle className="text-2xl tracking-tight text-foreground">
             Selesai vs Dibatalkan
           </CardTitle>
         </div>
@@ -90,7 +90,7 @@ export function SuccessVsCancelChart({
       <CardContent>
         <div className="h-[260px] w-full">
           {data.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+            <div className="flex items-center justify-center h-full text-lg text-ink-mute">
               Tidak ada data
             </div>
           ) : (
@@ -113,7 +113,7 @@ export function SuccessVsCancelChart({
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
+                    border: '1px solid hsl(var(--hairline))',
                     borderRadius: '8px',
                     fontSize: '12px',
                   }}
@@ -122,7 +122,7 @@ export function SuccessVsCancelChart({
                 <Legend
                   verticalAlign="bottom"
                   height={36}
-                  wrapperStyle={{ fontSize: '12px' }}
+                  wrapperStyle={{ fontSize: '14px', color: 'hsl(var(--foreground))' }}
                 />
               </PieChart>
             </ResponsiveContainer>

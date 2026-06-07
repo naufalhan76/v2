@@ -127,7 +127,7 @@ export function PhotoUpload({
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">
           {label}
-          <span className="text-muted-foreground ml-1">
+          <span className="text-ink-mute ml-1">
             ({value.length}/{max})
           </span>
         </label>
@@ -167,8 +167,8 @@ export function PhotoUpload({
             onClick={() => inputRef.current?.click()}
             disabled={uploading}
             className={cn(
-              'flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed',
-              'text-muted-foreground hover:border-primary hover:text-primary transition-colors',
+              'flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-hairline bg-canvas-soft',
+              'text-ink-mute hover:border-primary hover:text-primary transition-colors',
               'min-h-[80px]',
               uploading && 'pointer-events-none opacity-50'
             )}

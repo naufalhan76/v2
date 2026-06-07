@@ -24,9 +24,9 @@ interface ServiceTypeBadgeProps {
 export function ServiceTypeBadge({ serviceType, size = 'default', className }: ServiceTypeBadgeProps) {
   const normalized = (serviceType?.toUpperCase() ?? '') as ServiceType
   const colors = SERVICE_TYPE_COLORS[normalized] ?? {
-    bg: 'bg-gray-100 dark:bg-gray-800/40',
-    text: 'text-gray-700 dark:text-gray-300',
-    border: 'border-gray-200 dark:border-gray-700',
+    bg: 'bg-canvas-soft dark:bg-canvas-soft',
+    text: 'text-foreground dark:text-foreground',
+    border: 'border-hairline dark:border-hairline',
   }
   const label = SERVICE_TYPE_LABELS[normalized] ?? serviceType ?? 'Unknown'
 

@@ -267,25 +267,24 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
     <div className="space-y-6 pb-8">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <Link
-          href={`/technician/job/${orderId}`}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground h-11 px-1"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Kembali</span>
-        </Link>
+        <Button variant="outline" size="sm" className="rounded-md" asChild>
+          <Link href={`/technician/job/${orderId}`}>
+            <ArrowLeft className="h-4 w-4" />
+            <span className="ml-1">Kembali</span>
+          </Link>
+        </Button>
       </div>
 
       <div>
         <h1 className="text-xl font-semibold">Laporan Pekerjaan</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-ink-mute">
           Lengkapi laporan untuk menyelesaikan pekerjaan ini
         </p>
       </div>
 
       {/* Offline banner */}
       {!isOnline && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+        <div className="flex items-center gap-2 rounded-lg border border-status-pending/20 bg-status-pending/5 p-3 text-sm text-status-pending dark:border-status-pending/30 dark:text-status-pending">
           <WifiOff className="h-4 w-4 shrink-0" />
           <span>Anda sedang offline. Data tersimpan sebagai draft.</span>
         </div>
@@ -293,7 +292,7 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
 
       {/* Draft restored notice */}
       {draftRestored && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
+        <div className="rounded-lg border border-status-assigned/30 bg-status-assigned/10 p-3 text-sm text-status-assigned dark:border-status-assigned/30 dark:bg-status-assigned/10 dark:text-status-assigned">
           Draft sebelumnya berhasil dipulihkan.
         </div>
       )}
@@ -346,7 +345,7 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
           className="h-11 text-base"
           placeholder="0"
         />
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-ink-mute">
           Pre-filled dari total material. Bisa disesuaikan jika ada negosiasi di lapangan.
         </p>
       </div>
@@ -367,10 +366,10 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
       </div>
 
       {/* Next-service recommendation */}
-      <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+      <div className="space-y-3 rounded-lg border border-hairline bg-canvas-soft p-4">
         <div>
           <h2 className="text-sm font-semibold">Rekomendasi Service Berikutnya</h2>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-ink-mute">
             Estimasi jadwal service rutin selanjutnya. Default 90 hari, sesuaikan jika perlu.
           </p>
         </div>

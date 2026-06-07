@@ -13,10 +13,10 @@ function Delta({ value, variant = 'badge', className, children, ...props }: Delt
   const isNeutral = value === 0
 
   const colorClass = isPositive
-    ? 'text-emerald-600'
+    ? 'text-status-completed'
     : isNegative
-      ? 'text-red-600'
-      : 'text-zinc-500'
+      ? 'text-status-cancelled'
+      : 'text-ink-mute'
 
   const Icon = isPositive ? TrendingUp : isNegative ? TrendingDown : null
 
@@ -24,10 +24,10 @@ function Delta({ value, variant = 'badge', className, children, ...props }: Delt
 
   if (variant === 'badge') {
     const bgClass = isPositive
-      ? 'bg-emerald-50'
+      ? 'bg-status-completed/12'
       : isNegative
-        ? 'bg-red-50'
-        : 'bg-zinc-50'
+        ? 'bg-status-cancelled/12'
+        : 'bg-canvas-soft'
 
     return (
       <div

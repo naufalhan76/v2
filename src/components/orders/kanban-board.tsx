@@ -182,7 +182,7 @@ export function KanbanBoard({
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveOrder(null)}
       >
-        <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none lg:snap-none -mx-4 px-4 sm:mx-0 sm:px-0 sm:gap-4">
+        <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none lg:snap-none -mx-4 px-4 sm:mx-0 sm:px-0 sm:gap-4 bg-canvas-soft rounded-lg p-4">
           {BOARD_COLUMNS.map((col) => (
             <KanbanColumn
               key={col.id}
@@ -209,7 +209,11 @@ export function KanbanBoard({
           ))}
         </div>
         <DragOverlay>
-          {activeOrder ? <OrderCard order={activeOrder} hideStatusBadge /> : null}
+          {activeOrder ? (
+            <div className="rounded-lg border-2 border-primary shadow-lg">
+              <OrderCard order={activeOrder} hideStatusBadge />
+            </div>
+          ) : null}
         </DragOverlay>
       </DndContext>
 

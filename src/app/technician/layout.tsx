@@ -30,7 +30,7 @@ export default function TechnicianLayout({
       <ServiceWorkerRegister />
 
       {/* Main content area — bottom bar auto-hides on /complete routes */}
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main className="flex-1 overflow-y-auto pb-huge">
         <TechnicianShell>{children}</TechnicianShell>
       </main>
 

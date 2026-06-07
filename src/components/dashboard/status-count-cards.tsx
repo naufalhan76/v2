@@ -40,7 +40,7 @@ export function StatusCountCards({
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="h-20 bg-muted rounded-xl animate-pulse"
+            className="h-20 bg-canvas-soft rounded-lg animate-pulse border border-hairline"
             style={{ animationDelay: `${i * 50}ms` }}
           />
         ))}
@@ -57,10 +57,7 @@ export function StatusCountCards({
         return (
           <Card
             key={status}
-            className={cn(
-              'border-0 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5',
-              'bg-background'
-            )}
+            className="border-hairline bg-canvas-soft shadow-none transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
             style={{
               animationDelay: `${index * 60}ms`,
             }}
@@ -69,14 +66,14 @@ export function StatusCountCards({
               <div
                 className={cn('w-2 h-2 rounded-full', colors.bg)}
               />
-              <span className={cn('text-lg font-bold leading-none', colors.text)}>
+              <span className={cn('text-[22px] font-[460] leading-none', colors.text)}>
                 {count}
               </span>
-              <span className="text-[10px] font-medium text-muted-foreground leading-tight">
+              <span className="text-xs font-medium text-ink-mute leading-tight">
                 {getStatusLabel(status)}
               </span>
               {total > 0 && (
-                <span className="text-[10px] tabular-nums text-muted-foreground/70">
+                <span className="text-xs tabular-nums text-ink-faint">
                   {pct}%
                 </span>
               )}

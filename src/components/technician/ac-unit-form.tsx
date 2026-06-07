@@ -126,7 +126,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
           <Card key={field.id} className="overflow-hidden shadow-sm">
             <CardHeader 
               className={cn(
-                "p-4 flex flex-row items-center justify-between cursor-pointer transition-colors hover:bg-muted/50 active:bg-muted/80",
+                "p-4 flex flex-row items-center justify-between cursor-pointer transition-colors hover:bg-canvas-soft active:bg-canvas-soft",
                 !isExpanded && "pb-4"
               )}
               onClick={() => toggleExpand(field.id)}
@@ -140,7 +140,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                     AC {index + 1}
                     {isSkipped && <span className="ml-2 text-xs font-normal text-destructive">(Tidak diservis)</span>}
                   </CardTitle>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-ink-mute">
                     {formValues[index]?.brand || 'Merk belum diisi'} 
                     {formValues[index]?.capacity_label ? ` (${formValues[index]?.capacity_label})` : ''}
                     {formValues[index]?.room_location ? ` • ${formValues[index]?.room_location}` : ''}
@@ -149,9 +149,9 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
               </div>
               <div className="flex items-center gap-2">
                 {isExpanded ? (
-                  <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  <ChevronUp className="h-5 w-5 text-ink-mute" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  <ChevronDown className="h-5 w-5 text-ink-mute" />
                 )}
               </div>
             </CardHeader>
@@ -159,7 +159,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
             {isExpanded && (
               <CardContent className="p-4 pt-0 space-y-6">
                 {isExisting && (
-                  <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3">
+                  <div className="flex flex-col gap-2 rounded-lg border border-hairline bg-canvas-soft p-3">
                     <div className="flex items-center justify-between">
                       <Label htmlFor={`skip-${index}`} className="text-sm font-medium cursor-pointer">
                         Tandai tidak diservis
@@ -372,7 +372,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
       })}
 
       {fields.length === 0 && (
-        <div className="rounded-lg border border-dashed bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+        <div className="rounded-lg border border-dashed border-hairline bg-canvas-soft p-6 text-center text-sm text-ink-mute">
           Order ini tidak memiliki unit AC yang perlu diinspeksi.
         </div>
       )}

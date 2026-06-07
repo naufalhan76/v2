@@ -41,20 +41,29 @@ export function DashboardOnboarding({ children }: { children: React.ReactNode })
   return (
     <TooltipProvider delayDuration={200}>
       {showBanner && (
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-4 flex items-start gap-3">
-          <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">
-              Selamat datang di Dashboard MSN ERP
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Halaman ini menampilkan order yang memerlukan perhatian Anda. Gunakan filter tanggal untuk melihat periode tertentu, dan klik &quot;Buat Order&quot; atau &quot;Tugaskan&quot; untuk mengelola pekerjaan.
-            </p>
+        <div className="relative mb-4">
+          {/* Indigo overlay backdrop */}
+          <div className="absolute inset-0 bg-[#1b1938]/90 rounded-xl" />
+          {/* Canvas card */}
+          <div className="relative rounded-xl border border-hairline bg-background shadow-lg p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-canvas-soft">
+                <Lightbulb className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-[28px] font-[540] leading-tight text-foreground mb-2">
+                  Selamat datang di Dashboard MSN ERP
+                </h3>
+                <p className="text-lg text-ink-mute leading-relaxed">
+                  Halaman ini menampilkan order yang memerlukan perhatian Anda. Gunakan filter tanggal untuk melihat periode tertentu, dan klik &quot;Buat Order&quot; atau &quot;Tugaskan&quot; untuk mengelola pekerjaan.
+                </p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-ink-mute hover:text-foreground" onClick={dismiss}>
+                <X className="h-4 w-4" />
+                <span className="sr-only">Tutup</span>
+              </Button>
+            </div>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={dismiss}>
-            <X className="h-4 w-4" />
-            <span className="sr-only">Tutup</span>
-          </Button>
         </div>
       )}
       {children}

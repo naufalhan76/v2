@@ -204,7 +204,7 @@ export function AssignModal({
                   type="button"
                   className={cn(
                     'h-11 w-full justify-start text-left font-normal sm:h-9',
-                    !scheduledDate && 'text-muted-foreground'
+                    !scheduledDate && 'text-ink-mute'
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -231,7 +231,7 @@ export function AssignModal({
 
           {/* Server/submission errors */}
           {form.formState.errors.root && (
-            <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-base text-destructive">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{form.formState.errors.root.message}</span>
             </div>
@@ -239,7 +239,7 @@ export function AssignModal({
 
           {/* Technician query error */}
           {techQueryError && (
-            <div className="flex items-center gap-2 rounded-lg border border-amber-500/50 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-700 dark:text-amber-400">
+            <div className="flex items-center gap-2 rounded-lg border border-status-pending/30 bg-[#fef3c7] dark:bg-amber-950/30 p-3 text-sm text-[#d97706] dark:text-amber-400">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>Gagal memuat daftar teknisi. Silakan coba lagi.</span>
             </div>

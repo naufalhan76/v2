@@ -38,15 +38,15 @@ function getRateColor(rate: number): 'emerald' | 'amber' | 'red' {
 }
 
 function getRateTextColor(rate: number): string {
-  if (rate >= 80) return 'text-emerald-700 dark:text-emerald-300'
-  if (rate >= 50) return 'text-amber-700 dark:text-amber-300'
-  return 'text-red-700 dark:text-red-300'
+  if (rate >= 80) return 'text-status-completed'
+  if (rate >= 50) return 'text-status-pending'
+  return 'text-status-cancelled'
 }
 
 function getRateBgColor(rate: number): string {
-  if (rate >= 80) return 'bg-emerald-100 dark:bg-emerald-900/40'
-  if (rate >= 50) return 'bg-amber-100 dark:bg-amber-900/40'
-  return 'bg-red-100 dark:bg-red-900/40'
+  if (rate >= 80) return 'bg-status-completed/12'
+  if (rate >= 50) return 'bg-status-pending/12'
+  return 'bg-status-cancelled/12'
 }
 
 export function TopTechniciansList({
@@ -76,18 +76,18 @@ export function TopTechniciansList({
 
   if (loading) {
     return (
-      <Card className="border-0 shadow-sm bg-background animate-pulse">
+      <Card className="border-hairline shadow-none bg-background animate-pulse">
         <CardHeader className="pb-2">
-          <div className="h-5 w-48 bg-muted rounded" />
+          <div className="h-5 w-48 bg-canvas-soft rounded" />
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="h-9 w-9 bg-muted rounded-full" />
+                <div className="h-9 w-9 bg-canvas-soft rounded-full" />
                 <div className="flex-1 space-y-1">
-                  <div className="h-3.5 w-28 bg-muted rounded" />
-                  <div className="h-3 w-20 bg-muted rounded" />
+                  <div className="h-3.5 w-28 bg-canvas-soft rounded" />
+                  <div className="h-3 w-20 bg-canvas-soft rounded" />
                 </div>
               </div>
             ))}
@@ -98,19 +98,19 @@ export function TopTechniciansList({
   }
 
   return (
-    <Card className="border-0 shadow-sm bg-background transition-shadow hover:shadow-md">
+    <Card className="border-hairline shadow-none bg-background transition-shadow hover:shadow-md">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
-          <Medal className="h-4 w-4 text-amber-500" />
-          <CardTitle className="text-sm font-semibold text-foreground">
+          <Medal className="h-4 w-4 text-status-pending" />
+          <CardTitle className="text-2xl tracking-tight text-foreground">
             Top 10 Teknisi
           </CardTitle>
         </div>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-sm text-muted-foreground gap-2">
-            <Wrench className="h-6 w-6 text-muted-foreground/40" />
+          <div className="flex flex-col items-center justify-center py-10 text-lg text-ink-mute gap-2">
+            <Wrench className="h-6 w-6 text-ink-faint" />
             <span>Belum ada data teknisi</span>
           </div>
         ) : (
@@ -122,17 +122,17 @@ export function TopTechniciansList({
                 <li
                   key={tech.id}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/50',
-                    index < 3 && 'bg-amber-50/40 dark:bg-amber-950/10'
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-canvas-soft',
+                    index < 3 && 'bg-canvas-soft'
                   )}
                 >
                   {/* Rank badge */}
-                  <span className="w-5 text-center text-xs font-bold text-muted-foreground tabular-nums">
+                  <span className="w-5 text-center text-xs font-bold text-ink-mute tabular-nums">
                     {index + 1}
                   </span>
 
                   {/* Avatar */}
-                  <Avatar className="h-9 w-9 border border-border">
+                  <Avatar className="h-9 w-9 border border-hairline">
                     <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
                       {getInitials(tech.name)}
                     </AvatarFallback>
@@ -140,10 +140,10 @@ export function TopTechniciansList({
 
                   {/* Name + stats */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
+                    <p className="text-lg text-foreground truncate">
                       {tech.name}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-ink-mute">
                       {tech.completed} selesai
                       <span className="mx-1">·</span>
                       {tech.total} total
@@ -169,7 +169,7 @@ export function TopTechniciansList({
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
-                          className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          className="h-7 w-7 inline-flex items-center justify-center rounded-md text-ink-mute hover:text-foreground hover:bg-canvas-soft transition-colors"
                           aria-label={`Menu untuk ${tech.name}`}
                         >
                           <MoreHorizontal className="h-4 w-4" />

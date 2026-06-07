@@ -250,7 +250,7 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
   if (loadingContext) {
     return (
       <div className="flex h-40 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-8 w-8 animate-spin text-ink-mute" />
       </div>
     )
   }
@@ -263,7 +263,7 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
       <div className="flex items-center justify-between">
         <Link
           href={`/technician/job/${orderId}`}
-          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center text-sm font-medium text-ink-mute hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Kembali
@@ -273,7 +273,7 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
 
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Penyelesaian Pekerjaan</h1>
-        <p className="text-muted-foreground">
+        <p className="text-ink-mute">
           Selesaikan pesanan untuk <strong>{customerName}</strong> di {locationAddress}
         </p>
       </div>

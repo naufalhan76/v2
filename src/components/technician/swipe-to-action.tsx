@@ -75,18 +75,18 @@ export function SwipeToAction({
     <div 
       ref={containerRef}
       className={cn(
-        "relative h-16 w-full rounded-full bg-muted/60 overflow-hidden select-none touch-none border border-border/50 transition-colors duration-300",
-        isCompleted && "bg-blue-600 border-blue-700 dark:bg-blue-600 dark:border-blue-700 shadow-inner",
+        "relative h-16 w-full rounded-full bg-canvas-soft overflow-hidden select-none touch-none border border-hairline transition-colors duration-300",
+        isCompleted && "bg-primary border-primary dark:bg-primary dark:border-primary shadow-inner",
         className
       )}
     >
       {/* Progress Track Fill */}
       <div 
         className={cn(
-          "absolute left-0 top-0 bottom-0 bg-blue-600/20 dark:bg-blue-500/20 border-r border-blue-500/30",
+          "absolute left-0 top-0 bottom-0 bg-primary/20 dark:bg-primary/20 border-r border-primary/30",
           !isDragging && "transition-all duration-300 cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-          isCompleted && "bg-blue-600 dark:bg-blue-600 border-none",
-          isLoading && "bg-blue-600/10 dark:bg-blue-500/10 border-none animate-pulse"
+          isCompleted && "bg-primary dark:bg-primary border-none",
+          isLoading && "bg-primary/20 dark:bg-primary/20 border-none animate-pulse"
         )}
         style={{ width: isCompleted ? '100%' : isLoading ? '100%' : `${xPos + 56 + 8}px` }}
       />
@@ -94,7 +94,7 @@ export function SwipeToAction({
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
         <span 
           className={cn(
-            "text-[15px] font-medium transition-opacity duration-200 text-muted-foreground"
+            "text-[15px] font-medium transition-opacity duration-200 text-ink-mute"
           )}
           style={{ 
             opacity: isLoading || isCompleted ? 0 : Math.max(0, 1 - (xPos / (maxTravel.current || 1)) * 1.5)

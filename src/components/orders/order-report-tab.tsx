@@ -67,20 +67,20 @@ export function OrderReportTab({ orderId }: OrderReportTabProps) {
   return (
     <div className="space-y-5">
       {/* Pricing summary — visually prominent */}
-      <Card className="border-primary/40 bg-primary/5">
+      <Card className="border-primary/30 bg-canvas-soft">
         <CardContent className="flex items-center justify-between p-4">
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs uppercase tracking-wide text-ink-mute">
               Total Aktual
             </p>
-            <p className="text-2xl font-bold text-primary">
+            <p className="text-5xl font-bold text-primary">
               {formatCurrency(report.actual_total_price)}
             </p>
           </div>
           {report.technicians?.technician_name && (
             <div className="text-right">
-              <p className="text-xs text-muted-foreground">Submitted by</p>
-              <p className="text-sm font-medium">
+              <p className="text-xs text-ink-mute">Submitted by</p>
+              <p className="text-lg font-medium text-foreground">
                 {report.technicians.technician_name}
               </p>
             </div>
@@ -112,8 +112,8 @@ export function OrderReportTab({ orderId }: OrderReportTabProps) {
         <>
           <Separator />
           <div className="space-y-2">
-            <p className="text-sm font-semibold">Catatan Teknisi</p>
-            <p className="whitespace-pre-wrap rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+            <p className="text-lg font-[540] text-foreground">Catatan Teknisi</p>
+            <p className="whitespace-pre-wrap rounded-md bg-canvas-soft p-3 text-lg text-ink-mute">
               {report.notes}
             </p>
           </div>
@@ -123,8 +123,8 @@ export function OrderReportTab({ orderId }: OrderReportTabProps) {
       {/* Timeline */}
       <Separator />
       <div className="space-y-2">
-        <p className="text-sm font-semibold">Timeline</p>
-        <dl className="space-y-1 text-xs text-muted-foreground">
+        <p className="text-lg font-[540] text-foreground">Timeline</p>
+        <dl className="space-y-1 text-base text-ink-mute">
           <div className="flex items-center gap-2">
             <Clock className="h-3.5 w-3.5" />
             <dt className="w-32">Mulai kerja</dt>

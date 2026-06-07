@@ -20,7 +20,7 @@ function Skeleton({
 // Card Skeleton untuk mencegah layout shift
 export function CardSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)}>
+    <div className={cn("rounded-lg border border-hairline bg-background text-foreground", className)}>
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between space-y-0 pb-2">
           <Skeleton className="h-4 w-[100px]" />
@@ -38,7 +38,7 @@ export function CardSkeleton({ className }: { className?: string }) {
 export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
   return (
     <div className="w-full">
-      <div className="border-b">
+      <div className="border-b border-hairline">
         <div className="flex items-center p-3 sm:p-4 gap-3 sm:gap-4">
           {Array.from({ length: columns }).map((_, i) => (
             <Skeleton
@@ -52,7 +52,7 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
           ))}
         </div>
       </div>
-      <div className="divide-y">
+      <div className="divide-y divide-hairline">
         {Array.from({ length: rows }).map((_, rowIndex) => (
           <div key={rowIndex} className="flex items-center p-3 sm:p-4 gap-3 sm:gap-4">
             {Array.from({ length: columns }).map((_, colIndex) => (
@@ -91,7 +91,7 @@ export function KpiCardSkeleton() {
 
 export function ChartSkeleton({ height = 400 }: { height?: number }) {
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+    <div className="rounded-lg border border-hairline bg-background">
       <div className="p-6 space-y-4">
         <div className="space-y-2">
           <Skeleton className="h-6 w-[200px]" />
@@ -132,7 +132,7 @@ export function ListSkeleton({ items = 5 }: { items?: number }) {
   return (
     <div className="space-y-4">
       {Array.from({ length: items }).map((_, i) => (
-        <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg">
+        <div key={i} className="flex items-center space-x-4 p-4 border border-hairline rounded-lg">
           <Skeleton className="h-10 w-10 rounded-full" />
           <div className="space-y-2 flex-1">
             <Skeleton className="h-4 w-[200px]" />

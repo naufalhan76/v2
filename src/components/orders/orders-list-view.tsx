@@ -220,8 +220,8 @@ export function OrdersListView({ orders, isLoading, hasFilters, onRowClick }: Or
   return (
     <div className="space-y-3">
       {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2">
-          <p className="text-sm text-muted-foreground">{selectedIds.length} order dipilih</p>
+        <div className="flex items-center justify-between rounded-lg border border-hairline bg-canvas-soft px-3 py-2">
+          <p className="text-base text-ink-mute">{selectedIds.length} order dipilih</p>
           <Button
             variant="outline"
             size="sm"
@@ -234,7 +234,7 @@ export function OrdersListView({ orders, isLoading, hasFilters, onRowClick }: Or
         </div>
       )}
 
-      <div className="rounded-xl border hidden md:block">
+      <div className="rounded-lg border hidden md:block">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -285,7 +285,7 @@ export function OrdersListView({ orders, isLoading, hasFilters, onRowClick }: Or
                   onRowClick(order.order_id)
                 }
               }}
-              className="rounded-xl border bg-card p-3 shadow-sm active:bg-muted/50 transition-colors cursor-pointer"
+              className="rounded-lg border border-hairline bg-background p-3 shadow-sm active:bg-canvas-soft transition-colors cursor-pointer"
             >
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex items-start gap-2 min-w-0 flex-1">
@@ -297,10 +297,10 @@ export function OrdersListView({ orders, isLoading, hasFilters, onRowClick }: Or
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">
+                    <p className="text-xl font-bold text-foreground truncate">
                       {order.customers?.customer_name ?? 'Customer'}
                     </p>
-                    <p className="font-mono text-[11px] text-muted-foreground truncate">
+                    <p className="font-mono text-xs text-ink-mute truncate">
                       {order.order_id}
                     </p>
                   </div>
@@ -340,7 +340,7 @@ export function OrdersListView({ orders, isLoading, hasFilters, onRowClick }: Or
                 {serviceType && <ServiceTypeBadge serviceType={serviceType} size="sm" />}
               </div>
 
-              <div className="space-y-1 text-xs text-muted-foreground">
+              <div className="space-y-1 text-base text-ink-mute">
                 {dateStr && (
                   <div className="flex items-center gap-1.5">
                     <CalendarIcon className="h-3 w-3 shrink-0" />
@@ -362,7 +362,7 @@ export function OrdersListView({ orders, isLoading, hasFilters, onRowClick }: Or
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-base text-ink-mute">
           Menampilkan {table.getRowModel().rows.length} dari {orders.length} order
         </p>
         <div className="flex gap-2">

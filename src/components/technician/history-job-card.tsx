@@ -48,7 +48,7 @@ export function HistoryJobCard({ job }: HistoryJobCardProps) {
   return (
     <Link
       href={`/technician/job/${job.order_id}`}
-      className="block rounded-xl border bg-card p-4 transition-colors active:bg-accent/50 hover:bg-accent/30"
+      className="block rounded-lg border border-hairline bg-background p-4 transition-colors active:bg-canvas-soft hover:bg-canvas-soft"
     >
       {/* Top row: customer + status */}
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -58,16 +58,16 @@ export function HistoryJobCard({ job }: HistoryJobCardProps) {
 
       {/* Details */}
       <div className="space-y-1">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-xs text-ink-mute">
           <Wrench className="h-3 w-3 shrink-0" aria-hidden="true" />
           <span>{serviceType}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-xs text-ink-mute">
           <Calendar className="h-3 w-3 shrink-0" aria-hidden="true" />
           <span>{scheduledDate}</span>
         </div>
         {actualPrice > 0 && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs text-ink-mute">
             <Banknote className="h-3 w-3 shrink-0" aria-hidden="true" />
             <span className="font-medium text-foreground">{formatCurrency(actualPrice)}</span>
           </div>

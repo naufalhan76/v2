@@ -39,7 +39,7 @@ function JakartaTime() {
   }, [])
 
   return (
-    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div className="flex items-center gap-2 text-sm text-ink-mute">
       <Clock className="h-4 w-4" />
       <div className="text-right">
         <div className="font-mono font-medium text-foreground">{time}</div>
@@ -62,11 +62,11 @@ export function Navbar({ onOpenCommandPalette }: { onOpenCommandPalette?: () => 
   }
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b border-border/50 bg-card px-4 lg:h-[60px] lg:px-6 shadow-sm">
+    <header className="flex h-14 items-center gap-4 border-b border-hairline bg-background px-4 lg:h-[60px] lg:px-6">
       <div className="w-full flex-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold md:text-xl">
+            <h1 className="text-2xl font-[460]">
               {getPageTitle()}
             </h1>
           </div>
@@ -77,7 +77,7 @@ export function Navbar({ onOpenCommandPalette }: { onOpenCommandPalette?: () => 
             <button
               type="button"
               onClick={onOpenCommandPalette}
-              className="hidden md:flex items-center gap-1.5 rounded-md border border-border/60 bg-background px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+              className="hidden md:flex items-center gap-1.5 rounded-md border border-hairline bg-background px-2 py-1 text-xs text-ink-mute hover:text-foreground hover:bg-canvas-soft transition-colors"
             >
               <Command className="h-3 w-3" />
               <span className="font-medium">K</span>

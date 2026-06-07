@@ -166,44 +166,44 @@ export function getStatusLabel(status: string): string {
  */
 export const ORDER_STATUS_COLORS: Record<OrderStatus, { bg: string; text: string; border: string }> = {
   PENDING: {
-    bg: 'bg-amber-100 dark:bg-amber-950/40',
-    text: 'text-amber-700 dark:text-amber-300',
-    border: 'border-amber-200 dark:border-amber-800',
+    bg: 'bg-status-pending/12',
+    text: 'text-status-pending',
+    border: 'border-status-pending/30',
   },
   ASSIGNED: {
-    bg: 'bg-blue-100 dark:bg-blue-950/40',
-    text: 'text-blue-700 dark:text-blue-300',
-    border: 'border-blue-200 dark:border-blue-800',
+    bg: 'bg-status-assigned/12',
+    text: 'text-status-assigned',
+    border: 'border-status-assigned/30',
   },
   EN_ROUTE: {
-    bg: 'bg-indigo-100 dark:bg-indigo-950/40',
-    text: 'text-indigo-700 dark:text-indigo-300',
-    border: 'border-indigo-200 dark:border-indigo-800',
+    bg: 'bg-status-en-route/12',
+    text: 'text-status-en-route',
+    border: 'border-status-en-route/30',
   },
   IN_PROGRESS: {
-    bg: 'bg-violet-100 dark:bg-violet-950/40',
-    text: 'text-violet-700 dark:text-violet-300',
-    border: 'border-violet-200 dark:border-violet-800',
+    bg: 'bg-status-in-progress/12',
+    text: 'text-status-in-progress',
+    border: 'border-status-in-progress/30',
   },
   COMPLETED: {
-    bg: 'bg-green-100 dark:bg-green-950/40',
-    text: 'text-green-700 dark:text-green-300',
-    border: 'border-green-200 dark:border-green-800',
+    bg: 'bg-status-completed/12',
+    text: 'text-status-completed',
+    border: 'border-status-completed/30',
   },
   INVOICED: {
-    bg: 'bg-cyan-100 dark:bg-cyan-950/40',
-    text: 'text-cyan-700 dark:text-cyan-300',
-    border: 'border-cyan-200 dark:border-cyan-800',
+    bg: 'bg-status-invoiced/12',
+    text: 'text-status-invoiced',
+    border: 'border-status-invoiced/30',
   },
   PAID: {
-    bg: 'bg-emerald-100 dark:bg-emerald-950/40',
-    text: 'text-emerald-700 dark:text-emerald-300',
-    border: 'border-emerald-200 dark:border-emerald-800',
+    bg: 'bg-status-paid/12',
+    text: 'text-status-paid',
+    border: 'border-status-paid/30',
   },
   CANCELLED: {
-    bg: 'bg-red-100 dark:bg-red-950/40',
-    text: 'text-red-700 dark:text-red-300',
-    border: 'border-red-200 dark:border-red-800',
+    bg: 'bg-status-cancelled/12',
+    text: 'text-status-cancelled',
+    border: 'border-status-cancelled/30',
   },
 }
 

@@ -52,7 +52,7 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
       <div
         className={cn(
           baseClass,
-          'border-destructive bg-destructive text-destructive-foreground'
+          'border-status-pending bg-status-pending text-white'
         )}
         role="status"
         aria-label="Tidak ada koneksi"
@@ -64,7 +64,7 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
         <CloudOff className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         {!isCompact && <span>Offline</span>}
         {hasPending && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white text-destructive px-1.5 text-[10px] font-bold tabular-nums">
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white text-status-pending px-1.5 text-[10px] font-bold tabular-nums">
             {pendingCount}
           </span>
         )}
@@ -111,7 +111,7 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
         onClick={() => void syncNow()}
         className={cn(
           baseClass,
-          'border-amber-500 bg-amber-500 text-white hover:bg-amber-600 cursor-pointer'
+          'border-status-pending bg-status-pending text-white hover:bg-status-pending/90 cursor-pointer'
         )}
         aria-label={`${pendingCount} item tertunda. Ketuk untuk sinkronkan sekarang.`}
       >
@@ -122,7 +122,7 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
         <RefreshCw className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         {!isCompact && <span className="tabular-nums">{pendingCount} tertunda</span>}
         {isCompact && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white text-amber-600 px-1.5 text-[10px] font-bold tabular-nums">
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white text-status-pending px-1.5 text-[10px] font-bold tabular-nums">
             {pendingCount}
           </span>
         )}
@@ -136,18 +136,18 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
           <TooltipContent side="bottom" align="end" className="space-y-1.5">
             <p className="text-xs font-semibold">Detail Tertunda</p>
             <div className="flex items-center gap-2 text-xs">
-              <FileText className="h-3 w-3 text-muted-foreground" />
+              <FileText className="h-3 w-3 text-ink-mute" />
               <span>{pending.reports} laporan</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
-              <ImageIcon className="h-3 w-3 text-muted-foreground" />
+              <ImageIcon className="h-3 w-3 text-ink-mute" />
               <span>{pending.photos} foto</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
-              <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
+              <ArrowRightLeft className="h-3 w-3 text-ink-mute" />
               <span>{pending.transitions} transisi</span>
             </div>
-            <p className="text-[10px] text-muted-foreground pt-1 border-t">
+            <p className="text-[10px] text-ink-mute pt-1 border-t">
               Klik untuk sinkronkan sekarang
             </p>
           </TooltipContent>
@@ -161,7 +161,7 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
       <div
         className={cn(
           baseClass,
-          'border-emerald-600 bg-emerald-600 text-white'
+          'border-status-completed bg-status-completed text-white'
         )}
         role="status"
         aria-label="Sinkronisasi berhasil"
@@ -177,7 +177,7 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
     <div
       className={cn(
         baseClass,
-        'border-emerald-600 bg-emerald-600 text-white'
+        'border-status-completed bg-status-completed text-white'
       )}
       role="status"
       aria-label="Online dan tersinkron"

@@ -58,8 +58,8 @@ export function KanbanColumn({
   }
 
   return (
-    <div className="flex flex-col w-[280px] sm:w-72 shrink-0 snap-start sm:snap-none bg-muted/40 rounded-lg border border-border/50">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/50">
+    <div className="flex flex-col w-[280px] sm:w-72 shrink-0 snap-start sm:snap-none bg-background rounded-lg border border-hairline">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-hairline bg-background">
         <div className="flex items-center gap-2">
           {isSelectionMode && (
             <Checkbox
@@ -68,9 +68,9 @@ export function KanbanColumn({
               aria-label={`Pilih semua order di kolom ${title}`}
             />
           )}
-          <h3 className="text-sm font-semibold">{title}</h3>
+          <h3 className="text-2xl font-[460] text-foreground">{title}</h3>
         </div>
-        <Badge variant="secondary" className="text-xs">
+        <Badge variant="secondary" className="text-sm bg-canvas-soft text-ink-mute">
           {orders.length}
         </Badge>
       </div>
@@ -80,7 +80,7 @@ export function KanbanColumn({
           ref={setNodeRef}
           className={cn(
             'p-2 space-y-2 min-h-[200px] transition-colors',
-            isOver && acceptsDrops && 'bg-primary/5 ring-2 ring-primary/40 ring-inset rounded-lg'
+            isOver && acceptsDrops && 'bg-violet-soft/20 border-2 border-dashed border-violet-soft rounded-lg'
           )}
         >
           {orders.length === 0 ? (
@@ -104,7 +104,7 @@ export function KanbanColumn({
                   />
                 )
               )}
-              <p className="text-xs text-center text-muted-foreground py-2">
+              <p className="text-sm text-center text-ink-mute py-2">
                 +{orders.length - 5} order lainnya
               </p>
             </>

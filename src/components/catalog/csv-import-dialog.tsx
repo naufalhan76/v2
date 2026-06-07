@@ -140,8 +140,8 @@ export function CsvImportDialog({ open, onOpenChange, onImportSuccess }: CsvImpo
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/40 p-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center justify-between rounded-lg border border-hairline bg-canvas-soft p-3">
+            <div className="flex items-center gap-2 text-sm text-ink-mute">
               <FileText className="h-4 w-4" />
               <span>Butuh format? Unduh template CSV beserta contoh baris.</span>
             </div>
@@ -160,7 +160,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportSuccess }: CsvImpo
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isImporting}
-            className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/60 p-6 text-center transition-colors hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-hairline bg-canvas-soft p-6 text-center transition-colors hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <input
               type="file"
@@ -170,12 +170,12 @@ export function CsvImportDialog({ open, onOpenChange, onImportSuccess }: CsvImpo
               className="hidden"
               aria-label="Upload CSV"
             />
-            <div className="rounded-full bg-muted p-3">
-              <UploadCloud className="h-6 w-6 text-muted-foreground" />
+            <div className="rounded-full bg-canvas-soft p-3">
+              <UploadCloud className="h-6 w-6 text-ink-mute" />
             </div>
             <div>
               <p className="font-medium">Klik untuk pilih file CSV</p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-ink-mute">
                 Kolom: {CSV_HEADERS.join(', ')}
               </p>
             </div>
@@ -183,7 +183,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportSuccess }: CsvImpo
 
           {fileName && !readError ? (
             <p className="flex items-center gap-2 text-sm text-foreground">
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <FileText className="h-4 w-4 text-ink-mute" />
               <span className="font-medium">{fileName}</span>
             </p>
           ) : null}
@@ -217,7 +217,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportSuccess }: CsvImpo
                   {result?.importedCount ?? 0} baris diimpor, {errorRows.length} baris gagal
                 </span>
               </div>
-              <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-border/60 bg-muted/30 p-2 text-xs">
+              <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-hairline bg-canvas-soft p-2 text-xs">
                 {errorRows.map((err, i) => (
                   <li
                     key={`${err.rowNumber}-${err.msn_code}-${i}`}
@@ -227,7 +227,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportSuccess }: CsvImpo
                       Baris {err.rowNumber}
                       {err.msn_code ? ` · ${err.msn_code}` : ''}
                     </span>
-                    <span className="text-muted-foreground">{err.message}</span>
+                    <span className="text-ink-mute">{err.message}</span>
                   </li>
                 ))}
               </ul>

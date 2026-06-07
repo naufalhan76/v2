@@ -21,20 +21,20 @@ export function ReportMaterialsTable({ materials }: ReportMaterialsTableProps) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 text-sm font-semibold">
-        <Package className="h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center gap-2 text-lg font-[540] text-foreground">
+        <Package className="h-4 w-4 text-ink-mute" />
         Material yang dipakai
-        <span className="text-xs font-normal text-muted-foreground">
+        <span className="text-base font-normal text-ink-mute">
           ({materials.length})
         </span>
       </div>
 
       {materials.length === 0 ? (
-        <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+        <p className="rounded-md border border-dashed border-hairline p-3 text-base text-ink-mute">
           Tidak ada material tambahan.
         </p>
       ) : (
-        <div className="rounded-md border">
+        <div className="rounded-md border border-hairline">
           <Table>
             <TableHeader>
               <TableRow>
