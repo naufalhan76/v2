@@ -2,10 +2,11 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import '../styles/globals.css'
 import { QueryProvider } from '@/components/query-provider'
+import { AnimationProvider } from '@/components/animation-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { ThemeProvider } from '@/components/theme-provider'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
   title: 'MSN ERP',
@@ -22,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={inter.variable}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -30,7 +31,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
-            {children}
+            <AnimationProvider>
+              {children}
+            </AnimationProvider>
           </QueryProvider>
           <Toaster />
         </ThemeProvider>

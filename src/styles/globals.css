@@ -9,75 +9,117 @@
   }
   :root {
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 30 2% 16%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 30 2% 16%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
+    --popover-foreground: 30 2% 16%;
+    --primary: 248 37% 16%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
+    --secondary: 40 20% 96%;
+    --secondary-foreground: 248 37% 16%;
+    --muted: 40 14% 94%;
+    --muted-foreground: 30 3% 44%;
+    --accent: 40 14% 94%;
+    --accent-foreground: 248 37% 16%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-    --radius: 0.75rem;
-    --chart-1: 221 83% 53%;
-    --chart-2: 221 83% 73%;
-    --chart-3: 142 71% 45%;
-    --chart-4: 38 92% 50%;
-    --chart-5: 0 84% 60%;
-    /* Status badge tokens (semantic, dark-mode aware) */
-    --status-pending: 38 92% 50%;
-    --status-assigned: 221 83% 53%;
-    --status-en-route: 234 89% 64%;
-    --status-in-progress: 270 91% 65%;
-    --status-completed: 142 71% 45%;
-    --status-invoiced: 188 92% 43%;
-    --status-paid: 142 76% 36%;
-    --status-cancelled: 0 84% 60%;
+    --border: 40 14% 89%;
+    --input: 40 14% 89%;
+    --ring: 248 37% 60%;
+    --radius: 0.5rem;
+    --chart-1: 248 37% 16%;
+    --chart-2: 248 37% 60%;
+    --chart-3: 180 60% 21%;
+    --chart-4: 32 95% 43%;
+    --chart-5: 0 72% 51%;
+
+    /* Superhuman extended tokens */
+    --violet-soft: 264 89% 84%;
+    --teal-deep: 180 52% 12%;
+    --teal-mid: 180 60% 21%;
+    --canvas-soft: 40 20% 98%;
+    --ink-mute: 30 3% 44%;
+    --ink-faint: 30 3% 60%;
+    --hairline: 40 14% 89%;
+    --hairline-dark: 252 18% 28%;
+
+    /* Spacing tokens */
+    --space-xxs: 2px;
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-xxl: 32px;
+    --space-huge: 64px;
+
+    /* Status badge tokens */
+    --status-pending: 32 95% 43%;
+    --status-assigned: 239 84% 67%;
+    --status-en-route: 258 90% 66%;
+    --status-in-progress: 174 72% 38%;
+    --status-completed: 160 84% 39%;
+    --status-invoiced: 189 94% 43%;
+    --status-paid: 158 64% 52%;
+    --status-cancelled: 0 72% 51%;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 217 33% 17%;
-    --card-foreground: 210 40% 98%;
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 221 83% 53%;
+    --background: 248 37% 10%;
+    --foreground: 40 10% 92%;
+    --card: 248 37% 12%;
+    --card-foreground: 40 10% 92%;
+    --popover: 248 37% 12%;
+    --popover-foreground: 40 10% 92%;
+    --primary: 248 37% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62% 30%;
+    --secondary: 248 30% 16%;
+    --secondary-foreground: 40 10% 92%;
+    --muted: 248 30% 16%;
+    --muted-foreground: 30 3% 60%;
+    --accent: 248 30% 16%;
+    --accent-foreground: 40 10% 92%;
+    --destructive: 0 72% 40%;
     --destructive-foreground: 0 0% 98%;
-    --border: 217 19% 27%;
-    --input: 217 19% 27%;
-    --ring: 221 83% 53%;
-    --chart-1: 221 83% 63%;
-    --chart-2: 221 83% 78%;
-    --chart-3: 142 71% 55%;
-    --chart-4: 38 92% 60%;
-    --chart-5: 0 84% 65%;
-    /* Status badge tokens (dark mode) */
-    --status-pending: 38 92% 60%;
-    --status-assigned: 221 83% 63%;
-    --status-en-route: 234 89% 74%;
-    --status-in-progress: 270 91% 75%;
-    --status-completed: 142 71% 55%;
-    --status-invoiced: 188 92% 53%;
-    --status-paid: 142 76% 46%;
-    --status-cancelled: 0 84% 70%;
+    --border: 252 18% 22%;
+    --input: 252 18% 22%;
+    --ring: 248 37% 60%;
+    --chart-1: 248 37% 60%;
+    --chart-2: 248 37% 70%;
+    --chart-3: 180 60% 40%;
+    --chart-4: 32 95% 55%;
+    --chart-5: 0 72% 55%;
+
+    /* Superhuman extended tokens */
+    --violet-soft: 264 89% 70%;
+    --teal-deep: 180 52% 20%;
+    --teal-mid: 180 60% 30%;
+    --canvas-soft: 248 30% 14%;
+    --ink-mute: 30 3% 60%;
+    --ink-faint: 30 3% 45%;
+    --hairline: 252 18% 22%;
+    --hairline-dark: 252 18% 35%;
+
+    /* Spacing tokens */
+    --space-xxs: 2px;
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-xxl: 32px;
+    --space-huge: 64px;
+
+    /* Status badge tokens */
+    --status-pending: 32 95% 55%;
+    --status-assigned: 239 84% 75%;
+    --status-en-route: 258 90% 74%;
+    --status-in-progress: 174 72% 50%;
+    --status-completed: 160 84% 50%;
+    --status-invoiced: 189 94% 55%;
+    --status-paid: 158 64% 60%;
+    --status-cancelled: 0 72% 60%;
   }
 }
 
@@ -87,6 +129,14 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+    font-variation-settings: 'wght' 460;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-variation-settings: 'wght' 540;
+  }
+  button, [role="button"] {
+    font-variation-settings: 'wght' 600;
   }
 }
 

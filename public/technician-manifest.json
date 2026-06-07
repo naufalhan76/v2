@@ -6,7 +6,7 @@
   "scope": "/technician",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#2563eb",
+  "theme_color": "#1b1938",
   "background_color": "#ffffff",
   "categories": ["business", "productivity"],
   "icons": [
