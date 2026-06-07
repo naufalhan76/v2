@@ -93,8 +93,8 @@ export function HomeHeader() {
         <div className="min-w-0 flex-1">
           <h1 className="text-3xl sm:text-4xl font-[540] tracking-tight">
             {greeting || '...'}
-            {firstName ? <span className="text-foreground">, {firstName}</span> : null}
-            <span className="text-ink-mute">.</span>
+            {firstName ? <span className="text-primary-foreground/80">, {firstName}</span> : null}
+            <span className="text-primary-foreground/60">.</span>
           </h1>
           <p className="text-lg text-ink-mute capitalize tabular-nums">
             {longDate}

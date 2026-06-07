@@ -13,7 +13,7 @@ export default function TechnicianProfilePage() {
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg sm:text-xl font-semibold tracking-tight">Profil</h1>
-            <p className="text-xs text-muted-foreground">Kelola akun dan preferensi kamu</p>
+            <p className="text-xs text-ink-mute">Kelola akun dan preferensi kamu</p>
           </div>
           <SyncStatus variant="compact" className="shrink-0 mt-0.5" />
         </div>

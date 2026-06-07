@@ -6,8 +6,8 @@ import { TodayJobsSkeleton } from './today-jobs-skeleton'
 import { EmptyTodayJobs } from './empty-today-jobs'
 import { AlertCircle, Briefcase, CheckCircle2, Clock, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { OrderStatus } from '@/lib/order-status'
 import { cn } from '@/lib/utils'
+import type { OrderStatus } from '@/lib/order-status'
 
 async function fetchTodayJobs() {
   const res = await fetch('/api/technician/jobs/today', {
@@ -106,10 +106,10 @@ export function TodayJobsList() {
             <h2
               id={`group-${group.key}`}
               className={cn(
-                'flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider',
-                group.key === 'active' && 'text-primary',
-                group.key === 'pending' && 'text-ink-mute',
-                group.key === 'completed' && 'text-status-completed'
+                'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
+                group.key === 'active'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-background text-foreground border border-hairline'
               )}
             >
               <group.icon className="h-3.5 w-3.5" aria-hidden="true" />

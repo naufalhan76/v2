@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import { CheckCircle, Loader2 } from 'lucide-react'
+import { CheckCircle, Loader2, XCircle } from 'lucide-react'
 
 function ConfirmPageContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
@@ -61,41 +61,47 @@ function ConfirmPageContent() {
   }, [searchParams, router, toast])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            {status === 'loading' && <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />}
-            {status === 'success' && <CheckCircle className="h-12 w-12 text-green-600" />}
-            {status === 'error' && <CheckCircle className="h-12 w-12 text-red-600" />}
+    <div className="flex min-h-screen items-center justify-center bg-[#1b1938] px-4">
+      <Card className="w-full max-w-md bg-white !rounded-xl shadow-lg border-0">
+        <CardHeader className="text-center pb-2">
+          <div className="flex justify-center mb-6">
+            {status === 'loading' && <Loader2 className="h-12 w-12 text-primary animate-spin" />}
+            {status === 'success' && <CheckCircle className="h-12 w-12 text-status-completed" />}
+            {status === 'error' && <CheckCircle className="h-12 w-12 text-destructive" />}
           </div>
-          <CardTitle className="text-2xl font-bold">
-            {status === 'loading' && 'Confirming Your Email'}
-            {status === 'success' && 'Email Confirmed!'}
-            {status === 'error' && 'Confirmation Failed'}
+          <CardTitle
+            className="text-[28px] leading-tight"
+            style={{ fontVariationSettings: "'wght' 540" }}
+          >
+            {status === 'loading' && 'Mengonfirmasi Email'}
+            {status === 'success' && 'Email Terkonfirmasi!'}
+            {status === 'error' && 'Konfirmasi Gagal'}
           </CardTitle>
-          <CardDescription>
-            {status === 'loading' && 'Please wait while we verify your email address...'}
-            {status === 'success' && 'Your email has been successfully verified.'}
+          <CardDescription
+            className="text-lg mt-2 text-ink-mute"
+            style={{ fontVariationSettings: "'wght' 460" }}
+          >
+            {status === 'loading' && 'Mohon tunggu, kami sedang memverifikasi alamat email Anda...'}
+            {status === 'success' && 'Alamat email Anda telah berhasil diverifikasi.'}
             {status === 'error' && message}
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center">
           {status === 'success' && (
-            <p className="text-sm text-muted-foreground mb-4">
-              You will be redirected to the login page in a few seconds...
+            <p className="text-base text-ink-mute mb-4">
+              Anda akan dialihkan ke halaman masuk dalam beberapa saat...
             </p>
           )}
           {status === 'error' && (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Please try again or contact support if the problem persists.
+              <p className="text-base text-ink-mute">
+                Silakan coba lagi atau hubungi dukungan jika masalah berlanjut.
               </p>
-              <Button 
+              <Button
                 onClick={() => router.push('/login')}
                 className="w-full"
               >
-                Back to Login
+                Kembali ke Halaman Masuk
               </Button>
             </div>
           )}
@@ -108,13 +114,18 @@ function ConfirmPageContent() {
 export default function ConfirmPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-[#1b1938] px-4">
+        <Card className="w-full max-w-md bg-white !rounded-xl shadow-lg border-0">
+          <CardHeader className="text-center pb-2">
+            <div className="flex justify-center mb-6">
+              <Loader2 className="h-12 w-12 text-primary animate-spin" />
             </div>
-            <CardTitle className="text-2xl font-bold">Loading...</CardTitle>
+            <CardTitle
+              className="text-[28px] leading-tight"
+              style={{ fontVariationSettings: "'wght' 540" }}
+            >
+              Memuat...
+            </CardTitle>
           </CardHeader>
         </Card>
       </div>

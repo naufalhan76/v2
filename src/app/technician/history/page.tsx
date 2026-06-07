@@ -15,7 +15,7 @@ export default function TechnicianHistoryPage() {
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg sm:text-xl font-semibold tracking-tight">Riwayat Pekerjaan</h1>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-ink-mute">
               Semua pekerjaan yang telah selesai atau dibatalkan
             </p>
           </div>

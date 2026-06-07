@@ -160,7 +160,7 @@ export function CsvImportDialog({ open, onOpenChange, onImportSuccess }: CsvImpo
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isImporting}
-            className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-hairline bg-canvas-soft p-6 text-center transition-colors hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-hairline bg-canvas-soft p-6 text-center transition-colors hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <input
               type="file"

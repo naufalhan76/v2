@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { useState, Suspense, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
@@ -67,11 +68,11 @@ function LoginForm() {
     }
 
     setIsLoading(true)
-        setLoadingMessage('Mengautentikasi...')
+    setLoadingMessage('Mengautentikasi...')
 
     try {
       const supabase = createClient()
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -79,7 +80,7 @@ function LoginForm() {
 
       if (error) {
         logger.error('Supabase auth error:', error)
-        
+
         // Better error messages
         if (error.message.includes('Invalid login credentials')) {
           throw new Error('Email atau kata sandi salah')
@@ -87,7 +88,7 @@ function LoginForm() {
         if (error.message.includes('Email not confirmed')) {
           throw new Error('Verifikasi email terlebih dahulu sebelum masuk')
         }
-        
+
         throw error
       }
 
@@ -103,12 +104,12 @@ function LoginForm() {
         logger.error('Error fetching user role:', userError)
         logger.error('User ID:', data.user?.id)
         logger.error('User Email:', data.user?.email)
-        
+
         // More helpful error message
         if (userError.code === 'PGRST116') {
           throw new Error('Pengguna tidak ditemukan. Hubungi administrator untuk menyiapkan akun Anda.')
         }
-        
+
         throw new Error(`Gagal mengambil izin pengguna: ${userError.message}`)
       }
 
@@ -135,125 +136,161 @@ function LoginForm() {
       })
 
       router.refresh()
-      
+
       // Small delay to ensure cookie is set and show success message
       await new Promise(resolve => setTimeout(resolve, 500))
-      
+
       // Then redirect - loading state akan tetap sampai page benar-benar pindah
       router.push(targetRoute)
-      
+
       // Keep loading state active - akan hilang saat component unmount
       // Ini memastikan overlay tetap ada sampai dashboard selesai load
     } catch (error: unknown) {
       logger.error('Login error:', error)
       setLoadingMessage('')
       setIsLoading(false)
-        toast({
-          title: "Gagal masuk",
-          description: error instanceof Error ? error.message : "Terjadi kesalahan saat masuk",
-          variant: "destructive"
-        })
+      toast({
+        title: "Gagal masuk",
+        description: error instanceof Error ? error.message : "Terjadi kesalahan saat masuk",
+        variant: "destructive"
+      })
     }
     // Note: Don't set isLoading to false in finally block
     // Let it stay true until page navigation completes
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <LoadingOverlay
-        isLoading={isLoading}
-        message={loadingMessage || 'Memuat...'}
-        className="w-full max-w-md"
-      >
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-4">
-            <div className="flex justify-center py-4">
-              <Image
-                src="/logo.png"
-                alt="MSN ERP"
-                width={96}
-                height={96}
-                className="h-24 w-auto"
-              />
-            </div>
-            <CardDescription className="text-center">
+    <div className="relative min-h-screen bg-[#1b1938] flex items-center justify-center overflow-hidden">
+      {/* Atmospheric radial gradient backdrop */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at 30% 50%, rgba(201,180,250,0.15) 0%, rgba(59,130,246,0.06) 50%, transparent 70%)',
+        }}
+      />
+
+      <div className="relative z-10 w-full max-w-5xl mx-auto px-4 py-12">
+        <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
+          {/* Left: Hero */}
+          <div className="flex-1 text-center lg:text-left">
+            <Image
+              src="/logo.png"
+              alt="MSN ERP"
+              width={96}
+              height={96}
+              className="h-24 w-auto brightness-0 invert mx-auto lg:mx-0"
+              priority
+            />
+            <h1 className="text-5xl lg:text-[64px] font-[540] leading-tight lg:leading-[0.96] text-white mt-8 text-balance">
               Masuk ke MSN ERP
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value)
-                    if (touched.email) {
-                      setFieldErrors(prev => ({ ...prev, email: validateEmail(e.target.value) }))
-                    }
-                  }}
-                  onBlur={() => handleBlur('email')}
-                  aria-invalid={!!fieldErrors.email}
-                  aria-describedby={fieldErrors.email ? 'email-error' : undefined}
-                  disabled={isLoading}
-                />
-                {touched.email && fieldErrors.email && (
-                  <p id="email-error" className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Kata Sandi</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value)
-                      if (touched.password) {
-                        setFieldErrors(prev => ({ ...prev, password: validatePassword(e.target.value) }))
-                      }
-                    }}
-                    onBlur={() => handleBlur('password')}
-                    aria-invalid={!!fieldErrors.password}
-                    aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-                    className="pr-10"
-                    disabled={isLoading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                {touched.password && fieldErrors.password && (
-                  <p id="password-error" className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
-                )}
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sedang masuk...
-                  </>
-                ) : (
-                  'Masuk'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </LoadingOverlay>
+            </h1>
+            <p className="text-xl font-[540] text-[#bcbac9] mt-4 max-w-md">
+              Kelola pesanan, teknisi, dan faktur dalam satu tempat
+            </p>
+          </div>
+
+          {/* Right: Form Card */}
+          <div className="w-full max-w-md flex-shrink-0">
+            <LoadingOverlay
+              isLoading={isLoading}
+              message={loadingMessage || 'Memuat...'}
+            >
+              <Card className="rounded-xl shadow-lg hover:shadow-lg p-8 border-0">
+                <CardHeader className="space-y-1 p-0 pb-6 text-center">
+                  <CardDescription className="text-ink-mute text-lg">
+                    Selamat datang kembali
+                  </CardDescription>
+                  <h2 className="text-2xl font-[540] text-foreground">
+                    Masuk
+                  </h2>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="name@example.com"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value)
+                          if (touched.email) {
+                            setFieldErrors(prev => ({ ...prev, email: validateEmail(e.target.value) }))
+                          }
+                        }}
+                        onBlur={() => handleBlur('email')}
+                        aria-invalid={!!fieldErrors.email}
+                        aria-describedby={fieldErrors.email ? 'email-error' : undefined}
+                        disabled={isLoading}
+                      />
+                      {touched.email && fieldErrors.email && (
+                        <p id="email-error" className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Kata Sandi</Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          value={password}
+                          onChange={(e) => {
+                            setPassword(e.target.value)
+                            if (touched.password) {
+                              setFieldErrors(prev => ({ ...prev, password: validatePassword(e.target.value) }))
+                            }
+                          }}
+                          onBlur={() => handleBlur('password')}
+                          aria-invalid={!!fieldErrors.password}
+                          aria-describedby={fieldErrors.password ? 'password-error' : undefined}
+                          className="pr-10"
+                          disabled={isLoading}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          disabled={isLoading}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer text-ink-mute hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {touched.password && fieldErrors.password && (
+                        <p id="password-error" className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
+                      )}
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full rounded-full bg-violet-soft text-primary hover:bg-violet-soft/80 font-bold text-lg"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sedang masuk...
+                        </>
+                      ) : (
+                        'Masuk'
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Forgot password link below card on dark background */}
+              <p className="mt-5 text-center">
+                <Link
+                  href="/forgot-password"
+                  className="text-[#bcbac9] hover:underline text-sm transition-colors"
+                >
+                  Lupa kata sandi?
+                </Link>
+              </p>
+            </LoadingOverlay>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -261,10 +298,10 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen bg-[#1b1938] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-          <p className="mt-4 text-muted-foreground">Memuat...</p>
+          <Loader2 className="h-12 w-12 animate-spin text-violet-soft mx-auto" />
+          <p className="mt-4 text-[#bcbac9]">Memuat...</p>
         </div>
       </div>
     }>

@@ -29,9 +29,9 @@ export function EmptyState({ icon: Icon, title, description, action, className }
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-canvas-soft mb-4">
         <Icon className="h-6 w-6 text-ink-faint" />
       </div>
-      <h3 className="text-2xl text-foreground mb-1">{title}</h3>
+      <h3 className="text-[22px] font-[460] text-foreground mb-1">{title}</h3>
       {description && (
-        <p className="text-base text-ink-mute max-w-[280px] sm:max-w-sm mb-4">{description}</p>
+        <p className="text-lg text-ink-mute max-w-[280px] sm:max-w-sm mb-4">{description}</p>
       )}
       {action && (
         <Button

@@ -13,7 +13,7 @@ export function EmptyTodayJobs() {
 
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-lg border border-dashed border-hairline bg-background px-6 py-12 text-center"
+      className="flex flex-col items-center justify-center rounded-lg border border-hairline bg-background px-6 py-12 text-center"
       data-testid="today-jobs-empty"
     >
       <div className="relative mb-4 flex h-16 w-16 items-center justify-center">
@@ -23,7 +23,7 @@ export function EmptyTodayJobs() {
         />
         <CalendarCheck2 className="relative h-7 w-7 text-ink-faint" aria-hidden="true" />
       </div>
-      <h3 className="text-2xl font-[460] tracking-tight mb-1">Tidak Ada Pekerjaan</h3>
+      <h3 className="text-[22px] font-[460] tracking-tight mb-1">Tidak Ada Pekerjaan</h3>
       <p className="text-lg text-ink-mute max-w-[260px] mb-5">
         Belum ada pekerjaan yang dijadwalkan untuk hari ini. Nikmati waktumu atau periksa
         pembaruan terbaru.

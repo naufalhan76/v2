@@ -138,7 +138,7 @@ function GroupTable({ data, onEdit, toggleMutation }: GroupTableProps) {
         accessorKey: 'msn_code',
         header: 'MSN Code',
         cell: ({ row }) => (
-          <span className="font-mono text-sm font-semibold text-primary">
+          <span className="font-mono text-lg text-foreground">
             {row.original.msn_code}
           </span>
         ),
@@ -146,13 +146,14 @@ function GroupTable({ data, onEdit, toggleMutation }: GroupTableProps) {
       {
         accessorKey: 'service_name',
         header: 'Nama Service',
+        cell: ({ row }) => <span className="text-lg text-foreground">{row.original.service_name}</span>,
       },
       {
         id: 'capacity',
         header: 'Kapasitas',
         accessorFn: (row) => row.capacity_ranges?.capacity_label ?? '-',
         cell: ({ getValue }) => (
-          <span className="text-sm">{getValue<string>()}</span>
+          <span className="text-lg text-foreground">{getValue<string>()}</span>
         ),
       },
       {
@@ -169,7 +170,7 @@ function GroupTable({ data, onEdit, toggleMutation }: GroupTableProps) {
         accessorKey: 'base_price',
         header: () => <div className="text-right">Harga Base</div>,
         cell: ({ row }) => (
-          <div className="text-right font-medium tabular-nums">
+          <div className="text-right font-bold text-xl tabular-nums text-foreground">
             {formatIDR(row.original.base_price)}
           </div>
         ),
