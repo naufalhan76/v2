@@ -73,8 +73,8 @@ export function LoadingState({
     <div className={`flex flex-col items-center justify-center p-6 sm:p-8 w-full min-h-[120px] ${className}`}>
       {!hasTimedOut ? (
         <div className="flex flex-col items-center space-y-4">
-          <Loader2 className={`animate-spin ${sizeClasses[size]}`} />
-          <p className="text-sm text-muted-foreground animate-pulse text-center">
+          <Loader2 className={`animate-spin text-primary ${sizeClasses[size]}`} />
+          <p className="text-sm text-ink-mute animate-pulse text-center">
             {message}
           </p>
         </div>
@@ -95,7 +95,7 @@ export function LoadingState({
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-ink-mute">
                 Still loading... Please wait.
               </p>
               {showRetry && onRetry && (
@@ -187,7 +187,7 @@ export function LoadingOverlay({
         >
           <div className="flex flex-col items-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin" />
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-ink-mute">
               {hasTimedOut ? 'Taking longer than expected...' : message}
             </p>
           </div>
@@ -243,8 +243,8 @@ export function LoadingBar({
     <div className={`w-full ${className}`}>
       {showPercentage && (
         <div className="flex justify-between mb-1">
-          <span className="text-xs text-muted-foreground">Loading</span>
-          <span className="text-xs text-muted-foreground">{Math.round(displayProgress)}%</span>
+          <span className="text-xs text-ink-mute">Loading</span>
+          <span className="text-xs text-ink-mute">{Math.round(displayProgress)}%</span>
         </div>
       )}
       <div className="w-full bg-secondary rounded-full h-2">

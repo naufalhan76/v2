@@ -74,15 +74,15 @@ export function MultiSelectDropdown({
             {selectedOptions.map(option => (
               <div
                 key={option.id}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-900 rounded-full text-sm"
+                className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
               >
                 <span>{option.label}</span>
                 {option.secondaryLabel && (
-                  <span className="text-xs text-blue-700">({option.secondaryLabel})</span>
+                  <span className="text-xs text-primary/80">({option.secondaryLabel})</span>
                 )}
                 <button
                   onClick={(e) => handleRemoveSelected(option.id, e)}
-                  className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                  className="ml-1 hover:bg-primary/20 rounded-full p-0.5"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -103,7 +103,7 @@ export function MultiSelectDropdown({
           }
         }}
       >
-        <span className="text-muted-foreground truncate">
+        <span className="text-ink-mute truncate">
           {selectedOptions.length > 0
             ? `${selectedOptions.length} selected`
             : placeholder}
@@ -113,9 +113,9 @@ export function MultiSelectDropdown({
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 w-full bg-white border rounded-lg shadow-lg z-50 max-h-[60vh] sm:max-h-64 overflow-hidden flex flex-col">
+        <div className="absolute top-full left-0 right-0 mt-1 w-full bg-background border-hairline rounded-lg shadow-lg z-50 max-h-[60vh] sm:max-h-64 overflow-hidden flex flex-col">
           {/* Search input */}
-          <div className="p-2 border-b sticky top-0 bg-white">
+          <div className="p-2 border-b border-hairline sticky top-0 bg-background">
             <Input
               ref={inputRef}
               type="text"
@@ -132,7 +132,7 @@ export function MultiSelectDropdown({
               filteredOptions.map(option => (
                 <div
                   key={option.id}
-                  className="flex items-center gap-2 px-3 py-3 sm:py-2 min-h-[44px] sm:min-h-0 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
+                  className="flex items-center gap-2 px-3 py-3 sm:py-2 min-h-[44px] sm:min-h-0 hover:bg-canvas-soft cursor-pointer border-b border-hairline last:border-b-0"
                   onClick={() => handleToggleOption(option.id)}
                 >
                   <input
@@ -140,18 +140,18 @@ export function MultiSelectDropdown({
                     checked={selected.includes(option.id)}
                     onChange={() => handleToggleOption(option.id)}
                     onClick={(e) => e.stopPropagation()}
-                    className="h-4 w-4 shrink-0 rounded border-input border text-primary focus:ring-ring focus:ring-1 focus-visible:outline-none cursor-pointer accent-blue-600"
+                    className="h-4 w-4 shrink-0 rounded border-hairline text-primary focus:ring-ring focus:ring-1 focus-visible:outline-none cursor-pointer accent-primary"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{option.label}</div>
                     {option.secondaryLabel && (
-                      <div className="text-xs text-muted-foreground truncate">{option.secondaryLabel}</div>
+                      <div className="text-xs text-ink-mute truncate">{option.secondaryLabel}</div>
                     )}
                   </div>
                 </div>
               ))
             ) : (
-              <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+              <div className="px-3 py-4 text-center text-sm text-ink-mute">
                 No results found
               </div>
             )}

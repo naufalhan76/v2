@@ -30,7 +30,7 @@ export function SortableTableHead({
         <span>{children}</span>
         <div className="w-4 h-4 flex items-center justify-center">
           {!isActive && (
-            <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground opacity-50" />
+            <ArrowUpDown className="w-3.5 h-3.5 text-ink-mute opacity-50" />
           )}
           {isActive && direction === 'asc' && (
             <ArrowUp className="w-3.5 h-3.5 text-primary" />

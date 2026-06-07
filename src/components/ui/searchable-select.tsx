@@ -76,12 +76,12 @@ export function SearchableSelect({
           }
         }}
       >
-        <span className={cn("truncate", selectedOption ? "" : "text-muted-foreground")}>
+        <span className={cn("truncate", selectedOption ? "" : "text-ink-mute")}>
           {selectedOption ? (
             <span>
               {selectedOption.label}
               {selectedOption.secondaryLabel && (
-                <span className="text-muted-foreground ml-1">({selectedOption.secondaryLabel})</span>
+                <span className="text-ink-mute ml-1">({selectedOption.secondaryLabel})</span>
               )}
             </span>
           ) : (
@@ -93,9 +93,9 @@ export function SearchableSelect({
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 w-full bg-white border rounded-lg shadow-lg z-50 max-h-[60vh] sm:max-h-80 overflow-hidden flex flex-col">
+        <div className="absolute top-full left-0 right-0 mt-1 w-full bg-background border-hairline rounded-lg shadow-lg z-50 max-h-[60vh] sm:max-h-80 overflow-hidden flex flex-col">
           {/* Search input */}
-          <div className="p-2 border-b sticky top-0 bg-white">
+          <div className="p-2 border-b border-hairline sticky top-0 bg-background">
             <Input
               ref={inputRef}
               type="text"
@@ -115,15 +115,15 @@ export function SearchableSelect({
                   <div
                     key={option.id}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-3 sm:py-2 min-h-[44px] sm:min-h-0 hover:bg-gray-100 cursor-pointer border-b last:border-b-0",
-                      isSelected && "bg-blue-50"
+                      "flex items-center gap-2 px-3 py-3 sm:py-2 min-h-[44px] sm:min-h-0 hover:bg-canvas-soft cursor-pointer border-b border-hairline last:border-b-0",
+                      isSelected && "bg-primary/5"
                     )}
                     onClick={() => handleSelect(option.id)}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{option.label}</div>
                       {option.secondaryLabel && (
-                        <div className="text-xs text-muted-foreground truncate">{option.secondaryLabel}</div>
+                        <div className="text-xs text-ink-mute truncate">{option.secondaryLabel}</div>
                       )}
                     </div>
                     {isSelected && (
@@ -133,7 +133,7 @@ export function SearchableSelect({
                 )
               })
             ) : (
-              <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+              <div className="px-3 py-4 text-center text-sm text-ink-mute">
                 No results found
               </div>
             )}

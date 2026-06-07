@@ -8,10 +8,10 @@ export interface StatusIndicatorProps extends React.HTMLAttributes<HTMLDivElemen
 
 function StatusIndicator({ color = 'emerald', pulse = false, className, ...props }: StatusIndicatorProps) {
   const colorMap = {
-    emerald: 'bg-emerald-500',
-    amber: 'bg-amber-500',
-    red: 'bg-red-500',
-    blue: 'bg-blue-500',
+    emerald: 'bg-status-completed',
+    amber: 'bg-status-pending',
+    red: 'bg-status-cancelled',
+    blue: 'bg-status-assigned',
   }
 
   const pulseClass = pulse ? 'animate-pulse' : ''

@@ -31,16 +31,16 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
 
 const sheetVariants = cva(
-  "fixed z-50 gap-4 bg-background p-4 sm:p-6 transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out overflow-y-auto",
+  "fixed z-50 gap-4 bg-background p-4 sm:p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out overflow-y-auto",
   {
     variants: {
       side: {
-        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top max-h-[90vh] rounded-b-2xl",
+        top: "inset-x-0 top-0 border-b border-hairline data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top max-h-[90vh] rounded-b-xl",
         bottom:
-          "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom max-h-[90vh] pb-safe rounded-t-3xl",
-        left: "inset-y-0 left-0 h-full w-full border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-xl rounded-r-2xl",
+          "inset-x-0 bottom-0 border-t border-hairline data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom max-h-[90vh] pb-safe rounded-t-xl",
+        left: "inset-y-0 left-0 h-full w-full border-r border-hairline data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-xl rounded-r-xl",
         right:
-          "inset-y-0 right-0 h-full w-full border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-xl rounded-l-2xl",
+          "inset-y-0 right-0 h-full w-full border-l border-hairline data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-xl rounded-l-xl",
       },
     },
     defaultVariants: {
@@ -108,7 +108,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Title
     ref={ref}
-    className={cn("text-lg font-semibold text-foreground", className)}
+    className={cn("text-[22px] font-[460] leading-tight text-foreground", className)}
     {...props}
   />
 ))

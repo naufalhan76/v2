@@ -7,7 +7,7 @@ describe('StatusIndicator', () => {
   it('renders emerald dot by default', () => {
     const { container } = render(<StatusIndicator />)
     const dot = container.firstChild as HTMLElement
-    expect(dot.className).toContain('bg-emerald-500')
+    expect(dot.className).toContain('bg-status-completed')
     expect(dot.className).toContain('h-2')
     expect(dot.className).toContain('w-2')
     expect(dot.className).toContain('rounded-full')
@@ -16,19 +16,19 @@ describe('StatusIndicator', () => {
   it('renders amber dot', () => {
     const { container } = render(<StatusIndicator color="amber" />)
     const dot = container.firstChild as HTMLElement
-    expect(dot.className).toContain('bg-amber-500')
+    expect(dot.className).toContain('bg-status-pending')
   })
 
   it('renders red dot', () => {
     const { container } = render(<StatusIndicator color="red" />)
     const dot = container.firstChild as HTMLElement
-    expect(dot.className).toContain('bg-red-500')
+    expect(dot.className).toContain('bg-status-cancelled')
   })
 
   it('renders blue dot', () => {
     const { container } = render(<StatusIndicator color="blue" />)
     const dot = container.firstChild as HTMLElement
-    expect(dot.className).toContain('bg-blue-500')
+    expect(dot.className).toContain('bg-status-assigned')
   })
 
   it('adds pulse animation when pulse=true', () => {

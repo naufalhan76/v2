@@ -1,3 +1,6 @@
+"use client"
+
+import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 function Skeleton({
@@ -5,9 +8,11 @@ function Skeleton({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
-      className={cn("animate-pulse rounded-md bg-muted", className)}
-      {...props}
+    <motion.div
+      className={cn("rounded-md bg-canvas-soft", className)}
+      animate={{ opacity: [0.5, 1, 0.5] }}
+      transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+      {...(props as Record<string, unknown>)}
     />
   )
 }
@@ -68,8 +73,8 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
 
 export function KpiCardSkeleton() {
   return (
-    <div className="relative overflow-hidden rounded-xl border-0 bg-amber-50/50 dark:bg-amber-950/10 p-5">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-200 dark:bg-amber-800" />
+    <div className="relative overflow-hidden rounded-xl border-0 bg-canvas-soft p-5">
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-soft" />
       <div className="flex items-center justify-between pl-3">
         <div className="flex items-center gap-3">
           <Skeleton className="h-10 w-10 rounded-full shrink-0" />
