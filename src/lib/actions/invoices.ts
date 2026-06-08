@@ -1422,7 +1422,7 @@ export async function recordPayment(
     paymentStatus = 'PAID'
     newStatus = 'PAID'
   } else if (newPaidAmount > 0) {
-    paymentStatus = 'PARTIAL'
+    paymentStatus = 'PARTIAL_PAID'
     newStatus = 'PARTIAL_PAID'
   }
 

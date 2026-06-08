@@ -60,6 +60,19 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
     return masterData.capacityRanges.filter((c: unknown) => (c as Record<string, unknown>).unit_type_id === unitTypeId)
   }, [masterData, unitTypeId])
 
+  // Service types that have at least one active catalog entry for the selected (unit_type, capacity) combo
+  const availableServiceTypes = useMemo(() => {
+    if (!masterData || !unitTypeId || !capacityId) return masterData?.serviceTypes || []
+    const catalogEntries = masterData.serviceCatalog as Array<Record<string, unknown>>
+    const availableTypeIds = new Set(
+      catalogEntries
+        .filter((c) => c.is_active !== false && c.unit_type_id === unitTypeId && c.capacity_id === capacityId)
+        .map((c) => c.service_type_id as string)
+    )
+    return (masterData.serviceTypes as Array<Record<string, unknown>>)
+      .filter((st) => availableTypeIds.has(st.service_type_id as string))
+  }, [masterData, unitTypeId, capacityId])
+
   const availableCatalogs = useMemo(() => {
     if (!masterData) return []
     let results: unknown[] = []
@@ -194,10 +207,19 @@ export function ServiceSelectionModal({ open, onClose, onAddService, masterData,
             <div className="space-y-2">
               <Label>Master Service Type</Label>
               {(() => {
-                const opts = (masterData?.serviceTypes ?? []).map((s: unknown) => {
+                const opts = (availableServiceTypes ?? []).map((s: unknown) => {
                   const st = s as Record<string, unknown>
                   return { id: st.service_type_id as string, label: st.name as string }
                 })
+                if (opts.length === 0) {
+                  return (
+                    <div className="px-3 py-2 text-sm text-muted-foreground bg-muted/30 rounded-md border">
+                      {unitTypeId && capacityId
+                        ? 'Tidak ada service type untuk kombinasi ini'
+                        : 'Pilih unit type dan kapasitas terlebih dahulu'}
+                    </div>
+                  )
+                }
                 if (opts.length > 3) {
                   return (
                     <SearchableSelect

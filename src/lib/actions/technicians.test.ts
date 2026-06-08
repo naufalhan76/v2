@@ -65,8 +65,8 @@ describe('getTechnicianAvailability service records mapping', () => {
     expect(result.data).toEqual([
       {
         technician_id: 'tech-1',
-        name: 'Budi',
-        phone: '0812',
+        technician_name: 'Budi',
+        contact_number: '0812',
         activeServices: 1,
         isAvailable: true,
       },

@@ -5,10 +5,9 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Plug, Settings, GitBranch, TestTube2, CheckCircle2, AlertCircle } from 'lucide-react'
 
-export function OpenwaIntegrationTab() {
+function EnvVarsCard() {
   return (
-    <div className="space-y-4">
-      <Card>
+    <Card>
         <CardHeader>
           <div className="flex items-start gap-3">
             <Settings className="h-5 w-5 text-muted-foreground mt-1" />
@@ -38,9 +37,13 @@ OPENWA_SESSION_ID=msn-erp-prod`}
             URL. Set <code>OPENWA_API_URL=https://wa.yourdomain.com</code>.
           </p>
         </CardContent>
-      </Card>
+    </Card>
+  )
+}
 
-      <Card>
+function SenderModuleCard() {
+  return (
+    <Card>
         <CardHeader>
           <div className="flex items-start gap-3">
             <Plug className="h-5 w-5 text-muted-foreground mt-1" />
@@ -118,9 +121,13 @@ export async function sendWhatsApp(
 }`}
           </pre>
         </CardContent>
-      </Card>
+    </Card>
+  )
+}
 
-      <Card>
+function ReminderFlowCard() {
+  return (
+    <Card>
         <CardHeader>
           <div className="flex items-start gap-3">
             <GitBranch className="h-5 w-5 text-muted-foreground mt-1" />
@@ -194,9 +201,13 @@ export async function markReminderSent(
 }`}
           </pre>
         </CardContent>
-      </Card>
+    </Card>
+  )
+}
 
-      <Card>
+function TestIntegrationCard() {
+  return (
+    <Card>
         <CardHeader>
           <div className="flex items-start gap-3">
             <TestTube2 className="h-5 w-5 text-muted-foreground mt-1" />
@@ -242,9 +253,13 @@ export async function markReminderSent(
             </div>
           </div>
         </CardContent>
-      </Card>
+    </Card>
+  )
+}
 
-      <Card>
+function AutoSendCard() {
+  return (
+    <Card>
         <CardHeader>
           <CardTitle>5. Auto-Send (Optional)</CardTitle>
           <CardDescription>
@@ -274,9 +289,13 @@ for (const reminder of inserted) {
             </p>
           </div>
         </CardContent>
-      </Card>
+    </Card>
+  )
+}
 
-      <Card>
+function ChannelDispatchMatrixCard() {
+  return (
+    <Card>
         <CardHeader>
           <CardTitle>Channel Dispatch Matrix</CardTitle>
           <CardDescription>
@@ -326,7 +345,19 @@ for (const reminder of inserted) {
             </table>
           </div>
         </CardContent>
-      </Card>
+    </Card>
+  )
+}
+
+export function OpenwaIntegrationTab() {
+  return (
+    <div className="space-y-4">
+      <EnvVarsCard />
+      <SenderModuleCard />
+      <ReminderFlowCard />
+      <TestIntegrationCard />
+      <AutoSendCard />
+      <ChannelDispatchMatrixCard />
     </div>
   )
 }

@@ -94,7 +94,7 @@ export function OrderInvoiceTab({ orderId, orderStatus, onCreateInvoice }: Order
                 <InvoiceStatusBadge status={inv.status} size="sm" />
                 {inv.payment_status && (
                   <InvoiceStatusBadge
-                    status={inv.payment_status === 'PARTIAL' ? 'PARTIAL_PAID' : inv.payment_status}
+                    status={inv.payment_status}
                     size="sm"
                   />
                 )}

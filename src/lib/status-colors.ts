@@ -63,6 +63,8 @@ export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
 
 /**
  * Service type values.
+ * NOTE: MAINTENANCE is kept for backward compat — normalized to CHECKING
+ * in src/lib/service-types.ts.
  */
 export type ServiceType =
   | 'REFILL_FREON'
@@ -70,6 +72,8 @@ export type ServiceType =
   | 'REPAIR'
   | 'INSTALLATION'
   | 'INSPECTION'
+  | 'CHECKING'
+  | 'UNINSTALL'
   | 'MAINTENANCE'
 
 /**
@@ -101,6 +105,16 @@ export const SERVICE_TYPE_COLORS: Record<ServiceType, { bg: string; text: string
     text: 'text-cyan-700 dark:text-cyan-300',
     border: 'border-cyan-200 dark:border-cyan-800',
   },
+  CHECKING: {
+    bg: 'bg-teal-100 dark:bg-teal-950/40',
+    text: 'text-teal-700 dark:text-teal-300',
+    border: 'border-teal-200 dark:border-teal-800',
+  },
+  UNINSTALL: {
+    bg: 'bg-rose-100 dark:bg-rose-950/40',
+    text: 'text-rose-700 dark:text-rose-300',
+    border: 'border-rose-200 dark:border-rose-800',
+  },
   MAINTENANCE: {
     bg: 'bg-teal-100 dark:bg-teal-950/40',
     text: 'text-teal-700 dark:text-teal-300',
@@ -117,5 +131,7 @@ export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   REPAIR: 'Repair',
   INSTALLATION: 'Installation',
   INSPECTION: 'Inspection',
+  CHECKING: 'Checking',
+  UNINSTALL: 'Uninstall',
   MAINTENANCE: 'Maintenance',
 }

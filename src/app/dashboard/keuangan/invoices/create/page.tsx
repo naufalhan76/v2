@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -47,92 +48,34 @@ export default function CreateInvoicePage() {
     addonQuantity,
   } = useInvoiceForm()
   const [isLoading, setIsLoading] = useState(false)
-  const [orders, setOrders] = useState<InvoiceOrder[]>([])
-  const [addons, setAddons] = useState<Addon[]>([])
-  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
+  const { data: orders = [] } = useQuery<InvoiceOrder[]>({
+    queryKey: ['create-invoice', 'orders'],
+    queryFn: fetchAvailableInvoiceOrders,
+  })
+  const { data: addons = [] } = useQuery<Addon[]>({
+    queryKey: ['create-invoice', 'addons'],
+    queryFn: getActiveAddons,
+  })
+  const { data: bankAccounts = [] } = useQuery<BankAccount[]>({
+    queryKey: ['create-invoice', 'bank-accounts'],
+    queryFn: fetchConfiguredBankAccounts,
+  })
 
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
     defaultValues: { discountAmount: '0', discountPercentage: '0' },
   })
 
-  useEffect(() => {
-    const loadInitialData = async () => {
-      const availableOrders = await loadCompletedOrders()
-      const params = new URLSearchParams(window.location.search)
-      const orderId = params.get('order_id') || params.get('orderId')
-      const invoiceType = params.get('type')
+  const selectOrder = useCallback((orderId: string, orderList: InvoiceOrder[] = orders): boolean => {
+    const order = orderList.find((o) => o.order_id === orderId)
+    if (!order) return false
 
-      if (isInvoiceType(invoiceType)) invoiceActions.prefillFromOrder(null, invoiceType, null)
+    invoiceActions.selectOrder(order)
+    setValue('orderId', orderId)
+    return true
+  }, [invoiceActions, orders, setValue])
 
-      if (!orderId) return
-
-      const isSelected = selectOrder(orderId, availableOrders)
-      if (isSelected) {
-        invoiceActions.prefillFromOrder(
-          availableOrders.find((order) => order.order_id === orderId) ?? null,
-          isInvoiceType(invoiceType) ? invoiceType : null,
-          'Order and invoice type were prefilled from the create-order flow.'
-        )
-      } else {
-        invoiceActions.prefillFromOrder(
-          null,
-          isInvoiceType(invoiceType) ? invoiceType : null,
-          'The order from the URL is not available for invoice creation or already has an invoice.'
-        )
-      }
-    }
-
-    loadInitialData()
-    loadAddons()
-    loadBankAccounts()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    if (selectedOrder) loadServicePricing()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedOrder])
-
-  const loadCompletedOrders = async (): Promise<InvoiceOrder[]> => {
-    try {
-      const availableOrders = await fetchAvailableInvoiceOrders()
-      setOrders(availableOrders)
-      return availableOrders
-    } catch (error) {
-      logger.error('Error loading completed orders:', error)
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Gagal memuat data order',
-      })
-      return []
-    }
-  }
-
-  const loadAddons = async () => {
-    try {
-      const data = await getActiveAddons()
-      setAddons(data)
-    } catch (error) {
-      logger.error('Error loading addons:', error)
-    }
-  }
-
-  const loadBankAccounts = async () => {
-    try {
-      setBankAccounts(await fetchConfiguredBankAccounts())
-    } catch (error) {
-      logger.error('Error loading bank accounts:', error)
-      toast({
-        variant: 'destructive',
-        title: 'Warning',
-        description: 'Gagal memuat daftar payment accounts. Silakan config payment account terlebih dahulu.',
-      })
-    }
-  }
-
-  const loadServicePricing = async () => {
+  const loadServicePricing = useCallback(async () => {
     if (!selectedOrder) return
 
     try {
@@ -151,16 +94,36 @@ export default function CreateInvoicePage() {
     } catch (error) {
       logger.error('Error loading service pricing:', error)
     }
-  }
+  }, [invoiceActions, selectedOrder])
 
-  const selectOrder = (orderId: string, orderList: InvoiceOrder[] = orders): boolean => {
-    const order = orderList.find((o) => o.order_id === orderId)
-    if (!order) return false
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const orderId = params.get('order_id') || params.get('orderId')
+    const invoiceType = params.get('type')
 
-    invoiceActions.selectOrder(order)
-    setValue('orderId', orderId)
-    return true
-  }
+    if (isInvoiceType(invoiceType)) invoiceActions.prefillFromOrder(null, invoiceType, null)
+
+    if (!orderId) return
+
+    const isSelected = selectOrder(orderId, orders)
+    if (isSelected) {
+      invoiceActions.prefillFromOrder(
+        orders.find((order) => order.order_id === orderId) ?? null,
+        isInvoiceType(invoiceType) ? invoiceType : null,
+        'Order and invoice type were prefilled from the create-order flow.'
+      )
+    } else {
+      invoiceActions.prefillFromOrder(
+        null,
+        isInvoiceType(invoiceType) ? invoiceType : null,
+        'The order from the URL is not available for invoice creation or already has an invoice.'
+      )
+    }
+  }, [invoiceActions, orders, selectOrder])
+
+  useEffect(() => {
+    if (selectedOrder) loadServicePricing()
+  }, [loadServicePricing, selectedOrder])
 
   const handleOrderSelect = (orderId: string) => selectOrder(orderId)
 

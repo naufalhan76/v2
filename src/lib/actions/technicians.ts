@@ -260,8 +260,8 @@ export async function getTechnicianAvailability(date?: string) {
       
       return {
         technician_id: tech.technician_id,
-        name: tech.technician_name,
-        phone: tech.contact_number,
+        technician_name: tech.technician_name,
+        contact_number: tech.contact_number,
         activeServices,
         isAvailable: activeServices < 3, // Assume max 3 services per day
       }

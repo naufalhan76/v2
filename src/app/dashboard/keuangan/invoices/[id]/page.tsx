@@ -883,7 +883,7 @@ export default function InvoiceDetailPage() {
           )}
 
           {/* Prominent Remaining Balance banner (partial payment polish) */}
-          {invoice.payment_status === 'PARTIAL' && remainingAmount > 0 && (
+          {invoice.payment_status === 'PARTIAL_PAID' && remainingAmount > 0 && (
             <Card className="border-amber-300 bg-amber-50/60">
               <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
@@ -924,7 +924,7 @@ export default function InvoiceDetailPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <InvoiceStatusBadge status={displayStatus} data-testid="invoice-status-badge" />
-                  <InvoiceStatusBadge status={invoice.payment_status === 'PARTIAL' ? 'PARTIAL_PAID' : invoice.payment_status} />
+                  <InvoiceStatusBadge status={invoice.payment_status} />
                 </div>
               </div>
             </CardHeader>

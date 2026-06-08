@@ -366,7 +366,7 @@ export default function InvoicesPage() {
                           {invoice.invoice_type}
                         </Badge>
                         <InvoiceStatusBadge
-                          status={invoice.payment_status === 'PARTIAL' ? 'PARTIAL_PAID' : invoice.payment_status}
+                          status={invoice.payment_status}
                           size="sm"
                         />
                       </div>
@@ -454,7 +454,7 @@ export default function InvoicesPage() {
                           <InvoiceStatusBadge status={displayStatus} data-testid="invoice-status-badge" />
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                          <InvoiceStatusBadge status={invoice.payment_status === 'PARTIAL' ? 'PARTIAL_PAID' : invoice.payment_status} />
+                          <InvoiceStatusBadge status={invoice.payment_status} />
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
