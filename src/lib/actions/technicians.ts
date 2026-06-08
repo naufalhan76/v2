@@ -236,7 +236,9 @@ export async function getTechnicianAvailability(date?: string) {
         service_records (
           service_id,
           service_date,
-          status
+          orders (
+            status
+          )
         )
       `)
     
@@ -247,7 +249,13 @@ export async function getTechnicianAvailability(date?: string) {
       const serviceRecords = tech.service_records as Array<Record<string, unknown>> | undefined
       const activeServices = serviceRecords?.filter((record: Record<string, unknown>) => {
         const recordDate = new Date(record.service_date as string).toISOString().split('T')[0]
-        return recordDate === targetDate && ['SCHEDULED', 'IN_PROGRESS'].includes(record.status as string)
+        const order = Array.isArray(record.orders)
+          ? record.orders[0]
+          : record.orders
+        const status = order && typeof order === 'object' && 'status' in order
+          ? (order as { status: unknown }).status
+          : null
+        return recordDate === targetDate && ['SCHEDULED', 'IN_PROGRESS'].includes(status as string)
       }).length || 0
       
       return {

@@ -153,13 +153,14 @@ export async function getAcUnitById(acUnitId: string) {
         ),
         service_records (
           service_id,
+          order_id,
           service_date,
           service_type,
-          findings,
-          actions_taken,
-          parts_used,
           cost,
-          status,
+          next_service_due,
+          orders (
+            status
+          ),
           technicians (
             technician_id,
             technician_name,
@@ -172,9 +173,27 @@ export async function getAcUnitById(acUnitId: string) {
     
     if (error) throw error
     
+    const serviceRecords = Array.isArray(data?.service_records)
+      ? data.service_records.map((record: Record<string, unknown>) => {
+          const order = Array.isArray(record.orders)
+            ? record.orders[0]
+            : record.orders
+
+          const { orders: _orders, ...rest } = record
+
+          return {
+            ...rest,
+            status:
+              order && typeof order === 'object' && 'status' in order
+                ? (order as { status: unknown }).status ?? null
+                : null,
+          }
+        })
+      : data?.service_records
+
     return {
       success: true,
-      data,
+      data: data ? { ...data, service_records: serviceRecords } : data,
     }
   } catch (error: unknown) {
     logger.error('Error fetching AC unit:', error)
