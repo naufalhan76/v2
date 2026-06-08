@@ -59,7 +59,7 @@ export function StatusByDayBar({
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-primary" />
-            <CardTitle className="text-2xl tracking-tight text-foreground">
+            <CardTitle className="text-base font-semibold tracking-tight text-foreground">
               Status per Hari
             </CardTitle>
           </div>
@@ -67,7 +67,7 @@ export function StatusByDayBar({
         <CardContent>
           <div className="h-[300px] w-full">
             {data.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-lg text-ink-mute">
+              <div className="flex items-center justify-center h-full text-sm text-ink-mute">
                 Tidak ada data
               </div>
             ) : (

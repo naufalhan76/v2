@@ -62,14 +62,14 @@ export function EmptyState({ icon: Icon, title, description, action, className }
         <Icon className="h-6 w-6 text-ink-faint" />
       </motion.div>
       <motion.h3
-        className="text-[22px] font-[460] text-foreground mb-1"
+        className="text-lg font-[460] text-foreground mb-1"
         variants={itemVariants}
       >
         {title}
       </motion.h3>
       {description && (
         <motion.p
-          className="text-lg text-ink-mute max-w-[280px] sm:max-w-sm mb-4"
+          className="text-sm text-ink-mute max-w-[280px] sm:max-w-sm mb-4"
           variants={itemVariants}
         >
           {description}

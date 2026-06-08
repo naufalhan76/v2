@@ -66,7 +66,7 @@ export function Navbar({ onOpenCommandPalette }: { onOpenCommandPalette?: () => 
       <div className="w-full flex-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-[460]">
+            <h1 className="text-xl font-[460]">
               {getPageTitle()}
             </h1>
           </div>

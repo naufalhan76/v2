@@ -83,14 +83,14 @@ export function RevenueTrendLine({
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-status-completed" />
-            <CardTitle className="text-2xl tracking-tight text-foreground">
+            <CardTitle className="text-base font-semibold tracking-tight text-foreground">
               Tren Pendapatan (7 Hari)
             </CardTitle>
           </div>
         </CardHeader>
         <CardContent>
           {data.length === 0 ? (
-            <div className="flex items-center justify-center h-[240px] text-lg text-ink-mute">
+            <div className="flex items-center justify-center h-[240px] text-sm text-ink-mute">
               Tidak ada data
             </div>
           ) : (

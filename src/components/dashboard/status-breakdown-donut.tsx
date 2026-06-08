@@ -100,7 +100,7 @@ export function StatusBreakdownDonut({
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <PieChartIcon className="h-4 w-4 text-primary" />
-            <CardTitle className="text-2xl tracking-tight text-foreground">
+            <CardTitle className="text-base font-semibold tracking-tight text-foreground">
               Distribusi Status Order
             </CardTitle>
           </div>
@@ -108,7 +108,7 @@ export function StatusBreakdownDonut({
         <CardContent>
           <div className="h-[300px] w-full">
             {data.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-lg text-ink-mute">
+              <div className="flex items-center justify-center h-full text-sm text-ink-mute">
                 Tidak ada data
               </div>
             ) : (

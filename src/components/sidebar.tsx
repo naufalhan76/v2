@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useTheme } from 'next-themes'
 import { Switch } from '@/components/ui/switch'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import {
   LayoutDashboard,
   Settings,
@@ -23,9 +23,6 @@ import {
   Lightbulb,
   History,
   Bell,
-  Tag,
-  DollarSign,
-  Clock,
   BookOpen,
 } from 'lucide-react'
 
@@ -162,7 +159,7 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <nav className="grid items-start px-2 py-2 text-lg lg:px-4">
+        <nav className="grid items-start px-2 py-2 text-sm lg:px-4">
           {sidebarItems.map((item) => {
             const hasChildren = item.children && item.children.length > 0
             const isExpanded = expandedItems.includes(item.href)
@@ -214,7 +211,7 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
                         key={child.href}
                         href={child.href}
                         className={cn(
-                          'flex items-center gap-3 rounded-lg px-3 py-1.5 text-lg text-ink-mute transition-all duration-150 hover:bg-canvas-soft hover:text-foreground',
+                          'flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm text-ink-mute transition-all duration-150 hover:bg-canvas-soft hover:text-foreground',
                           pathname === child.href && 'bg-primary/10 text-primary font-medium'
                         )}
                       >

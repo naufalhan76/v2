@@ -102,14 +102,14 @@ export function TopTechniciansList({
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <Medal className="h-4 w-4 text-status-pending" />
-          <CardTitle className="text-2xl tracking-tight text-foreground">
+          <CardTitle className="text-base font-semibold tracking-tight text-foreground">
             Top 10 Teknisi
           </CardTitle>
         </div>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-lg text-ink-mute gap-2">
+          <div className="flex flex-col items-center justify-center py-10 text-sm text-ink-mute gap-2">
             <Wrench className="h-6 w-6 text-ink-faint" />
             <span>Belum ada data teknisi</span>
           </div>
@@ -140,7 +140,7 @@ export function TopTechniciansList({
 
                   {/* Name + stats */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-lg text-foreground truncate">
+                    <p className="text-sm text-foreground truncate">
                       {tech.name}
                     </p>
                     <p className="text-sm text-ink-mute">

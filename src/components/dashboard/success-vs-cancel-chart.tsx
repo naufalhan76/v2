@@ -93,7 +93,7 @@ export function SuccessVsCancelChart({
               <CheckCircle2 className="h-4 w-4 text-status-completed" />
               <XCircle className="h-4 w-4 text-status-cancelled" />
             </div>
-            <CardTitle className="text-2xl tracking-tight text-foreground">
+            <CardTitle className="text-base font-semibold tracking-tight text-foreground">
               Selesai vs Dibatalkan
             </CardTitle>
           </div>
@@ -101,7 +101,7 @@ export function SuccessVsCancelChart({
         <CardContent>
           <div className="h-[260px] w-full">
             {data.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-lg text-ink-mute">
+              <div className="flex items-center justify-center h-full text-sm text-ink-mute">
                 Tidak ada data
               </div>
             ) : (

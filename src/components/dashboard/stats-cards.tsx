@@ -71,8 +71,8 @@ function AnimatedKpiValue({
       className={cn(
         'mb-2 tracking-tight tabular-nums',
         isPrimary
-          ? 'text-[28px] font-[540] leading-tight'
-          : 'text-[22px] font-[460] leading-tight'
+          ? 'text-xl font-[540] leading-tight'
+          : 'text-lg font-[460] leading-tight'
       )}
     >
       {displayValue}
@@ -142,7 +142,7 @@ export function StatsCards() {
                     className={cn(
                       isPrimary
                         ? 'text-xl font-[540] text-primary-foreground/80'
-                        : 'text-2xl font-[460] text-ink-mute'
+                        : 'text-sm font-[460] text-ink-mute'
                     )}
                   >
                     {kpi.label}

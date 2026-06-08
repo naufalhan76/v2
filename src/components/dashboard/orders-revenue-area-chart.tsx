@@ -86,7 +86,7 @@ export function OrdersRevenueAreaChart({ index = 0 }: { index?: number }) {
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
-            <CardTitle className="text-2xl tracking-tight text-foreground">
+            <CardTitle className="text-base font-semibold tracking-tight text-foreground">
               Orders &amp; Revenue Overview
             </CardTitle>
           </div>

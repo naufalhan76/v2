@@ -135,13 +135,13 @@ export function OrdersActivityFeed({ limit = 10 }: { limit?: number }) {
     <Card className="border-hairline shadow-none bg-background transition-shadow hover:shadow-md">
       <CardHeader className="pb-2 flex flex-row items-center gap-2">
         <Activity className="h-4 w-4 text-primary" />
-        <CardTitle className="text-2xl tracking-tight text-foreground">
+        <CardTitle className="text-base font-semibold tracking-tight text-foreground">
           Perlu Perhatian
         </CardTitle>
       </CardHeader>
       <CardContent>
         {needsAttention.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-lg text-ink-mute gap-2">
+          <div className="flex flex-col items-center justify-center py-10 text-sm text-ink-mute gap-2">
             <Activity className="h-6 w-6 text-ink-faint" />
             <span>Tidak ada order yang perlu perhatian</span>
           </div>
@@ -174,7 +174,7 @@ export function OrdersActivityFeed({ limit = 10 }: { limit?: number }) {
                     </span>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-lg truncate text-foreground">
+                      <p className="text-sm truncate text-foreground">
                         {order.customer_name}
                         <span className="mx-1.5 text-ink-faint">·</span>
                         <span className="text-ink-mute">

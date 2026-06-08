@@ -108,13 +108,13 @@ export function RecentOrdersTable({ limit = 5 }: { limit?: number }) {
     <Card className="border-hairline shadow-none bg-background transition-shadow hover:shadow-md">
       <CardHeader className="pb-2 flex flex-row items-center gap-2">
         <ClipboardList className="h-4 w-4 text-primary" />
-        <CardTitle className="text-2xl tracking-tight text-foreground">
+        <CardTitle className="text-base font-semibold tracking-tight text-foreground">
           Order Terbaru
         </CardTitle>
       </CardHeader>
       <CardContent className="px-2">
         {orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-lg text-ink-mute gap-2">
+          <div className="flex flex-col items-center justify-center py-10 text-sm text-ink-mute gap-2">
             <Inbox className="h-6 w-6 text-ink-faint" />
             <span>Belum ada order</span>
           </div>
@@ -132,7 +132,7 @@ export function RecentOrdersTable({ limit = 5 }: { limit?: number }) {
               <TableBody>
                 {orders.map((order) => (
                   <TableRow key={order.order_id}>
-                    <TableCell className="text-lg text-foreground">
+                    <TableCell className="text-sm text-foreground">
                       {order.customer_name}
                     </TableCell>
                     <TableCell>
@@ -154,7 +154,7 @@ export function RecentOrdersTable({ limit = 5 }: { limit?: number }) {
       <div className="border-t px-4 py-3">
         <Link
           href="/dashboard/orders"
-          className="inline-flex items-center gap-1.5 text-lg text-primary hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
         >
           Lihat semua order
           <ArrowRight className="h-3.5 w-3.5" />

@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { getStatusBreakdown } from '@/lib/actions/dashboard'
 import { ORDER_STATUS_SEQUENCE, getStatusLabel, ORDER_STATUS_COLORS } from '@/lib/order-status'
 import { cn } from '@/lib/utils'
-import { ClipboardList } from 'lucide-react'
 
 export function StatusCountCards({
   startDate,
@@ -71,7 +70,7 @@ export function StatusCountCards({
                 <div
                   className={cn('w-2 h-2 rounded-full', colors.bg)}
                 />
-                <span className={cn('text-[22px] font-[460] leading-none', colors.text)}>
+                <span className={cn('text-lg font-[460] leading-none', colors.text)}>
                   {count}
                 </span>
                 <span className="text-xs font-medium text-ink-mute leading-tight">

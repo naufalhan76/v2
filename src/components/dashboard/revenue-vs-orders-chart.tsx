@@ -80,7 +80,7 @@ export function RevenueVsOrdersChart({
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
-            <CardTitle className="text-2xl tracking-tight text-foreground">
+            <CardTitle className="text-base font-semibold tracking-tight text-foreground">
               Pendapatan vs Order Harian
             </CardTitle>
           </div>
