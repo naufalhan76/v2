@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useTheme } from 'next-themes'
 import { Switch } from '@/components/ui/switch'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import {
   LayoutDashboard,
   Settings,
@@ -89,6 +90,7 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
   const [expandedItems, setExpandedItems] = useState<string[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
   const pathname = usePathname()
+  const prefersReducedMotion = useReducedMotion()
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -140,7 +142,11 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
   }
 
   return (
-    <div className={`border-r border-hairline bg-background ${isCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 h-full flex flex-col`}>
+    <motion.div
+      className="border-r border-hairline bg-background h-full flex flex-col"
+      animate={{ width: isCollapsed ? 64 : 256 }}
+      transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
+    >
       <div className="flex h-14 items-center justify-between border-b border-hairline px-4 lg:h-[60px] lg:px-6 shrink-0 relative">
         {!isCollapsed && (
           <Link href="/dashboard" className="flex items-center justify-center flex-1">
@@ -238,7 +244,7 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }
 

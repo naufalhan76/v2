@@ -145,4 +145,8 @@ export function ListSkeleton({ items = 5 }: { items?: number }) {
   )
 }
 
-export { Skeleton }
+function AnimatedSkeleton(props: React.HTMLAttributes<HTMLDivElement>) {
+  return <Skeleton {...props} />
+}
+
+export { Skeleton, AnimatedSkeleton }

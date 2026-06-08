@@ -65,9 +65,9 @@ function ConfirmPageContent() {
       <Card className="w-full max-w-md bg-white !rounded-xl shadow-lg border-0">
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center mb-6">
-            {status === 'loading' && <Loader2 className="h-12 w-12 text-primary animate-spin" />}
+            {status === 'loading' && <Loader2 className="h-12 w-12 text-violet-soft animate-spin" />}
             {status === 'success' && <CheckCircle className="h-12 w-12 text-status-completed" />}
-            {status === 'error' && <CheckCircle className="h-12 w-12 text-destructive" />}
+            {status === 'error' && <XCircle className="h-12 w-12 text-destructive" />}
           </div>
           <CardTitle
             className="text-[28px] leading-tight"
@@ -118,7 +118,7 @@ export default function ConfirmPage() {
         <Card className="w-full max-w-md bg-white !rounded-xl shadow-lg border-0">
           <CardHeader className="text-center pb-2">
             <div className="flex justify-center mb-6">
-              <Loader2 className="h-12 w-12 text-primary animate-spin" />
+              <Loader2 className="h-12 w-12 text-violet-soft animate-spin" />
             </div>
             <CardTitle
               className="text-[28px] leading-tight"

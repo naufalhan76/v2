@@ -195,7 +195,7 @@ function LoginForm() {
               isLoading={isLoading}
               message={loadingMessage || 'Memuat...'}
             >
-              <Card className="rounded-xl shadow-lg hover:shadow-lg p-8 border-0">
+              <Card className="rounded-xl shadow-lg hover:shadow-lg p-8 border-0 bg-white">
                 <CardHeader className="space-y-1 p-0 pb-6 text-center">
                   <CardDescription className="text-ink-mute text-lg">
                     Selamat datang kembali

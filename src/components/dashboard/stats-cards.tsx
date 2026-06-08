@@ -1,12 +1,84 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Delta } from '@/components/ui/delta'
 import { getDashboardKpis } from '@/lib/actions/dashboard'
 import { adaptKpis, type DashboardKPI } from '@/lib/dashboard-data'
 import { cn, formatRupiah } from '@/lib/utils'
 import { ArrowRight } from 'lucide-react'
+
+function useCountUp(end: number, enabled: boolean, duration: number = 1000): number {
+  const [value, setValue] = useState(0)
+  const startTimeRef = useRef<number | null>(null)
+  const frameRef = useRef<number>(0)
+
+  useEffect(() => {
+    if (!enabled) return
+    setValue(0)
+    startTimeRef.current = null
+
+    const animate = (timestamp: number) => {
+      if (startTimeRef.current === null) {
+        startTimeRef.current = timestamp
+      }
+      const elapsed = timestamp - startTimeRef.current
+      const progress = Math.min(elapsed / duration, 1)
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setValue(Math.round(eased * end))
+
+      if (progress < 1) {
+        frameRef.current = requestAnimationFrame(animate)
+      }
+    }
+
+    frameRef.current = requestAnimationFrame(animate)
+
+    return () => {
+      cancelAnimationFrame(frameRef.current)
+    }
+  }, [end, enabled, duration])
+
+  return value
+}
+
+function AnimatedKpiValue({
+  kpi,
+  isPrimary,
+}: {
+  kpi: DashboardKPI
+  isPrimary: boolean
+}) {
+  // Only animate once on initial mount (not on every re-render)
+  const [hasAnimated, setHasAnimated] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setHasAnimated(true), 300)
+    return () => clearTimeout(t)
+  }, [])
+
+  const animatedValue = useCountUp(kpi.value, hasAnimated)
+  const displayValue =
+    kpi.label === 'Total Revenue'
+      ? formatRupiah(hasAnimated ? animatedValue : 0)
+      : hasAnimated
+        ? animatedValue.toLocaleString('id-ID')
+        : '0'
+
+  return (
+    <div
+      className={cn(
+        'mb-2 tracking-tight tabular-nums',
+        isPrimary
+          ? 'text-[28px] font-[540] leading-tight'
+          : 'text-[22px] font-[460] leading-tight'
+      )}
+    >
+      {displayValue}
+    </div>
+  )
+}
 
 export function StatsCards() {
   const [kpis, setKpis] = useState<DashboardKPI[]>([])
@@ -46,50 +118,49 @@ export function StatsCards() {
       {kpis.map((kpi, index) => {
         const isPrimary = index < 2
         return (
-          <Card
+          <motion.div
             key={kpi.label}
-            className={cn(
-              'group shadow-none transition-shadow hover:shadow-md',
-              isPrimary
-                ? 'border-0 bg-primary text-primary-foreground'
-                : 'border-hairline bg-canvas-soft'
-            )}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{
+              duration: 0.35,
+              delay: index * 0.1,
+              ease: [0.16, 1, 0.3, 1],
+            }}
           >
-            <CardContent className="p-6">
-              <div className="mb-2 flex items-center justify-between">
-                <span
-                  className={cn(
-                    isPrimary
-                      ? 'text-xl font-[540] text-primary-foreground/80'
-                      : 'text-2xl font-[460] text-ink-mute'
-                  )}
-                >
-                  {kpi.label}
-                </span>
-                <ArrowRight
-                  className={cn(
-                    'h-3.5 w-3.5 transition-all group-hover:translate-x-0.5',
-                    isPrimary
-                      ? 'text-primary-foreground/30 group-hover:text-primary-foreground/70'
-                      : 'text-ink-faint group-hover:text-ink-mute'
-                  )}
-                />
-              </div>
-              <div
-                className={cn(
-                  'mb-2 tracking-tight',
-                  isPrimary
-                    ? 'text-[28px] font-[540] leading-tight'
-                    : 'text-[22px] font-[460] leading-tight'
-                )}
-              >
-                {kpi.label === 'Total Revenue'
-                  ? formatRupiah(kpi.value)
-                  : kpi.value.toLocaleString('id-ID')}
-              </div>
-              <Delta value={kpi.delta} />
-            </CardContent>
-          </Card>
+            <Card
+              className={cn(
+                'group shadow-none transition-shadow hover:shadow-md',
+                isPrimary
+                  ? 'border-0 bg-primary text-primary-foreground'
+                  : 'border-hairline bg-canvas-soft'
+              )}
+            >
+              <CardContent className="p-6">
+                <div className="mb-2 flex items-center justify-between">
+                  <span
+                    className={cn(
+                      isPrimary
+                        ? 'text-xl font-[540] text-primary-foreground/80'
+                        : 'text-2xl font-[460] text-ink-mute'
+                    )}
+                  >
+                    {kpi.label}
+                  </span>
+                  <ArrowRight
+                    className={cn(
+                      'h-3.5 w-3.5 transition-all group-hover:translate-x-0.5',
+                      isPrimary
+                        ? 'text-primary-foreground/30 group-hover:text-primary-foreground/70'
+                        : 'text-ink-faint group-hover:text-ink-mute'
+                    )}
+                  />
+                </div>
+                <AnimatedKpiValue kpi={kpi} isPrimary={isPrimary} />
+                <Delta value={kpi.delta} />
+              </CardContent>
+            </Card>
+          </motion.div>
         )
       })}
     </div>

@@ -185,8 +185,8 @@ export function LocationCard({
                   if (!ac.is_selected) return null
                   const actualIndex = location.existing_acs.findIndex(a => a.ac_unit_id === ac.ac_unit_id)
                   return (
-                    <div key={ac.ac_unit_id} className="border bg-white dark:bg-slate-900 rounded-md p-3 space-y-2 relative shadow-sm mt-3">
-                      <div className="font-medium text-sm text-slate-800 dark:text-slate-200">
+                    <div key={ac.ac_unit_id} className="border border-hairline bg-background rounded-md p-3 space-y-2 relative shadow-sm mt-3">
+                      <div className="font-medium text-sm text-foreground">
                         {ac.brand} {ac.model_number} {ac.serial_number && `(SN: ${ac.serial_number})`}
                       </div>
                       
@@ -399,7 +399,7 @@ export function LocationCard({
                             {unit.selected_services.map((svc: unknown, sIdx: number) => {
                               const s = svc as Record<string, unknown>
                               return (
-                              <div key={sIdx} className="flex items-center justify-between bg-white dark:bg-slate-900 border p-2 rounded text-sm group">
+                              <div key={sIdx} className="flex items-center justify-between bg-background border border-hairline p-2 rounded text-sm group">
                                 <div>
                                   <span className="font-mono text-xs font-bold text-primary mr-2 bg-primary/10 px-1 py-0.5 rounded">{s.msn_code as string}</span>
                                   <span>{s.service_name as string}</span>
@@ -419,7 +419,7 @@ export function LocationCard({
                           variant="secondary" 
                           size="sm" 
                         disabled={!unit.unit_type_id || !unit.capacity_id}
-                          className="w-full border border-dashed border-green-500/50 text-green-700 dark:text-green-400 bg-white dark:bg-slate-900"
+                          className="w-full border border-dashed border-green-500/50 text-green-700 dark:text-green-400 bg-background"
                           data-testid="add-service-button"
                           onClick={() => handleOpenServiceModal('new', unitIndex)}
                         >

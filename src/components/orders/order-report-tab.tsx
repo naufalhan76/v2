@@ -20,7 +20,7 @@ function ReportSkeleton() {
   return (
     <div className="space-y-4">
       <Skeleton className="h-6 w-32" />
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <Skeleton className="aspect-square w-full" />
         <Skeleton className="aspect-square w-full" />
         <Skeleton className="aspect-square w-full" />

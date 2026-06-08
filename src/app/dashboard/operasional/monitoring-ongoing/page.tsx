@@ -1049,7 +1049,7 @@ function MonitoringOngoingContent() {
                             const tc = tech as Record<string, unknown>
                             const technicians = tc.technicians as Record<string, unknown> | undefined
                             return (
-                            <div key={tc.id as string} className='flex items-center justify-between p-2 bg-white rounded border'>
+                            <div key={tc.id as string} className='flex items-center justify-between p-2 bg-background rounded border border-hairline'>
                               <div className='flex-1'>
                                 <div className='font-medium text-sm'>{(technicians?.technician_name as string) || 'Unknown'}</div>
                                 {!!technicians?.contact_number && (

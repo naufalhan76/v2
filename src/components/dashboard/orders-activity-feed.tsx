@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Card,
   CardContent,
@@ -146,43 +147,53 @@ export function OrdersActivityFeed({ limit = 10 }: { limit?: number }) {
           </div>
         ) : (
           <ul className="space-y-1">
-            {needsAttention.map((order) => {
-              const canonical = toCanonical(order.status)
-              const Icon = STATUS_ICONS[canonical]
-              return (
-                <li
-                  key={order.order_id}
-                  className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-canvas-soft"
-                >
-                  <span
-                    className={cn(
-                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-                      STATUS_ICON_TINT[canonical]
-                    )}
+            <AnimatePresence mode="popLayout">
+              {needsAttention.map((order, index) => {
+                const canonical = toCanonical(order.status)
+                const Icon = STATUS_ICONS[canonical]
+                return (
+                  <motion.li
+                    key={order.order_id}
+                    initial={{ opacity: 0, x: -16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -16 }}
+                    transition={{
+                      duration: 0.3,
+                      delay: index * 0.05,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                    className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-canvas-soft"
                   >
-                    <Icon className="h-4 w-4" />
-                  </span>
+                    <span
+                      className={cn(
+                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
+                        STATUS_ICON_TINT[canonical]
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-lg truncate text-foreground">
-                      {order.customer_name}
-                      <span className="mx-1.5 text-ink-faint">·</span>
-                      <span className="text-ink-mute">
-                        {getStatusLabel(order.status)}
-                      </span>
-                    </p>
-                    <p className="text-sm text-ink-faint tabular-nums">
-                      {formatTimestamp(order.created_at)}
-                    </p>
-                  </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-lg truncate text-foreground">
+                        {order.customer_name}
+                        <span className="mx-1.5 text-ink-faint">·</span>
+                        <span className="text-ink-mute">
+                          {getStatusLabel(order.status)}
+                        </span>
+                      </p>
+                      <p className="text-sm text-ink-faint tabular-nums">
+                        {formatTimestamp(order.created_at)}
+                      </p>
+                    </div>
 
-                  <StatusIndicator
-                    color={STATUS_INDICATOR_COLOR[canonical]}
-                    pulse={canonical === 'PENDING'}
-                  />
-                </li>
-              )
-            })}
+                    <StatusIndicator
+                      color={STATUS_INDICATOR_COLOR[canonical]}
+                      pulse={canonical === 'PENDING'}
+                    />
+                  </motion.li>
+                )
+              })}
+            </AnimatePresence>
           </ul>
         )}
       </CardContent>

@@ -27,7 +27,7 @@ export function DashboardShell({
         <header className="flex-none flex h-14 items-center gap-4 border-b border-hairline bg-background px-4">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="md:hidden">
+              <Button variant="outline" size="icon" className="md:hidden min-h-[44px] min-w-[44px]">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle menu</span>
               </Button>

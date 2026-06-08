@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react'
 import { Button } from './button'
 import { Alert, AlertDescription } from './alert'
@@ -72,12 +73,17 @@ export function LoadingState({
   return (
     <div className={`flex flex-col items-center justify-center p-6 sm:p-8 w-full min-h-[120px] ${className}`}>
       {!hasTimedOut ? (
-        <div className="flex flex-col items-center space-y-4">
+        <motion.div
+          className="flex flex-col items-center space-y-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as const }}
+        >
           <Loader2 className={`animate-spin text-primary ${sizeClasses[size]}`} />
-          <p className="text-sm text-ink-mute animate-pulse text-center">
+          <p className="text-sm text-ink-mute text-center">
             {message}
           </p>
-        </div>
+        </motion.div>
       ) : (
         <div className="flex flex-col items-center space-y-4 max-w-md w-full text-center px-2">
           {showTimeout && (
@@ -186,7 +192,7 @@ export function LoadingOverlay({
           className={overlayClassName}
         >
           <div className="flex flex-col items-center space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-ink-mute">
               {hasTimedOut ? 'Taking longer than expected...' : message}
             </p>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { getStatusBreakdown } from '@/lib/actions/dashboard'
 import { ORDER_STATUS_SEQUENCE, getStatusLabel, ORDER_STATUS_COLORS } from '@/lib/order-status'
@@ -55,30 +56,35 @@ export function StatusCountCards({
         const colors = ORDER_STATUS_COLORS[status]
         const pct = total > 0 ? Math.round((count / total) * 100) : 0
         return (
-          <Card
+          <motion.div
             key={status}
-            className="border-hairline bg-canvas-soft shadow-none transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-            style={{
-              animationDelay: `${index * 60}ms`,
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.3,
+              delay: index * 0.06,
+              ease: [0.16, 1, 0.3, 1],
             }}
           >
-            <CardContent className="p-3 flex flex-col items-center text-center gap-1">
-              <div
-                className={cn('w-2 h-2 rounded-full', colors.bg)}
-              />
-              <span className={cn('text-[22px] font-[460] leading-none', colors.text)}>
-                {count}
-              </span>
-              <span className="text-xs font-medium text-ink-mute leading-tight">
-                {getStatusLabel(status)}
-              </span>
-              {total > 0 && (
-                <span className="text-xs tabular-nums text-ink-faint">
-                  {pct}%
+            <Card className="border-hairline bg-canvas-soft shadow-none transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
+              <CardContent className="p-3 flex flex-col items-center text-center gap-1">
+                <div
+                  className={cn('w-2 h-2 rounded-full', colors.bg)}
+                />
+                <span className={cn('text-[22px] font-[460] leading-none', colors.text)}>
+                  {count}
                 </span>
-              )}
-            </CardContent>
-          </Card>
+                <span className="text-xs font-medium text-ink-mute leading-tight">
+                  {getStatusLabel(status)}
+                </span>
+                {total > 0 && (
+                  <span className="text-xs tabular-nums text-ink-faint">
+                    {pct}%
+                  </span>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
         )
       })}
     </div>
