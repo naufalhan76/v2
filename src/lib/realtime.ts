@@ -20,7 +20,7 @@ function subscribeChannel(
   channelName: string,
   table: string,
   queryClient: QueryClient,
-  invalidateKeys: string[],
+  invalidateKeys: readonly unknown[][],
   callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
 ) {
   // Return existing channel if already active (prevents duplicate WebSockets under StrictMode)
@@ -42,8 +42,8 @@ function subscribeChannel(
       },
       (payload) => {
         callback(payload)
-        for (const key of invalidateKeys) {
-          queryClient.invalidateQueries({ queryKey: [key] })
+        for (const queryKey of invalidateKeys) {
+          queryClient.invalidateQueries({ queryKey })
         }
       }
     )
@@ -68,7 +68,7 @@ export function subscribeOrders(
     'orders-changes',
     'orders',
     queryClient,
-    ['orders', 'dashboard-kpi'],
+    [['orders'], ['orders', 'all'], ['dashboard-kpi']],
     callback
   )
 }
@@ -81,7 +81,7 @@ export function subscribePayments(
     'payments-changes',
     'payments',
     queryClient,
-    ['payments', 'dashboard-kpi'],
+    [['payments'], ['dashboard-kpi']],
     callback
   )
 }
@@ -94,7 +94,7 @@ export function subscribeServiceRecords(
     'service-records-changes',
     'service_records',
     queryClient,
-    ['service-records', 'dashboard-kpi'],
+    [['service-records'], ['dashboard-kpi']],
     callback
   )
 }
@@ -107,7 +107,7 @@ export function subscribeServicePricing(
     'service-pricing-changes',
     'service_pricing',
     queryClient,
-    ['service-pricing'],
+    [['service-pricing']],
     callback
   )
 }
@@ -120,7 +120,7 @@ export function subscribeServiceSla(
     'service-sla-changes',
     'service_sla',
     queryClient,
-    ['service-sla'],
+    [['service-sla']],
     callback
   )
 }

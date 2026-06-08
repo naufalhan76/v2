@@ -1,13 +1,15 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { UnitTypeTab } from './components/UnitTypeTab'
-import { CapacityTab } from './components/CapacityTab'
-import { BrandTab } from './components/BrandTab'
-import { ServiceTypeTab } from './components/ServiceTypeTab'
 import { ServiceCatalogTab } from './components/ServiceCatalogTab'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Info, Settings } from 'lucide-react'
+
+const UnitTypeTab = dynamic(() => import('./components/UnitTypeTab').then((mod) => mod.UnitTypeTab))
+const CapacityTab = dynamic(() => import('./components/CapacityTab').then((mod) => mod.CapacityTab))
+const BrandTab = dynamic(() => import('./components/BrandTab').then((mod) => mod.BrandTab))
+const ServiceTypeTab = dynamic(() => import('./components/ServiceTypeTab').then((mod) => mod.ServiceTypeTab))
 
 const TABS = [
   { value: 'catalog', label: 'Katalog Service', description: 'Harga & kombinasi service' },
@@ -48,7 +50,7 @@ export default function ServiceConfigPage() {
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className="flex-1 max-w-[180px] rounded-lg text-sm font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground"
+              className="flex-1 max-w-[180px] rounded-lg text-sm font-medium"
             >
               {tab.label}
             </TabsTrigger>

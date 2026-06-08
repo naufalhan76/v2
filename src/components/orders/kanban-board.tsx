@@ -22,15 +22,15 @@ import {
   BOARD_COLUMNS,
   type BoardColumnId,
   type OrderForDisplay,
-  groupOrdersByStatus,
-  sortOrdersByUrgency,
   getColumnForStatus,
+  groupAndSortOrdersByStatus,
 } from '@/lib/order-utils'
 import { useTransitionOrder } from '@/hooks/use-order-mutation'
 import { toCanonical } from '@/lib/order-status'
 
 interface KanbanBoardProps {
   orders: OrderForDisplay[]
+  groupedOrders?: Record<BoardColumnId, OrderForDisplay[]>
   onCardClick: (orderId: string) => void
   /** When provided, called when admin drags COMPLETED → INVOICED to open invoice creation. */
   onCreateInvoice?: (orderId: string) => void
@@ -78,6 +78,7 @@ function DraggableCard({ order, onClick, isSelectionMode, isSelected, onSelectTo
 
 export function KanbanBoard({
   orders,
+  groupedOrders,
   onCardClick,
   onCreateInvoice,
   onRecordPayment,
@@ -98,12 +99,10 @@ export function KanbanBoard({
     useSensor(KeyboardSensor)
   )
 
-  const grouped = useMemo(() => {
-    const g = groupOrdersByStatus(orders)
-    return Object.fromEntries(
-      Object.entries(g).map(([k, v]) => [k, sortOrdersByUrgency(v)])
-    ) as Record<BoardColumnId, OrderForDisplay[]>
-  }, [orders])
+  const grouped = useMemo(
+    () => groupedOrders ?? groupAndSortOrdersByStatus(orders),
+    [groupedOrders, orders]
+  )
 
   function handleDragStart(event: DragStartEvent) {
     const order = (event.active.data.current as { order?: OrderForDisplay } | null)?.order

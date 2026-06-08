@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense, useRef } from 'react'
+import { useState, useEffect, Suspense, useRef, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { getOrders, getOrderById, addHelperTechnician, removeHelperTechnician } from '@/lib/actions/orders'
@@ -55,77 +55,13 @@ import { cn, formatPhone } from '@/lib/utils'
 import { id } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
 import { StatusBadge } from '@/components/orders/status-badge'
-
-function getLocationsSummary(orderItems: unknown[]) {
-  if (!orderItems || orderItems.length === 0) return { text: 'No locations', count: 0, locations: [] }
-
-  const uniqueLocations = new Map()
-  orderItems.forEach(item => {
-    const it = item as Record<string, unknown>
-    if (it.locations) {
-      uniqueLocations.set(it.location_id, (it.locations as Record<string, unknown>).full_address)
-    }
-  })
-  
-  const locationNames = Array.from(uniqueLocations.values()).filter(Boolean)
-  
-  if (locationNames.length === 0) return { text: 'No locations', count: 0, locations: [] }
-  if (locationNames.length === 1) return { text: locationNames[0], count: 1, locations: locationNames }
-  return { text: `${locationNames[0]} +${locationNames.length - 1}`, count: locationNames.length, locations: locationNames }
-}
-
-function getServicesGrouped(orderItems: unknown[]) {
-  if (!orderItems || orderItems.length === 0) return { count: 0, types: {} }
-
-  const serviceTypes: Record<string, number> = {}
-  orderItems.forEach(item => {
-    const it = item as Record<string, unknown>
-    const key = (it.msn_code as string) || (it.service_type as string)
-    if (key) {
-      serviceTypes[key] = (serviceTypes[key] || 0) + 1
-    }
-  })
-  
-  return { count: orderItems.length, types: serviceTypes }
-}
-
-function getServiceLabel(item: unknown): string {
-  const it = item as Record<string, unknown>
-  if (it.msn_code) {
-    const parts = [it.msn_code as string]
-    const unitTypes = it.unit_types as Record<string, unknown> | undefined
-    const capacityRanges = it.capacity_ranges as Record<string, unknown> | undefined
-    if (unitTypes?.name) parts.push(unitTypes.name as string)
-    if (capacityRanges?.capacity_label) parts.push(capacityRanges.capacity_label as string)
-    return parts.join(' • ')
-  }
-  return (it.service_type as string) || '-'
-}
-
-function getUniqueServiceLabels(orderItems: unknown[]): string[] {
-  if (!orderItems || orderItems.length === 0) return []
-
-  const seen = new Set<string>()
-  const labels: string[] = []
-  orderItems.forEach(item => {
-    const label = getServiceLabel(item)
-    if (!seen.has(label)) {
-      seen.add(label)
-      labels.push(label)
-    }
-  })
-
-  return labels
-}
-
-
-const STATUS_GROUPS = {
-  NON_ASSIGNED: ['PENDING'],
-  ASSIGNED: ['ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS'],
-  INVOICED: ['COMPLETED', 'INVOICED', 'PAID']
-}
-
-const ALL_ONGOING_STATUSES = [...STATUS_GROUPS.NON_ASSIGNED, ...STATUS_GROUPS.ASSIGNED, ...STATUS_GROUPS.INVOICED]
+import {
+  ALL_ONGOING_STATUSES,
+  selectMonitoringOrders,
+  getUniqueServiceLabels,
+  getOrderDetailLocationGroups,
+  getOrderItemsEstimatedTotal,
+} from './monitoring-ongoing-utils'
 
 const SERVICE_TYPES = [
   { value: 'REFILL_FREON', label: 'Refill Freon' },
@@ -259,56 +195,36 @@ function MonitoringOngoingContent() {
   
   const technicians = techniciansData?.data || []
 
-  // Filter orders to only show ongoing (exclude PAID and CLOSED)
-  const ongoingOrders = (ordersData?.data || []).filter((order: unknown) =>
-    ALL_ONGOING_STATUSES.includes((order as Record<string, unknown>).status as string)
+  const { ongoingOrderViews, filteredOrderViews, counts } = useMemo(
+    () =>
+      selectMonitoringOrders(ordersData?.data || [], {
+        searchQuery,
+        statusFilter,
+        statusGroupFilter,
+        orderTypeFilter,
+        paymentStatusFilter,
+        multiLocationFilter,
+      }),
+    [
+      ordersData?.data,
+      searchQuery,
+      statusFilter,
+      statusGroupFilter,
+      orderTypeFilter,
+      paymentStatusFilter,
+      multiLocationFilter,
+    ]
   )
 
-  // Apply filters
-  const filteredOrdersBase = ongoingOrders.filter((order: unknown) => {
-    const o = order as Record<string, unknown>
-    const customers = o.customers as Record<string, unknown> | undefined
-    // Search filter
-    if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase()
-      const matchesOrderId = (o.order_id as string)?.toLowerCase().includes(searchLower)
-      const matchesCustomer = (customers?.customer_name as string)?.toLowerCase().includes(searchLower)
-      if (!matchesOrderId && !matchesCustomer) return false
-    }
-
-    // Status group filter (from cards)
-    if (statusGroupFilter === 'NON_ASSIGNED' && !STATUS_GROUPS.NON_ASSIGNED.includes(o.status as string)) return false
-    if (statusGroupFilter === 'ASSIGNED' && !STATUS_GROUPS.ASSIGNED.includes(o.status as string)) return false
-    if (statusGroupFilter === 'INVOICED' && !STATUS_GROUPS.INVOICED.includes(o.status as string)) return false
-
-    // Status filter (specific status)
-    if (statusFilter !== 'ALL' && o.status !== statusFilter) return false
-
-    // Order type filter
-    if (orderTypeFilter !== 'ALL' && o.order_type !== orderTypeFilter) return false
-
-    // Payment status filter
-    if (paymentStatusFilter !== 'ALL' && o.payment_status !== paymentStatusFilter) return false
-
-    // Multi-location filter
-    if (multiLocationFilter !== 'ALL') {
-      const locationsSummary = getLocationsSummary((o.order_items as unknown[]) || [])
-      if (multiLocationFilter === 'SINGLE' && locationsSummary.count !== 1) return false
-      if (multiLocationFilter === 'MULTI' && locationsSummary.count <= 1) return false
-    }
-
-    return true
-  })
-
   // Apply sorting
-  const { sortedData: filteredOrders, sortConfig, requestSort } = useSortableTable(filteredOrdersBase, {
+  const { sortedData: filteredOrders, sortConfig, requestSort } = useSortableTable(filteredOrderViews, {
     key: 'order_id',
     direction: 'desc'
   })
 
-  const nonAssignedCount = ongoingOrders.filter((o: unknown) => STATUS_GROUPS.NON_ASSIGNED.includes((o as Record<string, unknown>).status as string)).length
-  const assignedCount = ongoingOrders.filter((o: unknown) => STATUS_GROUPS.ASSIGNED.includes((o as Record<string, unknown>).status as string)).length
-  const invoicedCount = ongoingOrders.filter((o: unknown) => STATUS_GROUPS.INVOICED.includes((o as Record<string, unknown>).status as string)).length
+  const nonAssignedCount = counts.nonAssigned
+  const assignedCount = counts.assigned
+  const invoicedCount = counts.invoiced
 
   const handleOpenAddHelper = () => {
     setSelectedHelpers([])
@@ -699,7 +615,7 @@ function MonitoringOngoingContent() {
           {/* Active Filters Summary */}
           {(searchQuery || statusFilter !== 'ALL' || statusGroupFilter !== 'ALL' || orderTypeFilter !== 'ALL' || paymentStatusFilter !== 'ALL' || multiLocationFilter !== 'ALL') && (
             <div className='mt-4 flex items-center gap-2 text-sm text-muted-foreground'>
-              <span>Showing {filteredOrders.length} of {ongoingOrders.length} orders (tanggal order {format(dateFrom, 'dd MMM yyyy')} - {format(dateTo, 'dd MMM yyyy')})</span>
+              <span>Showing {filteredOrders.length} of {ongoingOrderViews.length} orders (tanggal order {format(dateFrom, 'dd MMM yyyy')} - {format(dateTo, 'dd MMM yyyy')})</span>
               <Button
                 variant='ghost'
                 size='sm'
@@ -759,10 +675,9 @@ function MonitoringOngoingContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredOrders.map((order: unknown) => {
-                    const o = order as Record<string, unknown>
-                    const locationsSummary = getLocationsSummary((o.order_items as unknown[]) || [])
-                    const servicesInfo = getServicesGrouped((o.order_items as unknown[]) || [])
+                  {filteredOrders.map((orderView) => {
+                    const o = orderView.order as Record<string, unknown>
+                    const { locationsSummary, servicesInfo, uniqueServiceLabels, helperTechnicianNames } = orderView
                     
                     return (
                       <TableRow
@@ -832,12 +747,12 @@ function MonitoringOngoingContent() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {getUniqueServiceLabels((o.order_items as unknown[]) || []).map((label) => (
+                            {uniqueServiceLabels.map((label) => (
                               <Badge key={label} variant='outline' className="text-xs font-mono">
                                 {label}
                               </Badge>
                             ))}
-                            {getUniqueServiceLabels((o.order_items as unknown[]) || []).length === 0 && (
+                            {uniqueServiceLabels.length === 0 && (
                               <Badge variant='outline'>
                                 {(o.order_type as string) || '-'}
                               </Badge>
@@ -851,11 +766,11 @@ function MonitoringOngoingContent() {
                           {o.order_technicians && (o.order_technicians as unknown[]).length > 0 ? (
                             <div className='space-y-1'>
                               <div className='font-medium'>
-                                {((o.order_technicians as unknown[]).find((t: unknown) => (t as Record<string, unknown>).role === 'lead') as Record<string, unknown> | undefined)?.technicians ? ((((o.order_technicians as unknown[]).find((t: unknown) => (t as Record<string, unknown>).role === 'lead') as Record<string, unknown>).technicians) as Record<string, unknown>).technician_name as string : (o.assigned_technician_id as string) || '-'}
-                              </div>
-                              {(o.order_technicians as unknown[]).filter((t: unknown) => (t as Record<string, unknown>).role === 'helper').length > 0 && (
+                                  {orderView.leadTechnicianName ?? ((o.assigned_technician_id as string) || '-')}
+                                </div>
+                              {helperTechnicianNames.length > 0 && (
                                 <div className='text-xs text-muted-foreground'>
-                                  + {(o.order_technicians as unknown[]).filter((t: unknown) => (t as Record<string, unknown>).role === 'helper').map((t: unknown) => ((t as Record<string, unknown>).technicians as Record<string, unknown>)?.technician_name as string).join(', ')}
+                                  + {helperTechnicianNames.join(', ')}
                                 </div>
                               )}
                             </div>
@@ -895,25 +810,9 @@ function MonitoringOngoingContent() {
             <DialogDescription>Complete information about this order</DialogDescription>
           </DialogHeader>
           {orderDetail?.data && (() => {
-            // Group order_items by location
-            const groupedByLocation = (orderDetail.data.order_items || []).reduce((acc: Record<string, unknown>, item: unknown) => {
-              const it = item as Record<string, unknown>
-              const locId = (it.location_id as string) || 'unknown'
-              if (!acc[locId]) {
-                acc[locId] = {
-                  location: it.locations,
-                  items: []
-                }
-              }
-              ;(acc[locId] as Record<string, unknown[]>).items.push(item)
-              return acc
-            }, {})
-            
-            const locationGroups = Object.values(groupedByLocation)
-            const totalEstimated = (orderDetail.data.order_items || []).reduce((sum: number, item: unknown) => {
-              const it = item as Record<string, unknown>
-              return sum + ((it.estimated_price as number) || 0) * ((it.quantity as number) || 1)
-            }, 0)
+            const orderItems = orderDetail.data.order_items || []
+            const locationGroups = getOrderDetailLocationGroups(orderItems)
+            const totalEstimated = getOrderItemsEstimatedTotal(orderItems)
             
             return (
               <div className='space-y-4'>

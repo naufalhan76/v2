@@ -750,7 +750,6 @@ export async function getServicedAcUnits(
           )
         `
       )
-      .or('last_service_date.not.is.null,next_service_due_date.not.is.null')
       .order('next_service_due_date', { ascending: true, nullsFirst: false })
 
     if (filters?.date_from) {
@@ -787,13 +786,15 @@ export async function getServicedAcUnits(
       }
     }
 
-    const latestOrderStatusMap = new Map<string, string>()
-    const latestServiceTypeMap = new Map<string, string>()
+    const latestOrderMap = new Map<
+      string,
+      { created_at: string; status: string; service_type: string }
+    >()
 
     if (unitIds.length > 0) {
       const { data: orderItemData, error: orderItemErr } = await supabase
         .from('order_items')
-        .select('ac_unit_id, service_type, orders ( status, created_at )')
+        .select('ac_unit_id, service_type, status, orders ( status, order_type, created_at )')
         .in('ac_unit_id', unitIds)
 
       if (orderItemErr) throw orderItemErr
@@ -801,23 +802,22 @@ export async function getServicedAcUnits(
       for (const row of (orderItemData ?? []) as unknown as Array<{
         ac_unit_id: string | null
         service_type: string | null
-        orders: { status: string; created_at: string } | Array<{ status: string; created_at: string }> | null
+        status: string | null
+        orders:
+          | { status: string | null; order_type: string | null; created_at: string }
+          | Array<{ status: string | null; order_type: string | null; created_at: string }>
+          | null
       }>) {
         if (!row.ac_unit_id) continue
         const order = Array.isArray(row.orders) ? row.orders[0] : row.orders
         if (!order) continue
-        const prev = latestOrderStatusMap.get(row.ac_unit_id)
-        const prevCreatedAt = prev
-          ? ((orderItemData ?? []) as unknown as Array<{ ac_unit_id: string | null; orders: unknown }>)
-              .map((r) => {
-                const o = Array.isArray(r.orders) ? (r.orders as Array<{ status: string; created_at: string }>)[0] : r.orders as { status: string; created_at: string } | null
-                return r.ac_unit_id === row.ac_unit_id && o?.status === prev ? o?.created_at ?? '' : ''
-              })
-              .find((v) => v !== '') ?? ''
-          : ''
-        if (!prev || order.created_at > prevCreatedAt) {
-          latestOrderStatusMap.set(row.ac_unit_id, order.status)
-          if (row.service_type) latestServiceTypeMap.set(row.ac_unit_id, row.service_type)
+        const prev = latestOrderMap.get(row.ac_unit_id)
+        if (!prev || order.created_at > prev.created_at) {
+          latestOrderMap.set(row.ac_unit_id, {
+            created_at: order.created_at,
+            service_type: row.service_type ?? order.order_type ?? '—',
+            status: row.status ?? order.status ?? '—',
+          })
         }
       }
     }
@@ -852,13 +852,16 @@ export async function getServicedAcUnits(
         has_pending_reminder: pendingSet.has(u.ac_unit_id),
         reminder_count: reminderCountMap.get(u.ac_unit_id) ?? 0,
         last_reminder_sent_at: lastSentMap.get(u.ac_unit_id) ?? null,
-        latest_order_status: latestOrderStatusMap.get(u.ac_unit_id) ?? null,
-        latest_service_type: latestServiceTypeMap.get(u.ac_unit_id) ?? null,
+        latest_order_status: latestOrderMap.get(u.ac_unit_id)?.status ?? null,
+        latest_service_type: latestOrderMap.get(u.ac_unit_id)?.service_type ?? null,
       }
     })
 
+    let result = mapped.filter(
+      (row) => row.last_service_date !== null || row.next_service_due_date !== null
+    )
+
     // Status filter (in-memory; the underlying date math is small)
-    let result = mapped
     if (filters?.status && filters.status !== 'all') {
       result = result.filter((row) => {
         const due = row.next_service_due_date

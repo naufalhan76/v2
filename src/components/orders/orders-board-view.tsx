@@ -2,10 +2,11 @@
 
 import { KanbanBoard } from '@/components/orders/kanban-board'
 import { BoardSkeleton } from '@/components/orders/board-skeleton'
-import { type OrderForDisplay } from '@/lib/order-utils'
+import { type BoardColumnId, type OrderForDisplay } from '@/lib/order-utils'
 
 interface OrdersBoardViewProps {
   orders: OrderForDisplay[]
+  groupedOrders?: Record<BoardColumnId, OrderForDisplay[]>
   isLoading: boolean
   onCardClick: (orderId: string) => void
   isSelectionMode?: boolean
@@ -16,6 +17,7 @@ interface OrdersBoardViewProps {
 
 export function OrdersBoardView({
   orders,
+  groupedOrders,
   isLoading,
   onCardClick,
   isSelectionMode,
@@ -27,6 +29,7 @@ export function OrdersBoardView({
   return (
     <KanbanBoard
       orders={orders}
+      groupedOrders={groupedOrders}
       onCardClick={onCardClick}
       isSelectionMode={isSelectionMode}
       selectedOrderIds={selectedOrderIds}

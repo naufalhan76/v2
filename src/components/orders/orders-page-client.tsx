@@ -17,13 +17,11 @@ import { BulkAssignBar } from '@/components/orders/bulk-assign-bar'
 import { subscribeOrders } from '@/lib/realtime'
 import {
   filterOrders,
-  groupOrdersByStatus,
-  sortOrdersByUrgency,
+  groupAndSortOrdersByStatus,
   BOARD_COLUMNS,
   type OrderFilters as OrderFiltersSpec,
   type OrderForDisplay,
   type Urgency,
-  type BoardColumnId,
 } from '@/lib/order-utils'
 import { toCanonical } from '@/lib/order-status'
 
@@ -125,12 +123,7 @@ export function OrdersPageClient() {
 
   const hasFilters = Object.values(filters).some((v) => v !== undefined && v !== '')
 
-  const groupedOrders = useMemo(() => {
-    const g = groupOrdersByStatus(filtered)
-    return Object.fromEntries(
-      Object.entries(g).map(([k, v]) => [k, sortOrdersByUrgency(v)])
-    ) as Record<BoardColumnId, OrderForDisplay[]>
-  }, [filtered])
+  const groupedOrders = useMemo(() => groupAndSortOrdersByStatus(filtered), [filtered])
 
   const columnIds = useMemo(() => BOARD_COLUMNS.map((c) => c.id), [])
 
@@ -403,6 +396,7 @@ export function OrdersPageClient() {
       {view === 'board' ? (
         <OrdersBoardView
           orders={filtered}
+          groupedOrders={groupedOrders}
           isLoading={isLoading}
           onCardClick={handleOpenDetail}
           isSelectionMode={selectionMode}

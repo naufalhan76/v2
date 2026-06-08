@@ -130,6 +130,15 @@ export function sortOrdersByUrgency<T extends OrderForDisplay>(orders: T[]): T[]
   })
 }
 
+export function groupAndSortOrdersByStatus<T extends OrderForDisplay>(
+  orders: T[]
+): Record<BoardColumnId, T[]> {
+  const grouped = groupOrdersByStatus(orders)
+  return Object.fromEntries(
+    Object.entries(grouped).map(([key, value]) => [key, sortOrdersByUrgency(value)])
+  ) as Record<BoardColumnId, T[]>
+}
+
 /**
  * Filter spec used by both Board and List views.
  */

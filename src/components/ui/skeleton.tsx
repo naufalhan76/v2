@@ -1,6 +1,3 @@
-"use client"
-
-import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 function Skeleton({
@@ -8,11 +5,9 @@ function Skeleton({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <motion.div
-      className={cn("rounded-md bg-canvas-soft", className)}
-      animate={{ opacity: [0.5, 1, 0.5] }}
-      transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-      {...(props as Record<string, unknown>)}
+    <div
+      className={cn("rounded-md bg-canvas-soft animate-pulse", className)}
+      {...props}
     />
   )
 }

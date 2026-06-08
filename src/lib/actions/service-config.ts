@@ -3,6 +3,12 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { sanitizeSearchTerm } from '@/lib/utils'
+import {
+  buildBulkUpdateServiceCatalogMessage,
+  findBulkUpdateColumn,
+  parseBulkUpdateServiceCatalogCsv,
+  prepareBulkUpdateServiceCatalogRows,
+} from './service-config-bulk-utils'
 
 // ==========================================
 // SERVICE TYPES
@@ -444,66 +450,33 @@ export async function bulkUpdateServiceCatalog(csvText: string) {
   const lines = csvText.split('\n').filter(l => l.trim().length > 0)
   if (lines.length < 2) return { success: false, error: 'CSV kosong atau format tidak valid. Pastikan ada header dan minimal 1 baris data.' }
 
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/^["']|["']$/g, ''))
-  const records = lines.slice(1).map(l => l.split(',').map(c => c.trim().replace(/^["']|["']$/g, '')))
+  const { headers, records } = parseBulkUpdateServiceCatalogCsv(csvText)
+  const { updates, skippedCount } = prepareBulkUpdateServiceCatalogRows(headers, records)
 
-  const findIdx = (names: string[]) => {
-    for (const name of names) {
-      const idx = headers.indexOf(name.toLowerCase())
-      if (idx !== -1) return idx
-    }
-    return -1
-  }
-
-  const catalogIdIdx = findIdx(['catalog_id', 'catalogid', 'id'])
-  const msnCodeIdx = findIdx(['msn_code', 'msncode', 'msn', 'kode'])
-  const serviceNameIdx = findIdx(['service_name', 'servicename', 'nama', 'name'])
-  const basePriceIdx = findIdx(['base_price', 'baseprice', 'price', 'harga'])
-  const descriptionIdx = findIdx(['description', 'desc', 'deskripsi'])
-  const isActiveIdx = findIdx(['is_active', 'isactive', 'active', 'status'])
-
+  const catalogIdIdx = findBulkUpdateColumn(headers, ['catalog_id', 'catalogid', 'id'])
+  const msnCodeIdx = findBulkUpdateColumn(headers, ['msn_code', 'msncode', 'msn', 'kode'])
   if (catalogIdIdx === -1 && msnCodeIdx === -1) {
     return { success: false, error: 'CSV harus memiliki kolom catalog_id atau msn_code untuk matching.' }
   }
 
   try {
-    let updatedCount = 0
-    let skippedCount = 0
-    const errors: string[] = []
+    const updatedAt = new Date().toISOString()
+    const results = await Promise.all(
+      updates.map(({ matchField, matchValue, payload }) =>
+        supabase
+          .from('service_catalog')
+          .update({ ...payload, updated_at: updatedAt })
+          .eq(matchField, matchValue)
+      )
+    )
 
-    for (const record of records) {
-      const catalogId = catalogIdIdx !== -1 ? record[catalogIdIdx] : ''
-      const msnCode = msnCodeIdx !== -1 ? record[msnCodeIdx] : ''
-      if (!catalogId && !msnCode) { skippedCount++; continue }
-
-      const payload: Record<string, unknown> = {}
-      if (serviceNameIdx !== -1 && record[serviceNameIdx]) payload.service_name = record[serviceNameIdx]
-      if (basePriceIdx !== -1 && record[basePriceIdx]) {
-        const price = parseFloat(record[basePriceIdx].replace(/[^0-9.-]+/g, ''))
-        if (!isNaN(price)) payload.base_price = price
-      }
-      if (descriptionIdx !== -1) payload.description = record[descriptionIdx] || null
-      if (isActiveIdx !== -1) {
-        const val = record[isActiveIdx].toLowerCase()
-        payload.is_active = val === 'true' || val === '1' || val === 'yes' || val === 'aktif'
-      }
-
-      if (Object.keys(payload).length === 0) { skippedCount++; continue }
-
-      let query = supabase.from('service_catalog').update({ ...payload, updated_at: new Date().toISOString() })
-      if (catalogId) query = query.eq('catalog_id', catalogId)
-      else query = query.eq('msn_code', msnCode)
-      const { error } = await query
-      if (error) errors.push(`${msnCode || catalogId}: ${error.message}`)
-      else updatedCount++
-    }
+    const errors = results.flatMap((result, index) =>
+      result.error ? [`${updates[index].label}: ${result.error.message}`] : []
+    )
+    const updatedCount = updates.length - errors.length
 
     revalidatePath('/dashboard/konfigurasi/service-config')
-    const parts: string[] = []
-    if (updatedCount > 0) parts.push(`${updatedCount} diupdate`)
-    if (skippedCount > 0) parts.push(`${skippedCount} dilewati`)
-    if (errors.length > 0) parts.push(`${errors.length} error`)
-    return { success: true, message: parts.join(', ') || 'Tidak ada perubahan', updatedCount, skippedCount, errors: errors.length > 0 ? errors : undefined }
+    return { success: true, message: buildBulkUpdateServiceCatalogMessage(updatedCount, skippedCount, errors.length), updatedCount, skippedCount, errors: errors.length > 0 ? errors : undefined }
   } catch (err: unknown) {
     return { success: false, error: err instanceof Error ? err.message : 'Gagal memproses update' }
   }
