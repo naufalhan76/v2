@@ -41,7 +41,7 @@ function AssignmentSuccessContent() {
       enabled: !!id,
     })),
   })
-  const helpers = helperResults.map(q => q.data?.data).filter(Boolean)
+  const helpers = helperResults.flatMap(q => q.data?.data ? [q.data.data] : [])
 
   const orderResults = useQueries({
     queries: orderIds.map((id) => ({
@@ -50,7 +50,7 @@ function AssignmentSuccessContent() {
       enabled: !!id,
     })),
   })
-  const orders = orderResults.map(q => q.data?.data).filter(Boolean) as unknown[]
+  const orders = orderResults.flatMap(q => q.data?.data ? [q.data.data] : []) as unknown[]
   const isLoading = orderResults.some(q => q.isLoading)
 
 

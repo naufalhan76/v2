@@ -321,15 +321,14 @@ export default function AssignOrderPage() {
                         Helper Technicians <span className='text-muted-foreground text-sm font-normal'>(Optional)</span>
                       </h3>
                       <MultiSelectDropdown
-                        options={filteredTechnicians
-                          .filter((tech: unknown) => (tech as Record<string, unknown>).technician_id !== selectedTechnician)
-                          .map((tech: unknown) => {
+                        options={filteredTechnicians.flatMap((tech: unknown) => {
                             const t = tech as Record<string, unknown> & { technician_id: string; technician_name: string; company?: string; contact_number?: string }
-                            return ({
+                            if (t.technician_id === selectedTechnician) return []
+                            return [{
                               id: t.technician_id,
                               label: t.technician_name,
                               secondaryLabel: t.company || formatPhone(t.contact_number)
-                            })
+                            }]
                           })}
                         selected={selectedHelpers}
                         onSelectionChange={setSelectedHelpers}

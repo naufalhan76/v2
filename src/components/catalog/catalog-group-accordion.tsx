@@ -108,8 +108,10 @@ const parseIncludes = (text?: string): string[] | null => {
   if (!text) return null
   const arr = text
     .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
+    .flatMap((s) => {
+      const trimmed = s.trim()
+      return trimmed ? [trimmed] : []
+    })
   return arr.length > 0 ? arr : null
 }
 

@@ -115,7 +115,7 @@ export function OrderDetailTab({ order }: OrderDetailTabProps) {
               {helpers.length > 0 && (
                 <p>
                   <span className="font-medium">Helper:</span>{' '}
-                  {helpers.map((h) => h.technicians?.technician_name).filter(Boolean).join(', ')}
+                  {helpers.flatMap((h) => h.technicians?.technician_name ? [h.technicians.technician_name] : []).join(', ')}
                 </p>
               )}
             </div>

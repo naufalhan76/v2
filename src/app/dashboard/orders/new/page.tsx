@@ -525,9 +525,9 @@ export default function NewOrderAccordionPage() {
     
     // Count how many new ACs are already added for this location
     const uniqueNewAcs = Array.from(new Set(
-      serviceLines
-        .filter((l) => l.location_id === locationId && l.ac_unit_id === '__new__')
-        .map((l) => l.unit_instance_id)
+      serviceLines.flatMap((l) =>
+        l.location_id === locationId && l.ac_unit_id === '__new__' ? [l.unit_instance_id] : []
+      )
     ))
     const count = uniqueNewAcs.length
 
@@ -812,18 +812,14 @@ export default function NewOrderAccordionPage() {
   // Counters for AC visibility (unique unit instances)
   const newAcCount = useMemo(() => {
     const newAcIds = new Set(
-      serviceLines
-        .filter((l) => l.ac_unit_id === '__new__')
-        .map((l) => l.unit_instance_id)
+      serviceLines.flatMap((l) => (l.ac_unit_id === '__new__' ? [l.unit_instance_id] : []))
     )
     return newAcIds.size
   }, [serviceLines])
 
   const existingAcCount = useMemo(() => {
     const existingAcIds = new Set(
-      serviceLines
-        .filter((l) => l.ac_unit_id !== '__new__')
-        .map((l) => l.unit_instance_id)
+      serviceLines.flatMap((l) => (l.ac_unit_id !== '__new__' ? [l.unit_instance_id] : []))
     )
     return existingAcIds.size
   }, [serviceLines])
@@ -1422,11 +1418,11 @@ export default function NewOrderAccordionPage() {
                                 <SelectValue placeholder={firstLine.unit_type_id ? "Pilih kapasitas..." : "Pilih tipe unit dulu"} />
                               </SelectTrigger>
                               <SelectContent>
-                                {(((masterData?.capacityRanges || []) as Array<Record<string, unknown>>).filter((c) => c.unit_type_id === firstLine.unit_type_id)).map((cr) => (
+                                {((masterData?.capacityRanges || []) as Array<Record<string, unknown>>).flatMap((cr) => cr.unit_type_id === firstLine.unit_type_id ? [(
                                   <SelectItem key={cr.capacity_id as string} value={cr.capacity_id as string}>
                                     {cr.capacity_label as string}
                                   </SelectItem>
-                                ))}
+                                )] : [])}
                               </SelectContent>
                             </Select>
                           </div>
@@ -1706,9 +1702,9 @@ export default function NewOrderAccordionPage() {
                       <div>
                         <Label>Helper (opsional)</Label>
                         <MultiSelectDropdown
-                          options={(technicians || [])
-                            .filter((t) => t.technician_id !== leadTechnicianId)
-                            .map((t) => ({ id: t.technician_id, label: t.full_name }))}
+                          options={(technicians || []).flatMap((t) =>
+                            t.technician_id === leadTechnicianId ? [] : [{ id: t.technician_id, label: t.full_name }]
+                          )}
                           selected={helperTechnicianIds}
                           onSelectionChange={setHelperTechnicianIds}
                           placeholder="Pilih helper..."
@@ -1910,4 +1906,3 @@ function SummaryRow({ label, children }: { label: string; children: React.ReactN
     </div>
   )
 }
-

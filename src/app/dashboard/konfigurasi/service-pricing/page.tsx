@@ -131,7 +131,10 @@ export default function ServicePricingPage() {
             includes = Array.isArray(parsed) ? parsed.map(String) : [String(parsed)]
           } catch {
             includes = raw
-              ? raw.split(',').map((s) => s.trim()).filter(Boolean)
+              ? raw.split(',').flatMap((s) => {
+                  const trimmed = s.trim()
+                  return trimmed ? [trimmed] : []
+                })
               : null
           }
         }
@@ -192,7 +195,10 @@ export default function ServicePricingPage() {
       setIsLoading(true)
 
       const includesArray = data.includes
-        ? data.includes.split(',').map((item) => item.trim()).filter(Boolean)
+        ? data.includes.split(',').flatMap((item) => {
+            const trimmed = item.trim()
+            return trimmed ? [trimmed] : []
+          })
         : []
 
       const input = {
@@ -278,7 +284,10 @@ export default function ServicePricingPage() {
         if (Array.isArray(parsed)) return parsed.map(String)
         return [String(parsed)]
       } catch {
-        return raw.split(',').map((s) => s.trim()).filter(Boolean)
+        return raw.split(',').flatMap((s) => {
+          const trimmed = s.trim()
+          return trimmed ? [trimmed] : []
+        })
       }
     }
 

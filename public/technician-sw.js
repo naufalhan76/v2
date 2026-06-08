@@ -27,11 +27,13 @@ self.addEventListener('install', (event) => {
 // Activate: clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((names) =>
-      Promise.all(
-        names.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))
-      )
-    )
+    caches.keys().then((names) => {
+      const deletions = []
+      for (const name of names) {
+        if (name !== CACHE_NAME) deletions.push(caches.delete(name))
+      }
+      return Promise.all(deletions)
+    })
   )
   self.clients.claim()
 })

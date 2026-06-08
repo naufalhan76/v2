@@ -107,20 +107,18 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
   }, [])
 
   const filterMenuItems = (items: { href: string; title: string; requireRole?: string; children?: { href: string; title: string; requireRole?: string }[] }[]) => {
-    return items.filter(item => {
-      if (item.requireRole && userRole !== item.requireRole) return false
-      return true
-    }).map(item => {
+    return items.flatMap(item => {
+      if (item.requireRole && userRole !== item.requireRole) return []
       if (item.children && item.children.length > 0) {
-        return {
+        return [{
           ...item,
           children: item.children.filter((child: { href: string; title: string; requireRole?: string }) => {
             if (child.requireRole && userRole !== child.requireRole) return false
             return true
           })
-        }
+        }]
       }
-      return item
+      return [item]
     })
   }
 

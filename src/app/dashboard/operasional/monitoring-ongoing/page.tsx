@@ -320,7 +320,10 @@ function MonitoringOngoingContent() {
     
     const leadTech = orderDetail.data.order_technicians?.find((t: unknown) => (t as Record<string, unknown>).role === 'lead')
     const leadTechId = leadTech ? (leadTech as Record<string, unknown>).technician_id : undefined
-    const helperIds = orderDetail.data.order_technicians?.filter((t: unknown) => (t as Record<string, unknown>).role === 'helper').map((t: unknown) => (t as Record<string, unknown>).technician_id) || []
+    const helperIds = orderDetail.data.order_technicians?.flatMap((t: unknown) => {
+      const technician = t as Record<string, unknown>
+      return technician.role === 'helper' ? [technician.technician_id] : []
+    }) || []
 
     return technicians.filter((tech: unknown) => {
       const t = tech as Record<string, unknown>
@@ -926,10 +929,11 @@ function MonitoringOngoingContent() {
                     </div>
                     <div className='bg-muted/50 rounded-lg p-4 space-y-3'>
                       {/* Lead Technician */}
-                      {orderDetail.data.order_technicians.filter((t: unknown) => (t as Record<string, unknown>).role === 'lead').map((tech: unknown) => {
+                      {orderDetail.data.order_technicians.flatMap((tech: unknown) => {
                         const tc = tech as Record<string, unknown>
+                        if (tc.role !== 'lead') return []
                         const technicians = tc.technicians as Record<string, unknown> | undefined
-                        return (
+                        return [(
                         <div key={tc.id as string} className='flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20'>
                           <div>
                             <div className='font-semibold'>{(technicians?.technician_name as string) || 'Unknown'}</div>
@@ -937,17 +941,18 @@ function MonitoringOngoingContent() {
                           </div>
                           <Badge className='bg-primary'>LEAD</Badge>
                         </div>
-                        )
+                        )]
                       })}
                       
                       {/* Helper Technicians */}
                       {orderDetail.data.order_technicians.filter((t: unknown) => (t as Record<string, unknown>).role === 'helper').length > 0 && (
                         <div className='space-y-2'>
                           <div className='text-sm font-medium text-muted-foreground'>Helpers:</div>
-                          {orderDetail.data.order_technicians.filter((t: unknown) => (t as Record<string, unknown>).role === 'helper').map((tech: unknown) => {
+                          {orderDetail.data.order_technicians.flatMap((tech: unknown) => {
                             const tc = tech as Record<string, unknown>
+                            if (tc.role !== 'helper') return []
                             const technicians = tc.technicians as Record<string, unknown> | undefined
-                            return (
+                            return [(
                             <div key={tc.id as string} className='flex items-center justify-between p-2 bg-background rounded border border-hairline'>
                               <div className='flex-1'>
                                 <div className='font-medium text-sm'>{(technicians?.technician_name as string) || 'Unknown'}</div>
@@ -973,7 +978,7 @@ function MonitoringOngoingContent() {
                               </Button>
                               </div>
                             </div>
-                            )
+                            )]
                           })}
                         </div>
                       )}

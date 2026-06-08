@@ -184,9 +184,9 @@ export function AssignModal({
           <div className="space-y-2">
             <Label>Helper (opsional)</Label>
             <MultiSelectDropdown
-              options={safeTechnicians
-                .filter((t) => t.technician_id !== technicianId)
-                .map((t) => ({ id: t.technician_id, label: t.technician_name }))}
+              options={safeTechnicians.flatMap((t) =>
+                t.technician_id === technicianId ? [] : [{ id: t.technician_id, label: t.technician_name }]
+              )}
               selected={helperIds}
               onSelectionChange={(vals) => form.setValue('helperIds', vals)}
               placeholder="Pilih helper (opsional)"

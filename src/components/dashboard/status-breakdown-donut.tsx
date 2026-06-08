@@ -36,15 +36,16 @@ interface DonutSlice {
 }
 
 function buildDonutData(breakdown: StatusBreakdownItem[]): DonutSlice[] {
-  return ORDER_STATUS_SEQUENCE.map((status) => {
+  return ORDER_STATUS_SEQUENCE.flatMap((status) => {
     const item = breakdown.find((b) => b.status === status)
-    return {
+    const value = item?.count ?? 0
+    return value > 0 ? [{
       name: getStatusLabel(status),
-      value: item?.count ?? 0,
+      value,
       color: STATUS_COLORS[status],
       status,
-    }
-  }).filter((d) => d.value > 0)
+    }] : []
+  })
 }
 
 export function StatusBreakdownDonut({

@@ -167,7 +167,7 @@ export function LocationCard({
                     label: `${ac.brand} ${ac.model_number}`,
                     secondaryLabel: ac.serial_number || 'Tanpa SN',
                   }))}
-                  selected={location.existing_acs.filter(ac => ac.is_selected).map(ac => ac.ac_unit_id)}
+                  selected={location.existing_acs.flatMap(ac => ac.is_selected ? [ac.ac_unit_id] : [])}
                   onSelectionChange={(selectedIds) => {
                     const updated = { ...location }
                     updated.existing_acs = updated.existing_acs.map(ac => ({
@@ -181,10 +181,10 @@ export function LocationCard({
                   searchPlaceholder="Cari dari merk, model, atau SN..."
                 />
 
-                {location.existing_acs.filter(ac => ac.is_selected).map((ac, _acIndex) => {
-                  if (!ac.is_selected) return null
+                {location.existing_acs.flatMap((ac) => {
+                  if (!ac.is_selected) return []
                   const actualIndex = location.existing_acs.findIndex(a => a.ac_unit_id === ac.ac_unit_id)
-                  return (
+                  return [(
                     <div key={ac.ac_unit_id} className="border border-hairline bg-background rounded-md p-3 space-y-2 relative shadow-sm mt-3">
                       <div className="font-medium text-sm text-foreground">
                         {ac.brand} {ac.model_number} {ac.serial_number && `(SN: ${ac.serial_number})`}
@@ -222,7 +222,7 @@ export function LocationCard({
                         <Plus className="h-3 w-3 mr-1" /> Tambah Service untuk AC ini
                       </Button>
                     </div>
-                  )
+                  )]
                 })}
               </div>
             ) : (
@@ -354,11 +354,11 @@ export function LocationCard({
                          <Label className="text-xs">Kapasitas (HP/Btu) *</Label>
                          {(() => {
                            const capacityOptions = masterData.capacityRanges
-                             .filter((c: unknown) => (c as Record<string, unknown>).unit_type_id === unit.unit_type_id)
-                             .map((c: unknown) => {
-                               const cap = c as Record<string, unknown>
-                               return { id: cap.capacity_id as string, label: cap.capacity_label as string }
-                             })
+                              .flatMap((c: unknown) => {
+                                const cap = c as Record<string, unknown>
+                                if (cap.unit_type_id !== unit.unit_type_id) return []
+                                return [{ id: cap.capacity_id as string, label: cap.capacity_label as string }]
+                              })
                            const onChangeCapacity = (val: string) => {
                              const updated = { ...location }
                              updated.new_ac_units[unitIndex].capacity_id = val

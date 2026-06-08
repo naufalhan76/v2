@@ -526,17 +526,17 @@ export async function cleanupAfterSync(orderId: string): Promise<void> {
   const photos = await getPhotosForOrder(orderId)
   await Promise.all(photos.map((p) => deletePhoto(p.id)))
   const reports = await getAllReports()
-  await Promise.all(
-    reports
-      .filter((r) => r.orderId === orderId)
-      .map((r) => deleteReport(r.idempotencyKey))
-  )
+  const reportDeletions = []
+  for (const report of reports) {
+    if (report.orderId === orderId) reportDeletions.push(deleteReport(report.idempotencyKey))
+  }
+  await Promise.all(reportDeletions)
   const transitions = await getAllTransitions()
-  await Promise.all(
-    transitions
-      .filter((t) => t.orderId === orderId)
-      .map((t) => deleteTransition(t.idempotencyKey))
-  )
+  const transitionDeletions = []
+  for (const transition of transitions) {
+    if (transition.orderId === orderId) transitionDeletions.push(deleteTransition(transition.idempotencyKey))
+  }
+  await Promise.all(transitionDeletions)
 }
 
 export async function getPendingCount(): Promise<{

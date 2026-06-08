@@ -70,6 +70,44 @@ const servicedAcUnit = {
   },
 }
 
+const servicedAcUnitWithoutLocation = {
+  ...servicedAcUnit,
+  ac_unit_id: 'ac-no-location',
+  location_id: null,
+  locations: null,
+}
+
+const servicedAcUnitMissingRelations = {
+  ...servicedAcUnit,
+  ac_unit_id: 'ac-missing',
+  brand: null,
+  model_number: null,
+  location_id: null,
+  ac_brands: null,
+  unit_types: null,
+  locations: null,
+}
+
+function orderItem(overrides: Record<string, unknown> = {}) {
+  return {
+    ac_unit_id: 'ac-1',
+    service_type: null,
+    status: null,
+    service_types: null,
+    orders: {
+      status: 'COMPLETED',
+      order_type: 'MAINTENANCE',
+      created_at: '2026-06-03T09:00:00Z',
+      customers: {
+        customer_id: 'cust-order',
+        customer_name: 'Order Customer',
+        phone_number: '0899999999',
+      },
+    },
+    ...overrides,
+  }
+}
+
 describe('getServicedAcUnits monitoring columns', () => {
   beforeEach(() => {
     createClientMock.mockReset()
@@ -77,21 +115,51 @@ describe('getServicedAcUnits monitoring columns', () => {
     getUserRoleMock.mockResolvedValue('ADMIN')
   })
 
-  it('maps customer, service type, and status from the latest order item/order source data', async () => {
+  it('populates customer name and phone from AC location customer', async () => {
+    const client = buildClient({
+      ac_units: queryResult([servicedAcUnit]),
+      customer_reminders: queryResult([]),
+      order_items: queryResult([orderItem()]),
+    })
+    createClientMock.mockResolvedValue(client)
+
+    const result = await getServicedAcUnits()
+
+    expect(result.success).toBe(true)
+    expect(result.data?.[0]).toMatchObject({
+      customer_id: 'cust-1',
+      customer_name: 'PT Sejuk',
+      customer_phone: '08123456789',
+    })
+  })
+
+  it('falls back to latest order customer when AC location is missing', async () => {
+    const client = buildClient({
+      ac_units: queryResult([servicedAcUnitWithoutLocation]),
+      customer_reminders: queryResult([]),
+      order_items: queryResult([orderItem({ ac_unit_id: 'ac-no-location' })]),
+    })
+    createClientMock.mockResolvedValue(client)
+
+    const result = await getServicedAcUnits()
+
+    expect(result.success).toBe(true)
+    expect(result.data?.[0]).toMatchObject({
+      customer_id: 'cust-order',
+      customer_name: 'Order Customer',
+      customer_phone: '0899999999',
+    })
+  })
+
+  it('resolves service type from joined service_types name/code when service_type_id exists', async () => {
     const client = buildClient({
       ac_units: queryResult([servicedAcUnit]),
       customer_reminders: queryResult([]),
       order_items: queryResult([
-        {
-          ac_unit_id: 'ac-1',
-          service_type: null,
-          status: null,
-          orders: {
-            status: 'COMPLETED',
-            order_type: 'MAINTENANCE',
-            created_at: '2026-06-03T09:00:00Z',
-          },
-        },
+        orderItem({
+          service_type: 'MAINTENANCE',
+          service_types: { name: 'Deep Cleaning', code: 'DEEP_CLEAN' },
+        }),
       ]),
     })
     createClientMock.mockResolvedValue(client)
@@ -100,25 +168,57 @@ describe('getServicedAcUnits monitoring columns', () => {
 
     expect(result.success).toBe(true)
     expect(result.data?.[0]).toMatchObject({
-      customer_name: 'PT Sejuk',
-      latest_service_type: 'MAINTENANCE',
+      latest_service_type: 'Deep Cleaning',
+    })
+  })
+
+  it('uses order item service_type text when service_type_id join is missing', async () => {
+    const client = buildClient({
+      ac_units: queryResult([servicedAcUnit]),
+      customer_reminders: queryResult([]),
+      order_items: queryResult([orderItem({ service_type: 'CLEANING', service_types: null })]),
+    })
+    createClientMock.mockResolvedValue(client)
+
+    const result = await getServicedAcUnits()
+
+    expect(result.success).toBe(true)
+    expect(result.data?.[0]).toMatchObject({
+      latest_service_type: 'CLEANING',
+    })
+  })
+
+  it('uses order status when order item status is null', async () => {
+    const client = buildClient({
+      ac_units: queryResult([servicedAcUnit]),
+      customer_reminders: queryResult([]),
+      order_items: queryResult([orderItem({ status: null })]),
+    })
+    createClientMock.mockResolvedValue(client)
+
+    const result = await getServicedAcUnits()
+
+    expect(result.success).toBe(true)
+    expect(result.data?.[0]).toMatchObject({
       latest_order_status: 'COMPLETED',
     })
   })
 
-  it('uses deterministic em dash fallbacks when service type and status are missing', async () => {
+  it('keeps customer, order status, and service type null when relational data is genuinely missing', async () => {
     const client = buildClient({
-      ac_units: queryResult([servicedAcUnit]),
+      ac_units: queryResult([servicedAcUnitMissingRelations]),
       customer_reminders: queryResult([]),
       order_items: queryResult([
         {
-          ac_unit_id: 'ac-1',
+          ac_unit_id: 'ac-missing',
           service_type: null,
           status: null,
+          service_types: null,
           orders: {
             status: null,
             order_type: null,
             created_at: '2026-06-03T09:00:00Z',
+            customers: null,
           },
         },
       ]),
@@ -129,8 +229,31 @@ describe('getServicedAcUnits monitoring columns', () => {
 
     expect(result.success).toBe(true)
     expect(result.data?.[0]).toMatchObject({
-      latest_service_type: '—',
-      latest_order_status: '—',
+      customer_id: null,
+      customer_name: null,
+      customer_phone: null,
+      latest_service_type: null,
+      latest_order_status: null,
+    })
+  })
+
+  it('does not use customer_reminders.status as service status', async () => {
+    const client = buildClient({
+      ac_units: queryResult([servicedAcUnitMissingRelations]),
+      customer_reminders: queryResult([
+        { ac_unit_id: 'ac-missing', status: 'PENDING', sent_at: null },
+      ]),
+      order_items: queryResult([]),
+    })
+    createClientMock.mockResolvedValue(client)
+
+    const result = await getServicedAcUnits()
+
+    expect(result.success).toBe(true)
+    expect(result.data?.[0]).toMatchObject({
+      has_pending_reminder: true,
+      reminder_count: 1,
+      latest_order_status: null,
     })
   })
 })

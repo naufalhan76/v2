@@ -706,7 +706,7 @@ export async function getServiceTypesForCatalog(
     if (catalogError) throw catalogError
 
     const serviceTypeIds = Array.from(
-      new Set((catalogRows || []).map((r) => r.service_type_id).filter(Boolean) as string[])
+      new Set((catalogRows || []).flatMap((r) => (r.service_type_id ? [r.service_type_id] : [])))
     )
 
     if (serviceTypeIds.length === 0) {

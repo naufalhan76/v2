@@ -788,13 +788,37 @@ export async function getServicedAcUnits(
 
     const latestOrderMap = new Map<
       string,
-      { created_at: string; status: string; service_type: string }
+      {
+        created_at: string
+        status: string | null
+        service_type: string | null
+        customer: {
+          customer_id: string
+          customer_name: string | null
+          phone_number: string | null
+        } | null
+      }
     >()
 
     if (unitIds.length > 0) {
       const { data: orderItemData, error: orderItemErr } = await supabase
         .from('order_items')
-        .select('ac_unit_id, service_type, status, orders ( status, order_type, created_at )')
+        .select(`
+          ac_unit_id,
+          service_type,
+          status,
+          service_types ( name, code ),
+          orders (
+            status,
+            order_type,
+            created_at,
+            customers (
+              customer_id,
+              customer_name,
+              phone_number
+            )
+          )
+        `)
         .in('ac_unit_id', unitIds)
 
       if (orderItemErr) throw orderItemErr
@@ -803,20 +827,47 @@ export async function getServicedAcUnits(
         ac_unit_id: string | null
         service_type: string | null
         status: string | null
+        service_types:
+          | { name: string | null; code: string | null }
+          | Array<{ name: string | null; code: string | null }>
+          | null
         orders:
-          | { status: string | null; order_type: string | null; created_at: string }
-          | Array<{ status: string | null; order_type: string | null; created_at: string }>
+          | {
+              status: string | null
+              order_type: string | null
+              created_at: string
+              customers:
+                | { customer_id: string; customer_name: string | null; phone_number: string | null }
+                | Array<{ customer_id: string; customer_name: string | null; phone_number: string | null }>
+                | null
+            }
+          | Array<{
+              status: string | null
+              order_type: string | null
+              created_at: string
+              customers:
+                | { customer_id: string; customer_name: string | null; phone_number: string | null }
+                | Array<{ customer_id: string; customer_name: string | null; phone_number: string | null }>
+                | null
+            }>
           | null
       }>) {
         if (!row.ac_unit_id) continue
         const order = Array.isArray(row.orders) ? row.orders[0] : row.orders
         if (!order) continue
+        const serviceType = Array.isArray(row.service_types)
+          ? row.service_types[0]
+          : row.service_types
+        const customer = Array.isArray(order.customers)
+          ? order.customers[0]
+          : order.customers
         const prev = latestOrderMap.get(row.ac_unit_id)
         if (!prev || order.created_at > prev.created_at) {
           latestOrderMap.set(row.ac_unit_id, {
             created_at: order.created_at,
-            service_type: row.service_type ?? order.order_type ?? '—',
-            status: row.status ?? order.status ?? '—',
+            service_type: serviceType?.name ?? serviceType?.code ?? row.service_type ?? order.order_type ?? null,
+            status: order.status ?? row.status ?? null,
+            customer: customer ?? null,
           })
         }
       }
@@ -828,8 +879,13 @@ export async function getServicedAcUnits(
     const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
 
     const mapped: ServicedAcUnitRow[] = rawUnits.map((u) => {
-      const loc = u.locations
-      const cust = loc?.customers ?? null
+      const loc = Array.isArray(u.locations) ? u.locations[0] : u.locations
+      const cust = Array.isArray(loc?.customers)
+        ? loc.customers[0]
+        : loc?.customers ?? null
+      const latestOrder = latestOrderMap.get(u.ac_unit_id)
+      const fallbackCust = latestOrder?.customer ?? null
+      const resolvedCust = cust ?? fallbackCust
       const fullAddr =
         [loc?.full_address, loc?.house_number, loc?.city]
           .filter((s) => !!s && String(s).trim().length > 0)
@@ -837,9 +893,9 @@ export async function getServicedAcUnits(
 
       return {
         ac_unit_id: u.ac_unit_id,
-        customer_id: cust?.customer_id ?? null,
-        customer_name: cust?.customer_name ?? null,
-        customer_phone: cust?.phone_number ?? null,
+        customer_id: resolvedCust?.customer_id ?? null,
+        customer_name: resolvedCust?.customer_name ?? null,
+        customer_phone: resolvedCust?.phone_number ?? null,
         location_id: loc?.location_id ?? u.location_id ?? null,
         location_address: fullAddr,
         brand: u.ac_brands?.name ?? u.brand ?? null,
@@ -852,8 +908,8 @@ export async function getServicedAcUnits(
         has_pending_reminder: pendingSet.has(u.ac_unit_id),
         reminder_count: reminderCountMap.get(u.ac_unit_id) ?? 0,
         last_reminder_sent_at: lastSentMap.get(u.ac_unit_id) ?? null,
-        latest_order_status: latestOrderMap.get(u.ac_unit_id)?.status ?? null,
-        latest_service_type: latestOrderMap.get(u.ac_unit_id)?.service_type ?? null,
+        latest_order_status: latestOrder?.status ?? null,
+        latest_service_type: latestOrder?.service_type ?? null,
       }
     })
 

@@ -185,14 +185,14 @@ const ChartTooltipContent = React.forwardRef<
       >
         {!nestLabel ? tooltipLabel : null}
         <div className="grid gap-1.5">
-          {payload
-            .filter((item) => item.type !== "none")
-            .map((item, index) => {
+          {payload.reduce<React.ReactNode[]>((items, item) => {
+              if (item.type === "none") return []
+              const index = items.length
               const key = `${nameKey || item.name || item.dataKey || "value"}`
               const itemConfig = getPayloadConfigFromPayload(config, item, key)
               const indicatorColor = color || item.payload.fill || item.color
 
-              return (
+              items.push(
                 <div
                   key={item.dataKey}
                   className={cn(
@@ -250,7 +250,8 @@ const ChartTooltipContent = React.forwardRef<
                   )}
                 </div>
               )
-            })}
+              return items
+            }, [])}
         </div>
       </div>
     )
@@ -287,13 +288,12 @@ const ChartLegendContent = React.forwardRef<
           className
         )}
       >
-        {payload
-          .filter((item) => item.type !== "none")
-          .map((item) => {
+        {payload.reduce<React.ReactNode[]>((items, item) => {
+            if (item.type === "none") return items
             const key = `${nameKey || item.dataKey || "value"}`
             const itemConfig = getPayloadConfigFromPayload(config, item, key)
 
-            return (
+            items.push(
               <div
                 key={item.value}
                 className={cn(
@@ -313,7 +313,8 @@ const ChartLegendContent = React.forwardRef<
                 {itemConfig?.label}
               </div>
             )
-          })}
+            return items
+          }, [])}
       </div>
     )
   }

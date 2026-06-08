@@ -1068,13 +1068,11 @@ function CreateOrderPage() {
                     <div>
                       <Label>Helper Technicians (Optional)</Label>
                       <MultiSelectDropdown
-                        options={technicians
-                          .filter(t => t.technician_id !== technicianId)
-                          .map(tech => ({
+                        options={technicians.flatMap(tech => tech.technician_id === technicianId ? [] : [{
                             id: tech.technician_id,
                             label: tech.full_name,
                             secondaryLabel: tech.employee_id
-                          }))}
+                          }])}
                         selected={helperTechnicianIds}
                         onSelectionChange={setHelperTechnicianIds}
                         placeholder="Select helper technicians..."
