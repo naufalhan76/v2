@@ -81,3 +81,8 @@
 - Invalid token handling: reset-password [YES], confirm [YES]
 - Screenshots captured: .omo/evidence/task-7-auth-error-states.png, .omo/evidence/task-7-forgot-copy.png
 - Gotchas: Supabase reset password automatically sets session on hash load, but throws an error if token has expired or `updateUser` is called incorrectly. Handled with explicit Indonesian error string.
+## [2026-06-09] Task 6: Auth Regression Suite COMPLETED
+- Unit tests passing: auth-roles [4], auth-guards [6], users [5], middleware [9]
+- Playwright smoke: [SKIP 3 - NEXT_PUBLIC_SUPABASE_URL not configured]
+- Test data names: admin@example.com, tech@example.com, invitee@example.com (deterministic)
+- Gotchas: `qa` project needed `testMatch` coverage for explicit `tests/e2e/auth-smoke.spec.ts` because its testDir was scoped to `tests/e2e/qa`.

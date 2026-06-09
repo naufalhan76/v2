@@ -61,7 +61,8 @@ export default defineConfig({
       // wider mobile viewport so admin/finance dashboard pages render in their
       // intended layout while still keeping the technician PWA testable.
       name: 'qa',
-      testDir: './tests/e2e/qa',
+      testDir: './tests/e2e',
+      testMatch: ['qa/**/*.spec.ts', 'auth-smoke.spec.ts'],
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 800 },
