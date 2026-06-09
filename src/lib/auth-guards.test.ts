@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+/// <reference path="../bun-test.d.ts" />
+
+import { beforeEach, describe, expect, it, mock } from 'bun:test'
+import { vi } from 'vitest'
 
 const createClientMock = vi.fn()
 
@@ -7,7 +10,16 @@ vi.mock('@/lib/supabase-server', () => ({
 }))
 
 import type { UserProfile } from './auth-roles'
-import { requireAnyRole, requireSuperAdmin, requireUserProfile } from './auth-guards'
+import type * as AuthGuards from './auth-guards'
+
+mock.module('server-only', () => ({}))
+mock.module('@/lib/supabase-server', () => ({
+  createClient: () => createClientMock(),
+}))
+
+const { requireAnyRole, requireSuperAdmin, requireUserProfile } = await import(
+  './auth-guards'
+) as typeof AuthGuards
 
 const superAdminProfile: UserProfile = {
   auth_user_id: 'user-superadmin',

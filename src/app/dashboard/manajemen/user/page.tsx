@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Plus, Search, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { User, Plus, Search, Pencil, Trash2, Loader2, Mail } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -39,23 +39,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { useToast } from '@/hooks/use-toast'
+import { createClient } from '@/lib/supabase-browser'
 import { 
   getUsers, 
   createUser, 
   updateUser, 
   toggleUserStatus, 
   deleteUser,
+  inviteUser,
+  resendInvite,
   type User as UserType 
 } from '@/lib/actions/users'
+import type { UserRole } from '@/lib/auth-roles'
 
 export default function ManajemenUserPage() {
   const [usersBase, setUsers] = useState<UserType[]>([])
@@ -67,6 +64,9 @@ export default function ManajemenUserPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
+  const [isInviteSubmitting, setIsInviteSubmitting] = useState(false)
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
 
   // Apply sorting
   const { sortedData: usersSorted, sortConfig, requestSort } = useSortableTable(usersBase as unknown as Record<string, unknown>[], {
@@ -81,6 +81,10 @@ export default function ManajemenUserPage() {
     email: '',
     password: '',
     role: 'ADMIN',
+  })
+  const [inviteFormData, setInviteFormData] = useState({
+    email: '',
+    role: 'ADMIN' as UserRole,
   })
 
   const { toast } = useToast()
@@ -103,6 +107,20 @@ export default function ManajemenUserPage() {
 
   useEffect(() => {
     loadUsers()
+    const loadCurrentRole = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: profile } = await supabase
+        .from('user_management')
+        .select('role, is_active')
+        .eq('auth_user_id', user.id)
+        .single()
+
+      setIsSuperAdmin(profile?.role === 'SUPERADMIN' && profile?.is_active === true)
+    }
+    loadCurrentRole()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -122,6 +140,61 @@ export default function ManajemenUserPage() {
       role: 'ADMIN',
     })
     setEditingUser(null)
+  }
+
+  const resetInviteForm = () => {
+    setInviteFormData({
+      email: '',
+      role: 'ADMIN' as UserRole,
+    })
+  }
+
+  const getUserStatusLabel = (user: UserType) => {
+    if (user.row_type === 'invite') return 'Menunggu Konfirmasi'
+    return user.is_active ? 'Aktif' : 'Nonaktif'
+  }
+
+  const handleInviteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsInviteSubmitting(true)
+
+    const result = await inviteUser(inviteFormData)
+
+    if (result.success) {
+      toast({
+        title: 'Berhasil',
+        description: 'Undangan user berhasil dikirim',
+      })
+      setIsInviteDialogOpen(false)
+      resetInviteForm()
+      loadUsers()
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error || 'Gagal mengirim undangan',
+        variant: 'destructive',
+      })
+    }
+
+    setIsInviteSubmitting(false)
+  }
+
+  const handleResendInvite = async (inviteId: string) => {
+    const result = await resendInvite(inviteId)
+
+    if (result.success) {
+      toast({
+        title: 'Berhasil',
+        description: 'Undangan berhasil dikirim ulang',
+      })
+      loadUsers()
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error || 'Gagal mengirim ulang undangan',
+        variant: 'destructive',
+      })
+    }
   }
 
   // Handle create/update user
@@ -256,16 +329,79 @@ export default function ManajemenUserPage() {
           <User className="h-6 w-6" />
           <h1 className="text-2xl sm:text-3xl font-bold">Manajemen User</h1>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open)
-          if (!open) resetForm()
-        }}>
-          <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              Tambah User
-            </Button>
-          </DialogTrigger>
+        <div className="flex flex-col sm:flex-row gap-2">
+          {isSuperAdmin && (
+            <Dialog open={isInviteDialogOpen} onOpenChange={(open) => {
+              setIsInviteDialogOpen(open)
+              if (!open) resetInviteForm()
+            }}>
+              <DialogTrigger asChild>
+                <Button className="w-full sm:w-auto">
+                  <Mail className="mr-2 h-4 w-4" />
+                  Undang Pengguna
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-[calc(100vw-2rem)] max-w-lg sm:w-full">
+                <form onSubmit={handleInviteSubmit}>
+                  <DialogHeader>
+                    <DialogTitle>Undang Pengguna</DialogTitle>
+                    <DialogDescription>
+                      Kirim undangan email untuk membuat akses user baru.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="invite_email">Email</Label>
+                    <Input
+                      id="invite_email"
+                      type="email"
+                      value={inviteFormData.email}
+                      onChange={(e) => setInviteFormData({ ...inviteFormData, email: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="invite_role">Role</Label>
+                    <SearchableSelect
+                      options={[
+                        { id: 'SUPERADMIN', label: 'Super Admin' },
+                        { id: 'ADMIN', label: 'Admin' },
+                        { id: 'FINANCE', label: 'Finance' },
+                        { id: 'TECHNICIAN', label: 'Technician' },
+                      ]}
+                      value={inviteFormData.role}
+                      onValueChange={(value) => setInviteFormData({ ...inviteFormData, role: value as UserRole })}
+                      placeholder="Pilih role"
+                      searchPlaceholder="Cari role..."
+                    />
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setIsInviteDialogOpen(false)} disabled={isInviteSubmitting}>
+                    Batal
+                  </Button>
+                  <Button type="submit" disabled={isInviteSubmitting}>
+                    {isInviteSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Kirim Undangan
+                  </Button>
+                </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open)
+            if (!open) resetForm()
+          }}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-auto">
+                <Plus className="mr-2 h-4 w-4" />
+                Tambah User
+              </Button>
+            </DialogTrigger>
           <DialogContent className="w-[calc(100vw-2rem)] max-w-lg sm:w-full">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
@@ -352,7 +488,8 @@ export default function ManajemenUserPage() {
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -436,37 +573,49 @@ export default function ManajemenUserPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Switch
-                            checked={user.is_active}
-                            onCheckedChange={() => handleToggleStatus(user.user_id, user.is_active)}
-                          />
-                          <span className="text-sm">
-                            {user.is_active ? 'Aktif' : 'Nonaktif'}
-                          </span>
+                          {user.row_type === 'invite' ? (
+                            <Badge variant="secondary">{getUserStatusLabel(user)}</Badge>
+                          ) : (
+                            <>
+                              <Switch
+                                checked={user.is_active}
+                                onCheckedChange={() => handleToggleStatus(user.user_id, user.is_active)}
+                              />
+                              <span className="text-sm">{getUserStatusLabel(user)}</span>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right w-[180px]">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
-                            onClick={() => handleEdit(user)}
-                          >
-                            <Pencil className="h-4 w-4 flex-shrink-0" />
-                            <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              Ubah
-                            </span>
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
-                            onClick={() => handleDelete(user.user_id)}
-                          >
-                            <Trash2 className="h-4 w-4 flex-shrink-0" />
-                            <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              Hapus
-                            </span>
-                          </Button>
+                          {user.row_type === 'invite' ? (
+                            <Button variant="outline" size="sm" onClick={() => user.invite_id && handleResendInvite(user.invite_id)}>
+                              Kirim Ulang
+                            </Button>
+                          ) : (
+                            <>
+                              <Button
+                                variant="outline"
+                                className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
+                                onClick={() => handleEdit(user)}
+                              >
+                                <Pencil className="h-4 w-4 flex-shrink-0" />
+                                <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                  Ubah
+                                </span>
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
+                                onClick={() => handleDelete(user.user_id)}
+                              >
+                                <Trash2 className="h-4 w-4 flex-shrink-0" />
+                                <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                  Hapus
+                                </span>
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -521,31 +670,43 @@ export default function ManajemenUserPage() {
                     
                     <div className="flex items-center justify-between pt-2 border-t">
                       <div className="flex items-center gap-2">
-                        <Switch
-                          checked={user.is_active}
-                          onCheckedChange={() => handleToggleStatus(user.user_id, user.is_active)}
-                        />
-                        <span className="text-sm font-medium">
-                          {user.is_active ? 'Aktif' : 'Nonaktif'}
-                        </span>
+                        {user.row_type === 'invite' ? (
+                          <Badge variant="secondary">{getUserStatusLabel(user)}</Badge>
+                        ) : (
+                          <>
+                            <Switch
+                              checked={user.is_active}
+                              onCheckedChange={() => handleToggleStatus(user.user_id, user.is_active)}
+                            />
+                            <span className="text-sm font-medium">{getUserStatusLabel(user)}</span>
+                          </>
+                        )}
                       </div>
                       <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(user)}
-                        >
-                          <Pencil className="h-3 w-3 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(user.user_id)}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Hapus
-                        </Button>
+                        {user.row_type === 'invite' ? (
+                          <Button variant="outline" size="sm" onClick={() => user.invite_id && handleResendInvite(user.invite_id)}>
+                            Kirim Ulang
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(user)}
+                            >
+                              <Pencil className="h-3 w-3 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(user.user_id)}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Hapus
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

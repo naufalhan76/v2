@@ -1,12 +1,1 @@
-Task 2 no client/service-role auth guard evidence — 2026-06-09
-
-auth-guards.ts constraints verified:
-- Top import: import 'server-only'
-- Uses createClient from '@/lib/supabase-server'
-- Does not import '@/lib/supabase-admin'
-- Does not import createAdminClient
-- Does not reference SUPABASE_SERVICE_ROLE_KEY/service_role
-
-Relevant grep:
-- auth-guards import references in src are limited to src/lib/actions/api-keys.ts and src/lib/auth-guards.test.ts.
-- Existing service-role/admin-client references elsewhere are pre-existing and outside auth-guards.ts.
+src/app/api/orders/create/route.ts:import { createAdminClient } from '@/lib/supabase-admin'
