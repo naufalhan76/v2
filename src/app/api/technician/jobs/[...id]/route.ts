@@ -5,6 +5,131 @@ import { authenticateTechnician, isTechnicianContext } from '../../helpers'
 import { toCanonical, canTransition, type OrderStatus } from '@/lib/order-status'
 import { TechnicianTransitionSchema, TechnicianReportSchema } from '@/app/api/schemas/technician'
 
+type MaybeArray<T> = T | T[] | null | undefined
+
+type LookupName = { name?: string | null } | null
+type CapacityRange = { capacity_label?: string | null } | null
+type OrderLocation = {
+  location_id?: string | null
+  customer_id?: string | null
+  full_address?: string | null
+  house_number?: string | null
+  city?: string | null
+} | null
+type AcUnitForJob = {
+  ac_unit_id?: string | null
+  customer_id?: string | null
+  location_id?: string | null
+  brand?: string | null
+  brand_id?: string | null
+  model_number?: string | null
+  serial_number?: string | null
+  installation_date?: string | null
+  ac_type?: string | null
+  unit_type_id?: string | null
+  capacity_id?: string | null
+  room_location?: string | null
+  floor_level?: string | null
+  position_detail?: string | null
+  ac_brands?: MaybeArray<LookupName>
+  unit_types?: MaybeArray<LookupName>
+  capacity_ranges?: MaybeArray<CapacityRange>
+  locations?: MaybeArray<OrderLocation>
+} | null
+type OrderItemForJob = {
+  order_item_id?: string | null
+  ac_unit_id?: string | null
+  location_id?: string | null
+  unit_type_id?: string | null
+  capacity_id?: string | null
+  brand_id?: string | null
+  service_type_id?: string | null
+  catalog_id?: string | null
+  msn_code?: string | null
+  service_type?: string | null
+  quantity?: number | null
+  description?: string | null
+  estimated_price?: number | null
+  locations?: MaybeArray<OrderLocation>
+  ac_units?: MaybeArray<AcUnitForJob>
+  unit_types?: MaybeArray<LookupName>
+  capacity_ranges?: MaybeArray<CapacityRange>
+  ac_brands?: MaybeArray<LookupName>
+  service_catalog?: MaybeArray<{
+    catalog_id?: string | null
+    msn_code?: string | null
+    service_name?: string | null
+    base_price?: number | null
+    unit_type_id?: string | null
+    capacity_id?: string | null
+    service_type_id?: string | null
+    unit_types?: MaybeArray<LookupName>
+    capacity_ranges?: MaybeArray<CapacityRange>
+  } | null>
+}
+type OrderForJob = {
+  customer_id?: string | null
+  order_items?: OrderItemForJob[] | null
+}
+
+function first<T>(value: MaybeArray<T>): T | null {
+  if (Array.isArray(value)) return value[0] ?? null
+  return value ?? null
+}
+
+function normalizeJobOrderItems(order: OrderForJob) {
+  const orderItems = Array.isArray(order.order_items) ? order.order_items : []
+
+  return orderItems.map((item) => {
+    const location = first(item.locations)
+    const acUnit = first(item.ac_units)
+    const catalog = first(item.service_catalog)
+
+    if (item.ac_unit_id && !acUnit?.ac_unit_id) {
+      throw new Error(`AC unit ${item.ac_unit_id} is not accessible for order item ${item.order_item_id}`)
+    }
+
+    if (acUnit?.customer_id && order.customer_id && acUnit.customer_id !== order.customer_id) {
+      throw new Error(`AC unit ${acUnit.ac_unit_id} belongs to a different customer`)
+    }
+
+    if (acUnit?.location_id && item.location_id && acUnit.location_id !== item.location_id) {
+      throw new Error(`AC unit ${acUnit.ac_unit_id} belongs to a different location`)
+    }
+
+    const acLocation = first(acUnit?.locations)
+    const brandName = first(acUnit?.ac_brands)?.name ?? acUnit?.brand ?? null
+    const unitTypeName = first(acUnit?.unit_types)?.name ?? acUnit?.ac_type ?? null
+    const capacityLabel = first(acUnit?.capacity_ranges)?.capacity_label ?? null
+
+    return {
+      ...item,
+      ac_unit_id: item.ac_unit_id ?? null,
+      locations: location,
+      service_catalog: catalog,
+      unit_type_name: first(item.unit_types)?.name ?? first(catalog?.unit_types)?.name ?? null,
+      capacity_label: first(item.capacity_ranges)?.capacity_label ?? first(catalog?.capacity_ranges)?.capacity_label ?? null,
+      brand: first(item.ac_brands)?.name ?? null,
+      ac_units: item.ac_unit_id
+        ? {
+            ...acUnit,
+            ac_unit_id: acUnit?.ac_unit_id ?? item.ac_unit_id,
+            brand_id: acUnit?.brand_id ?? null,
+            brand: brandName,
+            unit_type_id: acUnit?.unit_type_id ?? null,
+            unit_type_name: unitTypeName,
+            ac_type: acUnit?.ac_type ?? unitTypeName,
+            capacity_id: acUnit?.capacity_id ?? null,
+            capacity_label: capacityLabel,
+            capacity_ranges: { capacity_label: capacityLabel },
+            location_id: acUnit?.location_id ?? item.location_id ?? null,
+            location: acLocation ?? location,
+          }
+        : null,
+    }
+  })
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string | string[] }> }
@@ -36,6 +161,7 @@ export async function GET(
       .from('orders')
       .select(`
         order_id,
+        customer_id,
         status,
         scheduled_visit_date,
         description,
@@ -50,18 +176,43 @@ export async function GET(
         ),
         order_items (
           order_item_id,
+          ac_unit_id,
+          location_id,
+          unit_type_id,
+          capacity_id,
+          brand_id,
+          service_type_id,
+          catalog_id,
+          msn_code,
           service_type,
           quantity,
           description,
           estimated_price,
           locations (
             location_id,
+            customer_id,
             full_address,
             house_number,
             city
           ),
+          unit_types (name),
+          capacity_ranges (capacity_label),
+          ac_brands (name),
+          service_catalog (
+            catalog_id,
+            msn_code,
+            service_name,
+            base_price,
+            unit_type_id,
+            capacity_id,
+            service_type_id,
+            unit_types (name),
+            capacity_ranges (capacity_label)
+          ),
           ac_units (
             ac_unit_id,
+            customer_id,
+            location_id,
             brand,
             brand_id,
             model_number,
@@ -73,8 +224,17 @@ export async function GET(
             room_location,
             floor_level,
             position_detail,
+            ac_brands (name),
+            unit_types (name),
             capacity_ranges (
               capacity_label
+            ),
+            locations (
+              location_id,
+              customer_id,
+              full_address,
+              house_number,
+              city
             )
           )
         ),
@@ -108,6 +268,7 @@ export async function GET(
 
     return jsonSuccess({
       ...order,
+      order_items: normalizeJobOrderItems(order),
       canonical_status: toCanonical(order.status),
       has_report: !!report,
       report_id: report?.report_id ?? null,
