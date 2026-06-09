@@ -37,3 +37,9 @@
 - Route matrix: `/dashboard` allows SUPERADMIN/ADMIN/FINANCE, `/technician` allows TECHNICIAN, `/dashboard/manajemen/user` allows SUPERADMIN only, `/login` unauthenticated, `/` redirects by auth/role.
 - Migration: `20260609_create_user_invites.sql`
 - Any gotchas: `canManageUsers(role)` in `rbac.ts` still allows ADMIN for legacy checks; canonical route matrix keeps user-management route SUPERADMIN-only per middleware behavior.
+
+## [2026-06-09] Task 3: Forgot/Reset Password COMPLETED
+- Routes created: /forgot-password, /reset-password
+- Token handling: Handled automatically by Supabase's `getSession` and hash URL on initial load for the reset-password page.
+- Middleware update: Added `/forgot-password` and `/reset-password` to `authRoutes` to ensure authenticated users are redirected away.
+- Gotchas: Vitest is used instead of bun:test for DOM testing due to happy-dom config.

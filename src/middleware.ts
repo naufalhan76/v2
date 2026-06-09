@@ -74,7 +74,7 @@ export async function middleware(req: NextRequest) {
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route))
 
   // Define auth routes
-  const authRoutes = ['/login']
+  const authRoutes = ['/login', '/forgot-password', '/reset-password']
   const isAuthRoute = authRoutes.some((route) => pathname === route)
 
   // Redirect root path based on auth status
