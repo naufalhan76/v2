@@ -92,6 +92,10 @@ const AcUnitNewFieldsSchema = z.object({
 })
 
 export const AcUnitReportItemSchema = AcUnitNewFieldsSchema.extend({
+  order_item_id: z.string().uuid().optional().nullable(),
+  service_type_id: z.string().uuid().optional().nullable(),
+  catalog_id: z.string().uuid().optional().nullable(),
+  msn_code: z.string().optional().nullable(),
   ac_unit_id: z.string().optional().nullable(),
   /** True when the technician marks this unit as not serviced for this visit. */
   skipped: z.boolean().optional().default(false),
@@ -103,13 +107,11 @@ export const AcUnitReportItemSchema = AcUnitNewFieldsSchema.extend({
 }).refine(
   (v) => {
     if (v.skipped) return !!v.skip_reason
-    // Active units must identify themselves: existing id, or at least a brand
-    // so the server can create a new ac_units row.
-    return !!v.ac_unit_id || !!v.brand
+    return !!v.ac_unit_id || (!!v.brand_id && !!v.unit_type_id && !!v.capacity_id && !!v.room_location)
   },
   {
     message:
-      'ac_units[i]: provide ac_unit_id for existing unit, or brand for a new on-site unit; skipped units must include skip_reason',
+      'ac_units[i]: provide ac_unit_id for existing unit, or brand_id, unit_type_id, capacity_id, and room_location for a new on-site unit; skipped units must include skip_reason',
   }
 )
 

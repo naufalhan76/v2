@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
-import { GET } from './route'
+import { GET, POST } from './route'
 
 vi.mock('@/lib/supabase-server', () => ({
   createClient: vi.fn(),
@@ -54,10 +54,11 @@ class QueryBuilder {
   }
 }
 
-function createSupabaseMock(results: Record<string, QueryResult>) {
+function createSupabaseMock(results: Record<string, QueryResult>, rpc = vi.fn()) {
   const selects: Array<{ table: string; columns: string }> = []
   const client = {
     from: vi.fn((table: string) => new QueryBuilder(table, results, selects)),
+    rpc,
     __selects: selects,
   }
   vi.mocked(createClient).mockResolvedValue(client as never)
@@ -66,6 +67,13 @@ function createSupabaseMock(results: Record<string, QueryResult>) {
 
 function request() {
   return new NextRequest('http://localhost/api/technician/jobs/order-1')
+}
+
+function postReportRequest(body: unknown) {
+  return new NextRequest('http://localhost/api/technician/jobs/order-1/report', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
 }
 
 function params(orderId = 'order-1') {
@@ -314,5 +322,95 @@ describe('GET /api/technician/jobs/[orderId] AC hydration', () => {
 
     expect(response.status).toBe(500)
     expect(body.error).toContain('different location')
+  })
+})
+
+describe('POST /api/technician/jobs/[orderId]/report', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const idempotencyKey = '11111111-1111-4111-8111-111111111111'
+  const reportPayload = {
+    idempotency_key: idempotencyKey,
+    photos_before: [],
+    photos_after: [],
+    materials: [],
+    actual_total_price: 150000,
+    customer_signature_url: '/signatures/order-1.png',
+    customer_name_signed: 'Customer One',
+    notes: 'Done',
+    ac_units: [
+      {
+        ac_unit_id: 'ac-1',
+        brand_id: '22222222-2222-4222-8222-222222222222',
+        unit_type_id: '33333333-3333-4333-8333-333333333333',
+        capacity_id: '44444444-4444-4444-8444-444444444444',
+        room_location: 'Tampered Room',
+        photos_before: [],
+        photos_after: [],
+        materials_used: [],
+      },
+    ],
+  }
+
+  function mockReportPost(rpc = vi.fn(async () => ({ data: 'report-1', error: null }))) {
+    return createSupabaseMock(
+      {
+        order_technicians: { data: { role: 'lead' }, error: null },
+        service_reports: { data: null, error: null },
+        orders: { data: { status: 'IN_PROGRESS' }, error: null },
+      },
+      rpc
+    )
+  }
+
+  it('requires idempotency_key before calling the report RPC', async () => {
+    const rpc = vi.fn()
+    mockReportPost(rpc)
+
+    const response = await POST(
+      postReportRequest({ ...reportPayload, idempotency_key: undefined }),
+      { params: Promise.resolve({ id: ['order-1', 'report'] }) }
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(body.error).toContain('Invalid input')
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('passes the same idempotency_key through the direct report route to the RPC payload', async () => {
+    const rpc = vi.fn(async () => ({ data: 'report-1', error: null }))
+    mockReportPost(rpc)
+
+    const response = await POST(postReportRequest(reportPayload), {
+      params: Promise.resolve({ id: ['order-1', 'report'] }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(rpc).toHaveBeenCalledWith('technician_submit_report_v2', {
+      p_order_id: 'order-1',
+      p_technician_id: 'tech-1',
+      p_payload: expect.objectContaining({ idempotency_key: idempotencyKey }),
+    })
+  })
+
+  it('rejects a new AC payload missing required identity before RPC', async () => {
+    const rpc = vi.fn()
+    mockReportPost(rpc)
+
+    const response = await POST(
+      postReportRequest({
+        ...reportPayload,
+        ac_units: [{ photos_before: [], photos_after: [], materials_used: [], room_location: 'Bedroom' }],
+      }),
+      { params: Promise.resolve({ id: ['order-1', 'report'] }) }
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(body.error).toContain('brand_id, unit_type_id, capacity_id, and room_location')
+    expect(rpc).not.toHaveBeenCalled()
   })
 })

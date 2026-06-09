@@ -1,0 +1,52 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+
+const sql = readFileSync(
+  join(process.cwd(), 'supabase/migrations/09_technician_submit_report_rpc.sql'),
+  'utf8'
+)
+
+describe('technician_submit_report_v2 AC contract SQL', () => {
+  it('checks idempotency before inserting mutable report-side rows', () => {
+    expect(sql).toMatch(/SELECT report_id INTO v_report_id[\s\S]*idempotency_key = v_idempotency_key[\s\S]*RETURN v_report_id;/)
+    expect(sql.indexOf('SELECT report_id INTO v_report_id')).toBeLessThan(sql.indexOf('INSERT INTO public.service_reports'))
+  })
+
+  it('validates existing AC belongs to the submitted order customer and location', () => {
+    expect(sql).toContain('JOIN public.locations l ON l.location_id = au.location_id')
+    expect(sql).toContain('JOIN public.order_items oi ON oi.ac_unit_id = au.ac_unit_id')
+    expect(sql).toContain('AND oi.order_id = p_order_id')
+    expect(sql).toContain('AND l.customer_id = v_customer_id')
+    expect(sql).toContain('AND au.location_id = oi.location_id')
+  })
+
+  it('blocks malicious identity overwrite for non-null existing AC identity columns', () => {
+    expect(sql).toContain('Existing AC % brand_id cannot be overwritten')
+    expect(sql).toContain('Existing AC % unit_type_id cannot be overwritten')
+    expect(sql).toContain('Existing AC % capacity_id cannot be overwritten')
+    expect(sql).toContain('brand_id = COALESCE(brand_id, NULLIF')
+    expect(sql).toContain('unit_type_id = COALESCE(unit_type_id, NULLIF')
+    expect(sql).toContain('capacity_id = COALESCE(capacity_id, NULLIF')
+  })
+
+  it('requires complete new AC identity and uses matched order_items.location_id', () => {
+    expect(sql).toContain('New AC requires brand_id, unit_type_id, capacity_id, and room_location')
+    expect(sql).toContain('SELECT oi.location_id INTO v_new_ac_location_id')
+    expect(sql).toContain('FROM public.order_items oi')
+    expect(sql).toContain('AND oi.ac_unit_id IS NULL')
+    expect(sql).toContain('AND oi.order_item_id = v_order_item_id')
+    expect(sql).toContain("AND oi.brand_id = NULLIF(v_ac_unit->>'brand_id', '')::uuid")
+    expect(sql).toContain('SELECT COUNT(*), MIN(oi.location_id) INTO v_order_item_match_count, v_new_ac_location_id')
+    expect(sql).toContain('New AC payload must match exactly one order item/location')
+    expect(sql).toMatch(/VALUES \(\s+v_new_ac_location_id/)
+    expect(sql).not.toContain('SELECT customer_id, location_id, status')
+    expect(sql).not.toContain("v_ac_unit->>'location_id'")
+    expect(sql).toContain("'ACTIVE'")
+  })
+
+  it('preserves the completion transition idempotency key and only transitions IN_PROGRESS once', () => {
+    expect(sql).toContain('AND status = \'IN_PROGRESS\'')
+    expect(sql).toMatch(/INSERT INTO public\.order_status_transitions[\s\S]*idempotency_key[\s\S]*v_idempotency_key/)
+  })
+})

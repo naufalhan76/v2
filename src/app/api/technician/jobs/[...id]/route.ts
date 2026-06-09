@@ -506,7 +506,7 @@ export async function POST(
       const { data: result, error: rpcError } = await supabase.rpc('technician_submit_report_v2', {
         p_order_id: orderId,
         p_technician_id: technicianId,
-        p_payload: payload as any
+        p_payload: payload,
       })
 
       if (rpcError) {
