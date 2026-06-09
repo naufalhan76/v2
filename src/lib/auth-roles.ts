@@ -23,6 +23,11 @@ export const ALL_ROLES = ['SUPERADMIN', 'ADMIN', 'FINANCE', 'TECHNICIAN'] as con
 export const ADMIN_ROLES = ['SUPERADMIN', 'ADMIN'] as const satisfies readonly UserRole[]
 export const FINANCE_ROLES = ['SUPERADMIN', 'ADMIN', 'FINANCE'] as const satisfies readonly UserRole[]
 
+/**
+ * Single source of truth for route access control.
+ * Defines which roles can access which routes, and where they should be redirected
+ * if they are unauthenticated or attempt to access a route they aren't allowed on.
+ */
 export const ROUTE_ROLE_MATRIX = {
   '/': {
     allowUnauthenticated: false,

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { LayoutGrid, List, Plus, UserCheck, X } from 'lucide-react'
+import { Download, LayoutGrid, List, Plus, UserCheck, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
@@ -22,8 +22,24 @@ import {
   type OrderFilters as OrderFiltersSpec,
   type OrderForDisplay,
   type Urgency,
+  getLeadTechnicianName,
+  getPrimaryLocation,
+  getPrimaryServiceType,
+  getUrgencyLevel,
 } from '@/lib/order-utils'
 import { toCanonical } from '@/lib/order-status'
+import { datedCsvFilename, downloadCsv, type CsvColumn } from '@/lib/csv-export'
+
+const ORDER_CSV_COLUMNS: CsvColumn<OrderForDisplay>[] = [
+  { header: 'Order ID', value: (order) => order.order_id },
+  { header: 'Pelanggan', value: (order) => order.customers?.customer_name },
+  { header: 'Status', value: (order) => order.status },
+  { header: 'Layanan Utama', value: getPrimaryServiceType },
+  { header: 'Teknisi Lead', value: getLeadTechnicianName },
+  { header: 'Tanggal Kunjungan', value: (order) => order.scheduled_visit_date ?? order.req_visit_date },
+  { header: 'Urgensi', value: getUrgencyLevel },
+  { header: 'Alamat', value: getPrimaryLocation },
+]
 
 function isUrgency(v: string | null): v is Urgency {
   return v === 'overdue' || v === 'today' || v === 'future' || v === 'terminal'
@@ -329,6 +345,15 @@ export function OrdersPageClient() {
     setAssignModalOpen(true)
   }
 
+  function handleExportCsv() {
+    try {
+      downloadCsv(datedCsvFilename('orders'), filtered, ORDER_CSV_COLUMNS)
+      toast({ title: 'Export CSV berhasil', description: `${filtered.length} order diexport.` })
+    } catch {
+      toast({ variant: 'destructive', title: 'Export CSV gagal' })
+    }
+  }
+
   function handleAssignSuccess() {
     setAssignModalOpen(false)
     setSelectedOrderIds(new Set())
@@ -382,6 +407,15 @@ export function OrdersPageClient() {
               )}
             </Button>
           )}
+          <Button
+            variant="outline"
+            onClick={handleExportCsv}
+            disabled={isLoading || filtered.length === 0}
+            className="h-11 sm:h-9 gap-1.5"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
           <Button asChild className="h-11 sm:h-9">
             <Link href="/dashboard/orders/new">
               <Plus className="mr-2 h-4 w-4" />

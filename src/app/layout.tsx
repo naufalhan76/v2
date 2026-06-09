@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: 'MSN ERP',
   description: 'Admin Panel for MSN ERP Management System',
   icons: {
-    icon: '/logo.png',
+    icon: '/logo-msn.svg',
   },
 }
 

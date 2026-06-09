@@ -35,7 +35,7 @@ function ConfirmPageContent() {
 
         if (error) {
           setStatus('error')
-          setMessage(error.message || 'Email confirmation failed')
+          setMessage('Tautan tidak valid atau telah kedaluwarsa. Silakan coba lagi.')
           return
         }
 
@@ -53,7 +53,7 @@ function ConfirmPageContent() {
         }, 3000)
       } catch (error: unknown) {
         setStatus('error')
-        setMessage(error instanceof Error ? error.message : 'An error occurred during email confirmation')
+        setMessage('Tautan tidak valid atau telah kedaluwarsa. Silakan coba lagi.')
       }
     }
 

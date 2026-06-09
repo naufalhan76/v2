@@ -38,11 +38,29 @@
 - Migration: `20260609_create_user_invites.sql`
 - Any gotchas: `canManageUsers(role)` in `rbac.ts` still allows ADMIN for legacy checks; canonical route matrix keeps user-management route SUPERADMIN-only per middleware behavior.
 
+## [2026-06-09] Task 2: Server Auth Guards COMPLETED
+- auth-guards.ts guard API: `getCurrentUserProfile`, `requireUserProfile`, `requireRole`, `requireAnyRole`, `requireSuperAdmin`, `requireFinanceAccess`
+- Server actions refactored: `src/lib/actions/api-keys.ts`, `src/lib/actions/users.ts`
+- Mock pattern used: `src/lib/actions/reminders.test.ts`
+- Gotchas: `bun test` resolves `server-only` before static imports, so `src/lib/auth-guards.test.ts` mocks it before dynamically importing guards.
+
+## [2026-06-09] Task 4: Admin Invite Flow COMPLETED
+- New actions: inviteUser, resendInvite, acceptInvite
+- UI changes: user management page shows invite status + button
+- Supabase admin API used: `auth.admin.inviteUserByEmail(email, { data: { role } })`
+- Gotchas: `requireSuperAdmin` pulls `server-only` in Bun tests, so user actions now use an inline session/profile SUPERADMIN guard; pending duplicate invites route to resend.
+
 ## [2026-06-09] Task 3: Forgot/Reset Password COMPLETED
 - Routes created: /forgot-password, /reset-password
 - Token handling: Handled automatically by Supabase's `getSession` and hash URL on initial load for the reset-password page.
 - Middleware update: Added `/forgot-password` and `/reset-password` to `authRoutes` to ensure authenticated users are redirected away.
 - Gotchas: Vitest is used instead of bun:test for DOM testing due to happy-dom config.
+
+## [2026-06-09] Task 4: Admin Invite Flow COMPLETED
+- New actions: inviteUser, resendInvite, acceptInvite
+- UI: user management page shows invite status + Undang button
+- Supabase admin API: inviteUserByEmail
+- Gotchas: SUPERADMIN authorization must happen with anon createClient before admin client usage; duplicate pending invites should resend/update last_sent_at, not create a second pending row because the DB has a partial unique index.
 
 ## [2026-06-09] Task 2: Server Auth Guards COMPLETED
 - auth-guards.ts: getCurrentUserProfile, requireUserProfile, requireRole, requireAnyRole, requireSuperAdmin, requireFinanceAccess
@@ -50,3 +68,15 @@
 - api-keys.ts refactored: YES
 - Mock pattern: vi.mock('@/lib/supabase-server', ...)
 - Gotchas: api-keys.ts was already partially refactored; getUserApiKeys now also uses requireSuperAdmin().
+
+## [2026-06-09] Task 5: Middleware Hardening COMPLETED
+- Matrix used in middleware: YES
+- Test cases: 9 tests added
+- API middleware: Reviewed; API guards use explicit requiredRoles/finance role arrays matching the same SUPERADMIN/ADMIN/FINANCE decisions, while route-only redirects remain in ROUTE_ROLE_MATRIX.
+- Gotchas: Middleware must keep @supabase/ssr createServerClient and avoid auth-guards.ts because auth-guards imports server-only.
+
+## 2026-06-09 Task 7: Auth UX Polish COMPLETED
+- Reset-password expired token: improved YES
+- Confirm page: improved YES
+- JSDoc added: auth-guards YES, auth-roles YES
+- Screenshots: task-7-auth-error-states.png, task-7-forgot-copy.png

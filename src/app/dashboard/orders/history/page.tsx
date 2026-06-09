@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Search, Calendar as CalendarIcon, X, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Search, Calendar as CalendarIcon, X, RefreshCw, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -14,18 +14,31 @@ import { StatusBadge } from '@/components/orders/status-badge'
 import { ServiceTypeBadge } from '@/components/orders/service-type-badge'
 import { OrderDetailPanel } from '@/components/orders/order-detail-panel'
 import { getOrders } from '@/lib/actions/orders'
-import { type OrderForDisplay, getLeadTechnicianName, getPrimaryServiceType } from '@/lib/order-utils'
+import { type OrderForDisplay, getLeadTechnicianName, getPrimaryLocation, getPrimaryServiceType } from '@/lib/order-utils'
+import { datedCsvFilename, downloadCsv, type CsvColumn } from '@/lib/csv-export'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 
 const PAGE_SIZE = 20
+
+const ORDER_HISTORY_CSV_COLUMNS: CsvColumn<OrderForDisplay>[] = [
+  { header: 'Order ID', value: (order) => order.order_id },
+  { header: 'Pelanggan', value: (order) => order.customers?.customer_name },
+  { header: 'Layanan Utama', value: getPrimaryServiceType },
+  { header: 'Status', value: (order) => order.status },
+  { header: 'Teknisi Lead', value: getLeadTechnicianName },
+  { header: 'Tanggal Kunjungan', value: (order) => order.scheduled_visit_date ?? order.req_visit_date },
+  { header: 'Alamat', value: getPrimaryLocation },
+]
 
 export default function OrderHistoryPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const queryClient = useQueryClient()
+  const { toast } = useToast()
 
   const [search, setSearch] = useState(searchParams.get('q') ?? '')
   const [dateFrom, setDateFrom] = useState<string>(searchParams.get('dateFrom') ?? '')
@@ -126,6 +139,15 @@ export default function OrderHistoryPage() {
     setDetailOpen(true)
   }
 
+  const handleExportCsv = () => {
+    try {
+      downloadCsv(datedCsvFilename('order-history'), filteredOrders, ORDER_HISTORY_CSV_COLUMNS)
+      toast({ title: 'Export CSV berhasil', description: `${filteredOrders.length} order diexport.` })
+    } catch {
+      toast({ variant: 'destructive', title: 'Export CSV gagal' })
+    }
+  }
+
   const statusOptions = [
     { value: 'all', label: 'Semua Status', count: totalCount },
     { value: 'COMPLETED', label: 'Selesai' },
@@ -152,10 +174,16 @@ export default function OrderHistoryPage() {
             Semua order yang telah selesai, ditagih, lunas, atau dibatalkan
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => handlePageChange(1)} disabled={isFetching}>
-          <RefreshCw className={cn('h-4 w-4 mr-1.5', isFetching && 'animate-spin')} />
-          Refresh
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={isLoading || filteredOrders.length === 0}>
+            <Download className="h-4 w-4 mr-1.5" />
+            Export CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handlePageChange(1)} disabled={isFetching}>
+            <RefreshCw className={cn('h-4 w-4 mr-1.5', isFetching && 'animate-spin')} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Status Tabs */}

@@ -67,7 +67,6 @@ import {
   createLocation as createLocationAction,
   createOrderWithItems,
   getOrderConfigMasterData,
-  getServiceTypesForCatalog,
   getTechnicians,
 } from '@/lib/actions/create-order'
 import { createProformaInvoice } from '@/lib/actions/invoices'
@@ -359,8 +358,6 @@ export default function NewOrderAccordionPage() {
   const [serviceLines, setServiceLines] = useState<SelectedAcLine[]>([])
   const [newAcCounter, setNewAcCounter] = useState(0)
   // Per-line filtered service types from service_catalog for (unit_type, capacity) combo
-  const [lineServiceTypes, setLineServiceTypes] = useState<Record<string, Array<Record<string, unknown>>>>({})
-  const [lineServiceTypesLoading, setLineServiceTypesLoading] = useState<Record<string, boolean>>({})
   const [lineCatalogMissing, setLineCatalogMissing] = useState<Record<string, boolean>>({})
 
   // Section 4: Schedule & assignment
@@ -485,11 +482,6 @@ export default function NewOrderAccordionPage() {
       if (loc && ac) {
         const newLineId = `${locationId}:${acUnitId}:${Date.now()}`
         
-        // Auto-load available service types immediately on selection if config exists
-        if (ac.unit_type_id && ac.capacity_id) {
-          void fetchServiceTypesForLine(newLineId, ac.unit_type_id, ac.capacity_id)
-        }
-        
         setServiceLines((prev) => [
           ...prev,
           {
@@ -553,30 +545,55 @@ export default function NewOrderAccordionPage() {
     ])
   }
 
-  // Fetch service types available in service_catalog for a given (unit_type, capacity) combo
-  const fetchServiceTypesForLine = async (
-    lineId: string,
-    unitTypeId: string,
-    capacityId: string
-  ) => {
-    if (!unitTypeId || !capacityId) {
-      setLineServiceTypes((prev) => ({ ...prev, [lineId]: [] }))
-      setLineCatalogMissing((prev) => ({ ...prev, [lineId]: false }))
-      return
-    }
-    setLineServiceTypesLoading((prev) => ({ ...prev, [lineId]: true }))
-    try {
-      const res = await getServiceTypesForCatalog(unitTypeId, capacityId)
-      if (res.success) {
-        setLineServiceTypes((prev) => ({ ...prev, [lineId]: (res.data || []) as Array<Record<string, unknown>> }))
-        setLineCatalogMissing((prev) => ({ ...prev, [lineId]: (res.data || []).length === 0 }))
-      } else {
-        setLineServiceTypes((prev) => ({ ...prev, [lineId]: [] }))
-        setLineCatalogMissing((prev) => ({ ...prev, [lineId]: true }))
-      }
-    } finally {
-      setLineServiceTypesLoading((prev) => ({ ...prev, [lineId]: false }))
-    }
+  const getAvailableServiceTypesForLine = (unitTypeId: string, capacityId: string) => {
+    const serviceCatalog = (masterData?.serviceCatalog || []) as Array<Record<string, unknown>>
+    const serviceTypes = (masterData?.serviceTypes || []) as Array<Record<string, unknown>>
+
+    if (!unitTypeId || !capacityId) return []
+
+    const availableTypeIds = new Set(
+      serviceCatalog
+        .filter(
+          (c) =>
+            c.is_active !== false &&
+            c.unit_type_id === unitTypeId &&
+            c.capacity_id === capacityId
+        )
+        .map((c) => c.service_type_id as string)
+    )
+
+    const orderedTypeIds = serviceTypes
+      .map((st) => st.service_type_id as string)
+      .filter((serviceTypeId) => availableTypeIds.has(serviceTypeId))
+
+    const seen = new Set<string>()
+    return orderedTypeIds
+      .filter((serviceTypeId) => {
+        if (seen.has(serviceTypeId)) return false
+        seen.add(serviceTypeId)
+        return true
+      })
+      .map((serviceTypeId) => {
+        const st = serviceTypes.find((item) => item.service_type_id === serviceTypeId)
+        return {
+          id: serviceTypeId,
+          label: String(st?.name || st?.code || serviceTypeId),
+        }
+      })
+  }
+
+  const getLineCatalogMatch = (line: SelectedAcLine) => {
+    if (!line.service_type_id || !line.unit_type_id || !line.capacity_id) return null
+    const catalog = (masterData?.serviceCatalog || []) as Array<Record<string, unknown>>
+    return (
+      catalog.find(
+        (c) =>
+          c.is_active !== false &&
+          c.service_type_id === line.service_type_id &&
+          c.unit_type_id === line.unit_type_id &&
+          c.capacity_id === line.capacity_id
+      ) || null
+    )
   }
 
   // When a service is picked or details change, dynamically compute the catalog price
@@ -643,9 +660,17 @@ export default function NewOrderAccordionPage() {
       setLineCatalogMissing((prev) => ({ ...prev, [lineId]: noCatalogMatch }))
     }
 
-    // Refetch cascading service types when unit_type or capacity changes
-    if ('unit_type_id' in patch || 'capacity_id' in patch) {
-      void fetchServiceTypesForLine(lineId, nextUnitType, nextCapacity)
+    // Keep catalog-missing state aligned with current selection
+    if ('unit_type_id' in patch || 'capacity_id' in patch || 'service_type_id' in patch) {
+      const hasMatch = !!nextUnitType && !!nextCapacity && !!updatedLines.find((l) => l.line_id === lineId)?.service_type_id &&
+        (masterData?.serviceCatalog as Array<Record<string, unknown>> | undefined)?.some(
+          (c) =>
+            c.is_active !== false &&
+            c.service_type_id === updatedLines.find((l) => l.line_id === lineId)?.service_type_id &&
+            c.unit_type_id === nextUnitType &&
+            c.capacity_id === nextCapacity
+        )
+      setLineCatalogMissing((prev) => ({ ...prev, [lineId]: !!nextUnitType && !!nextCapacity && !hasMatch }))
     }
   }
 
@@ -701,21 +726,11 @@ export default function NewOrderAccordionPage() {
       const linesInGroup = updatedLines.filter((l) => l.unit_instance_id === unitInstanceId)
       
       linesInGroup.forEach((l) => {
-        let matchFound = false
-        if (l.service_type_id && nextUnitType && nextCapacity) {
-          const catalog = (masterData?.serviceCatalog || []) as Array<Record<string, unknown>>
-          matchFound = catalog.some(
-            (c) =>
-              c.is_active !== false &&
-              c.service_type_id === l.service_type_id &&
-              c.unit_type_id === nextUnitType &&
-              c.capacity_id === nextCapacity
-          )
-        }
-        const noCatalogMatch = !!l.service_type_id && !!nextUnitType && !!nextCapacity && !matchFound
+        const noCatalogMatch = !!getLineCatalogMatch({ ...l, unit_type_id: nextUnitType, capacity_id: nextCapacity })
+          ? false
+          : !!l.service_type_id && !!nextUnitType && !!nextCapacity
         
         setLineCatalogMissing((prev) => ({ ...prev, [l.line_id]: noCatalogMatch }))
-        void fetchServiceTypesForLine(l.line_id, nextUnitType, nextCapacity)
       })
     }
   }
@@ -727,11 +742,6 @@ export default function NewOrderAccordionPage() {
     
     const newLineId = `${firstLine.location_id}:${firstLine.ac_unit_id}:${Date.now()}:${Math.random().toString(36).substr(2, 9)}`
     
-    // Call fetchServiceTypesForLine if group already has unit type & capacity
-    if (firstLine.unit_type_id && firstLine.capacity_id) {
-      void fetchServiceTypesForLine(newLineId, firstLine.unit_type_id, firstLine.capacity_id)
-    }
-
     setServiceLines((prev) => [
       ...prev,
       {
@@ -1452,38 +1462,41 @@ export default function NewOrderAccordionPage() {
                               {/* Service Type Selection */}
                               <div>
                                 <Label className="text-[11px] font-medium">Jenis Service *</Label>
+                                {(() => {
+                                  const options = getAvailableServiceTypesForLine(line.unit_type_id || '', line.capacity_id || '')
+                                  const hasConfig = !!line.unit_type_id && !!line.capacity_id
+                                  const hasOptions = options.length > 0
+                                  return (
                                 <Select
                                   value={line.service_type_id || ''}
-                                  disabled={!line.capacity_id || !!lineServiceTypesLoading[line.line_id]}
+                                  disabled={!hasConfig}
                                   onValueChange={(stId) => pickServiceForLine(line.line_id, stId)}
                                 >
                                   <SelectTrigger className="h-9">
                                     <SelectValue
                                       placeholder={
-                                        !line.capacity_id
+                                        !hasConfig
                                           ? 'Pilih tipe unit & kapasitas dulu'
-                                          : lineServiceTypesLoading[line.line_id]
-                                            ? 'Memuat...'
-                                            : 'Pilih jenis service...'
+                                          : 'Pilih jenis service...'
                                       }
                                     />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {(!line.unit_type_id || !line.capacity_id
-                                      ? []
-                                      : (lineServiceTypes[line.line_id] || [])).length === 0 ? (
+                                    {!hasConfig ? null : !hasOptions ? (
                                       <SelectItem value="no_service_type" disabled className="text-[11px] text-amber-600 dark:text-amber-400">
                                         Tidak ada jenis service untuk tipe unit + kapasitas ini.
                                       </SelectItem>
                                     ) : (
-                                      (lineServiceTypes[line.line_id] || []).map((st) => (
-                                        <SelectItem key={st.service_type_id as string} value={st.service_type_id as string}>
-                                          {(st.name as string) || (st.code as string)}
+                                      options.map((st) => (
+                                        <SelectItem key={st.id} value={st.id}>
+                                          {st.label}
                                         </SelectItem>
                                       ))
                                     )}
                                   </SelectContent>
                                 </Select>
+                                  )
+                                })()}
                               </div>
 
                               {/* Qty, Price, Subtotal */}

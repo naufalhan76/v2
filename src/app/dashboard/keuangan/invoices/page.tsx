@@ -38,6 +38,7 @@ import {
   DollarSign,
   Clock,
   AlertCircle,
+  Download,
 } from 'lucide-react'
 
 import { EmptyState } from '@/components/ui/empty-state'
@@ -52,10 +53,24 @@ import { id as localeId } from 'date-fns/locale'
 import { logger } from '@/lib/logger'
 import { formatPhone } from '@/lib/utils'
 import { InvoiceStatusBadge } from '@/components/invoices/invoice-status-badge'
+import { datedCsvFilename, downloadCsv, type CsvColumn } from '@/lib/csv-export'
 
 const getInvoiceSourceLabel = (source?: Invoice['source']) => (source === 'BLANK' ? 'Kosong' : 'Transaksi')
 
 const getInvoiceSourceVariant = (source?: Invoice['source']) => (source === 'BLANK' ? 'secondary' : 'default')
+
+const INVOICE_CSV_COLUMNS: CsvColumn<Invoice>[] = [
+  { header: 'Nomor Invoice', value: (invoice) => invoice.invoice_number },
+  { header: 'Sumber', value: (invoice) => getInvoiceSourceLabel(invoice.source) },
+  { header: 'Tipe', value: (invoice) => invoice.invoice_type },
+  { header: 'Pelanggan', value: (invoice) => invoice.customers?.customer_name ?? invoice.customer_name_override },
+  { header: 'Telepon', value: (invoice) => invoice.customers?.phone_number ?? invoice.customer_phone_override },
+  { header: 'Tanggal Invoice', value: (invoice) => invoice.invoice_date },
+  { header: 'Jatuh Tempo', value: (invoice) => invoice.due_date },
+  { header: 'Total', value: (invoice) => invoice.total_amount },
+  { header: 'Status', value: (invoice) => invoice.computed_status ?? invoice.status },
+  { header: 'Status Pembayaran', value: (invoice) => invoice.payment_status },
+]
 
 export default function InvoicesPage() {
   const router = useRouter()
@@ -164,6 +179,15 @@ export default function InvoicesPage() {
     router.push(path)
   }
 
+  const handleExportCsv = () => {
+    try {
+      downloadCsv(datedCsvFilename('invoices'), invoices, INVOICE_CSV_COLUMNS)
+      toast({ title: 'Export CSV berhasil', description: `${invoices.length} invoice diexport.` })
+    } catch {
+      toast({ variant: 'destructive', title: 'Export CSV gagal' })
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -171,23 +195,29 @@ export default function InvoicesPage() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Invoice</h1>
           <p className="text-sm sm:text-base text-muted-foreground">Kelola dan monitor invoice pelanggan</p>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="gap-2 w-full sm:w-auto min-h-[44px]">
-              <Plus className="h-4 w-4" />
-              Buat Invoice
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
-            <DropdownMenuItem onClick={() => handleCreateInvoice('/dashboard/keuangan/invoices/create')}>
-              Buat Invoice (Transaksi)
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleCreateInvoice('/dashboard/keuangan/invoices/create-blank')}>
-              Buat Invoice Kosong
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={handleExportCsv} disabled={isLoading || invoices.length === 0} className="gap-2 w-full sm:w-auto min-h-[44px]">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="gap-2 w-full sm:w-auto min-h-[44px]">
+                <Plus className="h-4 w-4" />
+                Buat Invoice
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuItem onClick={() => handleCreateInvoice('/dashboard/keuangan/invoices/create')}>
+                Buat Invoice (Transaksi)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleCreateInvoice('/dashboard/keuangan/invoices/create-blank')}>
+                Buat Invoice Kosong
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Stats Cards */}

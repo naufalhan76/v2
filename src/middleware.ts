@@ -2,10 +2,43 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { logger } from '@/lib/logger'
+import {
+  ROUTE_ROLE_MATRIX,
+  isRoleAllowed,
+  isUserRole,
+  type AuthRoute,
+  type UserRole,
+} from '@/lib/auth-roles'
 
 // Simple in-memory cache to reduce database queries (expires after 30 seconds)
 const userCache = new Map<string, { data: unknown; expiry: number }>()
 const CACHE_DURATION = 30000 // 30 seconds
+
+const protectedRoutes = ['/dashboard', '/technician', '/konfigurasi', '/manajemen', '/operasional', '/profile']
+const authRoutes = ['/login', '/forgot-password', '/reset-password']
+
+function getRouteForPathname(pathname: string): AuthRoute | null {
+  if (pathname === '/') return '/'
+  if (pathname === '/login') return '/login'
+  if (pathname.startsWith('/dashboard/manajemen/user')) return '/dashboard/manajemen/user'
+  if (pathname.startsWith('/technician')) return '/technician'
+  if (pathname.startsWith('/dashboard')) return '/dashboard'
+  return null
+}
+
+function getAuthenticatedRedirect(role: UserRole | null | undefined, route: AuthRoute): AuthRoute | null {
+  if (!isUserRole(role)) return null
+
+  const redirects = ROUTE_ROLE_MATRIX[route].authenticatedRedirects as Partial<Record<UserRole, AuthRoute>> | undefined
+  return redirects?.[role] ?? null
+}
+
+function getUnauthenticatedRedirect(route: AuthRoute | null): AuthRoute {
+  if (!route) return '/login'
+
+  const access = ROUTE_ROLE_MATRIX[route] as { unauthenticatedRedirect?: AuthRoute }
+  return access.unauthenticatedRedirect ?? '/login'
+}
 
 function getCachedUser(userId: string) {
   const cached = userCache.get(userId)
@@ -69,26 +102,35 @@ export async function middleware(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Define protected routes (add /technician)
-  const protectedRoutes = ['/dashboard', '/technician', '/konfigurasi', '/manajemen', '/operasional', '/profile']
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route))
+  const matchedRoute = getRouteForPathname(pathname)
 
   // Define auth routes
-  const authRoutes = ['/login', '/forgot-password', '/reset-password']
   const isAuthRoute = authRoutes.some((route) => pathname === route)
 
-  // Redirect root path based on auth status
   if (pathname === '/') {
     if (user) {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
+      let userData = getCachedUser(user.id) as { role?: string } | null
+      if (!userData) {
+        const { data } = await supabase
+          .from('user_management')
+          .select('is_active, role')
+          .eq('auth_user_id', user.id)
+          .maybeSingle()
+        userData = data
+        if (data) setCachedUser(user.id, data)
+      }
+
+      const redirectTarget = getAuthenticatedRedirect(userData?.role as UserRole | undefined, '/') ?? '/dashboard'
+      return NextResponse.redirect(new URL(redirectTarget, req.url))
     } else {
-      return NextResponse.redirect(new URL('/login', req.url))
+      return NextResponse.redirect(new URL(ROUTE_ROLE_MATRIX['/'].unauthenticatedRedirect ?? '/login', req.url))
     }
   }
 
   // Redirect unauthenticated users to login if accessing protected routes
   if (isProtectedRoute && !user) {
-    const redirectUrl = new URL('/login', req.url)
+    const redirectUrl = new URL(getUnauthenticatedRedirect(matchedRoute), req.url)
     redirectUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(redirectUrl)
   }
@@ -120,25 +162,11 @@ export async function middleware(req: NextRequest) {
       setCachedUser(user.id, userData)
     }
 
-    const userRole = userData?.role
+    const userRole = userData?.role as UserRole | undefined
 
-    // --- Role-based routing for TECHNICIAN ---
-    // TECHNICIAN accessing /dashboard → redirect to /technician
-    if (userRole === 'TECHNICIAN' && pathname.startsWith('/dashboard')) {
-      return NextResponse.redirect(new URL('/technician', req.url))
-    }
-
-    // Non-TECHNICIAN accessing /technician → redirect to /dashboard
-    if (userRole !== 'TECHNICIAN' && pathname.startsWith('/technician')) {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
-    }
-
-    // Role-based access control for specific routes
-    if (pathname.startsWith('/dashboard/manajemen/user')) {
-      // Only SUPERADMIN can access user management
-      if (userRole !== 'SUPERADMIN') {
-        return NextResponse.redirect(new URL('/dashboard', req.url))
-      }
+    if (matchedRoute && !isRoleAllowed(userRole, matchedRoute)) {
+      const redirectTarget = getAuthenticatedRedirect(userRole, matchedRoute) ?? '/dashboard'
+      return NextResponse.redirect(new URL(redirectTarget, req.url))
     }
   }
 
@@ -156,10 +184,8 @@ export async function middleware(req: NextRequest) {
       if (data) setCachedUser(user.id, data)
     }
 
-    if (userData?.role === 'TECHNICIAN') {
-      return NextResponse.redirect(new URL('/technician', req.url))
-    }
-    return NextResponse.redirect(new URL('/dashboard', req.url))
+    const redirectTarget = getAuthenticatedRedirect(userData?.role as UserRole | undefined, '/login') ?? '/dashboard'
+    return NextResponse.redirect(new URL(redirectTarget, req.url))
   }
 
   return res

@@ -95,7 +95,10 @@ function ResetPasswordForm() {
 
       if (error) {
         logger.error('Supabase auth update user error:', error)
-        throw new Error('Gagal mereset kata sandi. Tautan mungkin telah kedaluwarsa.')
+        if (error.name === 'AuthApiError' && error.message.toLowerCase().includes('expired')) {
+          throw new Error('Tautan reset kata sandi telah kedaluwarsa. Silakan minta tautan baru di halaman lupa kata sandi.')
+        }
+        throw new Error('Tautan reset kata sandi tidak valid atau telah kedaluwarsa.')
       }
 
       toast({
@@ -109,7 +112,14 @@ function ResetPasswordForm() {
       logger.error('Reset password error:', error)
       toast({
         title: "Gagal mereset kata sandi",
-        description: error instanceof Error ? error.message : "Terjadi kesalahan saat mereset kata sandi",
+        description: (
+          <div className="flex flex-col gap-2 mt-1">
+            <p>{error instanceof Error ? error.message : "Terjadi kesalahan saat mereset kata sandi."}</p>
+            <Button variant="outline" size="sm" asChild className="w-fit mt-1">
+              <Link href="/forgot-password">Minta Tautan Baru</Link>
+            </Button>
+          </div>
+        ),
         variant: "destructive"
       })
       setIsLoading(false)
