@@ -75,8 +75,9 @@
 - API middleware: Reviewed; API guards use explicit requiredRoles/finance role arrays matching the same SUPERADMIN/ADMIN/FINANCE decisions, while route-only redirects remain in ROUTE_ROLE_MATRIX.
 - Gotchas: Middleware must keep @supabase/ssr createServerClient and avoid auth-guards.ts because auth-guards imports server-only.
 
-## 2026-06-09 Task 7: Auth UX Polish COMPLETED
-- Reset-password expired token: improved YES
-- Confirm page: improved YES
-- JSDoc added: auth-guards YES, auth-roles YES
-- Screenshots: task-7-auth-error-states.png, task-7-forgot-copy.png
+## [2026-06-09] Task 7: Auth UX Polish COMPLETED
+- Pages updated: login, forgot-password, reset-password, confirm, auth-guards, auth-roles
+- Neutral copy verified: forgot-password [YES]
+- Invalid token handling: reset-password [YES], confirm [YES]
+- Screenshots captured: .omo/evidence/task-7-auth-error-states.png, .omo/evidence/task-7-forgot-copy.png
+- Gotchas: Supabase reset password automatically sets session on hash load, but throws an error if token has expired or `updateUser` is called incorrectly. Handled with explicit Indonesian error string.
