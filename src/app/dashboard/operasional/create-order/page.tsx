@@ -256,8 +256,16 @@ function CreateOrderPage() {
         existing_acs: loc.ac_units?.map(ac => ({
           ac_unit_id: ac.ac_unit_id,
           brand: ac.brand,
+          brand_id: ac.brand_id,
           model_number: ac.model_number,
           serial_number: ac.serial_number || '',
+          unit_type_id: ac.unit_type_id || undefined,
+          capacity_id: ac.capacity_id || undefined,
+          capacity_label: ac.capacity_label,
+          ac_type: ac.ac_type || ac.unit_type_name || null,
+          room_location: ac.room_location,
+          floor_level: ac.floor_level,
+          position_detail: ac.position_detail,
           selected_services: [],
           notes: '',
           is_selected: false
@@ -590,11 +598,7 @@ function CreateOrderPage() {
               quantity: 1,
               description: unit.notes || undefined,
               estimated_price: (usvc.price as number) || 0,
-              new_ac_data: {
-                brand: unit.brand_id || 'TBD',
-                model_number: 'TBD',
-                capacity_btu: undefined
-              }
+              new_ac_temp_id: unit.temp_id
             })
           }
         }

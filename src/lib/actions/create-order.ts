@@ -11,6 +11,23 @@ import type {
 import { logger } from '@/lib/logger'
 import { sanitizeSearchTerm } from '@/lib/utils'
 
+type AcUnitWithLabels = {
+  unit_type_name?: string | null;
+  capacity_label?: string | null;
+  unit_types?: { name?: string | null } | null;
+  capacity_ranges?: { capacity_label?: string | null } | null;
+}
+
+function normalizeAcUnitLabels(locations: CustomerSearchResult['locations']) {
+  locations?.forEach(loc => {
+    loc.ac_units?.forEach(ac => {
+      const acWithLabels = ac as AcUnitWithLabels
+      ac.unit_type_name = ac.unit_type_name ?? acWithLabels.unit_types?.name ?? null
+      ac.capacity_label = ac.capacity_label ?? acWithLabels.capacity_ranges?.capacity_label ?? null
+    })
+  })
+}
+
 /**
  * Search customers by name or phone number (for autocomplete)
  */
@@ -83,18 +100,26 @@ export async function searchCustomerByPhone(phone: string): Promise<{
         ac_units (
           ac_unit_id,
           brand,
+          brand_id,
           model_number,
           serial_number,
           unit_type_id,
           capacity_id,
           ac_type,
           capacity_btu,
+          room_location,
+          floor_level,
+          position_detail,
+          unit_types (name),
+          capacity_ranges (capacity_label),
           status
         )
       `)
       .eq('customer_id', customer.customer_id)
     
     if (locationsError) throw locationsError
+
+    normalizeAcUnitLabels(locations)
 
     // Fetch recent order items for these AC units to autofill unit_type_id and capacity_id if missing
     const acUnitIds = locations?.flatMap(l => l.ac_units?.map(ac => ac.ac_unit_id) || []) || []
@@ -189,18 +214,26 @@ export async function getCustomerWithLocationsById(customerId: string): Promise<
         ac_units (
           ac_unit_id,
           brand,
+          brand_id,
           model_number,
           serial_number,
           unit_type_id,
           capacity_id,
           ac_type,
           capacity_btu,
+          room_location,
+          floor_level,
+          position_detail,
+          unit_types (name),
+          capacity_ranges (capacity_label),
           status
         )
       `)
       .eq('customer_id', customer.customer_id)
 
     if (locationsError) throw locationsError
+
+    normalizeAcUnitLabels(locations)
 
     // Fetch recent order items for these AC units to autofill unit_type_id and capacity_id if missing
     const acUnitIds = locations?.flatMap(l => l.ac_units?.map(ac => ac.ac_unit_id) || []) || []
@@ -369,82 +402,10 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
     
     if (orderError) throw orderError
     
-    // 2. Create AC units for new units (where ac_unit_id is null)
-    // We group by new_ac_temp_id if available, or just index if not, to avoid duplicate AC unit creation
-    const tempIdToAcId = new Map<string, string>()
-    const newAcUnitsToInsert: Array<{
-      temp_id: string;
-      data: {
-        location_id: string;
-        brand_id?: string;
-        unit_type_id?: string;
-        capacity_id?: string;
-        brand: string;
-        model_number: string;
-        capacity_btu: number | null;
-        status: string;
-      }
-    }> = []
-
-    input.items.forEach((item, index) => {
-      if (!item.ac_unit_id && item.new_ac_data) {
-        const tempId = item.new_ac_temp_id || `temp-index-${index}`
-        
-        if (!newAcUnitsToInsert.some(u => u.temp_id === tempId)) {
-          newAcUnitsToInsert.push({
-            temp_id: tempId,
-            data: {
-              location_id: item.location_id,
-              brand_id: item.brand_id,
-              unit_type_id: item.unit_type_id,
-              capacity_id: item.capacity_id,
-              brand: item.new_ac_data.brand || 'TBD',
-              model_number: item.new_ac_data.model_number || 'TBD',
-              capacity_btu: item.new_ac_data.capacity_btu || null,
-              status: 'ACTIVE'
-            }
-          })
-        }
-      }
-    })
-
-    // Insert new AC units if any
-    if (newAcUnitsToInsert.length > 0) {
-      const { data: insertedAcUnits, error: acUnitsError } = await supabase
-        .from('ac_units')
-        .insert(newAcUnitsToInsert.map(u => u.data))
-        .select('ac_unit_id')
-      
-      if (acUnitsError) {
-        // Rollback: delete order if AC units failed
-        await supabase
-          .from('orders')
-          .delete()
-          .eq('order_id', order.order_id)
-        
-        throw acUnitsError
-      }
-      
-      // Map the inserted AC IDs back to temp_id
-      newAcUnitsToInsert.forEach((u, idx) => {
-        if (insertedAcUnits && insertedAcUnits[idx]) {
-          tempIdToAcId.set(u.temp_id, insertedAcUnits[idx].ac_unit_id)
-        }
-      })
-    }
-
-    // 3. Create order items (same status as parent order)
-    const orderItems = input.items.map((item, index) => {
-      let finalAcUnitId = item.ac_unit_id || null
-      if (!finalAcUnitId && item.new_ac_data) {
-        const tempId = item.new_ac_temp_id || `temp-index-${index}`
-        finalAcUnitId = tempIdToAcId.get(tempId) || null
-      }
-
-      return {
+    const orderItems = input.items.map((item) => ({
         order_id: order.order_id,
         location_id: item.location_id,
-        ac_unit_id: finalAcUnitId,
+        ac_unit_id: item.ac_unit_id || null,
         unit_type_id: item.unit_type_id,
         capacity_id: item.capacity_id,
         brand_id: item.brand_id,
@@ -456,22 +417,13 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
         description: item.description,
         estimated_price: item.estimated_price || 0,
         status: orderStatus
-      }
-    })
+      }))
     
     const { error: itemsError } = await supabase
       .from('order_items')
       .insert(orderItems)
     
     if (itemsError) {
-      // Rollback: delete AC units and order if items failed
-      if (tempIdToAcId.size > 0) {
-        await supabase
-          .from('ac_units')
-          .delete()
-          .in('ac_unit_id', Array.from(tempIdToAcId.values()))
-      }
-      
       await supabase
         .from('orders')
         .delete()

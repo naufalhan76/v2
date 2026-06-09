@@ -113,10 +113,16 @@ export type LocationFormData = {
   existing_acs: Array<{
     ac_unit_id: string;
     brand: string;
+    brand_id?: string | null;
     model_number: string;
     serial_number: string;
     unit_type_id?: string; // Loaded from DB if available
     capacity_id?: string;
+    capacity_label?: string | null;
+    ac_type?: string | null;
+    room_location?: string | null;
+    floor_level?: string | null;
+    position_detail?: string | null;
     selected_services: Array<{
       catalog_id: string;
       msn_code: string;
@@ -194,12 +200,18 @@ export type CustomerSearchResult = {
     ac_units?: Array<{
       ac_unit_id: string;
       brand: string;
+      brand_id?: string | null;
       model_number: string;
       serial_number: string | null;
       unit_type_id?: string | null;
       capacity_id?: string | null;
+      capacity_label?: string | null;
       ac_type: string | null;
+      unit_type_name?: string | null;
       capacity_btu: number | null;
+      room_location?: string | null;
+      floor_level?: string | null;
+      position_detail?: string | null;
       status: string;
     }>;
   }>;
