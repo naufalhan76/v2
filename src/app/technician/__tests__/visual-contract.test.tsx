@@ -45,21 +45,24 @@ vi.mock('@/components/technician/sync-status', () => ({
 
 describe('Technician UI Visual Contract (Red Baseline)', () => {
   describe('1. Shell/Nav (BottomTabBar)', () => {
-    it('matches the fixed bottom nav reference design', () => {
+    it('[RED BASELINE] matches the fixed bottom nav reference design (expects active dot and #1C195F color)', () => {
       render(<BottomTabBar />)
       const nav = screen.getByRole('navigation')
       
       expect(nav).toHaveClass('fixed', 'bottom-0', 'inset-x-0', 'pb-safe')
       
+      // Active indicator dot (currently failing - missing in UI)
       const selectedTab = screen.getByText('Hari Ini').closest('a')
-      expect(selectedTab).toHaveClass('text-[#1C195F]')
-      // Active indicator dot
       expect(selectedTab?.querySelector('.bg-\\[\\#1C195F\\]')).toBeInTheDocument()
+
+      // Active color (currently failing)
+      const textSpan = screen.getByText('Hari Ini')
+      expect(textSpan).toHaveClass('text-[#1C195F]')
     })
   })
 
   describe('2. Today View (TechnicianTodayPage)', () => {
-    it('matches navy curved header and overlap cards layout', () => {
+    it.fails('[RED BASELINE] matches navy curved header and overlap cards layout (expects -mt-6 overlap)', () => {
       render(<TechnicianTodayPage />)
       
       const homePage = screen.getByTestId('technician-home')
@@ -93,7 +96,7 @@ describe('Technician UI Visual Contract (Red Baseline)', () => {
   })
 
   describe('5. Job Card (Concrete Data)', () => {
-    it('renders concrete data with required UI tokens', () => {
+    it.fails('[RED BASELINE] renders concrete data with required UI tokens (expects WO-TEC-001, missing in UI)', () => {
       const mockJob = {
         order_id: 'WO-TEC-001',
         status: 'Diproses',
@@ -118,22 +121,19 @@ describe('Technician UI Visual Contract (Red Baseline)', () => {
 
       render(<TodayJobCard job={mockJob as any} isOffline={false} />)
       
-      // Concrete data matching
       expect(screen.getByText('WO-TEC-001')).toBeInTheDocument()
       expect(screen.getByText('CV Beta Sample')).toBeInTheDocument()
       expect(screen.getByText(/Jl\. Gatot Subroto No\. 200/)).toBeInTheDocument()
       
-      // Expected total price formatting
       expect(screen.getByText(/Rp\s*850\.000/)).toBeInTheDocument()
 
-      // Card should be elevated
       const cardContainer = screen.getByText('WO-TEC-001').closest('div.rounded-xl')
       expect(cardContainer).toHaveClass('shadow-sm', 'border-hairline')
     })
   })
 
   describe('6. Media/Forms', () => {
-    it('renders native-like square camera buttons in PhotoUpload', () => {
+    it.fails('[RED BASELINE] renders native-like square camera buttons in PhotoUpload (expects Ambil Foto text)', () => {
       render(
         <PhotoUpload
           label="Foto Sebelum"
@@ -147,14 +147,13 @@ describe('Technician UI Visual Contract (Red Baseline)', () => {
       const label = screen.getByText('Foto Sebelum')
       expect(label).toBeInTheDocument()
       
-      // Look for the "upload" label or icon visually representing the camera
       const uploadArea = screen.getByText('Ambil Foto').closest('button') || screen.getByText('Ambil Foto').closest('label')
       expect(uploadArea).toHaveClass('aspect-square', 'border-dashed')
     })
   })
 
   describe('7. Sync/Conflict', () => {
-    it('shows destructive badge for cancelled conflict', () => {
+    it.fails('[RED BASELINE] shows destructive badge for cancelled conflict (expects Dibatalkan text)', () => {
       const conflicts = [
         {
           id: '1',
