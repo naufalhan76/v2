@@ -43,3 +43,10 @@
 - Token handling: Handled automatically by Supabase's `getSession` and hash URL on initial load for the reset-password page.
 - Middleware update: Added `/forgot-password` and `/reset-password` to `authRoutes` to ensure authenticated users are redirected away.
 - Gotchas: Vitest is used instead of bun:test for DOM testing due to happy-dom config.
+
+## [2026-06-09] Task 2: Server Auth Guards COMPLETED
+- auth-guards.ts: getCurrentUserProfile, requireUserProfile, requireRole, requireAnyRole, requireSuperAdmin, requireFinanceAccess
+- server-only import: YES
+- api-keys.ts refactored: YES
+- Mock pattern: vi.mock('@/lib/supabase-server', ...)
+- Gotchas: api-keys.ts was already partially refactored; getUserApiKeys now also uses requireSuperAdmin().

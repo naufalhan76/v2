@@ -1,7 +1,7 @@
 'use server'
 
-import { getUser, getUserRole } from '@/lib/auth'
 import { generateApiKey, maskApiKey, getApiKeyCreatedDate, getApiKeyExpirationDate } from '@/lib/api-key'
+import { requireSuperAdmin } from '@/lib/auth-guards'
 import { logger } from '@/lib/logger'
 
 export interface ApiKeyInfo {
@@ -25,23 +25,8 @@ export interface ApiKeyWithSecret extends ApiKeyInfo {
  */
 export async function generateNewApiKey() {
   try {
-    const user = await getUser()
-    if (!user) {
-      return {
-        success: false,
-        error: 'Not authenticated',
-      }
-    }
-
-    const role = await getUserRole()
-    if (role !== 'SUPERADMIN') {
-      return {
-        success: false,
-        error: 'Only SUPERADMIN users can generate API keys',
-      }
-    }
-
-    const apiKey = generateApiKey(user.id, user.email || '', role)
+    const profile = await requireSuperAdmin()
+    const apiKey = generateApiKey(profile.auth_user_id, profile.email || '', profile.role)
 
     return {
       success: true,
@@ -87,14 +72,7 @@ export async function getApiKeyInfo(apiKey: string) {
  */
 export async function getUserApiKeys() {
   try {
-    const user = await getUser()
-    if (!user) {
-      return {
-        success: false,
-        error: 'Not authenticated',
-        keys: [],
-      }
-    }
+    await requireSuperAdmin()
 
     // Since API keys are self-contained and not stored in DB,
     // we return empty list. In a real implementation, you'd store
@@ -125,25 +103,8 @@ export async function createApiKey(
   expirationDays: number = 90
 ) {
   try {
-    const user = await getUser()
-    if (!user) {
-      return {
-        success: false,
-        error: 'Not authenticated',
-        data: null,
-      }
-    }
-
-    const role = await getUserRole()
-    if (role !== 'SUPERADMIN') {
-      return {
-        success: false,
-        error: 'Only SUPERADMIN users can create API keys',
-        data: null,
-      }
-    }
-
-    const apiKey = generateApiKey(user.id, user.email || '', role)
+    const profile = await requireSuperAdmin()
+    const apiKey = generateApiKey(profile.auth_user_id, profile.email || '', profile.role)
     const createdAt = new Date()
     const expiresAt = new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000)
 
@@ -177,25 +138,8 @@ export async function createApiKey(
  */
 export async function regenerateApiKey(keyId: string) {
   try {
-    const user = await getUser()
-    if (!user) {
-      return {
-        success: false,
-        error: 'Not authenticated',
-        data: null,
-      }
-    }
-
-    const role = await getUserRole()
-    if (role !== 'SUPERADMIN') {
-      return {
-        success: false,
-        error: 'Only SUPERADMIN users can regenerate API keys',
-        data: null,
-      }
-    }
-
-    const apiKey = generateApiKey(user.id, user.email || '', role)
+    const profile = await requireSuperAdmin()
+    const apiKey = generateApiKey(profile.auth_user_id, profile.email || '', profile.role)
     const createdAt = new Date()
     const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
 
@@ -228,21 +172,7 @@ export async function regenerateApiKey(keyId: string) {
  */
 export async function deleteApiKey(_keyId: string) {
   try {
-    const user = await getUser()
-    if (!user) {
-      return {
-        success: false,
-        error: 'Not authenticated',
-      }
-    }
-
-    const role = await getUserRole()
-    if (role !== 'SUPERADMIN') {
-      return {
-        success: false,
-        error: 'Only SUPERADMIN users can delete API keys',
-      }
-    }
+    await requireSuperAdmin()
 
     // In a real implementation, delete the key metadata from database
     // For now, just return success (key is self-contained, no DB storage)
@@ -268,23 +198,7 @@ export async function updateApiKey(
   description?: string
 ) {
   try {
-    const user = await getUser()
-    if (!user) {
-      return {
-        success: false,
-        error: 'Not authenticated',
-        data: null,
-      }
-    }
-
-    const role = await getUserRole()
-    if (role !== 'SUPERADMIN') {
-      return {
-        success: false,
-        error: 'Only SUPERADMIN users can update API keys',
-        data: null,
-      }
-    }
+    await requireSuperAdmin()
 
     // In a real implementation, update the key metadata in database
     // For now, just return success

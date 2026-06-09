@@ -1,0 +1,18 @@
+Task 2 auth guards validation — 2026-06-09
+
+Commands run:
+- bunx vitest run src/lib/auth-guards.test.ts
+  Result: PASS — Test Files 1 passed, Tests 6 passed
+- bun run type-check
+  Result: PASS — tsc --noEmit exited 0
+
+Modified-file diagnostics:
+- src/lib/auth-guards.ts: No diagnostics found
+- src/lib/actions/api-keys.ts: No diagnostics found
+
+Client import check:
+- grep for auth-guards in src found only:
+  - src/lib/auth-guards.test.ts
+  - src/lib/auth-roles.ts stub error string
+  - src/lib/actions/api-keys.ts server action import
+- No client component imports src/lib/auth-guards.ts.
