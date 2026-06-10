@@ -41,7 +41,6 @@ import { AcUnitForm } from '@/components/technician/ac-unit-form'
 import { SignaturePad } from '@/components/technician/signature-pad'
 import { SyncStatus } from '@/components/technician/sync-status'
 import { cn } from '@/lib/utils'
-import { createAddonRequest } from '@/lib/actions/addon-requests'
 
 // Shape returned by GET /api/technician/jobs/[id]
 type JobContext = {
@@ -149,6 +148,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([1]))
   const [stepErrors, setStepErrors] = useState<Record<number, string[]>>({})
+  const [draftRestored, setDraftRestored] = useState(false)
 
   const draftKey = `msn-erp-wizard-draft-${orderId}`
 
@@ -193,6 +193,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
           setCurrentStep(draft.currentStep)
           setVisitedSteps(new Set([...Array.from({ length: draft.currentStep }, (_, i) => i + 1)]))
         }
+        setDraftRestored(true)
       }
     } catch {
       // corrupted draft — silently skip
@@ -323,19 +324,39 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
           return errors
         }
         acUnits.forEach((unit, idx) => {
+          const initialUnit = initialAcUnits[idx]
+          const isExisting = !!unit.ac_unit_id
+          const isExistingComplete = isExisting && !!(initialUnit?.brand_id && initialUnit?.unit_type_id && initialUnit?.capacity_id)
+
           if (unit.skipped) {
             if (!unit.skip_reason || unit.skip_reason.trim().length === 0) {
-              errors.push(`AC ${idx + 1}: alasan tidak diservis wajib diisi`)
+              errors.push(`AC ${idx + 1}: alasan tidak diservis wajib diisi`) 
             }
           } else {
-            if (!unit.brand_id) {
-              errors.push(`AC ${idx + 1}: merk wajib dipilih`)
-            }
-            if (!unit.unit_type_id) {
-              errors.push(`AC ${idx + 1}: jenis AC wajib dipilih`)
-            }
-            if (!unit.capacity_id) {
-              errors.push(`AC ${idx + 1}: kapasitas wajib dipilih`)
+            if (isExistingComplete) {
+            } else if (isExisting) {
+              if (!initialUnit?.brand_id && !unit.brand_id) {
+                errors.push(`AC ${idx + 1}: merk wajib diisi`)
+              }
+              if (!initialUnit?.unit_type_id && !unit.unit_type_id) {
+                errors.push(`AC ${idx + 1}: jenis AC wajib diisi`)
+              }
+              if (!initialUnit?.capacity_id && !unit.capacity_id) {
+                errors.push(`AC ${idx + 1}: kapasitas wajib diisi`)
+              }
+            } else {
+              if (!unit.brand_id) {
+                errors.push(`AC ${idx + 1}: merk wajib dipilih`)
+              }
+              if (!unit.unit_type_id) {
+                errors.push(`AC ${idx + 1}: jenis AC wajib dipilih`)
+              }
+              if (!unit.capacity_id) {
+                errors.push(`AC ${idx + 1}: kapasitas wajib dipilih`)
+              }
+              if (!unit.room_location || unit.room_location.trim().length === 0) {
+                errors.push(`AC ${idx + 1}: lokasi ruangan wajib diisi`)
+              }
             }
             if (!unit.photos_before || unit.photos_before.length === 0) {
               errors.push(`AC ${idx + 1}: minimal 1 foto sebelum wajib diunggah`)
@@ -362,7 +383,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
 
       return errors
     },
-    [acUnits, initialAcUnits.length, customerNameSigned, signatureBlob]
+    [acUnits, initialAcUnits, customerNameSigned, signatureBlob]
   )
 
   // ---------------------------------------------------------------------------
@@ -454,22 +475,6 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
 
       const allMaterials = acUnits.flatMap((unit) => unit.materials_used || [])
 
-      // Auto-submit addon requests for manual materials
-      const manualMaterials = allMaterials.filter((m) => !m.addon_id && m.is_manual)
-      for (const mat of manualMaterials) {
-        try {
-          await createAddonRequest({
-            category: mat.category || 'PARTS',
-            item_name: mat.name,
-            unit_of_measure: mat.unit_of_measure || 'pcs',
-            proposed_unit_price: mat.unit_price,
-            description: mat.description || `Auto-submitted dari order ${orderId}`,
-          })
-        } catch (err) {
-          console.error('Failed to auto-submit addon request:', err)
-        }
-      }
-
       const mappedAcUnits = acUnits.map((unit) => ({
         ...unit,
         photos_before: [],
@@ -546,7 +551,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
         return (
           <section className="space-y-4" data-testid="ac-units-section">
             <div className="space-y-1">
-              <h2 className="text-lg font-semibold">
+              <h2 className="text-lg font-semibold text-slate-950">
                 Data Unit AC
                 {initialAcUnits.length > 0 && (
                   <span className="ml-2 text-sm font-normal text-ink-mute tabular-nums">
@@ -554,7 +559,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-ink-mute">
+              <p className="text-sm leading-5 text-slate-500">
                 {initialAcUnits.length > 0
                   ? `Isi data untuk ${initialAcUnits.length} unit AC sesuai order. Tidak bisa tambah atau hapus.`
                   : 'Order ini tidak memiliki unit AC yang perlu diinspeksi.'}
@@ -574,7 +579,12 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       case 2:
         return (
           <section className="space-y-6" data-testid="signature-section">
-            <h2 className="text-lg font-semibold">Tanda Tangan Pelanggan</h2>
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold text-slate-950">Tanda Tangan Pelanggan</h2>
+              <p className="text-sm leading-5 text-slate-500">
+                Minta pelanggan mengecek pekerjaan, lalu tanda tangani laporan.
+              </p>
+            </div>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="customerNameSigned">Nama Penandatangan</Label>
@@ -602,7 +612,12 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       case 3:
         return (
           <section className="space-y-6">
-            <h2 className="text-lg font-semibold">Jadwal &amp; Catatan</h2>
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold text-slate-950">Jadwal &amp; Catatan</h2>
+              <p className="text-sm leading-5 text-slate-500">
+                Tambahkan catatan lapangan dan rekomendasi servis berikutnya.
+              </p>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="notes">Catatan Tambahan</Label>
@@ -641,14 +656,19 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       case 4:
         return (
           <section className="space-y-6" data-testid="review-section">
-            <h2 className="text-lg font-semibold">Review Laporan</h2>
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold text-slate-950">Review Laporan</h2>
+              <p className="text-sm leading-5 text-slate-500">
+                Periksa kembali data, foto, tanda tangan, dan jadwal sebelum disimpan.
+              </p>
+            </div>
 
             {/* AC Units Summary */}
             <div className="space-y-3">
               <h3 className="text-sm font-medium text-ink-mute">
                 Unit AC ({acUnits.length})
               </h3>
-              <div className="rounded-lg border border-hairline divide-y divide-hairline">
+              <div className="divide-y divide-hairline rounded-2xl border border-hairline bg-slate-50/70">
                 {acUnits.map((unit, idx) => (
                   <div key={unit.ac_unit_id || idx} className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
@@ -702,7 +722,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
             <Separator />
 
             {/* Signature Summary */}
-            <div className="space-y-3">
+            <div className="space-y-3 rounded-2xl border border-hairline bg-slate-50/70 p-4">
               <h3 className="text-sm font-medium text-ink-mute uppercase tracking-wide">
                 Tanda Tangan
               </h3>
@@ -725,7 +745,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
             <Separator />
 
             {/* Schedule & Cost Summary */}
-            <div className="space-y-3">
+            <div className="space-y-3 rounded-2xl border border-hairline bg-slate-50/70 p-4">
               <h3 className="text-sm font-medium text-ink-mute uppercase tracking-wide">
                 Ringkasan Biaya &amp; Jadwal
               </h3>
@@ -783,36 +803,56 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-4 pb-32">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <Button variant="outline" size="sm" className="rounded-md" asChild>
-          <Link href={`/technician/job/${orderId}`}>
-            <ArrowLeft className="h-4 w-4" />
-            <span className="ml-1">Kembali</span>
-          </Link>
-        </Button>
-        <SyncStatus variant="full" className="mb-4" data-testid="sync-status-badge" />
-      </div>
+    <div className="-mx-4 -my-4 min-h-dvh bg-slate-50 pb-28">
+      <header className="rounded-b-[40px] bg-[#1C195F] px-4 pb-16 pt-4 text-white shadow-sm">
+        <div className="mx-auto max-w-2xl space-y-5">
+          <div className="flex items-center justify-between gap-3">
+            <Button variant="ghost" size="sm" className="h-10 rounded-full bg-white/10 px-3 text-white hover:bg-white/15 hover:text-white" asChild>
+              <Link href={`/technician/job/${orderId}`}>
+                <ArrowLeft className="h-4 w-4" />
+                <span className="ml-1">Kembali</span>
+              </Link>
+            </Button>
+            <SyncStatus variant="full" className="text-white" data-testid="sync-status-badge" />
+          </div>
 
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Penyelesaian Pekerjaan</h1>
-        <p className="text-ink-mute">
-          Selesaikan pesanan untuk <strong>{customerName}</strong> di {locationAddress}
-        </p>
-      </div>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/65">
+              Laporan teknisi
+            </p>
+            <h1 className="text-2xl font-bold tracking-tight">Penyelesaian Pekerjaan</h1>
+            <p className="max-w-xl text-sm leading-6 text-white/75">
+              Selesaikan pesanan untuk <strong className="text-white">{customerName}</strong> di {locationAddress}
+            </p>
+          </div>
+        </div>
+      </header>
 
-      {/* Step Indicator */}
-      <div className="relative">
-        {/* Progress bar background */}
-        <div className="absolute top-5 left-0 right-0 h-0.5 bg-canvas-soft" />
-        {/* Progress bar fill */}
-        <div
-          className="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-300"
-          style={{ width: `${((currentStep - 1) / (STEPS.length - 1)) * 100}%` }}
-        />
+      <main className="mx-auto -mt-10 max-w-2xl space-y-4 px-4">
+        {draftRestored && (
+          <div className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-white p-4 text-sm text-[#1C195F] shadow-sm">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-semibold">Draft dipulihkan</p>
+              <p className="mt-0.5 text-slate-500">Data sebelumnya otomatis dimuat dari perangkat ini.</p>
+            </div>
+          </div>
+        )}
 
-        <div className="relative flex justify-between">
+        {/* Step Indicator */}
+        <div className="rounded-3xl border border-hairline bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between text-xs font-medium text-slate-500">
+            <span>Langkah {currentStep} dari {STEPS.length}</span>
+            <span>{STEPS[currentStep - 1]?.label}</span>
+          </div>
+          <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-[#1C195F] transition-all duration-300"
+              style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
+            />
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-1">
           {STEPS.map((step) => {
             const Icon = step.icon
             const isActive = step.id === currentStep
@@ -825,17 +865,20 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
                 type="button"
                 onClick={() => isClickable && goToStep(step.id)}
                 className={cn(
-                  'flex flex-col items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg p-1',
+                  'flex min-w-[124px] items-center gap-2 rounded-2xl border px-3 py-2 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C195F] focus-visible:ring-offset-2',
+                  isActive && 'border-[#1C195F] bg-[#1C195F] text-white shadow-sm',
+                  isCompleted && !isActive && 'border-[#1C195F]/20 bg-[#1C195F]/5 text-[#1C195F]',
+                  !isActive && !isCompleted && 'border-slate-200 bg-slate-50 text-slate-500',
                   !isClickable && 'cursor-default'
                 )}
                 disabled={!isClickable}
               >
                 <div
                   className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors duration-200',
-                    isActive && 'border-primary bg-primary text-primary-foreground',
-                    isCompleted && 'border-primary bg-primary text-primary-foreground',
-                    !isActive && !isCompleted && 'border-hairline bg-background text-ink-mute'
+                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-200',
+                    isActive && 'bg-white text-[#1C195F]',
+                    isCompleted && !isActive && 'bg-[#1C195F] text-white',
+                    !isActive && !isCompleted && 'bg-white text-slate-400'
                   )}
                 >
                   {isCompleted ? (
@@ -846,10 +889,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
                 </div>
                 <span
                   className={cn(
-                    'text-xs font-medium transition-colors duration-200',
-                    isActive && 'text-foreground',
-                    isCompleted && 'text-primary',
-                    !isActive && !isCompleted && 'text-ink-mute'
+                    'text-xs font-semibold leading-4 transition-colors duration-200'
                   )}
                 >
                   {step.label}
@@ -857,20 +897,20 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
               </button>
             )
           })}
+          </div>
         </div>
-      </div>
 
       {/* Step content */}
       <div 
         key={currentStep} // Forces re-render for animation on step change
-        className="min-h-[300px] animate-in fade-in slide-in-from-bottom-2 duration-300"
+        className="min-h-[300px] animate-in rounded-3xl border border-hairline bg-white p-4 shadow-sm fade-in slide-in-from-bottom-2 duration-300 sm:p-5"
       >
         {renderStepContent()}
       </div>
 
       {/* Step errors (non-review steps) */}
       {stepErrors[currentStep] && stepErrors[currentStep].length > 0 && currentStep !== 4 && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 space-y-2">
+        <div className="space-y-2 rounded-2xl border border-destructive/20 bg-white p-4 text-destructive shadow-sm">
           <div className="flex items-center gap-2 text-destructive">
             <AlertCircle className="h-5 w-5" />
             <span className="text-sm font-semibold">Perbaiki data berikut:</span>
@@ -884,13 +924,15 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       )}
 
       {/* Navigation buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 safe-area-pb">
+      </main>
+
+      <div className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white/95 p-4 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur safe-area-pb">
         <div className="mx-auto max-w-2xl flex items-center gap-3">
           {currentStep > 1 && (
             <Button
               type="button"
               variant="outline"
-              className="flex-1 h-12 transition-all duration-200 active:scale-[0.98]"
+              className="h-12 flex-1 rounded-2xl transition-all duration-200 active:scale-[0.98]"
               onClick={goBack}
               disabled={submitting}
             >
@@ -902,7 +944,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
           {currentStep < 4 ? (
             <Button
               type="button"
-              className={cn('h-12', currentStep === 1 ? 'w-full' : 'flex-1')}
+              className={cn('h-12 rounded-2xl bg-[#1C195F] text-white hover:bg-[#171452]', currentStep === 1 ? 'w-full' : 'flex-1')}
               onClick={goNext}
               disabled={submitting}
             >
@@ -912,7 +954,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
           ) : (
             <Button
               type="button"
-              className="flex-1 h-12"
+              className="h-12 flex-1 rounded-2xl bg-[#1C195F] text-white hover:bg-[#171452]"
               size="lg"
               disabled={submitting}
               onClick={handleSubmitClick}
@@ -932,7 +974,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
       <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
               <CheckCircle2 className="h-6 w-6" />
             </div>
             <AlertDialogTitle className="text-center">

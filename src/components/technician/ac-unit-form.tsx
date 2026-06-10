@@ -114,8 +114,11 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
     <div className="space-y-4">
       {fields.map((field, index) => {
         const isExisting = !!field.ac_unit_id
+        const initialUnit = initialUnits[index]
         const isSkipped = formValues[index]?.skipped ?? false
         const isExpanded = expandedCards[field.id] !== false
+        const isExistingComplete = isExisting && !!(initialUnit?.brand_id && initialUnit?.unit_type_id && initialUnit?.capacity_id)
+        const hasData = (key: keyof AcUnitFormValue) => isExisting && !!initialUnit?.[key]
         
         const selectedUnitTypeId = formValues[index]?.unit_type_id || undefined
         const filteredCapacities = dimensions.capacity_ranges.filter(
@@ -135,11 +138,12 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Snowflake className="h-4 w-4" />
                 </div>
-                <div>
-                  <CardTitle className="text-base">
-                    AC {index + 1}
-                    {isSkipped && <span className="ml-2 text-xs font-normal text-destructive">(Tidak diservis)</span>}
-                  </CardTitle>
+                  <div>
+                    <CardTitle className="text-base">
+                      AC {index + 1}
+                      {isExisting && <span className="ml-2 text-xs font-normal text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">Eksisting</span>}
+                      {isSkipped && <span className="ml-2 text-xs font-normal text-destructive">(Tidak diservis)</span>}
+                    </CardTitle>
                   <p className="text-xs text-ink-mute">
                     {formValues[index]?.brand || 'Merk belum diisi'} 
                     {formValues[index]?.capacity_label ? ` (${formValues[index]?.capacity_label})` : ''}
@@ -191,6 +195,13 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                   </div>
                 )}
 
+                {isExisting && !isExistingComplete && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                    <p className="font-medium">Data AC eksisting tidak lengkap</p>
+                    <p className="mt-0.5 text-amber-700">Lengkapi data identitas yang kosong untuk AC ini.</p>
+                  </div>
+                )}
+
                 {!isSkipped && (
                   <>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -203,7 +214,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                             setValue(`units.${index}.brand_id`, val)
                             setValue(`units.${index}.brand`, matched ? matched.name : null)
                           }}
-                          disabled={isExisting && !!initialUnits[index]?.brand_id}
+                          disabled={hasData('brand_id')}
                         >
                           <SelectTrigger className="h-11">
                             <SelectValue placeholder="Pilih Merk AC..." />
@@ -230,6 +241,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                             setValue(`units.${index}.capacity_id`, null)
                             setValue(`units.${index}.capacity_label`, null)
                           }}
+                          disabled={hasData('unit_type_id')}
                         >
                           <SelectTrigger className="h-11">
                             <SelectValue placeholder="Pilih Jenis AC..." />
@@ -248,7 +260,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                         <Label>Kapasitas</Label>
                         <Select
                           value={formValues[index]?.capacity_id || undefined}
-                          disabled={!selectedUnitTypeId}
+                          disabled={hasData('capacity_id') || !selectedUnitTypeId}
                           onValueChange={(val) => {
                             const matched = dimensions.capacity_ranges.find((cap) => cap.capacity_id === val)
                             setValue(`units.${index}.capacity_id`, val)
@@ -273,7 +285,8 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                         <Input
                           id={`room-${index}`}
                           placeholder="Kamar Tidur Utama, Ruang Tamu..."
-                          className="h-11"
+                          className={cn("h-11", hasData('room_location') && "bg-slate-50 text-slate-500 cursor-not-allowed")}
+                          readOnly={hasData('room_location')}
                           {...register(`units.${index}.room_location`)}
                         />
                       </div>
@@ -283,7 +296,8 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                         <Input
                           id={`floor-${index}`}
                           placeholder="Lantai 1, Lantai 2..."
-                          className="h-11"
+                          className={cn("h-11", hasData('floor_level') && "bg-slate-50 text-slate-500 cursor-not-allowed")}
+                          readOnly={hasData('floor_level')}
                           {...register(`units.${index}.floor_level`)}
                         />
                       </div>
@@ -293,7 +307,8 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                         <Input
                           id={`posdetail-${index}`}
                           placeholder="Dekat jendela, sebelah lemari..."
-                          className="h-11"
+                          className={cn("h-11", hasData('position_detail') && "bg-slate-50 text-slate-500 cursor-not-allowed")}
+                          readOnly={hasData('position_detail')}
                           {...register(`units.${index}.position_detail`)}
                         />
                       </div>
@@ -303,7 +318,8 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                         <Input
                           id={`model-${index}`}
                           placeholder="Model number..."
-                          className="h-11"
+                          className={cn("h-11", hasData('model_number') && "bg-slate-50 text-slate-500 cursor-not-allowed")}
+                          readOnly={hasData('model_number')}
                           {...register(`units.${index}.model_number`)}
                         />
                       </div>
@@ -313,7 +329,8 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                         <Input
                           id={`serial-${index}`}
                           placeholder="Serial number..."
-                          className="h-11"
+                          className={cn("h-11", hasData('serial_number') && "bg-slate-50 text-slate-500 cursor-not-allowed")}
+                          readOnly={hasData('serial_number')}
                           {...register(`units.${index}.serial_number`)}
                         />
                       </div>
@@ -379,4 +396,3 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
     </div>
   )
 }
-
