@@ -363,4 +363,132 @@ describe('Offline-First PWA Workflow (Red Baseline)', () => {
       expect(computeWorkDurationMinutes(baseTime.toISOString(), end3661s.toISOString())).toBe(61)
     })
   })
+
+  describe('6. Select Controlled Invariant', () => {
+    function expectNoSelectControlledWarning(consoleErrorSpy: ReturnType<typeof vi.spyOn>) {
+      const messages = consoleErrorSpy.mock.calls.map((call: unknown[]) => call.map(String).join(' '))
+      expect(messages.join('\n')).not.toContain('Select is changing from uncontrolled to controlled')
+    }
+
+    it('does not emit a Select controlled warning when cached snapshot has undefined select-bound AC fields', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false })))
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      const snapshotWithUndefinedFields = makeSnapshot()
+      const acUnit = snapshotWithUndefinedFields.orderItems[0].acUnit
+      if (acUnit) {
+        delete acUnit.brandId
+        delete acUnit.unitTypeId
+        delete acUnit.capacityId
+      }
+
+      render(<JobCompletionWizard orderId="WO-OFFLINE-001" snapshot={snapshotWithUndefinedFields} />)
+
+      expect(await screen.findByText(/Budi Offline/i)).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText(/Data Unit AC/i)).toBeInTheDocument())
+      expectNoSelectControlledWarning(consoleErrorSpy)
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('does not emit a Select controlled warning when cached snapshot has null select-bound AC fields', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false })))
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+      render(<JobCompletionWizard orderId="WO-OFFLINE-001" snapshot={makeSnapshot()} />)
+
+      expect(await screen.findByText(/Budi Offline/i)).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText(/Data Unit AC/i)).toBeInTheDocument())
+      expectNoSelectControlledWarning(consoleErrorSpy)
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('does not emit a Select controlled warning when draft restore hydrates string select values', async () => {
+      snapshotStore.current = makeSnapshot()
+      stubFetch('Server Customer')
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      localStorage.setItem(
+        'msn-erp-wizard-draft-WO-OFFLINE-001',
+        JSON.stringify({
+          customerNameSigned: 'Nama Draft Lokal',
+          notes: '',
+          nextServiceDate: '2026-09-11',
+          nextServiceNotes: '',
+          acUnits: [
+            {
+              ac_unit_id: 'ac-1',
+              brand: 'Draft Brand',
+              brand_id: '11111111-1111-4111-8111-111111111111',
+              ac_type: 'Split',
+              unit_type_id: '22222222-2222-4222-8222-222222222222',
+              capacity_id: '33333333-3333-4333-8333-333333333333',
+              capacity_label: '1 PK',
+              model_number: '',
+              serial_number: '',
+              room_location: 'Ruang Draft',
+              floor_level: '1',
+              position_detail: '',
+              skipped: false,
+              skip_reason: '',
+              photos_before: ['before-photo-id'],
+              photos_after: [],
+              notes: '',
+              materials_used: [],
+            },
+          ],
+          currentStep: 2,
+        })
+      )
+
+      render(<JobCompletionWizard orderId="WO-OFFLINE-001" />)
+
+      expect(await screen.findByText('Draft dipulihkan')).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText(/Server Customer/i)).toBeInTheDocument())
+      expectNoSelectControlledWarning(consoleErrorSpy)
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('preserves draft select values when server data hydrates in the background', async () => {
+      snapshotStore.current = makeSnapshot()
+      stubFetch('Server Customer')
+      localStorage.setItem(
+        'msn-erp-wizard-draft-WO-OFFLINE-001',
+        JSON.stringify({
+          customerNameSigned: 'Nama Draft Lokal',
+          notes: '',
+          nextServiceDate: '2026-09-11',
+          nextServiceNotes: '',
+          acUnits: [
+            {
+              ac_unit_id: 'ac-1',
+              brand: 'Draft Brand',
+              brand_id: '11111111-1111-4111-8111-111111111111',
+              ac_type: 'Split Draft',
+              unit_type_id: '22222222-2222-4222-8222-222222222222',
+              capacity_id: '33333333-3333-4333-8333-333333333333',
+              capacity_label: '1 PK Draft',
+              model_number: '',
+              serial_number: '',
+              room_location: 'Ruang Draft',
+              floor_level: '1',
+              position_detail: '',
+              skipped: false,
+              skip_reason: '',
+              photos_before: ['before-photo-id'],
+              photos_after: ['after-photo-id'],
+              notes: '',
+              materials_used: [],
+            },
+          ],
+          currentStep: 1,
+        })
+      )
+
+      render(<JobCompletionWizard orderId="WO-OFFLINE-001" />)
+
+      expect(await screen.findByText('Draft dipulihkan')).toBeInTheDocument()
+      expect(screen.getByText(/Draft Brand/)).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText(/Server Customer/i)).toBeInTheDocument())
+      expect(screen.getByText(/Draft Brand/)).toBeInTheDocument()
+      expect(screen.getByText(/1 PK Draft/)).toBeInTheDocument()
+    })
+  })
 })

@@ -25,6 +25,7 @@ export type AcUnitFormValue = AcUnitReportItem
 export type AcUnitFormProps = {
   orderId: string
   initialUnits: AcUnitFormValue[]
+  formUnits?: AcUnitFormValue[]
   onChange: (units: AcUnitFormValue[]) => void
   /** Called with flat array of all photo IDs across all AC units */
   onPhotoIdsChange?: (photoIds: string[]) => void
@@ -36,7 +37,9 @@ type DimensionData = {
   ac_brands: Array<{ brand_id: string; name: string }>
 }
 
-export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }: AcUnitFormProps) {
+const selectValue = (value: string | null | undefined) => value ?? ''
+
+export function AcUnitForm({ orderId, initialUnits, formUnits, onChange, onPhotoIdsChange }: AcUnitFormProps) {
   const [dimensions, setDimensions] = useState<DimensionData>({
     unit_types: [],
     capacity_ranges: [],
@@ -57,7 +60,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
 
   const { control, watch, setValue, register } = useForm<{ units: AcUnitFormValue[] }>({
     defaultValues: {
-      units: initialUnits.length > 0 ? initialUnits : [],
+      units: (formUnits ?? initialUnits).length > 0 ? (formUnits ?? initialUnits) : [],
     },
   })
 
@@ -120,7 +123,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
         const isExistingComplete = isExisting && !!(initialUnit?.brand_id && initialUnit?.unit_type_id && initialUnit?.capacity_id)
         const hasData = (key: keyof AcUnitFormValue) => isExisting && !!initialUnit?.[key]
         
-        const selectedUnitTypeId = formValues[index]?.unit_type_id || undefined
+        const selectedUnitTypeId = selectValue(formValues[index]?.unit_type_id)
         const filteredCapacities = dimensions.capacity_ranges.filter(
           (cap) => cap.unit_type_id === selectedUnitTypeId
         )
@@ -208,7 +211,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                       <div className="space-y-1.5">
                         <Label htmlFor={`brand-${index}`}>Merk</Label>
                         <Select
-                          value={formValues[index]?.brand_id || undefined}
+                          value={selectValue(formValues[index]?.brand_id)}
                           onValueChange={(val) => {
                             const matched = dimensions.ac_brands.find((b) => b.brand_id === val)
                             setValue(`units.${index}.brand_id`, val)
@@ -232,14 +235,14 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                       <div className="space-y-1.5">
                         <Label>Jenis AC</Label>
                         <Select
-                          value={formValues[index]?.unit_type_id || undefined}
+                          value={selectedUnitTypeId}
                           onValueChange={(val) => {
                             const matched = dimensions.unit_types.find((ut) => ut.unit_type_id === val)
                             setValue(`units.${index}.unit_type_id`, val)
                             setValue(`units.${index}.ac_type`, matched ? matched.name : null)
                             // Reset capacity when unit type changes
-                            setValue(`units.${index}.capacity_id`, null)
-                            setValue(`units.${index}.capacity_label`, null)
+                            setValue(`units.${index}.capacity_id`, '')
+                            setValue(`units.${index}.capacity_label`, '')
                           }}
                           disabled={hasData('unit_type_id')}
                         >
@@ -259,12 +262,12 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
                       <div className="space-y-1.5">
                         <Label>Kapasitas</Label>
                         <Select
-                          value={formValues[index]?.capacity_id || undefined}
+                          value={selectValue(formValues[index]?.capacity_id)}
                           disabled={hasData('capacity_id') || !selectedUnitTypeId}
                           onValueChange={(val) => {
                             const matched = dimensions.capacity_ranges.find((cap) => cap.capacity_id === val)
                             setValue(`units.${index}.capacity_id`, val)
-                            setValue(`units.${index}.capacity_label`, matched ? matched.capacity_label : null)
+                            setValue(`units.${index}.capacity_label`, matched ? matched.capacity_label : '')
                           }}
                         >
                           <SelectTrigger className="h-11">

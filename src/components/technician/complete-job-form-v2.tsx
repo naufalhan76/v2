@@ -50,10 +50,12 @@ type JobContext = {
     ac_units?: {
       ac_unit_id: string
       brand?: string | null
+      brand_id?: string | null
       model_number?: string | null
       serial_number?: string | null
       installation_date?: string | null
       ac_type?: string | null
+      unit_type_id?: string | null
       capacity_id?: string | null
       capacity_btu?: number | null
       room_location?: string | null
@@ -74,6 +76,25 @@ type JobContext = {
 
 interface CompleteJobFormV2Props {
   orderId: string
+}
+
+function selectString(value: string | null | undefined): string {
+  return value ?? ''
+}
+
+function normalizeAcUnitSelects(unit: AcUnitReportItem): AcUnitReportItem {
+  return {
+    ...unit,
+    brand_id: selectString(unit.brand_id),
+    unit_type_id: selectString(unit.unit_type_id),
+    capacity_id: selectString(unit.capacity_id),
+    capacity_label: selectString(unit.capacity_label),
+    materials_used: (unit.materials_used ?? []).map((material) => ({
+      ...material,
+      category: selectString(material.category) || 'PARTS',
+      unit_of_measure: selectString(material.unit_of_measure) || 'pcs',
+    })),
+  }
 }
 
 export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
@@ -139,7 +160,11 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
                   units.push({
                     ac_unit_id: item.ac_unit_id,
                     brand: acUnitData?.brand || '',
+                    brand_id: selectString(acUnitData?.brand_id),
                     ac_type: acUnitData?.ac_type || '',
+                    unit_type_id: selectString(acUnitData?.unit_type_id),
+                    capacity_id: selectString(acUnitData?.capacity_id),
+                    capacity_label: '',
                     model_number: acUnitData?.model_number || '',
                     serial_number: acUnitData?.serial_number || '',
                     room_location: acUnitData?.room_location || '',
@@ -153,8 +178,9 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
                 }
               })
             }
-            setInitialAcUnits(units)
-            setAcUnits(units)
+            const normalizedUnits = units.map(normalizeAcUnitSelects)
+            setInitialAcUnits(normalizedUnits)
+            setAcUnits(normalizedUnits)
 
             // Default next service date to 3 months from now
             const d = new Date()
@@ -286,6 +312,7 @@ export function CompleteJobFormV2({ orderId }: CompleteJobFormV2Props) {
           <AcUnitForm
             orderId={orderId}
             initialUnits={initialAcUnits}
+            formUnits={acUnits}
             onChange={setAcUnits}
             onPhotoIdsChange={(ids) => { acUnitPhotoIdsRef.current = ids }}
           />
