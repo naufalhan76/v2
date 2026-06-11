@@ -180,3 +180,44 @@ describe('Technician UI Visual Contract (Red Baseline)', () => {
     })
   })
 })
+
+  describe('8. Wizard Visuals (JobCompletionWizard)', () => {
+    it.fails('[RED BASELINE] renders wizard step indicators with correct styling', () => {
+      render(<JobCompletionWizard orderId="WO-WIZ-001" />)
+      
+      // Step indicator (e.g., "1/3", "2/3")
+      const stepIndicator = screen.getByText(/Langkah/i)
+      expect(stepIndicator).toBeInTheDocument()
+      
+      // Should have a progress bar or step active styling
+      // E.g., looking for the class that represents the active step
+      const activeStep = screen.getByTestId('wizard-active-step')
+      expect(activeStep).toHaveClass('text-[#1C195F]', 'font-bold')
+    })
+  })
+
+  describe('9. Status Pills', () => {
+    it.fails('[RED BASELINE] renders status pills with correct rounded-full styling', () => {
+      const mockJob = {
+        order_id: 'WO-TEC-002',
+        status: 'Diproses',
+        canonical_status: 'IN_PROGRESS' as const,
+        scheduled_visit_date: new Date().toISOString(),
+        customers: {
+          customer_name: 'CV Alpha',
+          primary_contact_person: 'Mr. Alpha',
+          phone_number: '081234567891'
+        },
+        order_items: [],
+        technician_order: []
+      }
+
+      render(<TodayJobCard job={mockJob as any} isOffline={false} />)
+      
+      const statusPill = screen.getByText('Diproses')
+      expect(statusPill).toHaveClass('rounded-full', 'px-2', 'py-1', 'text-xs')
+      
+      // Since it's Diproses (in progress), it might have blue/green colors,
+      // but visual contract just checks for pill shape
+    })
+  })

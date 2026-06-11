@@ -20,3 +20,10 @@
 - `LocalJobSnapshot` is not currently defined as a type or IndexedDB store in `src/lib/offline/db.ts`; existing `drafts` store keeps opaque `{ orderId, formState, updatedAt }` only.
 - No E2E scope proof: `git diff --name-only | grep '^tests/e2e/'` returns empty output; no `tests/e2e/**` files changed/created.
 
+
+## [2026-06-11] Task 2 TDD RED Baseline
+- Setup RED baseline tests for the PWA offline workflow in `src/app/technician/__tests__/offline-workflow.test.tsx`.
+- Tests verify: `LocalJobSnapshot` prop acceptance by wizard, timer disabled until prechecks pass, and nearest-minute duration calculation. All tests use `it.fails` to represent expected failures before implementation.
+- Extended `src/app/technician/__tests__/visual-contract.test.tsx` with new assertions for wizard step indicators and rounded-full status pills.
+- Captured test execution outputs (all expected failures correctly identified by Vitest) to `.omo/evidence/technician-pwa-offline-task-2-red.txt` and `.omo/evidence/technician-pwa-offline-task-2-visual.txt`.
+- Confirmed no `tests/e2e/**` files created or modified. 
