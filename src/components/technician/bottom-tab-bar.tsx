@@ -43,45 +43,45 @@ export function BottomTabBar() {
   }
 
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-50 bg-white border-t border-slate-200 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
-      aria-label="Navigasi utama"
-    >
-      <div className="mx-auto flex max-w-md items-center justify-around h-16 px-2">
-        {tabs.map((tab) => {
-          const active = isActive(tab)
-          const Icon = tab.icon
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className="group flex flex-1 flex-col items-center justify-center gap-1 h-full transition-transform duration-200 active:scale-[0.96]"
-              aria-current={active ? 'page' : undefined}
-            >
-              <span className="relative flex items-center justify-center">
+    <div className="fixed inset-x-6 bottom-4 z-50 pb-safe pointer-events-none">
+      <nav
+        className="pointer-events-auto bg-white rounded-3xl shadow-[0_4px_15px_rgba(0,0,0,0.05)]"
+        aria-label="Navigasi utama"
+      >
+        <div className="mx-auto flex items-center justify-around h-[72px] px-2">
+          {tabs.map((tab) => {
+            const active = isActive(tab)
+            const Icon = tab.icon
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className={cn(
+                  'group flex flex-col items-center justify-center gap-1 transition-transform duration-200 active:scale-[0.96]',
+                  active ? 'bg-navy-deep text-white rounded-xl py-3 px-4 flex-1 font-semibold' : 'text-gray-600 font-semibold py-3 flex-1 text-center'
+                )}
+                aria-current={active ? 'page' : undefined}
+              >
                 <Icon
                   className={cn(
                     'h-5 w-5 transition-colors duration-200',
-                    active ? 'text-[#1C195F]' : 'text-slate-400'
+                    active ? 'text-white' : 'text-gray-400'
                   )}
                   aria-hidden="true"
                 />
-                {active && (
-                  <span className="absolute -top-1.5 h-1 w-1 rounded-full bg-[#1C195F]" />
-                )}
-              </span>
-              <span
-                className={cn(
-                  'text-xs font-medium transition-colors duration-200',
-                  active ? 'text-[#1C195F]' : 'text-slate-400'
-                )}
-              >
-                {tab.label}
-              </span>
-            </Link>
-          )
-        })}
-      </div>
-    </nav>
+                <span
+                  className={cn(
+                    'text-xs transition-colors duration-200',
+                    active ? 'text-white' : 'text-gray-500'
+                  )}
+                >
+                  {tab.label}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+    </div>
   )
 }

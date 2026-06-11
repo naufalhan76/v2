@@ -15,8 +15,14 @@ module.exports = {
   			'2xl': '1400px'
   		}
   	},
-  	extend: {
-    colors: {
+      extend: {
+     colors: {
+        'navy-deep': 'hsl(var(--navy-deep))',
+        'navy-light': 'hsl(var(--navy-light))',
+        'bg-gray-faded': 'hsl(var(--bg-gray-faded))',
+        'success-green': 'hsl(var(--success-green))',
+        'status-red-bg': 'hsl(var(--status-red-bg))',
+        'status-red-text': 'hsl(var(--status-red-text))',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

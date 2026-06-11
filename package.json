@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-    "type-check": "tsc --noEmit",
+    "type-check": "mkdir -p .next/types && tsc --noEmit",
     "clean": "rimraf .next node_modules/.cache",
     "reinstall": "rimraf node_modules bun.lock && bun install",
     "setup": "bun install && bunx shadcn@latest add button calendar card input label popover",

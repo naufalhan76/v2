@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#1b1938',
+  themeColor: '#1e1b5e',
 }
 
 export default function TechnicianLayout({
@@ -26,11 +26,11 @@ export default function TechnicianLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-background">
+    <div className="flex min-h-[max(884px,100dvh)] flex-col bg-bg-gray-faded">
       <ServiceWorkerRegister />
 
       {/* Main content area — bottom bar auto-hides on /complete routes */}
-      <main className="flex-1 overflow-y-auto pb-huge">
+      <main className="flex-1 overflow-y-auto pb-safe">
         <TechnicianShell>{children}</TechnicianShell>
       </main>
 
