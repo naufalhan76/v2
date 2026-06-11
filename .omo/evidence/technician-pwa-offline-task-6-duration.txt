@@ -1,0 +1,10 @@
+$ vitest "src/app/api/technician/jobs/[...id]/report-rpc-contract.test.ts" --run
+
+ RUN  v4.1.8 /home/ubuntu/projectpenting/webpanel
+
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  00:20:49
+   Duration  1.12s (transform 44ms, setup 87ms, import 29ms, tests 8ms, environment 813ms)
+

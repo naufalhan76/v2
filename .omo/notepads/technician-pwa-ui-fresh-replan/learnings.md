@@ -39,3 +39,9 @@
 - Background hydrate updates job context only; restored draft fields and `acUnits` are protected by `hasRestoredRef`, so local draft survives fresh server data.
 - Draft persistence is immediate after state/step changes but gated by `draftReady`, preventing initial empty state from overwriting saved drafts before restore.
 - Evidence captured: `.omo/evidence/technician-pwa-offline-task-5-offline-mount.txt` and `.omo/evidence/technician-pwa-offline-task-5-draft.txt`; required type-check command exited 0.
+
+## [2026-06-12] Task 6 precheck-gated timer
+- `JobCompletionWizard` now keeps `workStartedAt` in the local draft and derives elapsed display from that timestamp, so timer state survives remount without using interval ticks as source of truth.
+- Timer start is gated on the step-1 precheck: before-service photos must exist and required AC identity/location details must be complete before `Mulai Waktu` enables.
+- Report submit now sets `work_completed_at` at submit time and computes `work_duration_minutes` with `computeWorkDurationMinutes(workStartedAt, workCompletedAt)`.
+- Evidence captured: `.omo/evidence/technician-pwa-offline-task-6-gate.txt` and `.omo/evidence/technician-pwa-offline-task-6-duration.txt`; AC completion contract and type-check stayed green.

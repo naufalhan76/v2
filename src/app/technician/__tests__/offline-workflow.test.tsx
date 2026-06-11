@@ -1,5 +1,5 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 
 import { JobCompletionWizard } from '@/components/technician/job-completion-wizard'
@@ -8,6 +8,10 @@ import { computeWorkDurationMinutes } from '@/lib/offline/time'
 
 const snapshotStore = vi.hoisted(() => ({
   current: undefined as LocalJobSnapshot | undefined,
+}))
+
+const reportQueue = vi.hoisted(() => ({
+  lastPayload: undefined as any,
 }))
 
 vi.mock('@/lib/offline/snapshot', async (importOriginal) => {
@@ -33,6 +37,15 @@ vi.mock('@/lib/supabase-browser', () => ({
   }),
 }))
 
+vi.mock('@/lib/offline/sync-manager', () => ({
+  enqueueReport: vi.fn(async (record) => {
+    reportQueue.lastPayload = record.payload
+  }),
+  enqueuePhoto: vi.fn(async () => ({ id: 'signature-photo-id' })),
+  newIdempotencyKey: vi.fn(() => '11111111-1111-4111-8111-111111111111'),
+  drainQueue: vi.fn(async () => undefined),
+}))
+
 // Mocking Next.js router
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -48,7 +61,10 @@ vi.mock('@/components/ui/toast', () => ({
 }))
 
 vi.mock('@/components/technician/signature-pad', () => ({
-  SignaturePad: () => <div data-testid="signature-pad" />,
+  SignaturePad: ({ onBlobChange }: { onBlobChange: (blob: Blob) => void }) => {
+    setTimeout(() => onBlobChange(new Blob(['signature'], { type: 'image/png' })), 0)
+    return <div data-testid="signature-pad" />
+  },
 }))
 
 function makeSnapshot(overrides: Partial<LocalJobSnapshot> = {}): LocalJobSnapshot {
@@ -119,6 +135,7 @@ describe('Offline-First PWA Workflow (Red Baseline)', () => {
   beforeEach(() => {
     localStorage.clear()
     snapshotStore.current = undefined
+    reportQueue.lastPayload = undefined
     vi.unstubAllGlobals()
   })
 
@@ -205,22 +222,128 @@ describe('Offline-First PWA Workflow (Red Baseline)', () => {
   })
 
   describe('3. Timer Precheck Gate', () => {
-    it.fails('[RED BASELINE] timer Start button is disabled until before photos and AC fields pass', () => {
+    it('timer Start button is disabled until before photos and AC fields pass', async () => {
+      snapshotStore.current = makeSnapshot({ orderId: 'WO-OFFLINE-002' })
+      vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false })))
+
       render(<JobCompletionWizard orderId="WO-OFFLINE-002" />)
-      
-      // The timer start button should be present
-      const startTimerBtn = screen.getByRole('button', { name: /Mulai Waktu/i })
-      
-      // Initially disabled
+       
+      const startTimerBtn = await screen.findByRole('button', { name: /Mulai Waktu/i })
+       
       expect(startTimerBtn).toBeDisabled()
-      
-      // Should have some visual indicator of why it's disabled
       expect(screen.getByText(/Harus upload foto sebelum/i)).toBeInTheDocument()
-      expect(screen.getByText(/Lengkapi data AC/i)).toBeInTheDocument()
+    })
+
+    it('persists work_started_at and restores running timer from draft', async () => {
+      snapshotStore.current = makeSnapshot()
+      vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false })))
+      localStorage.setItem(
+        'msn-erp-wizard-draft-WO-OFFLINE-001',
+        JSON.stringify({
+          customerNameSigned: '',
+          notes: '',
+          nextServiceDate: '2026-09-11',
+          nextServiceNotes: '',
+          acUnits: [
+            {
+              ac_unit_id: 'ac-1',
+              brand: 'Daikin',
+              brand_id: '11111111-1111-4111-8111-111111111111',
+              ac_type: '',
+              unit_type_id: '22222222-2222-4222-8222-222222222222',
+              capacity_id: '33333333-3333-4333-8333-333333333333',
+              capacity_label: '1 PK',
+              model_number: '',
+              serial_number: '',
+              room_location: 'Kamar',
+              floor_level: '1',
+              position_detail: '',
+              skipped: false,
+              skip_reason: '',
+              photos_before: ['before-photo-id'],
+              photos_after: [],
+              notes: '',
+              materials_used: [],
+            },
+          ],
+          currentStep: 1,
+        })
+      )
+
+      const { unmount } = render(<JobCompletionWizard orderId="WO-OFFLINE-001" />)
+
+      const startTimerBtn = await screen.findByRole('button', { name: /Mulai Waktu/i })
+      expect(startTimerBtn).toBeEnabled()
+      fireEvent.click(startTimerBtn)
+
+      await waitFor(() => {
+        const draft = JSON.parse(localStorage.getItem('msn-erp-wizard-draft-WO-OFFLINE-001') || '{}')
+        expect(draft.workStartedAt).toEqual(expect.any(String))
+      })
+
+      unmount()
+      render(<JobCompletionWizard orderId="WO-OFFLINE-001" />)
+
+      expect(await screen.findByRole('button', { name: /Timer Berjalan/i })).toBeDisabled()
     })
   })
 
-  describe('4. Duration Calculation', () => {
+  describe('4. Report Duration Payload', () => {
+    it('submits work_completed_at and nearest-minute duration from persisted start timestamp', async () => {
+      snapshotStore.current = makeSnapshot()
+      vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false })))
+      const startedAt = new Date(Date.now() - 90_000).toISOString()
+      localStorage.setItem(
+        'msn-erp-wizard-draft-WO-OFFLINE-001',
+        JSON.stringify({
+          customerNameSigned: 'Nama Draft Lokal',
+          notes: '',
+          nextServiceDate: '2026-09-11',
+          nextServiceNotes: '',
+          workStartedAt: startedAt,
+          acUnits: [
+            {
+              ac_unit_id: 'ac-1',
+              brand: 'Daikin',
+              brand_id: '11111111-1111-4111-8111-111111111111',
+              ac_type: '',
+              unit_type_id: '22222222-2222-4222-8222-222222222222',
+              capacity_id: '33333333-3333-4333-8333-333333333333',
+              capacity_label: '1 PK',
+              model_number: '',
+              serial_number: '',
+              room_location: 'Kamar',
+              floor_level: '1',
+              position_detail: '',
+              skipped: false,
+              skip_reason: '',
+              photos_before: ['before-photo-id'],
+              photos_after: ['after-photo-id'],
+              notes: '',
+              materials_used: [],
+            },
+          ],
+          currentStep: 2,
+        })
+      )
+
+      render(<JobCompletionWizard orderId="WO-OFFLINE-001" />)
+
+      expect(await screen.findByText('Tanda Tangan Pelanggan')).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByTestId('signature-pad')).toBeInTheDocument())
+      fireEvent.click(screen.getByRole('button', { name: /Selanjutnya/i }))
+      fireEvent.click(await screen.findByRole('button', { name: /Selanjutnya/i }))
+      fireEvent.click(await screen.findByTestId('submit-button'))
+      fireEvent.click(await screen.findByRole('button', { name: /Ya, Simpan/i }))
+
+      await waitFor(() => expect(reportQueue.lastPayload).toBeDefined())
+      expect(reportQueue.lastPayload.work_started_at).toBe(startedAt)
+      expect(reportQueue.lastPayload.work_completed_at).toEqual(expect.any(String))
+      expect(reportQueue.lastPayload.work_duration_minutes).toBe(2)
+    })
+  })
+
+  describe('5. Duration Calculation', () => {
     it('rounds duration to the nearest minute', () => {
       const baseTime = new Date('2026-06-11T10:00:00.000Z')
       

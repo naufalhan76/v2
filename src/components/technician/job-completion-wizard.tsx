@@ -15,6 +15,7 @@ import {
   Check,
   AlertCircle,
   CheckCircle2,
+  Timer,
 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -42,6 +43,7 @@ import { SignaturePad } from '@/components/technician/signature-pad'
 import { SyncStatus } from '@/components/technician/sync-status'
 import { cn } from '@/lib/utils'
 import { getJobSnapshot, type LocalJobSnapshot } from '@/lib/offline/snapshot'
+import { computeWorkDurationMinutes } from '@/lib/offline/time'
 
 // Shape returned by GET /api/technician/jobs/[id]
 type JobContext = {
@@ -186,6 +188,8 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
   const [nextServiceDate, setNextServiceDate] = useState<string>('')
   const [nextServiceNotes, setNextServiceNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [workStartedAt, setWorkStartedAt] = useState<string | null>(null)
+  const [nowMs, setNowMs] = useState(() => Date.now())
 
   const [acUnits, setAcUnits] = useState<AcUnitReportItem[]>([])
   const [initialAcUnits, setInitialAcUnits] = useState<AcUnitReportItem[]>([])
@@ -220,6 +224,7 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
       notes,
       nextServiceDate,
       nextServiceNotes,
+      workStartedAt,
       acUnits,
       currentStep,
     }
@@ -228,7 +233,7 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
     } catch {
       // localStorage quota exceeded or private mode — silently skip
     }
-  }, [customerNameSigned, notes, nextServiceDate, nextServiceNotes, acUnits, currentStep, draftKey])
+  }, [customerNameSigned, notes, nextServiceDate, nextServiceNotes, workStartedAt, acUnits, currentStep, draftKey])
 
   useEffect(() => {
     if (!draftReady) return
@@ -244,6 +249,7 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
         if (draft.notes !== undefined) setNotes(draft.notes)
         if (draft.nextServiceDate !== undefined) setNextServiceDate(draft.nextServiceDate)
         if (draft.nextServiceNotes !== undefined) setNextServiceNotes(draft.nextServiceNotes)
+        if (draft.workStartedAt !== undefined) setWorkStartedAt(draft.workStartedAt)
         if (draft.acUnits !== undefined && Array.isArray(draft.acUnits)) setAcUnits(draft.acUnits)
         if (draft.currentStep !== undefined) {
           setCurrentStep(draft.currentStep)
@@ -258,6 +264,12 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
       setDraftReady(true)
     }
   }, [draftKey])
+
+  useEffect(() => {
+    if (!workStartedAt) return
+    const interval = window.setInterval(() => setNowMs(Date.now()), 1000)
+    return () => window.clearInterval(interval)
+  }, [workStartedAt])
 
   // ---------------------------------------------------------------------------
   // Fetch job context
@@ -472,6 +484,59 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
     [acUnits, initialAcUnits, customerNameSigned, signatureBlob]
   )
 
+  const getTimerPrecheckErrors = useCallback((): string[] => {
+    const errors: string[] = []
+    if (initialAcUnits.length === 0) return errors
+    if (acUnits.length !== initialAcUnits.length) {
+      errors.push('Lengkapi data AC')
+      return errors
+    }
+
+    let needsBeforePhoto = false
+    let needsAcDetails = false
+    acUnits.forEach((unit, idx) => {
+      if (unit.skipped) return
+      const initialUnit = initialAcUnits[idx]
+      const isExisting = !!unit.ac_unit_id
+      const isExistingComplete = isExisting && !!(initialUnit?.brand_id && initialUnit?.unit_type_id && initialUnit?.capacity_id)
+
+      if (!unit.photos_before || unit.photos_before.length === 0) {
+        needsBeforePhoto = true
+      }
+      if (isExistingComplete) return
+      if (!unit.brand_id || !unit.unit_type_id || !unit.capacity_id) {
+        needsAcDetails = true
+      }
+      if (!isExisting && (!unit.room_location || unit.room_location.trim().length === 0)) {
+        needsAcDetails = true
+      }
+    })
+
+    if (needsBeforePhoto) errors.push('Harus upload foto sebelum')
+    if (needsAcDetails) errors.push('Lengkapi data AC')
+    return errors
+  }, [acUnits, initialAcUnits])
+
+  const timerPrecheckErrors = getTimerPrecheckErrors()
+  const canStartWorkTimer = timerPrecheckErrors.length === 0
+  const elapsedSeconds = workStartedAt
+    ? Math.max(0, Math.floor((nowMs - new Date(workStartedAt).getTime()) / 1000))
+    : 0
+
+  function formatElapsed(seconds: number) {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  }
+
+  function startWorkTimer() {
+    if (!canStartWorkTimer || workStartedAt) return
+    const startedAt = new Date().toISOString()
+    setWorkStartedAt(startedAt)
+    setNowMs(Date.now())
+  }
+
   // ---------------------------------------------------------------------------
   // Navigation
   // ---------------------------------------------------------------------------
@@ -567,6 +632,11 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
         photos_after: [],
       }))
 
+      const workCompletedAt = new Date().toISOString()
+      const workDurationMinutes = workStartedAt
+        ? computeWorkDurationMinutes(workStartedAt, workCompletedAt)
+        : undefined
+
       const payload: TechnicianReportPayload = {
         idempotency_key: idempotencyKey,
         photos_before: [],
@@ -576,8 +646,9 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
         customer_signature_url: '',
         customer_name_signed: customerNameSigned,
         notes: notes,
-        work_started_at: null,
-        work_completed_at: new Date().toISOString(),
+        work_started_at: workStartedAt,
+        work_completed_at: workCompletedAt,
+        work_duration_minutes: workDurationMinutes,
         next_service_recommendation_date: nextServiceDate || null,
         next_service_recommendation_notes: nextServiceNotes || null,
         ac_units: mappedAcUnits,
@@ -671,6 +742,31 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
                 acUnitPhotoIdsRef.current = ids
               }}
             />
+            <div className="rounded-2xl border border-hairline bg-slate-50/70 p-4 text-center">
+              <div className="mb-2 flex items-center justify-center gap-2 text-sm font-medium text-[#1C195F]">
+                <Timer className="h-4 w-4" aria-hidden="true" />
+                <span>Waktu Kerja</span>
+              </div>
+              <p className="text-2xl font-mono font-bold tabular-nums text-slate-950">
+                {formatElapsed(elapsedSeconds)}
+              </p>
+              <Button
+                type="button"
+                className="mt-3 h-11 rounded-2xl"
+                variant={workStartedAt ? 'outline' : 'default'}
+                onClick={startWorkTimer}
+                disabled={!canStartWorkTimer || !!workStartedAt}
+              >
+                {workStartedAt ? 'Timer Berjalan' : 'Mulai Waktu'}
+              </Button>
+              {timerPrecheckErrors.length > 0 && (
+                <div className="mt-3 space-y-1 text-xs text-destructive">
+                  {timerPrecheckErrors.map((error) => (
+                    <p key={error}>{error}</p>
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
         )
 
