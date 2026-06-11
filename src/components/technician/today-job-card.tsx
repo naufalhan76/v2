@@ -54,6 +54,8 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
   const address = job.order_items?.[0]?.locations?.full_address ?? '-'
   const customerName = job.customers?.customer_name ?? 'Customer'
   const phoneRaw = job.customers?.phone_number || ''
+  
+  const totalAmount = job.order_items?.reduce((acc, item) => acc + ((item as any).total_price || 0), 0) ?? 0
 
   // Fetch technician profile to get name
   const { data: profile } = useQuery({
@@ -147,7 +149,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
       onMouseEnter={handleMouseEnter}
       onTouchStart={handleMouseEnter}
       className={cn(
-        'block rounded-lg border border-hairline transition-colors duration-200 overflow-hidden',
+        'block rounded-xl border border-hairline shadow-sm transition-colors duration-200 overflow-hidden',
         isActive
           ? 'border-primary bg-background ring-1 ring-primary/20'
           : 'bg-background hover:border-primary/40'
@@ -177,9 +179,12 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2 mb-1">
-              <div className="flex items-center gap-1.5 text-xs text-ink-mute">
-                <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-                <span className="tabular-nums tracking-tight font-medium">{scheduledTime}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{job.order_id}</span>
+                <div className="flex items-center gap-1.5 text-xs text-ink-mute">
+                  <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="tabular-nums tracking-tight font-medium">{scheduledTime}</span>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge status={job.status} size="sm" />
@@ -192,7 +197,14 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
               </div>
             </div>
 
-            <h3 className="font-bold text-xl mb-1 truncate text-balance">{customerName}</h3>
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <h3 className="font-bold text-xl truncate text-balance">{customerName}</h3>
+              {totalAmount > 0 && (
+                <span className="text-sm font-semibold text-slate-700 whitespace-nowrap mt-1">
+                  Rp {totalAmount.toLocaleString('id-ID')}
+                </span>
+              )}
+            </div>
 
             <div className="flex items-center gap-1.5 text-lg text-ink-mute mb-0.5">
               <Wrench className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />

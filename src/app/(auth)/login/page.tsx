@@ -8,9 +8,8 @@ import { createClient } from '@/lib/supabase-browser'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Mail, Lock } from 'lucide-react'
 import { LoadingOverlay } from '@/components/ui/loading-state'
 import { logger } from '@/lib/logger'
 
@@ -160,65 +159,85 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas-soft flex flex-col items-center justify-center p-4 sm:p-8">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
+    <LoadingOverlay
+      isLoading={isLoading}
+      message={loadingMessage || 'Memuat...'}
+      fullscreen
+    >
+    <div className="min-h-screen bg-canvas-soft flex items-center justify-center p-4 sm:p-8">
+      <div className="w-full max-w-6xl md:h-[700px] flex flex-col md:flex-row bg-card border-hairline shadow-lg rounded-2xl overflow-hidden">
+        
+        {/* Left Column - Hero Image */}
+        <div className="relative w-full md:w-1/2 h-48 sm:h-64 md:h-full flex-shrink-0 animate-in fade-in slide-in-from-left-4 duration-700 ease-out">
+          <div 
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: 'url("https://pasteimg.com/images/2026/06/10/imageaa28b3b8097f142f.png")' }}
+          />
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute top-6 left-6 md:top-8 md:left-8 z-10">
             <Image
-              src="/logo-msn.svg"
+              src="/logo-msn.svg?v=20260610-newlogo"
               alt="MSN ERP"
-              width={240}
-              height={94}
-              className="h-auto w-48 sm:w-56 mx-auto"
+              width={160}
+              height={63}
+              className="h-auto w-32 md:w-40 drop-shadow-md brightness-0 invert"
               priority
             />
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground mt-6">
-            Masuk ke MSN ERP
-          </h1>
-          <p className="text-muted-foreground font-medium">
-            Kelola pesanan, teknisi, dan faktur
-          </p>
+          </div>
         </div>
 
-        <LoadingOverlay
-          isLoading={isLoading}
-          message={loadingMessage || 'Memuat...'}
-        >
-          <Card className="border-hairline shadow-sm">
-            <CardHeader className="space-y-1 pb-4 text-center">
-              <CardDescription className="text-muted-foreground text-sm font-medium">
-                Selamat datang kembali
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
+        {/* Right Column - Form */}
+        <div className="w-full md:w-1/2 p-6 sm:p-10 md:p-16 flex flex-col justify-center animate-in fade-in slide-in-from-right-4 duration-700 ease-out">
+            <div className="w-full max-w-md mx-auto space-y-8">
+              <div className="space-y-2">
+                <h1 className="text-3xl md:text-4xl font-light tracking-tight text-foreground">
+                  Kelola pesanan, teknisi, dan faktur
+                </h1>
+                <p className="text-muted-foreground font-medium text-lg">
+                  Selamat datang kembali
+                </p>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value)
-                      if (touched.email) {
-                        setFieldErrors(prev => ({ ...prev, email: validateEmail(e.target.value) }))
-                      }
-                    }}
-                    onBlur={() => handleBlur('email')}
-                    aria-invalid={!!fieldErrors.email}
-                    aria-describedby={fieldErrors.email ? 'email-error' : undefined}
-                    disabled={isLoading}
-                  />
+                  <Label htmlFor="email" className="sr-only">Email</Label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      <Mail className="h-5 w-5" />
+                    </div>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value)
+                        if (touched.email) {
+                          setFieldErrors(prev => ({ ...prev, email: validateEmail(e.target.value) }))
+                        }
+                      }}
+                      onBlur={() => handleBlur('email')}
+                      aria-invalid={!!fieldErrors.email}
+                      aria-describedby={fieldErrors.email ? 'email-error' : undefined}
+                      disabled={isLoading}
+                      className="pl-10 h-12 rounded-xl bg-background border-input focus:ring-ring"
+                    />
+                  </div>
                   {touched.email && fieldErrors.email && (
-                    <p id="email-error" className="text-xs text-destructive mt-1 font-medium">{fieldErrors.email}</p>
+                    <p id="email-error" className="text-xs text-destructive font-medium">{fieldErrors.email}</p>
                   )}
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="password">Kata Sandi</Label>
+                  <Label htmlFor="password" className="sr-only">Kata Sandi</Label>
                   <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      <Lock className="h-5 w-5" />
+                    </div>
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
+                      placeholder="Kata Sandi"
                       value={password}
                       onChange={(e) => {
                         setPassword(e.target.value)
@@ -229,7 +248,7 @@ function LoginForm() {
                       onBlur={() => handleBlur('password')}
                       aria-invalid={!!fieldErrors.password}
                       aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-                      className="pr-10"
+                      className="pl-10 pr-10 h-12 rounded-xl bg-background border-input focus:ring-ring"
                       disabled={isLoading}
                     />
                     <button
@@ -238,22 +257,23 @@ function LoginForm() {
                       disabled={isLoading}
                       className="absolute right-3 top-1/2 -translate-y-1/2 z-10 cursor-pointer text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
                   {touched.password && fieldErrors.password && (
-                    <p id="password-error" className="text-xs text-destructive mt-1 font-medium">{fieldErrors.password}</p>
+                    <p id="password-error" className="text-xs text-destructive font-medium">{fieldErrors.password}</p>
                   )}
                 </div>
+
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full mt-2"
+                  className="w-full h-12 mt-2 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-md"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       Sedang masuk...
                     </>
                   ) : (
@@ -261,20 +281,20 @@ function LoginForm() {
                   )}
                 </Button>
               </form>
-            </CardContent>
-          </Card>
 
-          <p className="mt-6 text-center">
-            <Link
-              href="/forgot-password"
-              className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
-            >
-              Lupa kata sandi?
-            </Link>
-          </p>
-        </LoadingOverlay>
+              <div className="text-center pt-2">
+                <Link
+                  href="/forgot-password"
+                  className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+                >
+                  Lupa kata sandi?
+                </Link>
+              </div>
+            </div>
+        </div>
       </div>
     </div>
+    </LoadingOverlay>
   )
 }
 

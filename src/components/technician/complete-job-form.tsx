@@ -12,6 +12,7 @@ import { PhotoUpload } from './photo-upload'
 import { MaterialInput, type MaterialItem } from './material-input'
 import { SignaturePad } from './signature-pad'
 import { createClient } from '@/lib/supabase-browser'
+import { computeWorkDurationMinutes } from '@/lib/offline/time'
 
 interface CompleteJobFormProps {
   orderId: string
@@ -213,6 +214,11 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
       const signaturePath = sigData.path
 
       // 2. Submit report via API
+      const workCompletedAt = new Date().toISOString()
+      const workDurationMinutes = workStartedAt
+        ? computeWorkDurationMinutes(workStartedAt, workCompletedAt)
+        : undefined
+
       const res = await fetch(`/api/technician/jobs/${encodeURIComponent(orderId)}/report`, {
         method: 'POST',
         credentials: 'include',
@@ -226,7 +232,8 @@ export function CompleteJobForm({ orderId }: CompleteJobFormProps) {
           customer_name_signed: customerNameSigned.trim(),
           notes: notes.trim(),
           work_started_at: workStartedAt,
-          work_completed_at: new Date().toISOString(),
+          work_completed_at: workCompletedAt,
+          work_duration_minutes: workDurationMinutes,
           next_service_recommendation_date: nextServiceDate || null,
           next_service_recommendation_notes: nextServiceNotes.trim() || null,
         }),

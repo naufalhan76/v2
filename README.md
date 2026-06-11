@@ -16,6 +16,7 @@ Web-based management system for AC service operations. Includes admin dashboard 
 - Job list with status and customer details
 - Service report form: before/after photos, materials entry, digital signature
 - Push notifications for new jobs and updates
+- **AC Completion Contract**: Branch behavior per-AC unit — existing complete AC (read-only identity), existing incomplete (fill missing fields), new AC (full input). Source of truth: `order_items.ac_unit_id`.
 
 ### Invoicing & Payments
 - Proforma invoices (deposit before service)
@@ -60,6 +61,7 @@ Web-based management system for AC service operations. Includes admin dashboard 
 | **API** | Next.js Server Actions + REST API routes |
 | **Email** | Resend API |
 | **PDF** | jsPDF + html2canvas |
+| **Testing** | Vitest (unit) + Playwright (E2E) |
 | **Hosting** | Docker (VPS), Cloudflare Tunnel |
 | **Storage** | Supabase Storage |
 
@@ -114,11 +116,11 @@ for f in supabase/migrations/*.sql; do
 done
 ```
 
-Or run individually:
+Or run individually (in order):
 ```bash
 psql $POSTGRES_URL -f supabase/migrations/00_v2_schema.sql
-psql $POSTGRES_URL -f supabase/migrations/01_rls_policies.sql
-# ...all files through 05_identity_and_addon_requests.sql
+psql $POSTGRES_URL -f supabase/migrations/01_v2_rls.sql
+# ...all files through 09_technician_submit_report_rpc.sql
 ```
 
 ### 3. Run (Development)
@@ -143,6 +145,15 @@ Container runs on `127.0.0.1:3001`. Configure reverse proxy (Cloudflare Tunnel, 
 
 Connect repo to Vercel, set environment variables, deploy. Configure Vercel Cron for reminder generation.
 
+## Testing
+
+```bash
+bun run test           # Vitest unit tests (44+ test files)
+bun run test:ui        # Vitest UI mode
+bun run type-check     # tsc --noEmit (type safety gate)
+bun run test:e2e       # Playwright E2E (headed)
+```
+
 ## Scripts
 
 | Command | Purpose |
@@ -152,18 +163,21 @@ Connect repo to Vercel, set environment variables, deploy. Configure Vercel Cron
 | `bun run lint` | ESLint |
 | `bun run type-check` | TypeScript check |
 | `bun run clean` | Remove `.next` cache |
+| `bun run test` | Vitest unit tests |
+| `bun run test:e2e` | Playwright E2E tests |
 
 ## Documentation
 
 | Doc | Description |
 |-----|------------|
 | [docs/BUSINESS-GUIDE.md](docs/BUSINESS-GUIDE.md) | Order lifecycle, payment scenarios, do's & don'ts |
-| [docs/TECHNICAL-GUIDE.md](docs/TECHNICAL-GUIDE.md) | Architecture, data flow, state machine, API patterns |
+| [docs/TECHNICAL-GUIDE.md](docs/TECHNICAL-GUIDE.md) | Architecture, data flow, state machine, API patterns, AC completion contract |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture and database schema |
 | [docs/api.md](docs/api.md) | REST API reference |
 | [docs/PRD.md](docs/PRD.md) | Product requirements (Indonesian) |
 | [docs/REMINDER-SYSTEM.md](docs/REMINDER-SYSTEM.md) | Service reminder pipeline |
 | [docs/CRON-SETUP.md](docs/CRON-SETUP.md) | Cron configuration |
+| [docs/V1-vs-V2-comparison.md](docs/V1-vs-V2-comparison.md) | Migration diff from V1 production to V2 |
 
 ## License
 

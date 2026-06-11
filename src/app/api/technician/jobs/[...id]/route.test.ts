@@ -393,6 +393,92 @@ describe('POST /api/technician/jobs/[orderId]/report', () => {
       p_order_id: 'order-1',
       p_technician_id: 'tech-1',
       p_payload: expect.objectContaining({ idempotency_key: idempotencyKey }),
+      p_work_duration_minutes: null,
+    })
+  })
+
+  it('preserves catalog and manual addon fields in report payload snapshots', async () => {
+    const rpc = vi.fn(async () => ({ data: 'report-1', error: null }))
+    mockReportPost(rpc)
+
+    const catalogAddonId = '55555555-5555-4555-8555-555555555555'
+    const response = await POST(
+      postReportRequest({
+        ...reportPayload,
+        materials: [
+          {
+            addon_id: catalogAddonId,
+            name: 'Filter Drier',
+            qty: 2,
+            unit_price: 50000,
+            total: 100000,
+            category: 'PARTS',
+            unit_of_measure: 'pcs',
+            is_manual: false,
+          },
+          {
+            addon_id: null,
+            name: 'Custom Bracket',
+            qty: 1,
+            unit_price: 25000,
+            total: 25000,
+            category: 'PARTS',
+            unit_of_measure: 'pcs',
+            description: 'Non-standard size',
+            is_manual: true,
+          },
+        ],
+        ac_units: [
+          {
+            ...reportPayload.ac_units[0],
+            materials_used: [
+              {
+                addon_id: catalogAddonId,
+                name: 'Filter Drier',
+                qty: 2,
+                unit_price: 50000,
+                total: 100000,
+                category: 'PARTS',
+                unit_of_measure: 'pcs',
+                is_manual: false,
+              },
+              {
+                addon_id: null,
+                name: 'Custom Bracket',
+                qty: 1,
+                unit_price: 25000,
+                total: 25000,
+                category: 'PARTS',
+                unit_of_measure: 'pcs',
+                description: 'Non-standard size',
+                is_manual: true,
+              },
+            ],
+          },
+        ],
+      }),
+      { params: Promise.resolve({ id: ['order-1', 'report'] }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(rpc).toHaveBeenCalledWith('technician_submit_report_v2', {
+      p_order_id: 'order-1',
+      p_technician_id: 'tech-1',
+      p_payload: expect.objectContaining({
+        materials: expect.arrayContaining([
+          expect.objectContaining({ addon_id: catalogAddonId, is_manual: false }),
+          expect.objectContaining({ addon_id: null, is_manual: true }),
+        ]),
+        ac_units: [
+          expect.objectContaining({
+            materials_used: expect.arrayContaining([
+              expect.objectContaining({ addon_id: catalogAddonId, name: 'Filter Drier', unit_price: 50000, qty: 2, total: 100000, category: 'PARTS', unit_of_measure: 'pcs', is_manual: false }),
+              expect.objectContaining({ addon_id: null, name: 'Custom Bracket', unit_price: 25000, qty: 1, total: 25000, category: 'PARTS', unit_of_measure: 'pcs', description: 'Non-standard size', is_manual: true }),
+            ]),
+          }),
+        ],
+      }),
+      p_work_duration_minutes: null,
     })
   })
 

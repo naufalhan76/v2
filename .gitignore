@@ -107,6 +107,8 @@ skills-lock.json
 /supabase/.temp/
 # All test code (E2E specs, fixtures, dev harnesses) - not part of prod runtime
 /tests/
+src/**/*.test.ts
+src/**/*.test.tsx
 
 # Stray / backup files
 ...

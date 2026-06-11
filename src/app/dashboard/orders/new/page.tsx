@@ -885,7 +885,6 @@ export default function NewOrderAccordionPage() {
         location_id: l.location_id,
         ac_unit_id: l.ac_unit_id === '__new__' ? null : l.ac_unit_id,
         new_ac_temp_id: l.ac_unit_id === '__new__' ? l.unit_instance_id : undefined,
-        ...(l.ac_unit_id === '__new__' ? { new_ac_data: { brand: 'TBD', model_number: 'TBD' } } : {}),
         service_type_id: l.service_type_id,
         service_type: normalizeOrderServiceType(l.service_type_code),
         quantity: l.quantity,

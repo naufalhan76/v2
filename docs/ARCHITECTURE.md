@@ -1,7 +1,7 @@
 # Arsitektur Teknis — MSN ERP
 
 > **Technical Architecture Document**
-> Versi: 1.0 | Tanggal: 2026-06-01
+> Versi: 1.1 | Tanggal: 2026-06-10
 
 ---
 
@@ -610,19 +610,14 @@ Semua endpoint mengembalikan:
 
         <JobDetailContent>        ← state-driven actions
           <PhotoUpload />         ← arrival photos
-          <JobCompletionWizard>   ← 4-step wizard (default)
-            <AcUnitForm>
+          <JobCompletionWizard>   ← 4-step wizard (primary — AC completion contract)
+            <AcUnitForm>          ← branches on AC source (existing vs new)
               <PhotoUploadOffline /> ← IndexedDB
-              <MaterialInput />      ← addon catalog search
+              <MaterialInput />      ← addon catalog search + pending request
             </AcUnitForm>
             <SignaturePad />
             <SyncStatus />
           </JobCompletionWizard>
-
-          {/* V2 fallback */}
-          <CompleteJobFormV2 />   ← offline-first flat
-          {/* V1 legacy */}
-          <CompleteJobForm />     ← online-only
         </JobDetailContent>
 
         <HistoryList>
@@ -724,6 +719,7 @@ push_subscriptions ──── auth.users
 | `order_technicians` | M:N orders↔technicians | `order_id`, `technician_id`, `role` (lead/helper) |
 | `order_status_transitions` | State machine audit trail | `order_id`, `from/to_status`, `lat/lng`, `idempotency_key`, `arrival_photos` |
 | `service_reports` | Technician completion report | `order_id`, `ac_units` (JSONB), `materials` (JSONB), `actual_total_price`, `customer_signature_url`, `idempotency_key` |
+| `technician_submit_report_v2()` | RPC: submit report + AC contract enforcement | Enforces AC source: existing=read-only identity, new=required fields. Idempotent. |
 | `invoices` | Invoice (proforma/final, linked/blank) | `invoice_number`, `order_id` (nullable), `total_amount`, `status`, `invoice_type`, `source` |
 | `invoice_items` | Invoice line items | `invoice_id`, `item_type`, `description`, `qty`, `unit_price`, `total_price` |
 | `payment_records` | Payment tracking | `invoice_id`, `amount`, `payment_method`, `payment_date` |
@@ -872,14 +868,14 @@ Design system ditentukan di `DESIGN.md` dan diimplementasikan via Tailwind CSS v
 
 Server Actions untuk web (aman, otomatis session), REST API untuk mobile/external (standard contract). Iya ada duplikasi validasi, tapi trade-off dapat diterima karena masing-masing punya konsumen berbeda.
 
-### Yes, tiga implementasi job completion (V1, V2 flat, V2 wizard)
+### Yes, AC Completion Contract dengan branching per source
 
-Ini hasil iterasi cepat. Idealnya standardisasi ke wizard (paling baru, offline-first). V1 dan V2 flat bisa dideprekasi nanti.
+AC source ditentukan oleh `order_items.ac_unit_id`. Tiga branch: existing complete AC → read-only, existing incomplete → fill missing, new AC → full input. Ditegakkan di RPC `technician_submit_report_v2()`. Test coverage via 5 dedicated test files.
 
 ### Yes, IndexedDB untuk offline queue (bukan localStorage)
 
 IndexedDB bisa simpan blob (foto), punya kapasitas lebih besar, dan query by index. localStorage terbatas ke string 5-10MB.
 
-### No, tidak ada test framework aktif
+### Yes, test framework aktif (Vitest + Playwright)
 
-Playwright E2E files exist tapi belum dikonfigurasi. `package.json` tidak punya script test. Area improvement untuk fase berikutnya.
+44+ test files: Vitest untuk unit test server actions, komponen, validasi schema. Playwright untuk E2E dan QA smoke test. `tsc --noEmit` sebagai type safety gate.

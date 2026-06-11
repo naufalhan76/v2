@@ -44,10 +44,10 @@ export function BottomTabBar() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 bg-[#1b1938] pb-safe rounded-t-lg"
+      className="fixed inset-x-0 bottom-0 z-50 bg-white border-t border-slate-200 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
       aria-label="Navigasi utama"
     >
-      <div className="mx-auto flex max-w-md items-center justify-around h-huge px-2">
+      <div className="mx-auto flex max-w-md items-center justify-around h-16 px-2">
         {tabs.map((tab) => {
           const active = isActive(tab)
           const Icon = tab.icon
@@ -62,18 +62,18 @@ export function BottomTabBar() {
                 <Icon
                   className={cn(
                     'h-5 w-5 transition-colors duration-200',
-                    active ? 'text-violet-soft' : 'text-white/80'
+                    active ? 'text-[#1C195F]' : 'text-slate-400'
                   )}
                   aria-hidden="true"
                 />
                 {active && (
-                  <span className="absolute -bottom-1.5 h-1 w-1 rounded-full bg-violet-soft" />
+                  <span className="absolute -top-1.5 h-1 w-1 rounded-full bg-[#1C195F]" />
                 )}
               </span>
               <span
                 className={cn(
-                  'text-xs font-[540] transition-colors duration-200',
-                  active ? 'text-violet-soft' : 'text-white/80'
+                  'text-xs font-medium transition-colors duration-200',
+                  active ? 'text-[#1C195F]' : 'text-slate-400'
                 )}
               >
                 {tab.label}

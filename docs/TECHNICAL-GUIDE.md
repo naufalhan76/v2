@@ -12,8 +12,9 @@
 8. [Authentication & Authorization](#authentication--authorization)
 9. [Real-time Features](#real-time-features)
 10. [Offline Architecture](#offline-architecture)
-11. [Deployment](#deployment)
-12. [Monitoring & Troubleshooting](#monitoring--troubleshooting)
+11. [Testing](#testing)
+12. [Deployment](#deployment)
+13. [Monitoring & Troubleshooting](#monitoring--troubleshooting)
 
 ---
 
@@ -302,6 +303,50 @@ const { data } = await response.json()
 - Works offline (queued requests)
 - External client support
 - Bearer token auth
+
+---
+
+## AC Completion Contract
+
+### Source of Truth
+
+The AC source is determined by `order_items.ac_unit_id`:
+
+| `ac_unit_id` | Meaning | Behavior |
+|---|---|---|
+| Non-null (links to `ac_units`) | Existing AC unit | Identity fields pre-filled from DB |
+| `null` | New AC (added during service) | All identity fields editable |
+
+### Branching Behavior per AC Unit
+
+The `AcUnitForm` component branches on AC source:
+
+```
+order_items.ac_unit_id
+  ├── non-null → existing AC
+  │     ├── ac_units.brand, model_number, etc. ALL non-null → READ-ONLY ✓
+  │     └── any identity field null → WARNING + FILL MISSING ONLY
+  └── null → new AC → ALL identity fields editable (brand, model, serial, type, PK)
+```
+
+**Key files:**
+- Branching logic: `src/components/technician/ac-unit-form.tsx`
+- Orchestration: `src/components/technician/job-completion-wizard.tsx`
+- Draft guard: `hasRestoredRef` prevents fetched job context from overwriting saved drafts
+
+### Backend Enforcement (RPC)
+
+The `technician_submit_report_v2()` PostgreSQL function enforces:
+- **Existing AC**: identity fields from payload are IGNORED — only DB values used
+- **New AC**: identity fields must be non-empty
+- **Idempotency**: re-submit returns existing report_id (no duplicates)
+- **Status guard**: only allows transition `IN_PROGRESS → COMPLETED`
+
+### Addon Catalog Linkage
+
+- Catalog items: `addon_id` preserved in payload → `service_records.materials`
+- Manual items (not in catalog): pending addon request created via `createPendingAddonRequest()`
+- Request validation: handled by `material-input.tsx` (client) + `addon-requests.ts` (server action)
 
 ---
 
@@ -950,6 +995,52 @@ async function syncQueue() {
 
 ---
 
+## Testing
+
+The project has **44+ test files** across two frameworks:
+
+### Unit Tests (Vitest)
+
+```bash
+bun run test           # Run all unit tests
+bun run test:ui        # Vitest UI mode
+```
+
+**Coverage areas:**
+- Server actions (orders, invoices, customers, technicians, reminders, users)
+- API routes (technician jobs, report RPC contract)
+- Components (material-input, dashboard widgets, catalog)
+- Utility functions (order-utils, dashboard-data, auth-guards)
+- Form validation schemas
+- Invoice creation flow
+
+### E2E Tests (Playwright)
+
+```bash
+bun run test:e2e             # Headless
+bun run test:e2e:headed      # Visible browser
+bun run test:e2e:ui          # Playwright UI mode
+bun run test:qa              # QA smoke tests
+bun run test:qa:happy        # Happy path only
+```
+
+**Key test files for AC Completion Contract:**
+| File | What it tests |
+|------|--------------|
+| `src/app/api/technician/jobs/[...id]/route.test.ts` | Full API route: AC identity hydration, transition state guards, payload validation |
+| `src/app/api/technician/jobs/[...id]/report-rpc-contract.test.ts` | RPC fixture validation: existing complete (read-only), existing incomplete (fill missing), new AC (full input) |
+| `src/components/technician/ac-completion-contract.test.ts` | Component-level branching: read-only vs editable identity fields |
+| `src/components/technician/material-input.test.tsx` | Addon catalog linkage + manual addon request creation |
+| `src/lib/actions/addon-requests.test.ts` | Server-side addon request workflow |
+
+### Type Safety Gate
+
+```bash
+bun run type-check    # tsc --noEmit — must pass before deployment
+```
+
+---
+
 ## Deployment
 
 ### Docker Deployment
@@ -998,21 +1089,17 @@ docker compose up -d --build
 
 ### Database Migrations
 
-**Apply Migrations:**
+**Apply Migrations (all 17 files in order):**
 ```bash
-# Connect to Supabase
-psql $POSTGRES_URL
+for f in supabase/migrations/*.sql; do
+  psql $POSTGRES_URL -f "$f"
+done
+```
 
-# Run migrations in order
-\i supabase/migrations/00_v2_schema.sql
-\i supabase/migrations/01_rls_policies.sql
-\i supabase/migrations/02_seed_dimensions.sql
-\i supabase/migrations/03_seed_catalog_ac_service.sql
-\i supabase/migrations/03_seed_catalog_addons.sql
-\i supabase/migrations/03_seed_catalog_refrigerant.sql
-\i supabase/migrations/03_seed_catalog_spareparts.sql
-\i supabase/migrations/04_realtime.sql
-\i supabase/migrations/05_identity_and_addon_requests.sql
+Or individually:
+```bash
+psql $POSTGRES_URL -f supabase/migrations/00_v2_schema.sql
+# ...through 09_technician_submit_report_rpc.sql
 ```
 
 ---
@@ -1092,6 +1179,8 @@ This technical guide provides comprehensive documentation of the AC Service Mana
 3. **RBAC**: Role-based access control with database-level RLS
 4. **Real-time**: Supabase Postgres Change subscriptions for live updates
 5. **Offline-First**: IndexedDB queue for technician PWA
+6. **AC Completion Contract**: Source-of-truth `order_items.ac_unit_id` drives per-AC branching — existing complete (read-only), existing incomplete (fill missing), new AC (full input). Enforced via `technician_submit_report_v2()` RPC.
+7. **Test Suite**: 44+ Vitest unit tests + Playwright E2E, `tsc --noEmit` type gate
 
 **For Business Documentation:**
 - See [BUSINESS-GUIDE.md](BUSINESS-GUIDE.md) for order lifecycle and payment scenarios
@@ -1104,6 +1193,6 @@ This technical guide provides comprehensive documentation of the AC Service Mana
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** 2026-06-01  
+**Document Version:** 1.1  
+**Last Updated:** 2026-06-10  
 **Maintained By:** Engineering Team

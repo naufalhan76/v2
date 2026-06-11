@@ -31,6 +31,18 @@ export interface CreateAddonRequestInput {
   proposed_unit_price?: number | null
   unit_of_measure?: string | null
   description?: string | null
+  order_id?: string | null
+  report_idempotency_key?: string | null
+}
+
+const COMPLETION_REQUEST_MARKER = '[completion-report-addon-request]'
+
+function buildCompletionRequestDescription(input: CreateAddonRequestInput): string | null {
+  const description = input.description ?? null
+  if (!input.order_id || !input.report_idempotency_key) return description
+
+  const context = `${COMPLETION_REQUEST_MARKER} order_id=${input.order_id} idempotency_key=${input.report_idempotency_key}`
+  return description ? `${description}\n${context}` : context
 }
 
 export interface ApproveAddonRequestInput {
@@ -82,6 +94,7 @@ export async function getPendingAddonRequestCount() {
 export async function createAddonRequest(input: CreateAddonRequestInput) {
   try {
     const supabase = await createClient()
+    const description = buildCompletionRequestDescription(input)
 
     const { data: techData, error: techError } = await supabase
       .from('technicians')
@@ -93,6 +106,23 @@ export async function createAddonRequest(input: CreateAddonRequestInput) {
       return { success: false, error: 'Hanya teknisi yang dapat mengajukan part' }
     }
 
+    if (input.order_id && input.report_idempotency_key) {
+      const { data: existing, error: existingError } = await supabase
+        .from('addon_requests')
+        .select('*')
+        .eq('requested_by_technician_id', techData.technician_id)
+        .eq('category', input.category)
+        .eq('item_name', input.item_name)
+        .eq('proposed_unit_price', input.proposed_unit_price ?? null)
+        .eq('unit_of_measure', input.unit_of_measure ?? 'pcs')
+        .eq('status', 'PENDING')
+        .ilike('description', `%${input.report_idempotency_key}%`)
+        .maybeSingle()
+
+      if (existingError) throw existingError
+      if (existing) return { success: true, data: existing as AddonRequest, idempotent_replay: true }
+    }
+
     const { data, error } = await supabase
       .from('addon_requests')
       .insert({
@@ -101,7 +131,7 @@ export async function createAddonRequest(input: CreateAddonRequestInput) {
         item_name: input.item_name,
         proposed_unit_price: input.proposed_unit_price ?? null,
         unit_of_measure: input.unit_of_measure ?? 'pcs',
-        description: input.description ?? null,
+        description,
         status: 'PENDING',
       })
       .select()

@@ -181,7 +181,7 @@ export function PhotoUpload({
             ) : (
               <>
                 <Camera className="h-6 w-6 mb-1" />
-                <span className="text-xs">Tambah</span>
+                <span className="text-xs">Ambil Foto</span>
               </>
             )}
           </button>

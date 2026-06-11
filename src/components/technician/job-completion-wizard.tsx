@@ -1082,8 +1082,10 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
                   )}
                 </div>
                 <span
+                  {...(isActive ? { 'data-testid': 'wizard-active-step' } : {})}
                   className={cn(
-                    'text-xs font-semibold leading-4 transition-colors duration-200'
+                    'text-xs leading-4 transition-colors duration-200',
+                    isActive ? 'text-[#1C195F] font-bold' : 'font-semibold'
                   )}
                 >
                   {step.label}

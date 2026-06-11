@@ -48,12 +48,16 @@ export function HistoryJobCard({ job }: HistoryJobCardProps) {
   return (
     <Link
       href={`/technician/job/${job.order_id}`}
-      className="block rounded-lg border border-hairline bg-background p-4 transition-colors active:bg-canvas-soft hover:bg-canvas-soft"
+      className="block rounded-xl border border-hairline bg-background p-4 shadow-sm transition-colors active:bg-canvas-soft hover:bg-canvas-soft"
     >
-      {/* Top row: customer + status */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="font-medium text-sm truncate flex-1">{customerName}</h3>
+      {/* Top row: order id + status */}
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <span className="text-xs font-mono font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{job.order_id}</span>
         <StatusBadge status={job.status} size="sm" />
+      </div>
+
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <h3 className="font-bold text-lg truncate flex-1">{customerName}</h3>
       </div>
 
       {/* Details */}

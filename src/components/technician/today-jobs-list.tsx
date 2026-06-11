@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { TodayJobCard, type TodayJob } from './today-job-card'
 import { TodayJobsSkeleton } from './today-jobs-skeleton'
@@ -8,6 +9,7 @@ import { AlertCircle, Briefcase, CheckCircle2, Clock, RefreshCw } from 'lucide-r
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { OrderStatus } from '@/lib/order-status'
+import { jobToSnapshot, saveJobSnapshot } from '@/lib/offline/snapshot'
 
 async function fetchTodayJobs() {
   const res = await fetch('/api/technician/jobs/today', {
@@ -72,6 +74,18 @@ export function TodayJobsList() {
     staleTime: 60_000,
     refetchInterval: 60_000,
   })
+
+  useEffect(() => {
+    if (!Array.isArray(jobs)) return
+    void Promise.all(
+      jobs
+        .map(jobToSnapshot)
+        .filter((snapshot): snapshot is NonNullable<ReturnType<typeof jobToSnapshot>> => !!snapshot)
+        .map((snapshot) => saveJobSnapshot(snapshot))
+    ).catch((err) => {
+      console.warn('Failed to cache job snapshots', err)
+    })
+  }, [jobs])
 
   if (isLoading) {
     return <TodayJobsSkeleton />

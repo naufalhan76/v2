@@ -49,4 +49,28 @@ describe('technician_submit_report_v2 AC contract SQL', () => {
     expect(sql).toContain('AND status = \'IN_PROGRESS\'')
     expect(sql).toMatch(/INSERT INTO public\.order_status_transitions[\s\S]*idempotency_key[\s\S]*v_idempotency_key/)
   })
+
+  it('rejects stale catalog material selections before report insert', () => {
+    expect(sql).toContain("p_payload->'materials'")
+    expect(sql).toContain('FROM public.addon_catalog ac')
+    expect(sql).toContain('WHERE ac.addon_id = v_addon_id')
+    expect(sql).toContain('AND ac.is_active = true')
+    expect(sql).toContain('Catalog addon % is inactive, deleted, or unavailable. Refresh material catalog and reselect.')
+    expect(sql.indexOf('Catalog addon % is inactive')).toBeLessThan(sql.indexOf('INSERT INTO public.service_reports'))
+  })
+
+  it('accepts and stores work duration minutes on new report rows', () => {
+    expect(sql).toContain('p_work_duration_minutes INT DEFAULT NULL')
+    expect(sql).toContain('work_duration_minutes')
+    expect(sql).toContain("COALESCE(p_work_duration_minutes, NULLIF(p_payload->>'work_duration_minutes', '')::int)")
+  })
+
+  it('creates pending addon request rows for manual report materials after report idempotency guard', () => {
+    expect(sql).toMatch(/SELECT report_id INTO v_report_id[\s\S]*idempotency_key = v_idempotency_key[\s\S]*RETURN v_report_id;/)
+    expect(sql).toContain('INSERT INTO public.addon_requests')
+    expect(sql).toContain("COALESCE((v_material->>'is_manual')::boolean, false)")
+    expect(sql).toContain("NULLIF(v_material->>'addon_id', '') IS NULL")
+    expect(sql).toContain("'PENDING'")
+    expect(sql.indexOf('IF v_report_id IS NOT NULL')).toBeLessThan(sql.indexOf('INSERT INTO public.addon_requests'))
+  })
 })

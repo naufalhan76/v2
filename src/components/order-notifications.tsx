@@ -236,20 +236,20 @@ export function OrderNotifications() {
           )}
         </div>
 
-        <Tabs defaultValue="rescheduled" className="w-full">
+          <Tabs defaultValue="rescheduled" className="w-full">
           <TabsList className="w-full grid grid-cols-2 rounded-none border-b">
-            <TabsTrigger value="rescheduled" className="relative">
+            <TabsTrigger value="rescheduled" className="flex items-center justify-center gap-1.5">
               Dijadwal Ulang
               {unreadRescheduled > 0 && (
-                <span className="ml-2 h-5 w-5 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center">
+                <span className="inline-flex h-5 min-w-5 px-1 rounded-full bg-orange-500 text-white text-xs font-bold items-center justify-center leading-none">
                   {unreadRescheduled}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="cancelled" className="relative">
+            <TabsTrigger value="cancelled" className="flex items-center justify-center gap-1.5">
               Dibatalkan
               {unreadCancelled > 0 && (
-                <span className="ml-2 h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
+                <span className="inline-flex h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold items-center justify-center leading-none">
                   {unreadCancelled}
                 </span>
               )}

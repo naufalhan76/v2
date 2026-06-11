@@ -20,6 +20,7 @@ import { useState, useEffect } from 'react'
 import type { OrderStatus } from '@/lib/order-status'
 import { captureGps } from '@/lib/utils/geolocation'
 import type { GpsResult } from '@/lib/utils/geolocation'
+import { jobToSnapshot, lockJobSnapshot, saveJobSnapshot } from '@/lib/offline/snapshot'
 
 interface JobDetailContentProps {
   orderId: string
@@ -81,6 +82,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
   const transitionMutation = useMutation({
     mutationFn: async (params: { toStatus: string; arrivalPhotos?: string[] }) => {
+      await lockJobSnapshot(orderId)
       const payload = await buildTransitionPayload(params.toStatus, params.arrivalPhotos)
       return transitionJob(orderId, payload)
     },
@@ -89,6 +91,15 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
       queryClient.invalidateQueries({ queryKey: ['technician', 'jobs', 'today'] })
     },
   })
+
+  useEffect(() => {
+    if (!job) return
+    const snapshot = jobToSnapshot(job)
+    if (!snapshot) return
+    void saveJobSnapshot(snapshot).catch((err) => {
+      console.warn('Failed to cache job detail snapshot', err)
+    })
+  }, [job])
 
   // Work timer for IN_PROGRESS state
   useEffect(() => {
@@ -268,7 +279,11 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
         {canonicalStatus === 'IN_PROGRESS' && (
           <Button
-              onClick={() => router.push(`/technician/job/${orderId}/complete`)}
+              onClick={() => {
+                void lockJobSnapshot(orderId).finally(() => {
+                  router.push(`/technician/job/${orderId}/complete`)
+                })
+              }}
             className="w-full h-12 text-base font-medium transition-all duration-200 active:scale-[0.98]"
             size="lg"
           >

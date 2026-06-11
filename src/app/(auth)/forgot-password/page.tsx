@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-2">
             <Image
-              src="/logo-msn.svg"
+              src="/logo-msn.svg?v=20260610-newlogo"
               alt="MSN ERP"
               width={240}
               height={94}

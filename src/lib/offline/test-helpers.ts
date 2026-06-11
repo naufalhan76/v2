@@ -18,15 +18,16 @@ import { getDb, type PendingPhotoRecord, type PendingReportRecord } from './db'
 export async function clearAllOfflineData(): Promise<void> {
   const db = await getDb()
   const tx = db.transaction(
-    ['drafts', 'pendingPhotos', 'pendingReports', 'pendingTransitions', 'conflicts'],
+    ['drafts', 'pendingPhotos', 'pendingReports', 'pendingTransitions', 'conflicts', 'jobSnapshots'],
     'readwrite',
   )
   await Promise.all([
     tx.objectStore('drafts').clear(),
     tx.objectStore('pendingPhotos').clear(),
     tx.objectStore('pendingReports').clear(),
-    tx.objectStore('pendingTransitions').clear(),
-    tx.objectStore('conflicts').clear(),
+      tx.objectStore('pendingTransitions').clear(),
+      tx.objectStore('conflicts').clear(),
+      tx.objectStore('jobSnapshots').clear(),
   ])
   await tx.done
 }
@@ -147,15 +148,17 @@ export async function dumpOfflineData(): Promise<{
   pendingReports: number
   pendingTransitions: number
   conflicts: number
+  jobSnapshots: number
 }> {
   const db = await getDb()
-  const [drafts, pendingPhotos, pendingReports, pendingTransitions, conflicts] =
+  const [drafts, pendingPhotos, pendingReports, pendingTransitions, conflicts, jobSnapshots] =
     await Promise.all([
       db.count('drafts'),
       db.count('pendingPhotos'),
       db.count('pendingReports'),
       db.count('pendingTransitions'),
       db.count('conflicts'),
+      db.count('jobSnapshots'),
     ])
-  return { drafts, pendingPhotos, pendingReports, pendingTransitions, conflicts }
+  return { drafts, pendingPhotos, pendingReports, pendingTransitions, conflicts, jobSnapshots }
 }

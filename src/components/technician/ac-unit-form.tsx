@@ -367,7 +367,7 @@ export function AcUnitForm({ orderId, initialUnits, onChange, onPhotoIdsChange }
 
                       <MaterialInput
                         value={(formValues[index]?.materials_used as MaterialItem[]) || []}
-                        onChange={(mats) => setValue(`units.${index}.materials_used`, mats as any)}
+                        onChange={(mats) => setValue(`units.${index}.materials_used`, mats)}
                       />
 
                       <div className="space-y-1.5">

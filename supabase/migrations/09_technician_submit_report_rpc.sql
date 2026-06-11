@@ -4,7 +4,8 @@
 CREATE OR REPLACE FUNCTION public.technician_submit_report_v2(
   p_order_id TEXT,
   p_technician_id TEXT,
-  p_payload JSONB
+  p_payload JSONB,
+  p_work_duration_minutes INT DEFAULT NULL
 )
 RETURNS UUID
 LANGUAGE plpgsql
@@ -23,6 +24,8 @@ DECLARE
   v_existing_ac RECORD;
   v_order_item_id UUID;
   v_order_item_match_count INT;
+  v_material JSONB;
+  v_addon_id UUID;
 BEGIN
   -- 1. Extract and check idempotency
   v_idempotency_key := p_payload->>'idempotency_key';
@@ -69,6 +72,21 @@ BEGIN
     v_next_service_date := NULL;
   END IF;
 
+  FOR v_material IN SELECT * FROM jsonb_array_elements(COALESCE(p_payload->'materials', '[]'::jsonb)) LOOP
+    v_addon_id := NULLIF(v_material->>'addon_id', '')::uuid;
+
+    IF v_addon_id IS NOT NULL THEN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM public.addon_catalog ac
+        WHERE ac.addon_id = v_addon_id
+          AND ac.is_active = true
+      ) THEN
+        RAISE EXCEPTION 'Catalog addon % is inactive, deleted, or unavailable. Refresh material catalog and reselect.', v_addon_id;
+      END IF;
+    END IF;
+  END LOOP;
+
   -- 2. Insert into service_reports
   INSERT INTO public.service_reports (
     order_id,
@@ -83,6 +101,7 @@ BEGIN
     notes,
     work_started_at,
     work_completed_at,
+    work_duration_minutes,
     next_service_recommendation_date,
     next_service_recommendation_notes,
     idempotency_key
@@ -100,11 +119,36 @@ BEGIN
     COALESCE(p_payload->>'notes', ''),
     (p_payload->>'work_started_at')::timestamptz,
     (p_payload->>'work_completed_at')::timestamptz,
+    COALESCE(p_work_duration_minutes, NULLIF(p_payload->>'work_duration_minutes', '')::int),
     v_next_service_date,
     p_payload->>'next_service_recommendation_notes',
     v_idempotency_key
   )
   RETURNING report_id INTO v_report_id;
+
+  FOR v_material IN SELECT * FROM jsonb_array_elements(COALESCE(p_payload->'materials', '[]'::jsonb)) LOOP
+    IF COALESCE((v_material->>'is_manual')::boolean, false)
+      AND NULLIF(v_material->>'addon_id', '') IS NULL THEN
+      INSERT INTO public.addon_requests (
+        requested_by_technician_id,
+        category,
+        item_name,
+        proposed_unit_price,
+        unit_of_measure,
+        description,
+        status
+      )
+      VALUES (
+        p_technician_id,
+        COALESCE(NULLIF(v_material->>'category', ''), 'PARTS'),
+        v_material->>'name',
+        NULLIF(v_material->>'unit_price', '')::numeric,
+        COALESCE(NULLIF(v_material->>'unit_of_measure', ''), 'pcs'),
+        COALESCE(NULLIF(v_material->>'description', ''), 'Auto-submitted dari laporan ' || v_report_id::text),
+        'PENDING'
+      );
+    END IF;
+  END LOOP;
 
   FOR v_ac_unit IN SELECT * FROM jsonb_array_elements(COALESCE(p_payload->'ac_units', '[]'::jsonb)) LOOP
     v_ac_unit_id := v_ac_unit->>'ac_unit_id';
@@ -286,5 +330,5 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.technician_submit_report_v2(text, text, jsonb) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.technician_submit_report_v2(text, text, jsonb) TO service_role;
+GRANT EXECUTE ON FUNCTION public.technician_submit_report_v2(text, text, jsonb, int) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.technician_submit_report_v2(text, text, jsonb, int) TO service_role;

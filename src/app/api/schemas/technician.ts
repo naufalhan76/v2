@@ -155,6 +155,7 @@ export const TechnicianReportSchema = z.object({
   notes: z.string().optional().default(''),
   work_started_at: z.string().datetime().optional().nullable(),
   work_completed_at: z.string().datetime().optional().nullable(),
+  work_duration_minutes: z.number().int().optional(),
   next_service_recommendation_date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD')

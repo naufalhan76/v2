@@ -4,6 +4,7 @@ import { jsonSuccess, jsonError, handleApiError } from '@/app/api/utils'
 import { authenticateTechnician, isTechnicianContext } from '../../helpers'
 import { toCanonical, canTransition, type OrderStatus } from '@/lib/order-status'
 import { TechnicianTransitionSchema, TechnicianReportSchema } from '@/app/api/schemas/technician'
+import { computeWorkDurationMinutes } from '@/lib/offline/time'
 
 type MaybeArray<T> = T | T[] | null | undefined
 
@@ -211,7 +212,6 @@ export async function GET(
           ),
           ac_units (
             ac_unit_id,
-            customer_id,
             location_id,
             brand,
             brand_id,
@@ -446,6 +446,16 @@ export async function POST(
       }
 
       const payload = parsed.data
+      const rpcPayload =
+        payload.work_started_at && payload.work_completed_at
+          ? {
+              ...payload,
+              work_duration_minutes: computeWorkDurationMinutes(
+                payload.work_started_at,
+                payload.work_completed_at
+              ),
+            }
+          : payload
 
       const { data: assignment, error: assignError } = await supabase
         .from('order_technicians')
@@ -506,7 +516,8 @@ export async function POST(
       const { data: result, error: rpcError } = await supabase.rpc('technician_submit_report_v2', {
         p_order_id: orderId,
         p_technician_id: technicianId,
-        p_payload: payload,
+        p_payload: rpcPayload,
+        p_work_duration_minutes: rpcPayload.work_duration_minutes ?? null,
       })
 
       if (rpcError) {

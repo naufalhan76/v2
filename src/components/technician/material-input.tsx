@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
-import { Plus, Trash2, Package, Search, FilePlus } from 'lucide-react'
+import { Plus, Trash2, Package, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getActiveAddons } from '@/lib/actions/addons'
@@ -34,7 +34,7 @@ export interface MaterialItem {
   category?: string | null
   unit_of_measure?: string | null
   description?: string | null
-  is_manual?: boolean
+  is_manual: boolean
 }
 
 interface MaterialInputProps {
@@ -49,6 +49,51 @@ interface AddonOption {
   category: string
   unit_price: number
   unit_of_measure: string
+}
+
+export function mergeCatalogAddonSelection(
+  materials: MaterialItem[],
+  index: number,
+  addon: AddonOption
+): MaterialItem[] {
+  const currentQty = Math.max(materials[index]?.qty || 1, 1)
+  const existingIndex = materials.findIndex(
+    (item, itemIndex) => itemIndex !== index && !item.is_manual && item.addon_id === addon.addon_id
+  )
+
+  if (existingIndex >= 0) {
+    const updated = materials.filter((_, itemIndex) => itemIndex !== index)
+    const targetIndex = existingIndex > index ? existingIndex - 1 : existingIndex
+    const existing = updated[targetIndex]
+    const qty = Math.max(existing.qty || 1, 1) + currentQty
+    updated[targetIndex] = {
+      ...existing,
+      addon_id: addon.addon_id,
+      name: addon.item_name,
+      qty,
+      unit_price: addon.unit_price,
+      total: qty * addon.unit_price,
+      category: addon.category,
+      unit_of_measure: addon.unit_of_measure,
+      description: null,
+      is_manual: false,
+    }
+    return updated
+  }
+
+  const updated = [...materials]
+  updated[index] = {
+    addon_id: addon.addon_id,
+    name: addon.item_name,
+    qty: currentQty,
+    unit_price: addon.unit_price,
+    total: currentQty * addon.unit_price,
+    category: addon.category,
+    unit_of_measure: addon.unit_of_measure,
+    description: null,
+    is_manual: false,
+  }
+  return updated
 }
 
 const CATEGORIES = ['PARTS', 'FREON', 'LABOR', 'TRANSPORTATION', 'OTHER'] as const
@@ -233,24 +278,24 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
   )
 
   const updateRow = useCallback(
-    (index: number, field: keyof MaterialItem, fieldValue: any) => {
+    <K extends keyof MaterialItem>(index: number, field: K, fieldValue: string | number | boolean) => {
       const updated = [...value]
       const row = { ...updated[index] }
 
       if (field === 'name') {
-        row.name = fieldValue as string
+        row.name = String(fieldValue)
       } else if (field === 'qty') {
         row.qty = Math.max(1, Number(fieldValue) || 1)
       } else if (field === 'unit_price') {
         row.unit_price = Math.max(0, Number(fieldValue) || 0)
       } else if (field === 'category') {
-        row.category = fieldValue as string
+        row.category = String(fieldValue)
       } else if (field === 'unit_of_measure') {
-        row.unit_of_measure = fieldValue as string
+        row.unit_of_measure = String(fieldValue)
       } else if (field === 'description') {
-        row.description = fieldValue as string
+        row.description = String(fieldValue)
       } else if (field === 'is_manual') {
-        row.is_manual = fieldValue as boolean
+        row.is_manual = Boolean(fieldValue)
       }
 
       row.total = row.qty * row.unit_price
@@ -262,19 +307,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
 
   const handleAddonSelect = useCallback(
     (index: number, addon: AddonOption) => {
-      const updated = [...value]
-      updated[index] = {
-        addon_id: addon.addon_id,
-        name: addon.item_name,
-        qty: Math.max(value[index]?.qty || 1, 1),
-        unit_price: addon.unit_price,
-        total: (value[index]?.qty || 1) * addon.unit_price,
-        category: addon.category,
-        unit_of_measure: addon.unit_of_measure,
-        description: null,
-        is_manual: false,
-      }
-      onChange(updated)
+      onChange(mergeCatalogAddonSelection(value, index, addon))
     },
     [onChange, value]
   )
@@ -282,31 +315,40 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
   const handleRequestSubmit = async () => {
     if (!requestName.trim()) return
     setRequestSubmitting(true)
-    const result = await createAddonRequest({
-      category: requestCategory,
-      item_name: requestName.trim(),
-      unit_of_measure: requestUnit,
-      proposed_unit_price: requestPrice ? Number(requestPrice) : null,
-      description: requestDescription.trim() || null,
-    })
-    setRequestSubmitting(false)
-    if (result.success) {
-      toast({
-        title: 'Berhasil',
-        description: 'Permintaan part dikirim. Menunggu persetujuan admin.',
+    try {
+      const result = await createAddonRequest({
+        category: requestCategory,
+        item_name: requestName.trim(),
+        unit_of_measure: requestUnit,
+        proposed_unit_price: requestPrice ? Number(requestPrice) : null,
+        description: requestDescription.trim() || null,
       })
-      setRequestCategory('PARTS')
-      setRequestName('')
-      setRequestUnit('pcs')
-      setRequestPrice('')
-      setRequestDescription('')
-      setDialogOpen(false)
-    } else {
+      if (result.success) {
+        toast({
+          title: 'Berhasil',
+          description: 'Permintaan part dikirim. Menunggu persetujuan admin.',
+        })
+        setRequestCategory('PARTS')
+        setRequestName('')
+        setRequestUnit('pcs')
+        setRequestPrice('')
+        setRequestDescription('')
+        setDialogOpen(false)
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Gagal',
+          description: result.error || 'Gagal mengajukan part',
+        })
+      }
+    } catch (_error) {
       toast({
         variant: 'destructive',
         title: 'Gagal',
-        description: result.error || 'Gagal mengajukan part',
+        description: 'Terjadi kesalahan tidak terduga',
       })
+    } finally {
+      setRequestSubmitting(false)
     }
   }
 
@@ -431,6 +473,11 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                     <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                     Katalog: {item.category || 'PARTS'} ({formatCurrency(item.unit_price)}/{item.unit_of_measure || 'pcs'})
                   </p>
+                  {!item.addon_id && !disabled && (
+                    <p className="text-xs text-destructive">
+                      Pilih material aktif dari katalog sebelum mengirim laporan.
+                    </p>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>

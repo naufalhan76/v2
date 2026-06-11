@@ -145,7 +145,7 @@ export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => v
       <div className="flex h-14 items-center justify-between border-b border-hairline px-4 lg:h-[60px] lg:px-6 shrink-0 relative">
         {!isCollapsed && (
           <Link href="/dashboard" className="flex items-center justify-center flex-1">
-            <Image src="/logo-msn.svg" alt="MSN ERP" className="h-10 w-auto" width={160} height={40} priority />
+            <Image src="/logo-msn.svg?v=20260610-newlogo" alt="MSN ERP" className="h-10 w-auto" width={160} height={40} priority />
           </Link>
         )}
         <button

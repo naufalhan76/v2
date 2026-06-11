@@ -380,7 +380,17 @@ Special States:
 - Click "Complete Job" button
 - Fill service report form:
 
-**A. Photo Upload**
+**A. AC Unit Identity & Source Handling**
+- **Existing AC unit** (linked to database record):
+  - **Complete** (all identity fields filled): Fields are **read-only** — brand, model, serial number, type, PK power shown but not editable
+  - **Incomplete** (missing brand/model/etc.): Warning displayed + only missing fields editable
+  - Green checkmark indicates complete AC identity
+- **New AC unit** (added during service, no prior record):
+  - All identity fields editable: brand, model number, serial number, AC type, PK power
+  - These will be saved to `ac_units` table upon report submission
+- **Source of truth**: `order_items.ac_unit_id` in the database — non-null means existing, null means new
+
+**B. Photo Upload**
 - Take "Before" photos (minimum 2):
   - AC unit exterior
   - AC unit interior (before cleaning)
@@ -391,9 +401,9 @@ Special States:
 - Photos are compressed automatically (reduces upload size)
 - Works offline (photos queued for upload when online)
 
-**B. Material/Addon Entry**
+**C. Material/Addon Entry**
 - Add materials used during service:
-  - Select from addon catalog
+  - Select from addon catalog (preserves catalog `addon_id`)
   - Enter quantity used
   - System calculates total cost
   - Stock is deducted automatically
@@ -403,15 +413,16 @@ Special States:
   - Submit request to admin for approval
   - Admin reviews and approves with final price and stock
   - Approved part appears in addon catalog
+  - Manual items create a pending addon request automatically
 
-**C. Service Findings**
+**D. Service Findings**
 - Document service findings:
   - AC condition (good, fair, poor)
   - Issues found (refrigerant leak, dirty filter, etc.)
   - Recommendations for customer
   - Next service due date (system generates reminder)
 
-**D. Customer Signature**
+**E. Customer Signature**
 - Capture customer signature on mobile device
 - Signature confirms service completion
 - Required before submission
@@ -434,6 +445,7 @@ Special States:
 - ✅ Get customer signature before leaving site
 - ✅ Submit report immediately after service
 - ✅ Request new parts if not in catalog (don't skip)
+- ✅ Verify AC identity fields: existing AC = correct data shown; new AC = all fields filled
 
 **DON'T:**
 - ❌ Skip photo upload (required for quality control)
@@ -1103,6 +1115,6 @@ This business process guide covers the complete order lifecycle from creation to
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** 2026-06-01  
+**Document Version:** 1.1  
+**Last Updated:** 2026-06-10  
 **Maintained By:** Operations Team

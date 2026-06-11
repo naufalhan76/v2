@@ -1,5 +1,4 @@
-/// <reference path="../bun-test.d.ts" />
-
+import type {} from '../bun-test'
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
 import { vi } from 'vitest'
 
