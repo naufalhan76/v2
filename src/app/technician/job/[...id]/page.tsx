@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 import { JobDetailContent } from '@/components/technician/job-detail-content'
 import { JobCompletionWizard } from '@/components/technician/job-completion-wizard'
 import { JobDetailSkeleton } from '@/components/technician/job-detail-skeleton'
-import { cn } from '@/lib/utils'
 
 interface JobDetailPageProps {
   params: Promise<{ id: string | string[] }>
@@ -18,12 +17,12 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   const id = idSegments.map(decodeURIComponent).join('/')
 
   return (
-    <div className={cn('min-h-full bg-background', !isComplete && '-mx-4 -my-4')}>
+    <div className="min-h-full bg-bg-gray-faded pb-20">
       <Suspense fallback={<JobDetailSkeleton />}>
         {isComplete ? (
           <JobCompletionWizard orderId={id} />
         ) : (
-          <div className="px-4 py-4">
+          <div className="px-6 pt-6 pb-20">
             <JobDetailContent orderId={id} />
           </div>
         )}

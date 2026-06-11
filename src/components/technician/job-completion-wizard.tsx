@@ -117,6 +117,29 @@ const STEPS = [
   { id: 4, label: 'Review', icon: ClipboardCheck },
 ] as const
 
+function selectString(value: string | null | undefined): string {
+  return value ?? ''
+}
+
+function normalizeMaterialSelects(materials: AcUnitReportItem['materials_used']): AcUnitReportItem['materials_used'] {
+  return (materials ?? []).map((material) => ({
+    ...material,
+    category: selectString(material.category) || 'PARTS',
+    unit_of_measure: selectString(material.unit_of_measure) || 'pcs',
+  }))
+}
+
+function normalizeAcUnitSelects(unit: AcUnitReportItem): AcUnitReportItem {
+  return {
+    ...unit,
+    brand_id: selectString(unit.brand_id),
+    unit_type_id: selectString(unit.unit_type_id),
+    capacity_id: selectString(unit.capacity_id),
+    capacity_label: selectString(unit.capacity_label),
+    materials_used: normalizeMaterialSelects(unit.materials_used),
+  }
+}
+
 function snapshotToJobContext(snapshot: LocalJobSnapshot): JobContext {
   return {
     order_id: snapshot.orderId,
@@ -140,18 +163,18 @@ function snapshotToJobContext(snapshot: LocalJobSnapshot): JobContext {
         ? {
             ac_unit_id: item.acUnit.id ?? item.acUnitId ?? '',
             brand: item.acUnit.brand,
-            brand_id: item.acUnit.brandId,
+            brand_id: selectString(item.acUnit.brandId),
             model_number: item.acUnit.modelNumber,
             serial_number: item.acUnit.serialNumber,
             installation_date: item.acUnit.installationDate,
             ac_type: item.acUnit.acType,
-            unit_type_id: item.acUnit.unitTypeId,
-            capacity_id: item.acUnit.capacityId,
+            unit_type_id: selectString(item.acUnit.unitTypeId),
+            capacity_id: selectString(item.acUnit.capacityId),
             room_location: item.acUnit.roomLocation,
             floor_level: item.acUnit.floorLevel,
             position_detail: item.acUnit.positionDetail,
             capacity_ranges: item.acUnit.capacityLabel
-              ? { capacity_label: item.acUnit.capacityLabel }
+              ? { capacity_label: selectString(item.acUnit.capacityLabel) }
               : null,
           }
         : null,
@@ -250,7 +273,9 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
         if (draft.nextServiceDate !== undefined) setNextServiceDate(draft.nextServiceDate)
         if (draft.nextServiceNotes !== undefined) setNextServiceNotes(draft.nextServiceNotes)
         if (draft.workStartedAt !== undefined) setWorkStartedAt(draft.workStartedAt)
-        if (draft.acUnits !== undefined && Array.isArray(draft.acUnits)) setAcUnits(draft.acUnits)
+        if (draft.acUnits !== undefined && Array.isArray(draft.acUnits)) {
+          setAcUnits(draft.acUnits.map(normalizeAcUnitSelects))
+        }
         if (draft.currentStep !== undefined) {
           setCurrentStep(draft.currentStep)
           setVisitedSteps(new Set([...Array.from({ length: draft.currentStep }, (_, i) => i + 1)]))
@@ -297,11 +322,11 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
             units.push({
               ac_unit_id: item.ac_unit_id,
               brand: acUnitData?.brand || '',
-              brand_id: acUnitData?.brand_id || null,
+              brand_id: selectString(acUnitData?.brand_id),
               ac_type: acUnitData?.ac_type || '',
-              unit_type_id: acUnitData?.unit_type_id || null,
-              capacity_id: acUnitData?.capacity_id || null,
-              capacity_label: capLabel || null,
+              unit_type_id: selectString(acUnitData?.unit_type_id),
+              capacity_id: selectString(acUnitData?.capacity_id),
+              capacity_label: selectString(capLabel),
               model_number: acUnitData?.model_number || '',
               serial_number: acUnitData?.serial_number || '',
               room_location: acUnitData?.room_location || '',
@@ -320,11 +345,11 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
               units.push({
                 ac_unit_id: '',
                 brand: '',
-                brand_id: null,
+                brand_id: '',
                 ac_type: '',
-                unit_type_id: null,
-                capacity_id: null,
-                capacity_label: null,
+                unit_type_id: '',
+                capacity_id: '',
+                capacity_label: '',
                 model_number: '',
                 serial_number: '',
                 room_location: '',
@@ -737,13 +762,14 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
             <AcUnitForm
               orderId={orderId}
               initialUnits={initialAcUnits}
+              formUnits={acUnits}
               onChange={setAcUnits}
               onPhotoIdsChange={(ids) => {
                 acUnitPhotoIdsRef.current = ids
               }}
             />
             <div className="rounded-2xl border border-hairline bg-slate-50/70 p-4 text-center">
-              <div className="mb-2 flex items-center justify-center gap-2 text-sm font-medium text-[#1C195F]">
+              <div className="mb-2 flex items-center justify-center gap-2 text-sm font-medium text-navy-deep">
                 <Timer className="h-4 w-4" aria-hidden="true" />
                 <span>Waktu Kerja</span>
               </div>
@@ -998,7 +1024,7 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
 
   return (
     <div className="-mx-4 -my-4 min-h-dvh bg-slate-50 pb-28">
-      <header className="rounded-b-[40px] bg-[#1C195F] px-4 pb-16 pt-4 text-white shadow-sm">
+      <header className="rounded-b-[40px] bg-navy-deep px-4 pb-16 pt-4 text-white shadow-sm">
         <div className="mx-auto max-w-2xl space-y-5">
           <div className="flex items-center justify-between gap-3">
             <Button variant="ghost" size="sm" className="h-10 rounded-full bg-white/10 px-3 text-white hover:bg-white/15 hover:text-white" asChild>
@@ -1024,7 +1050,7 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
 
       <main className="mx-auto -mt-10 max-w-2xl space-y-4 px-4">
         {draftRestored && (
-          <div className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-white p-4 text-sm text-[#1C195F] shadow-sm">
+          <div className="flex items-start gap-3 rounded-2xl border border-navy-deep/10 bg-white p-4 text-sm text-navy-deep shadow-sm">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <p className="font-semibold">Draft dipulihkan</p>
@@ -1041,12 +1067,12 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
           </div>
           <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
             <div
-              className="h-full rounded-full bg-[#1C195F] transition-all duration-300"
+              className="h-full rounded-full bg-navy-deep transition-all duration-300"
               style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
             />
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {STEPS.map((step) => {
             const Icon = step.icon
             const isActive = step.id === currentStep
@@ -1059,9 +1085,9 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
                 type="button"
                 onClick={() => isClickable && goToStep(step.id)}
                 className={cn(
-                  'flex min-w-[124px] items-center gap-2 rounded-2xl border px-3 py-2 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C195F] focus-visible:ring-offset-2',
-                  isActive && 'border-[#1C195F] bg-[#1C195F] text-white shadow-sm',
-                  isCompleted && !isActive && 'border-[#1C195F]/20 bg-[#1C195F]/5 text-[#1C195F]',
+                  'flex min-w-[max-content] items-center gap-2 rounded-2xl border px-3 py-2 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-deep focus-visible:ring-offset-2',
+                  isActive && 'border-navy-deep bg-navy-deep text-white shadow-sm',
+                  isCompleted && !isActive && 'border-navy-deep/20 bg-navy-deep/5 text-navy-deep',
                   !isActive && !isCompleted && 'border-slate-200 bg-slate-50 text-slate-500',
                   !isClickable && 'cursor-default'
                 )}
@@ -1070,8 +1096,8 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
                 <div
                   className={cn(
                     'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-200',
-                    isActive && 'bg-white text-[#1C195F]',
-                    isCompleted && !isActive && 'bg-[#1C195F] text-white',
+                    isActive && 'bg-white text-navy-deep',
+                    isCompleted && !isActive && 'bg-navy-deep text-white',
                     !isActive && !isCompleted && 'bg-white text-slate-400'
                   )}
                 >
@@ -1085,7 +1111,7 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
                   {...(isActive ? { 'data-testid': 'wizard-active-step' } : {})}
                   className={cn(
                     'text-xs leading-4 transition-colors duration-200',
-                    isActive ? 'text-[#1C195F] font-bold' : 'font-semibold'
+                    isActive ? 'text-navy-deep font-bold' : 'font-semibold'
                   )}
                 >
                   {step.label}
@@ -1140,7 +1166,7 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
           {currentStep < 4 ? (
             <Button
               type="button"
-              className={cn('h-12 rounded-2xl bg-[#1C195F] text-white hover:bg-[#171452]', currentStep === 1 ? 'w-full' : 'flex-1')}
+              className={cn('h-12 rounded-2xl bg-navy-deep text-white hover:bg-navy-light', currentStep === 1 ? 'w-full' : 'flex-1')}
               onClick={goNext}
               disabled={submitting}
             >
@@ -1150,7 +1176,7 @@ export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardPr
           ) : (
             <Button
               type="button"
-              className="h-12 flex-1 rounded-2xl bg-[#1C195F] text-white hover:bg-[#171452]"
+              className="h-12 flex-1 rounded-2xl bg-navy-deep text-white hover:bg-navy-light"
               size="lg"
               disabled={submitting}
               onClick={handleSubmitClick}

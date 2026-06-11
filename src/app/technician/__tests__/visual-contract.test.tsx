@@ -11,7 +11,6 @@ import { PhotoUpload } from '@/components/technician/photo-upload'
 import { ConflictResolution } from '@/components/technician/conflict-resolution'
 import { JobCompletionWizard } from '@/components/technician/job-completion-wizard'
 
-// Mock dependencies
 vi.mock('next/navigation', () => ({
   usePathname: () => '/technician',
   useRouter: () => ({
@@ -46,52 +45,57 @@ vi.mock('@/components/technician/sync-status', () => ({
 
 describe('Technician UI Visual Contract (Red Baseline)', () => {
   describe('1. Shell/Nav (BottomTabBar)', () => {
-    it('[RED BASELINE] matches the fixed bottom nav reference design (expects active dot and #1C195F color)', () => {
+    it('matches the new floating rounded island nav design', () => {
       render(<BottomTabBar />)
       const nav = screen.getByRole('navigation')
       
-      expect(nav).toHaveClass('fixed', 'bottom-0', 'inset-x-0', 'pb-safe')
+      const container = nav.parentElement
+      expect(container).toHaveClass('fixed', 'bottom-4', 'inset-x-6', 'z-50')
       
-      // Active indicator dot (currently failing - missing in UI)
-      const selectedTab = screen.getByText('Hari Ini').closest('a')
-      expect(selectedTab?.querySelector('.bg-\\[\\#1C195F\\]')).toBeInTheDocument()
-
-      // Active color (currently failing)
-      const textSpan = screen.getByText('Hari Ini')
-      expect(textSpan).toHaveClass('text-[#1C195F]')
+      expect(nav).toHaveClass('pointer-events-auto', 'bg-white', 'rounded-3xl', 'shadow-[0_4px_15px_rgba(0,0,0,0.05)]')
     })
   })
 
   describe('2. Today View (TechnicianTodayPage)', () => {
-    it('[RED BASELINE] matches navy curved header and overlap cards layout (expects -mt-6 overlap)', () => {
+    it('matches tokenized navy header and overlap cards layout (-mt-10 overlap)', () => {
       render(<TechnicianTodayPage />)
       
       const homePage = screen.getByTestId('technician-home')
       
-      const headerBanner = homePage.querySelector('.bg-\\[\\#1C195F\\]')
+      const headerBanner = homePage.querySelector('.bg-navy-deep')
       expect(headerBanner).toBeInTheDocument()
       expect(headerBanner).toHaveClass('rounded-b-[40px]', 'text-white')
 
       const listContainer = screen.getByTestId('today-jobs-list').parentElement
-      expect(listContainer).toHaveClass('-mt-6') 
+      expect(listContainer).toHaveClass('-mt-10') 
       expect(listContainer).toHaveClass('relative', 'z-10') 
     })
   })
 
   describe('3. History View', () => {
-    it('matches history visual contract with right structure', () => {
+    it('matches tokenized history visual contract with layout structure', () => {
       render(<TechnicianHistoryPage />)
       const historyPage = screen.getByTestId('technician-history')
-      expect(historyPage).toHaveClass('bg-canvas-soft')
+      expect(historyPage).toHaveClass('bg-bg-gray-faded')
+      
+      const headerBanner = historyPage.querySelector('.bg-navy-deep')
+      expect(headerBanner).toBeInTheDocument()
+      expect(headerBanner).toHaveClass('rounded-b-[40px]', 'text-white')
+
       expect(screen.getByText('Riwayat Pekerjaan')).toBeInTheDocument()
     })
   })
 
   describe('4. Profile View', () => {
-    it('matches profile header layout contract', () => {
+    it('matches tokenized profile header layout contract', () => {
       render(<TechnicianProfilePage />)
       const profilePage = screen.getByTestId('technician-profile')
-      expect(profilePage).toHaveClass('bg-background')
+      expect(profilePage).toHaveClass('bg-bg-gray-faded')
+      
+      const headerBanner = profilePage.querySelector('.bg-navy-deep')
+      expect(headerBanner).toBeInTheDocument()
+      expect(headerBanner).toHaveClass('rounded-b-[40px]', 'text-white')
+
       expect(screen.getByText('Profil')).toBeInTheDocument()
     })
   })
@@ -203,7 +207,7 @@ describe('Technician UI Visual Contract (Red Baseline)', () => {
       // Should have a progress bar or step active styling
       // E.g., looking for the class that represents the active step
       const activeStep = screen.getByTestId('wizard-active-step')
-      expect(activeStep).toHaveClass('text-[#1C195F]', 'font-bold')
+      expect(activeStep).toHaveClass('text-navy-deep', 'font-bold')
     })
   })
 
