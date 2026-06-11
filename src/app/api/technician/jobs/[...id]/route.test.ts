@@ -19,6 +19,7 @@ vi.mock('@/lib/logger', () => ({
 }))
 
 const { createClient } = await import('../../../../../lib/supabase-server')
+const technicianHelpers = await import('../../helpers')
 
 type QueryResult = { data: unknown; error: unknown }
 
@@ -54,7 +55,7 @@ class QueryBuilder {
   }
 }
 
-function createSupabaseMock(results: Record<string, QueryResult>, rpc = vi.fn()) {
+function createSupabaseMock(results: Record<string, QueryResult>, rpc: unknown = vi.fn()) {
   const selects: Array<{ table: string; columns: string }> = []
   const client = {
     from: vi.fn((table: string) => new QueryBuilder(table, results, selects)),
@@ -354,7 +355,7 @@ describe('POST /api/technician/jobs/[orderId]/report', () => {
     ],
   }
 
-  function mockReportPost(rpc = vi.fn(async () => ({ data: 'report-1', error: null }))) {
+  function mockReportPost(rpc: ReturnType<typeof vi.fn> = vi.fn(async () => ({ data: 'report-1', error: null }))) {
     return createSupabaseMock(
       {
         order_technicians: { data: { role: 'lead' }, error: null },
@@ -364,6 +365,84 @@ describe('POST /api/technician/jobs/[orderId]/report', () => {
       rpc
     )
   }
+
+  function expectStructuredError(body: unknown, message: string) {
+    expect(body).toMatchObject({ success: false })
+    expect((body as { error?: string }).error).toContain(message)
+  }
+
+  it('decodes catch-all encoded slash order id exactly once before report RPC', async () => {
+    const rpc = vi.fn(async () => ({ data: 'report-encoded', error: null }))
+    mockReportPost(rpc)
+
+    const response = await POST(postReportRequest(reportPayload), {
+      params: Promise.resolve({ id: ['REQ%2F2026-06%2F996730', 'report'] }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(rpc).toHaveBeenCalledWith('technician_submit_report_v2', expect.objectContaining({
+      p_order_id: 'REQ/2026-06/996730',
+    }))
+  })
+
+  it('returns structured 401 when technician auth is missing', async () => {
+    vi.mocked(technicianHelpers.authenticateTechnician).mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), { status: 401 }) as never
+    )
+    const rpc = vi.fn()
+    mockReportPost(rpc)
+
+    const response = await POST(postReportRequest(reportPayload), {
+      params: Promise.resolve({ id: ['order-1', 'report'] }),
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(401)
+    expectStructuredError(body, 'Unauthorized')
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('returns structured 404 when report order lookup misses', async () => {
+    const rpc = vi.fn()
+    createSupabaseMock(
+      {
+        order_technicians: { data: { role: 'lead' }, error: null },
+        service_reports: { data: null, error: null },
+        orders: { data: null, error: null },
+      },
+      rpc
+    )
+
+    const response = await POST(postReportRequest(reportPayload), {
+      params: Promise.resolve({ id: ['order-1', 'report'] }),
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(404)
+    expectStructuredError(body, 'Order not found')
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('returns structured 422 when report order is not IN_PROGRESS', async () => {
+    const rpc = vi.fn()
+    createSupabaseMock(
+      {
+        order_technicians: { data: { role: 'lead' }, error: null },
+        service_reports: { data: null, error: null },
+        orders: { data: { status: 'ASSIGNED' }, error: null },
+      },
+      rpc
+    )
+
+    const response = await POST(postReportRequest(reportPayload), {
+      params: Promise.resolve({ id: ['order-1', 'report'] }),
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(422)
+    expectStructuredError(body, 'Cannot submit report when order is ASSIGNED')
+    expect(rpc).not.toHaveBeenCalled()
+  })
 
   it('requires idempotency_key before calling the report RPC', async () => {
     const rpc = vi.fn()
@@ -375,8 +454,23 @@ describe('POST /api/technician/jobs/[orderId]/report', () => {
     )
     const body = await response.json()
 
-    expect(response.status).toBe(400)
+    expect(response.status).toBe(422)
     expect(body.error).toContain('Invalid input')
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('returns structured 422 for malformed report schema payload', async () => {
+    const rpc = vi.fn()
+    mockReportPost(rpc)
+
+    const response = await POST(
+      postReportRequest({ ...reportPayload, customer_signature_url: '' }),
+      { params: Promise.resolve({ id: ['order-1', 'report'] }) }
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(422)
+    expectStructuredError(body, 'Signature path wajib diisi')
     expect(rpc).not.toHaveBeenCalled()
   })
 
@@ -495,8 +589,40 @@ describe('POST /api/technician/jobs/[orderId]/report', () => {
     )
     const body = await response.json()
 
-    expect(response.status).toBe(400)
+    expect(response.status).toBe(422)
     expect(body.error).toContain('brand_id, unit_type_id, capacity_id, and room_location')
     expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('maps expected RPC business errors to structured 422', async () => {
+    const rpc = vi.fn(async () => ({
+      data: null,
+      error: { code: 'P0001', message: 'New AC payload must match exactly one order item/location' },
+    }))
+    mockReportPost(rpc)
+
+    const response = await POST(postReportRequest(reportPayload), {
+      params: Promise.resolve({ id: ['order-1', 'report'] }),
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(422)
+    expectStructuredError(body, 'New AC payload must match exactly one order item/location')
+  })
+
+  it('preserves structured 500 for unexpected RPC errors', async () => {
+    const rpc = vi.fn(async () => ({
+      data: null,
+      error: new Error('database unavailable'),
+    }))
+    mockReportPost(rpc)
+
+    const response = await POST(postReportRequest(reportPayload), {
+      params: Promise.resolve({ id: ['order-1', 'report'] }),
+    })
+    const body = await response.json()
+
+    expect(response.status).toBe(500)
+    expectStructuredError(body, 'database unavailable')
   })
 })

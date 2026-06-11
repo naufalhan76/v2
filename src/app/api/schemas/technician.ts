@@ -169,3 +169,23 @@ export const TechnicianReportSchema = z.object({
 })
 
 export type TechnicianReportPayload = z.infer<typeof TechnicianReportSchema>
+
+export function normalizeTechnicianReportPayload(
+  payload: TechnicianReportPayload
+): TechnicianReportPayload {
+  return {
+    ...payload,
+    photos_before: payload.photos_before ?? [],
+    photos_after: payload.photos_after ?? [],
+    materials: payload.materials ?? [],
+    actual_total_price: payload.actual_total_price ?? 0,
+    work_started_at: payload.work_started_at ?? null,
+    work_completed_at: payload.work_completed_at ?? null,
+    ac_units: (payload.ac_units ?? []).map((unit) => ({
+      ...unit,
+      photos_before: unit.photos_before ?? [],
+      photos_after: unit.photos_after ?? [],
+      materials_used: unit.materials_used ?? [],
+    })),
+  }
+}

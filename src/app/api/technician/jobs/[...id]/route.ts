@@ -5,6 +5,7 @@ import { authenticateTechnician, isTechnicianContext } from '../../helpers'
 import { toCanonical, canTransition, type OrderStatus } from '@/lib/order-status'
 import { TechnicianTransitionSchema, TechnicianReportSchema } from '@/app/api/schemas/technician'
 import { computeWorkDurationMinutes } from '@/lib/offline/time'
+import { logger } from '@/lib/logger'
 
 type MaybeArray<T> = T | T[] | null | undefined
 
@@ -73,6 +74,8 @@ type OrderForJob = {
   order_items?: OrderItemForJob[] | null
 }
 
+const log = logger.child('technician-job-route')
+
 function first<T>(value: MaybeArray<T>): T | null {
   if (Array.isArray(value)) return value[0] ?? null
   return value ?? null
@@ -131,6 +134,19 @@ function normalizeJobOrderItems(order: OrderForJob) {
   })
 }
 
+function decodeOrderId(segments: string[]) {
+  try {
+    return { orderId: segments.map(decodeURIComponent).join('/') }
+  } catch (error) {
+    log.error('Invalid encoded technician job id', { segments, error })
+    return { error: jsonError('Invalid encoded order id', 400) }
+  }
+}
+
+function isKnownRpcValidationError(error: { code?: string; message?: string }) {
+  return error.code === 'P0001' || error.code === '22P02'
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string | string[] }> }
@@ -142,7 +158,9 @@ export async function GET(
     const { technicianId } = authResult
     const resolvedParams = await params
     const rawId = Array.isArray(resolvedParams.id) ? resolvedParams.id : [resolvedParams.id]
-    const orderId = rawId.map(decodeURIComponent).join('/')
+    const decoded = decodeOrderId(rawId)
+    if (decoded.error) return decoded.error
+    const orderId = decoded.orderId
     const supabase = await createClient()
 
     // Verify this technician is assigned to this order
@@ -299,7 +317,9 @@ export async function POST(
       idSegments = rawId.slice(0, -1)
     }
 
-    const orderId = idSegments.map(decodeURIComponent).join('/')
+    const decoded = decodeOrderId(idSegments)
+    if (decoded.error) return decoded.error
+    const orderId = decoded.orderId
     const body = await request.json()
     const supabase = await createClient()
 
@@ -442,7 +462,7 @@ export async function POST(
     if (action === 'report') {
       const parsed = TechnicianReportSchema.safeParse(body)
       if (!parsed.success) {
-        return jsonError(`Invalid input: ${parsed.error.issues[0].message}`, 400)
+        return jsonError(`Invalid input: ${parsed.error.issues[0].message}`, 422)
       }
 
       const payload = parsed.data
@@ -491,6 +511,9 @@ export async function POST(
         .single()
 
       if (orderError) throw orderError
+      if (!order) {
+        return jsonError('Order not found', 404)
+      }
       
       const currentCanonical = toCanonical(order.status)
       if (currentCanonical === 'COMPLETED' || currentCanonical === 'INVOICED' || currentCanonical === 'PAID') {
@@ -535,10 +558,16 @@ export async function POST(
           })
         }
         
-        if (rpcError.code === 'P0001') {
+        if (isKnownRpcValidationError(rpcError)) {
           return jsonError(rpcError.message, 422)
         }
-        
+
+        log.error('Unexpected technician report RPC error', {
+          orderId,
+          technicianId,
+          code: rpcError.code,
+          message: rpcError.message,
+        })
         throw rpcError
       }
 

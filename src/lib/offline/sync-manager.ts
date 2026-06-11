@@ -39,6 +39,7 @@ import type {
   TechnicianReportPayload,
   TechnicianTransitionPayload,
 } from '@/app/api/schemas/technician'
+import { normalizeTechnicianReportPayload } from '@/app/api/schemas/technician'
 import { refreshSession } from '@/lib/offline/auth-refresh'
 import { offlineLogger } from './logger'
 import { createClient } from '@/lib/supabase-browser'
@@ -120,12 +121,13 @@ export type EnqueueReportInput = {
 export async function enqueueReport(
   input: EnqueueReportInput
 ): Promise<PendingReportRecord> {
+  const payload = normalizeTechnicianReportPayload(input.payload)
   const record: PendingReportRecord = {
-    idempotencyKey: input.payload.idempotency_key,
+    idempotencyKey: payload.idempotency_key,
     orderId: input.orderId,
     technicianId: input.technicianId,
     photoIds: input.photoIds,
-    payload: input.payload,
+    payload,
     attempts: 0,
     lastAttemptAt: null,
     lastError: null,

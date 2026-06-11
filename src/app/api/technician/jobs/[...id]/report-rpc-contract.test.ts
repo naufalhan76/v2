@@ -65,6 +65,18 @@ describe('technician_submit_report_v2 AC contract SQL', () => {
     expect(sql).toContain("COALESCE(p_work_duration_minutes, NULLIF(p_payload->>'work_duration_minutes', '')::int)")
   })
 
+  it('RPC reads report fields from payload keys required by offline sync', () => {
+    expect(sql).toContain("ARRAY(SELECT jsonb_array_elements_text(COALESCE(p_payload->'photos_before', '[]'::jsonb)))")
+    expect(sql).toContain("ARRAY(SELECT jsonb_array_elements_text(COALESCE(p_payload->'photos_after', '[]'::jsonb)))")
+    expect(sql).toContain("COALESCE(p_payload->'materials', '[]'::jsonb)")
+    expect(sql).toContain("(p_payload->>'actual_total_price')::numeric")
+    expect(sql).toContain("p_payload->>'customer_signature_url'")
+    expect(sql).toContain("p_payload->>'customer_name_signed'")
+    expect(sql).toContain("(p_payload->>'work_started_at')::timestamptz")
+    expect(sql).toContain("(p_payload->>'work_completed_at')::timestamptz")
+    expect(sql).toContain("COALESCE(p_payload->'ac_units', '[]'::jsonb)")
+  })
+
   it('creates pending addon request rows for manual report materials after report idempotency guard', () => {
     expect(sql).toMatch(/SELECT report_id INTO v_report_id[\s\S]*idempotency_key = v_idempotency_key[\s\S]*RETURN v_report_id;/)
     expect(sql).toContain('INSERT INTO public.addon_requests')
