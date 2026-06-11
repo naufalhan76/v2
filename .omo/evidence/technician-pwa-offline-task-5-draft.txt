@@ -1,0 +1,10 @@
+$ vitest src/components/technician/ac-completion-contract.test.ts --run
+
+ RUN  v4.1.8 /home/ubuntu/projectpenting/webpanel
+
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  00:13:46
+   Duration  1.10s (transform 43ms, setup 94ms, import 30ms, tests 6ms, environment 800ms)
+

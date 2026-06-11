@@ -41,6 +41,7 @@ import { AcUnitForm } from '@/components/technician/ac-unit-form'
 import { SignaturePad } from '@/components/technician/signature-pad'
 import { SyncStatus } from '@/components/technician/sync-status'
 import { cn } from '@/lib/utils'
+import { getJobSnapshot, type LocalJobSnapshot } from '@/lib/offline/snapshot'
 
 // Shape returned by GET /api/technician/jobs/[id]
 type JobContext = {
@@ -104,6 +105,7 @@ type JobContext = {
 
 interface JobCompletionWizardProps {
   orderId: string
+  snapshot?: LocalJobSnapshot
 }
 
 const STEPS = [
@@ -113,7 +115,58 @@ const STEPS = [
   { id: 4, label: 'Review', icon: ClipboardCheck },
 ] as const
 
-export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
+function snapshotToJobContext(snapshot: LocalJobSnapshot): JobContext {
+  return {
+    order_id: snapshot.orderId,
+    status: snapshot.status,
+    canonical_status: snapshot.status,
+    has_report: false,
+    report_id: null,
+    scheduled_visit_date: snapshot.scheduledDate,
+    customers: {
+      customer_name: snapshot.customer.name,
+    },
+    order_items: snapshot.orderItems.map((item) => ({
+      order_item_id: item.id,
+      ac_unit_id: item.acUnitId,
+      service_type: item.serviceType,
+      quantity: 1,
+      locations: {
+        full_address: snapshot.customer.address,
+      },
+      ac_units: item.acUnit
+        ? {
+            ac_unit_id: item.acUnit.id ?? item.acUnitId ?? '',
+            brand: item.acUnit.brand,
+            brand_id: item.acUnit.brandId,
+            model_number: item.acUnit.modelNumber,
+            serial_number: item.acUnit.serialNumber,
+            installation_date: item.acUnit.installationDate,
+            ac_type: item.acUnit.acType,
+            unit_type_id: item.acUnit.unitTypeId,
+            capacity_id: item.acUnit.capacityId,
+            room_location: item.acUnit.roomLocation,
+            floor_level: item.acUnit.floorLevel,
+            position_detail: item.acUnit.positionDetail,
+            capacity_ranges: item.acUnit.capacityLabel
+              ? { capacity_label: item.acUnit.capacityLabel }
+              : null,
+          }
+        : null,
+    })),
+    order_technicians: snapshot.technicianId
+      ? [
+          {
+            id: snapshot.technicianId,
+            technician_id: snapshot.technicianId,
+            role: 'lead',
+          },
+        ]
+      : [],
+  }
+}
+
+export function JobCompletionWizard({ orderId, snapshot }: JobCompletionWizardProps) {
   const router = useRouter()
   const { toast } = useToast()
 
@@ -123,6 +176,7 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   const [jobData, setJobData] = useState<JobContext | null>(null)
   const [technicianId, setTechnicianId] = useState<string>('')
   const [loadingContext, setLoadingContext] = useState(true)
+  const [missingOfflineSnapshot, setMissingOfflineSnapshot] = useState(false)
 
   // ---------------------------------------------------------------------------
   // Form state
@@ -149,6 +203,8 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([1]))
   const [stepErrors, setStepErrors] = useState<Record<number, string[]>>({})
   const [draftRestored, setDraftRestored] = useState(false)
+  const [draftReady, setDraftReady] = useState(false)
+  const hasRestoredRef = useRef(false)
 
   const draftKey = `msn-erp-wizard-draft-${orderId}`
 
@@ -175,9 +231,9 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   }, [customerNameSigned, notes, nextServiceDate, nextServiceNotes, acUnits, currentStep, draftKey])
 
   useEffect(() => {
-    const timer = setTimeout(saveDraft, 3000)
-    return () => clearTimeout(timer)
-  }, [saveDraft])
+    if (!draftReady) return
+    saveDraft()
+  }, [draftReady, saveDraft])
 
   useEffect(() => {
     try {
@@ -193,10 +249,13 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
           setCurrentStep(draft.currentStep)
           setVisitedSteps(new Set([...Array.from({ length: draft.currentStep }, (_, i) => i + 1)]))
         }
+        hasRestoredRef.current = true
         setDraftRestored(true)
       }
     } catch {
       // corrupted draft — silently skip
+    } finally {
+      setDraftReady(true)
     }
   }, [draftKey])
 
@@ -204,107 +263,134 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
   // Fetch job context
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    async function fetchContext() {
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: techData } = await supabase
-            .from('technicians')
-            .select('technician_id')
-            .eq('auth_user_id', user.id)
-            .maybeSingle()
+    function applyJobContext(jobContext: JobContext, options: { hydrateOnly?: boolean } = {}) {
+      setJobData(jobContext)
 
-          if (techData) {
-            setTechnicianId(techData.technician_id)
+      if (!hasRestoredRef.current && !options.hydrateOnly) {
+        setCustomerNameSigned(jobContext.customers?.customer_name || '')
+      }
+
+      const units: AcUnitReportItem[] = []
+      if (jobContext.order_items && Array.isArray(jobContext.order_items)) {
+        jobContext.order_items.forEach((item) => {
+          if (item.ac_unit_id) {
+            const acUnitData = item.ac_units
+            const rawCapRange = acUnitData?.capacity_ranges
+            const capLabel = rawCapRange
+              ? (Array.isArray(rawCapRange)
+                  ? rawCapRange[0]?.capacity_label
+                  : rawCapRange.capacity_label)
+              : null
+
+            units.push({
+              ac_unit_id: item.ac_unit_id,
+              brand: acUnitData?.brand || '',
+              brand_id: acUnitData?.brand_id || null,
+              ac_type: acUnitData?.ac_type || '',
+              unit_type_id: acUnitData?.unit_type_id || null,
+              capacity_id: acUnitData?.capacity_id || null,
+              capacity_label: capLabel || null,
+              model_number: acUnitData?.model_number || '',
+              serial_number: acUnitData?.serial_number || '',
+              room_location: acUnitData?.room_location || '',
+              floor_level: acUnitData?.floor_level || '',
+              position_detail: acUnitData?.position_detail || '',
+              skipped: false,
+              skip_reason: '',
+              photos_before: [],
+              photos_after: [],
+              notes: '',
+              materials_used: [],
+            })
           } else {
-            setTechnicianId(user.id)
-          }
-        }
-
-        const res = await fetch(`/api/technician/jobs/${encodeURIComponent(orderId)}`)
-        if (res.ok) {
-          const json = await res.json()
-          if (json.success && json.data) {
-            const jobContext = json.data as JobContext
-            setJobData(jobContext)
-            setCustomerNameSigned(jobContext.customers?.customer_name || '')
-
-            const units: AcUnitReportItem[] = []
-            if (jobContext.order_items && Array.isArray(jobContext.order_items)) {
-              jobContext.order_items.forEach((item) => {
-                if (item.ac_unit_id) {
-                  const acUnitData = item.ac_units
-                  const rawCapRange = acUnitData?.capacity_ranges
-                  const capLabel = rawCapRange
-                    ? (Array.isArray(rawCapRange)
-                        ? rawCapRange[0]?.capacity_label
-                        : rawCapRange.capacity_label)
-                    : null
-
-                  units.push({
-                    ac_unit_id: item.ac_unit_id,
-                    brand: acUnitData?.brand || '',
-                    brand_id: acUnitData?.brand_id || null,
-                    ac_type: acUnitData?.ac_type || '',
-                    unit_type_id: acUnitData?.unit_type_id || null,
-                    capacity_id: acUnitData?.capacity_id || null,
-                    capacity_label: capLabel || null,
-                    model_number: acUnitData?.model_number || '',
-                    serial_number: acUnitData?.serial_number || '',
-                    room_location: acUnitData?.room_location || '',
-                    floor_level: acUnitData?.floor_level || '',
-                    position_detail: acUnitData?.position_detail || '',
-                    skipped: false,
-                    skip_reason: '',
-                    photos_before: [],
-                    photos_after: [],
-                    notes: '',
-                    materials_used: [],
-                  })
-                } else {
-                  const qty = item.quantity || 1
-                  for (let i = 0; i < qty; i++) {
-                    units.push({
-                      ac_unit_id: '',
-                      brand: '',
-                      brand_id: null,
-                      ac_type: '',
-                      unit_type_id: null,
-                      capacity_id: null,
-                      capacity_label: null,
-                      model_number: '',
-                      serial_number: '',
-                      room_location: '',
-                      floor_level: '',
-                      position_detail: '',
-                      skipped: false,
-                      skip_reason: '',
-                      photos_before: [],
-                      photos_after: [],
-                      notes: '',
-                      materials_used: [],
-                    })
-                  }
-                }
+            const qty = item.quantity || 1
+            for (let i = 0; i < qty; i++) {
+              units.push({
+                ac_unit_id: '',
+                brand: '',
+                brand_id: null,
+                ac_type: '',
+                unit_type_id: null,
+                capacity_id: null,
+                capacity_label: null,
+                model_number: '',
+                serial_number: '',
+                room_location: '',
+                floor_level: '',
+                position_detail: '',
+                skipped: false,
+                skip_reason: '',
+                photos_before: [],
+                photos_after: [],
+                notes: '',
+                materials_used: [],
               })
             }
-            setInitialAcUnits(units)
-            setAcUnits(units)
-
-            const d = new Date()
-            d.setMonth(d.getMonth() + 3)
-            setNextServiceDate(d.toISOString().split('T')[0])
           }
+        })
+      }
+      setInitialAcUnits(units)
+      if (!hasRestoredRef.current && !options.hydrateOnly) {
+        setAcUnits(units)
+        const d = new Date()
+        d.setMonth(d.getMonth() + 3)
+        setNextServiceDate(d.toISOString().split('T')[0])
+      }
+    }
+
+    async function fetchServerContext(hydrateOnly: boolean) {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: techData } = await supabase
+          .from('technicians')
+          .select('technician_id')
+          .eq('auth_user_id', user.id)
+          .maybeSingle()
+
+        if (techData) {
+          setTechnicianId(techData.technician_id)
+        } else {
+          setTechnicianId(user.id)
         }
+      }
+
+      const res = await fetch(`/api/technician/jobs/${encodeURIComponent(orderId)}`)
+      if (!res.ok) throw new Error('Gagal memuat detail pekerjaan')
+
+      const json = await res.json()
+      if (!json.success || !json.data) throw new Error('Gagal memuat detail pekerjaan')
+
+      applyJobContext(json.data as JobContext, { hydrateOnly })
+    }
+
+    async function fetchContext() {
+      try {
+        setMissingOfflineSnapshot(false)
+
+        const localSnapshot = snapshot ?? (await getJobSnapshot(orderId).catch(() => undefined))
+        if (localSnapshot) {
+          applyJobContext(snapshotToJobContext(localSnapshot))
+          if (localSnapshot.technicianId) setTechnicianId(localSnapshot.technicianId)
+          setLoadingContext(false)
+          window.setTimeout(() => {
+            void fetchServerContext(true).catch((err) => {
+              console.warn('Background job hydrate failed', err)
+            })
+          }, 0)
+          return
+        }
+
+        await fetchServerContext(false)
       } catch (err) {
         console.error('Failed to fetch job context', err)
+        setMissingOfflineSnapshot(true)
       } finally {
         setLoadingContext(false)
       }
     }
     fetchContext()
-  }, [orderId])
+  }, [orderId, snapshot])
 
   // ---------------------------------------------------------------------------
   // Validation
@@ -535,6 +621,18 @@ export function JobCompletionWizard({ orderId }: JobCompletionWizardProps) {
     return (
       <div className="flex h-40 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-ink-mute" />
+      </div>
+    )
+  }
+
+  if (missingOfflineSnapshot) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <AlertCircle className="mb-3 h-10 w-10 text-destructive" />
+        <p className="mb-4 text-sm text-ink-mute">Tidak ada data offline untuk job ini</p>
+        <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="h-11">
+          Coba Lagi
+        </Button>
       </div>
     )
   }

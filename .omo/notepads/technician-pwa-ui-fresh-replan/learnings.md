@@ -27,3 +27,15 @@
 - Extended `src/app/technician/__tests__/visual-contract.test.tsx` with new assertions for wizard step indicators and rounded-full status pills.
 - Captured test execution outputs (all expected failures correctly identified by Vitest) to `.omo/evidence/technician-pwa-offline-task-2-red.txt` and `.omo/evidence/technician-pwa-offline-task-2-visual.txt`.
 - Confirmed no `tests/e2e/**` files created or modified. 
+
+## [2026-06-12] Task 4 offline snapshot fallback
+- `src/lib/offline/snapshot.ts` already contained `saveJobSnapshot`, `getJobSnapshot`, and `lockJobSnapshot`; added `src/lib/offline/snapshot.test.ts` to lock save/read/lock behavior and lock preservation on refreshed snapshots.
+- `JobCompletionWizard` now accepts an optional `LocalJobSnapshot` prop and maps it into the same job context shape used by the online fetch path, so cached snapshots can mount the completion wizard without network data.
+- If the wizard cannot fetch network data and `getJobSnapshot(orderId)` returns nothing, it renders `Tidak ada data offline untuk job ini` with a `Coba Lagi` retry button instead of silently showing an empty wizard.
+- Evidence captured: `.omo/evidence/technician-pwa-offline-task-4-snapshot.txt`, `.omo/evidence/technician-pwa-offline-task-4-ac-contract.txt`, `.omo/evidence/technician-pwa-offline-task-4-type-check.txt`.
+
+## [2026-06-12] Task 5 offline-first wizard
+- `JobCompletionWizard` now reads `snapshot` prop or `getJobSnapshot(orderId)` before network, renders the cached job immediately, then hydrates server data in a background tick.
+- Background hydrate updates job context only; restored draft fields and `acUnits` are protected by `hasRestoredRef`, so local draft survives fresh server data.
+- Draft persistence is immediate after state/step changes but gated by `draftReady`, preventing initial empty state from overwriting saved drafts before restore.
+- Evidence captured: `.omo/evidence/technician-pwa-offline-task-5-offline-mount.txt` and `.omo/evidence/technician-pwa-offline-task-5-draft.txt`; required type-check command exited 0.

@@ -1,0 +1,10 @@
+$ vitest src/app/technician/__tests__/offline-workflow.test.tsx --run
+
+ RUN  v4.1.8 /home/ubuntu/projectpenting/webpanel
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed | 1 expected fail (6)
+   Start at  00:13:36
+   Duration  2.46s (transform 380ms, setup 90ms, import 784ms, tests 632ms, environment 791ms)
+

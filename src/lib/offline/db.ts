@@ -8,6 +8,7 @@
  *  - pendingReports    keyPath: idempotencyKey   → ready-to-submit report
  *  - pendingTransitions keyPath: idempotencyKey  → queued status changes
  *  - conflicts         keyPath: id               → server-rejected payloads
+ *  - jobSnapshots      keyPath: orderId          → frozen job context for offline completion
  *
  * Why IndexedDB over localStorage:
  *   - Blobs survive serialization (photos/signature stay binary).
@@ -25,7 +26,7 @@ import type {
 } from '@/app/api/schemas/technician'
 
 export const DB_NAME = 'msn-technician'
-export const DB_VERSION = 1
+export const DB_VERSION = 2
 
 // =============================================================================
 // Stored record shapes
@@ -98,6 +99,39 @@ export type ConflictRecord = {
   createdAt: number
 }
 
+export type LocalJobSnapshot = {
+  orderId: string
+  status: string
+  customer: {
+    name: string | null
+    address: string | null
+  }
+  scheduledDate: string | null
+  orderItems: Array<{
+    id: string
+    serviceType: string | null
+    acUnitId: string | null
+    acUnit: {
+      id: string | null
+      brand: string | null
+      brandId: string | null
+      modelNumber: string | null
+      serialNumber: string | null
+      installationDate: string | null
+      acType: string | null
+      unitTypeId: string | null
+      capacityId: string | null
+      capacityLabel: string | null
+      roomLocation: string | null
+      floorLevel: string | null
+      positionDetail: string | null
+    } | null
+  }>
+  technicianId: string | null
+  syncedAt: number
+  locked: boolean
+}
+
 // =============================================================================
 // Schema typing for idb
 // =============================================================================
@@ -134,6 +168,10 @@ interface TechnicianDB extends DBSchema {
     indexes: {
       'by-order': string
     }
+  }
+  jobSnapshots: {
+    key: string
+    value: LocalJobSnapshot
   }
 }
 
@@ -173,6 +211,11 @@ export function getDb(): Promise<IDBPDatabase<TechnicianDB>> {
             keyPath: 'id',
           })
           conflicts.createIndex('by-order', 'orderId')
+        }
+        if (oldVersion < 2) {
+          if (!db.objectStoreNames.contains('jobSnapshots')) {
+            db.createObjectStore('jobSnapshots', { keyPath: 'orderId' })
+          }
         }
       },
       blocked() {
