@@ -57,3 +57,9 @@
 - Added vibration feedback on complete
 - Fixed React testing library mock for `setPointerCapture` in Vitest environment
 - Tests cover full swipe past threshold and early release scenarios
+
+## Sync Manager Data Preservation — 2026-06-12
+- Task 6 changes report sync failure handling: 422 keeps pending report with `status: "needs-attention"`; 403 keeps pending report with `status: "auth-error"`; neither path deletes the IndexedDB report.
+- `drainQueue({ bypassBackoff: true })` is the manual-sync path and skips retry backoff; normal drain keeps existing backoff behavior.
+- `enqueueReport()` still requests Background Sync, and when `navigator.onLine` is true it immediately drains the queue with backoff bypass so online submissions are sent without waiting for the service worker.
+- `DrainResult.errors` now carries optional `status` for report attention/auth errors, and `useOnlineSync()` exposes `errors` plus `needsAttention` for `SyncStatus`.
