@@ -283,8 +283,8 @@ export function PhotoUploadOffline({
             onClick={() => inputRef.current?.click()}
             disabled={enqueueing}
             className={cn(
-              'flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-hairline bg-canvas-soft',
-              'text-ink-mute hover:border-primary hover:text-primary transition-colors',
+              'flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-hairline dark:border-gray-600 bg-canvas-soft dark:bg-[#252243]',
+              'text-ink-mute hover:border-primary hover:text-primary dark:hover:border-indigo-400 dark:hover:text-indigo-300 transition-colors',
               'min-h-[80px] active:scale-95',
               enqueueing && 'pointer-events-none opacity-50'
             )}

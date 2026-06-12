@@ -174,10 +174,10 @@ function AddonSearchInput({
       <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-mute pointer-events-none" />
 
       {open && totalMatches > 0 && !disabled && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-background border border-hairline rounded-lg shadow-lg max-h-56 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-background dark:bg-[#1a1833] border border-hairline dark:border-gray-700 rounded-lg shadow-lg max-h-56 overflow-y-auto">
           {Object.entries(grouped).map(([category, items]) => (
             <div key={category}>
-              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-mute bg-canvas-soft sticky top-0">
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-mute bg-canvas-soft dark:bg-[#252243] sticky top-0">
                 {category}
               </div>
               {items.map((addon) => (
@@ -189,7 +189,7 @@ function AddonSearchInput({
                     setQuery(addon.item_name)
                     setOpen(false)
                   }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-canvas-soft transition-colors flex items-center justify-between gap-2"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-canvas-soft dark:hover:bg-[#252243] transition-colors flex items-center justify-between gap-2"
                 >
                   <span className="font-medium">{addon.item_name}</span>
                   <span className="text-xs text-ink-mute tabular-nums shrink-0">
@@ -383,7 +383,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
       </div>
 
       {addonsLoading && value.length === 0 && (
-        <div className="flex items-center justify-center py-6 text-center border rounded-lg border-dashed">
+        <div className="flex items-center justify-center py-6 text-center border rounded-lg border-dashed dark:border-gray-700">
           <div className="flex flex-col items-center gap-2">
             <div className="h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
             <p className="text-sm text-ink-mute">Memuat katalog material...</p>
@@ -392,7 +392,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
       )}
 
       {!addonsLoading && value.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-8 text-center border rounded-lg border-dashed border-hairline bg-canvas-soft">
+        <div className="flex flex-col items-center justify-center py-8 text-center border rounded-lg border-dashed border-hairline dark:border-gray-700 bg-canvas-soft dark:bg-[#252243]">
           <Package className="h-10 w-10 text-ink-faint mb-3" />
           <p className="text-sm font-medium text-foreground">Belum ada material</p>
           {addons.length > 0 && (
@@ -629,7 +629,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
           ))}
 
           {/* Grand total */}
-          <div className="flex items-center justify-between rounded-lg bg-canvas-soft px-3 py-2">
+          <div className="flex items-center justify-between rounded-lg bg-canvas-soft dark:bg-[#252243] px-3 py-2">
             <span className="text-sm font-medium">Total Material</span>
             <span className="text-sm font-bold text-primary">{formatCurrency(grandTotal)}</span>
           </div>

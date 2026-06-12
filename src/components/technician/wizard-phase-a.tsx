@@ -177,7 +177,7 @@ export function WizardPhaseA({ orderId, acUnits, onComplete }: WizardPhaseAProps
 
       <main className="-mt-10 space-y-5 px-5">
         {errors.length > 0 && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
+          <div className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-900/30 p-4 text-sm text-red-700 dark:text-red-300" role="alert">
             {errors.map((error) => (
               <p key={error}>{error}</p>
             ))}
@@ -197,14 +197,14 @@ export function WizardPhaseA({ orderId, acUnits, onComplete }: WizardPhaseAProps
         ))}
 
         {units.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+          <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1833] p-6 text-center text-sm text-gray-500 dark:text-gray-400">
             Order ini tidak memiliki unit AC.
           </div>
         )}
 
         <button
           type="submit"
-          className="w-full rounded-xl bg-[#1A1C4E] py-4 font-bold text-white shadow-sm active:scale-[0.99]"
+          className="w-full rounded-xl bg-[#1A1C4E] dark:bg-[#2d2a75] py-4 font-bold text-white shadow-sm active:scale-[0.99]"
         >
           Lanjut ke Timer
         </button>
@@ -244,7 +244,7 @@ function UnitCard({ index, orderId, unit, initialUnit, dimensions, onUpdate }: U
         </div>
         <div>
           <h2 className="text-lg font-bold text-[#1A1C4E] dark:text-white">AC {index + 1}</h2>
-          <p className="text-sm text-gray-500">{isExisting ? 'Unit terdaftar dari order' : 'Unit baru dari order'}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{isExisting ? 'Unit terdaftar dari order' : 'Unit baru dari order'}</p>
         </div>
       </div>
 
@@ -263,7 +263,7 @@ function UnitCard({ index, orderId, unit, initialUnit, dimensions, onUpdate }: U
 
         {showMissingFields && (
           <div className="space-y-4">
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 p-3 text-sm text-amber-800 dark:text-amber-300">
               <p className="font-bold">Data AC eksisting belum lengkap</p>
               <p>Lengkapi field yang masih kosong sebelum lanjut.</p>
             </div>
@@ -304,11 +304,11 @@ function ReadOnlyIdentity({ unit, onlyPresent = false }: { unit: AcUnitData; onl
   if (items.length === 0) return null
 
   return (
-    <div className="grid grid-cols-1 gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-[#252243] p-4 sm:grid-cols-2">
       {items.map(([label, value]) => (
         <div key={label}>
-          <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{label}</p>
-          <p className="mt-1 font-semibold text-gray-900">{value || '-'}</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
+          <p className="mt-1 font-semibold text-gray-900 dark:text-white">{value || '-'}</p>
         </div>
       ))}
     </div>
@@ -336,7 +336,7 @@ function IdentityFields({ unit, initialUnit, dimensions, filteredCapacities, onU
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {showBrand && (
         <div className="space-y-1.5">
-          <Label className="text-sm font-bold text-gray-800">Merk</Label>
+          <Label className="text-sm font-bold text-gray-800 dark:text-white">Merk</Label>
           <select
             aria-label="Merk"
             value={valueOf(unit.brand_id)}
@@ -344,7 +344,7 @@ function IdentityFields({ unit, initialUnit, dimensions, filteredCapacities, onU
               const matched = dimensions.ac_brands.find((brand) => brand.brand_id === event.target.value)
               onUpdate({ brand_id: event.target.value, brand: matched?.name ?? '' })
             }}
-            className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm focus:border-[#1A1C4E] focus:ring-[#1A1C4E]"
+            className="h-11 w-full rounded-xl border border-gray-300 dark:bg-[#252243] dark:text-white px-3 text-sm focus:border-[#1A1C4E] focus:ring-[#1A1C4E] dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
           >
             <option value="">Pilih Merk AC...</option>
             {dimensions.ac_brands.map((brand) => (
@@ -358,7 +358,7 @@ function IdentityFields({ unit, initialUnit, dimensions, filteredCapacities, onU
 
       {showType && (
         <div className="space-y-1.5">
-          <Label className="text-sm font-bold text-gray-800">Jenis / Model</Label>
+          <Label className="text-sm font-bold text-gray-800 dark:text-white">Jenis / Model</Label>
           <select
             aria-label="Jenis / Model"
             value={valueOf(unit.unit_type_id)}
@@ -371,7 +371,7 @@ function IdentityFields({ unit, initialUnit, dimensions, filteredCapacities, onU
                 capacity_label: '',
               })
             }}
-            className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm focus:border-[#1A1C4E] focus:ring-[#1A1C4E]"
+            className="h-11 w-full rounded-xl border border-gray-300 dark:bg-[#252243] dark:text-white px-3 text-sm focus:border-[#1A1C4E] focus:ring-[#1A1C4E] dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
           >
             <option value="">Pilih Jenis AC...</option>
             {dimensions.unit_types.map((type) => (
@@ -385,7 +385,7 @@ function IdentityFields({ unit, initialUnit, dimensions, filteredCapacities, onU
 
       {showCapacity && (
         <div className="space-y-1.5">
-          <Label className="text-sm font-bold text-gray-800">Kapasitas</Label>
+          <Label className="text-sm font-bold text-gray-800 dark:text-white">Kapasitas</Label>
           <select
             aria-label="Kapasitas"
             value={valueOf(unit.capacity_id)}
@@ -397,7 +397,7 @@ function IdentityFields({ unit, initialUnit, dimensions, filteredCapacities, onU
                 capacity_label: matched?.capacity_label ?? '',
               })
             }}
-            className="h-11 w-full rounded-xl border border-gray-300 bg-white px-3 text-sm focus:border-[#1A1C4E] focus:ring-[#1A1C4E] disabled:bg-gray-100 disabled:text-gray-500"
+            className="h-11 w-full rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-[#252243] dark:text-white px-3 text-sm focus:border-[#1A1C4E] focus:ring-[#1A1C4E] dark:focus:border-indigo-400 dark:focus:ring-indigo-400 disabled:bg-gray-100 dark:disabled:bg-[#1a1833] disabled:text-gray-500 dark:disabled:text-gray-500"
           >
             <option value="">{unit.unit_type_id ? 'Pilih Kapasitas...' : 'Pilih Jenis AC terlebih dahulu'}</option>
             {filteredCapacities.map((capacity) => (
@@ -411,7 +411,7 @@ function IdentityFields({ unit, initialUnit, dimensions, filteredCapacities, onU
 
       {showRoom && (
         <div className="space-y-1.5">
-          <Label htmlFor={`phase-a-room-${unit.ac_unit_id || 'new'}`} className="text-sm font-bold text-gray-800">
+          <Label htmlFor={`phase-a-room-${unit.ac_unit_id || 'new'}`} className="text-sm font-bold text-gray-800 dark:text-white">
             Lokasi Ruangan
           </Label>
           <Input
@@ -420,7 +420,7 @@ function IdentityFields({ unit, initialUnit, dimensions, filteredCapacities, onU
             value={valueOf(unit.room_location)}
             onChange={(event) => onUpdate({ room_location: event.target.value })}
             placeholder="Kamar Tidur Utama, Ruang Tamu..."
-            className="h-11 rounded-xl border-gray-300 focus:border-[#1A1C4E] focus:ring-[#1A1C4E]"
+            className="h-11 rounded-xl border-gray-300 dark:border-gray-600 focus:border-[#1A1C4E] focus:ring-[#1A1C4E] dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
           />
         </div>
       )}

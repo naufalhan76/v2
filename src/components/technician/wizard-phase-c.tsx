@@ -50,16 +50,16 @@ function ConfirmationModal({ open, onConfirm, onCancel, submitting }: Confirmati
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className="w-full max-w-sm rounded-[32px] bg-white p-8 text-center shadow-[0_10px_25px_rgba(0,0,0,0.2)]">
+      <div className="w-full max-w-sm rounded-[32px] bg-white dark:bg-[#1a1833] p-8 text-center shadow-[0_10px_25px_rgba(0,0,0,0.2)]">
         {/* Success icon */}
         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#4caf50]">
           <CheckCircle2 className="h-10 w-10 text-white" />
         </div>
 
-        <h2 id="modal-title" className="mb-2 text-2xl font-bold text-[#1A1C4E]">
+        <h2 id="modal-title" className="mb-2 text-2xl font-bold text-[#1A1C4E] dark:text-white">
           Konfirmasi Submit
         </h2>
-        <p className="mb-8 text-sm leading-relaxed text-gray-600">
+        <p className="mb-8 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
           Pastikan semua data, material, foto sesudah, dan tanda tangan sudah benar.
           Laporan yang sudah disimpan akan dikirim ke sistem.
         </p>
@@ -69,7 +69,7 @@ function ConfirmationModal({ open, onConfirm, onCancel, submitting }: Confirmati
             type="button"
             onClick={onConfirm}
             disabled={submitting}
-            className="flex w-full items-center justify-center rounded-xl bg-[#1A1C4E] py-4 font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-60"
+            className="flex w-full items-center justify-center rounded-xl bg-[#1A1C4E] dark:bg-[#2d2a75] py-4 font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-60"
           >
             {submitting ? (
               <>
@@ -85,7 +85,7 @@ function ConfirmationModal({ open, onConfirm, onCancel, submitting }: Confirmati
             type="button"
             onClick={onCancel}
             disabled={submitting}
-            className="w-full rounded-xl border-2 border-[#1A1C4E] bg-white py-4 font-bold text-[#1A1C4E] transition-all active:scale-[0.98] disabled:opacity-60"
+            className="w-full rounded-xl border-2 border-[#1A1C4E] dark:border-indigo-400 bg-white dark:bg-[#252243] py-4 font-bold text-[#1A1C4E] dark:text-white transition-all active:scale-[0.98] disabled:opacity-60"
           >
             Kembali
           </button>
@@ -370,7 +370,7 @@ export function WizardPhaseC({ orderId, phaseADraft, onComplete }: WizardPhaseCP
                     AC {index + 1}
                   </h2>
                   {identity && (
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {identity.brand} — {identity.room_location}
                     </p>
                   )}
@@ -428,7 +428,7 @@ export function WizardPhaseC({ orderId, phaseADraft, onComplete }: WizardPhaseCP
                 placeholder="Nama pelanggan yang bertanda tangan"
                 value={customerNameSigned}
                 onChange={(e) => setCustomerNameSigned(e.target.value)}
-                className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm focus:border-[#1A1C4E] focus:outline-none focus:ring-[#1A1C4E]"
+                className="h-11 w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#252243] dark:text-white px-3 text-sm focus:border-[#1A1C4E] focus:outline-none focus:ring-[#1A1C4E] dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
               />
             </div>
 
@@ -467,7 +467,7 @@ export function WizardPhaseC({ orderId, phaseADraft, onComplete }: WizardPhaseCP
                 placeholder="Catatan pengerjaan (opsional)"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="min-h-[120px] w-full rounded-xl border border-gray-300 p-3 text-sm focus:border-[#1A1C4E] focus:outline-none focus:ring-[#1A1C4E]"
+                className="min-h-[120px] w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#252243] dark:text-white p-3 text-sm focus:border-[#1A1C4E] focus:outline-none focus:ring-[#1A1C4E] dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
               />
             </div>
 
@@ -481,7 +481,7 @@ export function WizardPhaseC({ orderId, phaseADraft, onComplete }: WizardPhaseCP
                 type="date"
                 value={nextServiceDate}
                 onChange={(e) => setNextServiceDate(e.target.value)}
-                className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm focus:border-[#1A1C4E] focus:outline-none focus:ring-[#1A1C4E]"
+                className="h-11 w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#252243] dark:text-white px-3 text-sm focus:border-[#1A1C4E] focus:outline-none focus:ring-[#1A1C4E] dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
                 aria-label="Tanggal servis berikutnya"
               />
             </div>
@@ -497,7 +497,7 @@ export function WizardPhaseC({ orderId, phaseADraft, onComplete }: WizardPhaseCP
                 placeholder="Catatan servis berikutnya (opsional)"
                 value={nextServiceNotes}
                 onChange={(e) => setNextServiceNotes(e.target.value)}
-                className="h-11 w-full rounded-xl border border-gray-300 px-3 text-sm focus:border-[#1A1C4E] focus:outline-none focus:ring-[#1A1C4E]"
+                className="h-11 w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#252243] dark:text-white px-3 text-sm focus:border-[#1A1C4E] focus:outline-none focus:ring-[#1A1C4E] dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
                 aria-label="Catatan servis berikutnya"
               />
             </div>

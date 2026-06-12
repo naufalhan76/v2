@@ -37,7 +37,7 @@ export default function TechnicianLayout({
     <TechnicianThemeProvider>
       <TechnicianThemeScript />
       <div
-        className={`${lexend.variable} technician flex min-h-[max(884px,100dvh)] flex-col bg-bg-gray-faded font-body dark:bg-[#0f0d2f]`}
+        className={`${lexend.variable} technician flex min-h-[max(884px,100dvh)] flex-col bg-bg-gray-faded font-body dark:bg-[#0f0e1a]`}
       >
         <ServiceWorkerRegister />
 

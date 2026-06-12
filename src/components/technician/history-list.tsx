@@ -113,10 +113,10 @@ export function HistoryList() {
 
       {!isLoading && !isError && allJobs.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-canvas-soft mb-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-canvas-soft dark:bg-[#252243] mb-4">
             <History className="h-7 w-7 text-ink-faint" />
           </div>
-          <h3 className="text-2xl font-[460] mb-1">Belum Ada Riwayat</h3>
+          <h3 className="text-2xl font-[460] mb-1 dark:text-white">Belum Ada Riwayat</h3>
           <p className="text-lg text-ink-mute max-w-[240px]">
             Riwayat pekerjaan Anda akan muncul di sini setelah menyelesaikan job.
           </p>

@@ -6,7 +6,7 @@ import { SyncStatus } from '@/components/technician/sync-status'
 
 export default function TechnicianHistoryPage() {
   return (
-    <div className="min-h-full bg-bg-gray-faded pb-20 dark:bg-[#110e2d]" data-testid="technician-history">
+    <div className="min-h-full bg-bg-gray-faded pb-20 dark:bg-[#0f0e1a]" data-testid="technician-history">
       <div className="bg-[#211c59] text-white pt-12 pb-24 px-6 rounded-b-[80px]">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">

@@ -169,9 +169,9 @@ export function SignaturePad({ onChange, onBlobChange, value, disabled = false, 
 
       <div
         className={cn(
-          'relative rounded-lg border-2 border-dashed border-hairline bg-background overflow-hidden',
+          'relative rounded-lg border-2 border-dashed border-hairline dark:border-gray-600 bg-background dark:bg-[#252243] overflow-hidden',
           disabled ? 'opacity-50 pointer-events-none' : 'hover:border-primary/50 transition-colors duration-200',
-          !isEmpty && 'border-solid border-primary/40'
+          !isEmpty && 'border-solid border-primary/40 dark:border-indigo-400/40'
         )}
       >
         <canvas

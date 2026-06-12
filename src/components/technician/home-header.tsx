@@ -154,7 +154,7 @@ function StatChip({
   const toneClass =
     tone === 'primary'
       ? 'bg-[#211c59] text-white'
-      : 'bg-white text-[#211c59] shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]'
+      : 'bg-white text-[#211c59] shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] dark:bg-[#252243] dark:text-white dark:shadow-none'
 
   return (
     <div

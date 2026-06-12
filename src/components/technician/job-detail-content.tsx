@@ -162,8 +162,8 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
       </div>
 
       {/* Customer info card */}
-      <div className="rounded-lg border border-hairline bg-background p-4 space-y-3">
-        <h2 className="font-semibold text-lg text-balance">{customer?.customer_name ?? 'Customer'}</h2>
+      <div className="rounded-lg border border-hairline dark:border-gray-700 bg-background dark:bg-[#1a1833] p-4 space-y-3">
+        <h2 className="font-semibold text-lg text-balance dark:text-white">{customer?.customer_name ?? 'Customer'}</h2>
 
         {customer?.primary_contact_person && (
           <div className="flex items-center gap-2 text-sm">
@@ -198,8 +198,8 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
       </div>
 
       {/* Service info card */}
-      <div className="rounded-lg border border-hairline bg-background p-4 space-y-3">
-        <h3 className="font-medium text-sm text-ink-mute uppercase tracking-wide">
+      <div className="rounded-lg border border-hairline dark:border-gray-700 bg-background dark:bg-[#1a1833] p-4 space-y-3">
+        <h3 className="font-medium text-sm text-ink-mute uppercase tracking-wide dark:text-[#a5a3b5]">
           Detail Layanan
         </h3>
 
@@ -228,8 +228,8 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
       {/* Notes */}
       {job.notes && (
-        <div className="rounded-lg border border-hairline bg-background p-4">
-          <h3 className="font-medium text-sm text-ink-mute uppercase tracking-wide mb-2">
+        <div className="rounded-lg border border-hairline dark:border-gray-700 bg-background dark:bg-[#1a1833] p-4">
+          <h3 className="font-medium text-sm text-ink-mute uppercase tracking-wide mb-2 dark:text-[#a5a3b5]">
             Catatan
           </h3>
           <p className="text-sm text-pretty whitespace-pre-wrap leading-relaxed">{job.notes}</p>

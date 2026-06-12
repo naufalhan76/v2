@@ -123,7 +123,7 @@ export function TodayJobsList() {
                 'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
                 group.key === 'active'
                   ? 'bg-primary text-primary-foreground'
-                  : 'bg-background text-foreground border border-hairline'
+                  : 'bg-background text-foreground border border-hairline dark:border-gray-700'
               )}
             >
               <group.icon className="h-3.5 w-3.5" aria-hidden="true" />

@@ -4,7 +4,7 @@ import { SyncStatus } from '@/components/technician/sync-status'
 
 export default function TechnicianProfilePage() {
   return (
-    <div className="min-h-full bg-bg-gray-faded dark:bg-black pb-20" data-testid="technician-profile">
+    <div className="min-h-full bg-bg-gray-faded dark:bg-[#0f0e1a] pb-20" data-testid="technician-profile">
       {/* Header */}
       <div className="bg-[#211c59] text-white px-6 pt-12 pb-24 rounded-b-[40px]">
         <div className="flex items-start gap-3">
