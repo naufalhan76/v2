@@ -70,6 +70,7 @@
     --status-invoiced: 189 94% 43%;
     --status-paid: 158 64% 52%;
     --status-cancelled: 0 72% 51%;
+
   }
 
   .dark {
@@ -134,6 +135,27 @@
     --status-invoiced: 189 94% 55%;
     --status-paid: 158 64% 60%;
     --status-cancelled: 0 72% 60%;
+
+    --tech-bg: #0f0e1a;
+    --tech-card: #1a1833;
+    --tech-text: #e8e6f0;
+    --tech-text-secondary: #a5a3b5;
+  }
+
+  .technician {
+    --tech-primary: #211c59;
+    --tech-bg: #F8FAFC;
+    --tech-card: #ffffff;
+    --tech-text: #1e1b4b;
+    --tech-text-secondary: #4B5563;
+  }
+
+  .dark .technician,
+  .technician.dark {
+    --tech-bg: #0f0e1a;
+    --tech-card: #1a1833;
+    --tech-text: #e8e6f0;
+    --tech-text-secondary: #a5a3b5;
   }
 }
 

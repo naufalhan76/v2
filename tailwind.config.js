@@ -1,3 +1,5 @@
+const defaultTheme = require('tailwindcss/defaultTheme')
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
@@ -16,6 +18,10 @@ module.exports = {
   		}
   	},
       extend: {
+      fontFamily: {
+        heading: ['Lexend', ...defaultTheme.fontFamily.sans],
+        body: ['Lexend', ...defaultTheme.fontFamily.sans],
+      },
      colors: {
         'navy-deep': 'hsl(var(--navy-deep))',
         'navy-light': 'hsl(var(--navy-light))',
@@ -71,6 +77,11 @@ module.exports = {
         'ink-faint': 'hsl(var(--ink-faint))',
         hairline: 'hsl(var(--hairline))',
         'hairline-dark': 'hsl(var(--hairline-dark))',
+        'tech-primary': '#211c59',
+        'tech-bg': '#F8FAFC',
+        'tech-card': '#ffffff',
+        'tech-text': '#1e1b4b',
+        'tech-text-secondary': '#4B5563',
         status: {
             pending: 'hsl(var(--status-pending))',
             assigned: 'hsl(var(--status-assigned))',
