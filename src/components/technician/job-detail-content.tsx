@@ -2,24 +2,15 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, MapPin, Phone, User, Wrench, FileText, Timer, Camera, Loader2 } from 'lucide-react'
+import { ArrowLeft, Clock, MapPin, Phone, User, Wrench, FileText, Timer } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/orders/status-badge'
 import { JobDetailSkeleton } from './job-detail-skeleton'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { useState, useEffect } from 'react'
 import type { OrderStatus } from '@/lib/order-status'
 import { captureGps } from '@/lib/utils/geolocation'
 import type { GpsResult } from '@/lib/utils/geolocation'
-import { SwipeToAction } from '@/components/technician/swipe-to-action'
 import { jobToSnapshot, lockJobSnapshot, saveJobSnapshot } from '@/lib/offline/snapshot'
 
 interface JobDetailContentProps {
@@ -69,8 +60,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [workTimer, setWorkTimer] = useState<number>(0)
-  const [showArrivalModal, setShowArrivalModal] = useState(false)
-  const [arrivalPhotos, setArrivalPhotos] = useState<string[]>([])
+
 
   const { data: job, isLoading, isError, error } = useQuery({
     queryKey: ['technician', 'job', orderId],
@@ -84,9 +74,14 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
       const payload = await buildTransitionPayload(params.toStatus)
       return transitionJob(orderId, payload)
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['technician', 'job', orderId] })
       queryClient.invalidateQueries({ queryKey: ['technician', 'jobs', 'today'] })
+      if (variables.toStatus === 'IN_PROGRESS') {
+        void lockJobSnapshot(orderId).finally(() => {
+          router.push(`/technician/job/${orderId}/complete`)
+        })
+      }
     },
   })
 
@@ -266,7 +261,9 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
         {canonicalStatus === 'EN_ROUTE' && (
           <Button
-            onClick={() => setShowArrivalModal(true)}
+            onClick={() => {
+              transitionMutation.mutate({ toStatus: 'IN_PROGRESS' })
+            }}
             disabled={transitionMutation.isPending}
             className="w-full h-12 text-base font-medium transition-all duration-200 active:scale-[0.98]"
             size="lg"
@@ -304,67 +301,6 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
           </p>
         )}
       </div>
-
-      {/* Arrival photo modal — shown before Mulai Kerja */}
-      <Dialog open={showArrivalModal} onOpenChange={setShowArrivalModal}>
-        <DialogContent className="sm:max-w-md max-w-[calc(100vw-2rem)]">
-          <DialogHeader>
-            <DialogTitle>Foto Kedatangan</DialogTitle>
-            <DialogDescription>
-              Ambil foto sebagai bukti sudah tiba di lokasi pelanggan. Wajib minimal 1 foto, maksimal 3.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-2">
-            <PhotoUpload
-              label="Foto Lokasi"
-              bucket="service-photos"
-              pathPrefix={`orders/${orderId}/arrival`}
-              value={arrivalPhotos}
-              onChange={setArrivalPhotos}
-              min={1}
-              max={3}
-              disabled={transitionMutation.isPending}
-            />
-          </div>
-
-          {arrivalPhotos.length === 0 && (
-            <p className="text-xs text-destructive">Minimal 1 foto wajib diupload</p>
-          )}
-
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowArrivalModal(false)
-                setArrivalPhotos([])
-              }}
-              disabled={transitionMutation.isPending}
-              className="h-11 w-full sm:h-9 sm:w-auto transition-all duration-200 active:scale-[0.98]"
-            >
-              Batal
-            </Button>
-            <Button
-              type="button"
-              onClick={() => {
-                if (arrivalPhotos.length === 0) return
-                setShowArrivalModal(false)
-                transitionMutation.mutate({ toStatus: 'IN_PROGRESS', arrivalPhotos })
-              }}
-              disabled={arrivalPhotos.length === 0 || transitionMutation.isPending}
-              className="h-11 w-full sm:h-9 sm:w-auto transition-all duration-200 active:scale-[0.98]"
-            >
-              {transitionMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Camera className="mr-2 h-4 w-4" />
-              )}
-              Konfirmasi & Mulai Kerja
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

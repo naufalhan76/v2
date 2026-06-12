@@ -52,17 +52,6 @@ vi.mock('@/components/orders/status-badge', () => ({
   StatusBadge: ({ status }: { status: string }) => <span data-testid="status-badge">{status}</span>,
 }))
 
-vi.mock('@/components/technician/photo-upload', () => ({
-  PhotoUpload: ({ value, onChange, disabled }: { value: string[]; onChange: (urls: string[]) => void; disabled?: boolean }) => (
-    <div data-testid="arrival-photo-upload">
-      <p>arrival count {value.length}</p>
-      <button type="button" disabled={disabled} onClick={() => onChange([...value, 'https://photos.test/arrival-1.jpg'])}>
-        Add arrival photo
-      </button>
-    </div>
-  ),
-}))
-
 function makeJob(canonicalStatus: 'ASSIGNED' | 'EN_ROUTE' | 'IN_PROGRESS' | 'COMPLETED') {
   return {
     order_id: 'WO-DETAIL-001',
@@ -152,22 +141,16 @@ describe('JobDetailContent current transition behavior', () => {
     })
   })
 
-  it('requires arrival photo before posting EN_ROUTE to IN_PROGRESS transition', async () => {
+  it('directly posts IN_PROGRESS transition (no arrival photo) when technician taps Mulai Kerja, then navigates to wizard', async () => {
     renderJobDetail('EN_ROUTE')
 
-    fireEvent.click(await screen.findByRole('button', { name: /Mulai Kerja/i }))
-
-    expect(await screen.findByText('Foto Kedatangan')).toBeInTheDocument()
-    expect(screen.getByText('Minimal 1 foto wajib diupload')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Konfirmasi & Mulai Kerja/i })).toBeDisabled()
-
-    fireEvent.click(screen.getByRole('button', { name: /Add arrival photo/i }))
-    expect(screen.getByRole('button', { name: /Konfirmasi & Mulai Kerja/i })).toBeEnabled()
-    fireEvent.click(screen.getByRole('button', { name: /Konfirmasi & Mulai Kerja/i }))
+    expect(await screen.findByText('Budi Detail')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Mulai Kerja/i }))
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith('/api/technician/jobs/WO-DETAIL-001/transition', expect.objectContaining({ method: 'POST' }))
     })
+    expect(snapshotStore.lockJobSnapshot).toHaveBeenCalledWith('WO-DETAIL-001')
     const transitionCall = vi.mocked(fetch).mock.calls.find((call) => String(call[0]).endsWith('/transition'))
     expect(JSON.parse(String(transitionCall?.[1]?.body))).toEqual({
       to_status: 'IN_PROGRESS',
@@ -178,7 +161,10 @@ describe('JobDetailContent current transition behavior', () => {
         accuracy_m: 12,
         captured_at: '2026-06-11T10:00:00.000Z',
       },
-      arrival_photos: ['https://photos.test/arrival-1.jpg'],
+    })
+
+    await waitFor(() => {
+      expect(routerStore.push).toHaveBeenCalledWith('/technician/job/WO-DETAIL-001/complete')
     })
   })
 
