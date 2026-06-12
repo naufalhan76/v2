@@ -1,8 +1,7 @@
 'use client'
 
 import { useQueryClient } from '@tanstack/react-query'
-import { CalendarCheck2, RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Calendar, RefreshCw } from 'lucide-react'
 
 export function EmptyTodayJobs() {
   const queryClient = useQueryClient()
@@ -13,31 +12,25 @@ export function EmptyTodayJobs() {
 
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-lg border border-hairline bg-background px-6 py-12 text-center"
+      className="bg-white dark:bg-[#1a1833] rounded-[40px] p-6 flex flex-col items-center text-center shadow-2xl"
       data-testid="today-jobs-empty"
     >
-      <div className="relative mb-4 flex h-16 w-16 items-center justify-center">
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 rounded-full bg-canvas-soft"
-        />
-        <CalendarCheck2 className="relative h-7 w-7 text-ink-faint" aria-hidden="true" />
+      <div className="bg-gray-100 dark:bg-gray-700 p-6 rounded-full mb-6">
+        <Calendar className="w-10 h-10 text-gray-500" aria-hidden="true" />
       </div>
-      <h3 className="text-[22px] font-[460] tracking-tight mb-1">Tidak Ada Pekerjaan</h3>
-      <p className="text-lg text-ink-mute max-w-[260px] mb-5">
+      <h3 className="text-xl font-bold mb-4 text-[#1e1b4b] dark:text-white">Tidak Ada Pekerjaan</h3>
+      <p className="text-gray-400 text-sm mb-8 px-2 leading-loose">
         Belum ada pekerjaan yang dijadwalkan untuk hari ini. Nikmati waktumu atau periksa
         pembaruan terbaru.
       </p>
-      <Button
+      <button
         type="button"
-        size="default"
-        variant="outline"
         onClick={handleRefresh}
-        className="min-h-[44px] sm:min-h-0"
+        className="flex items-center justify-center border-2 border-gray-200 dark:border-gray-600 rounded-2xl py-3 text-[#211c59] dark:text-white font-semibold px-8 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
       >
-        <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+        <RefreshCw className="mr-2 h-5 w-5" aria-hidden="true" />
         Coba Lagi
-      </Button>
+      </button>
     </div>
   )
 }
