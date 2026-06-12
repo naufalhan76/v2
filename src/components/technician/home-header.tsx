@@ -87,7 +87,7 @@ export function HomeHeader() {
   const hasJobs = (jobs?.length ?? 0) > 0
 
   return (
-    <div className="bg-[#211c59] pt-12 pb-32 px-6 rounded-b-[40px] space-y-3" data-testid="technician-home-header">
+    <div className="bg-[#211c59] pt-12 pb-32 px-6 rounded-b-[40px] space-y-3 relative" data-testid="technician-home-header">
       {/* Greeting */}
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
@@ -112,7 +112,7 @@ export function HomeHeader() {
       {/* Quick stats */}
       {hasJobs && (
         <div
-          className="grid grid-cols-3 gap-2"
+          className="grid grid-cols-3 gap-3 -mt-24 absolute bottom-[-40px] left-6 right-6 z-10"
           role="list"
           aria-label="Ringkasan pekerjaan"
         >
@@ -153,21 +153,19 @@ function StatChip({
 }) {
   const toneClass =
     tone === 'primary'
-      ? 'border-primary bg-primary text-primary-foreground'
-      : tone === 'success'
-        ? 'border-status-completed bg-status-completed text-white'
-        : 'border-hairline bg-canvas-soft text-foreground'
+      ? 'bg-[#211c59] text-white'
+      : 'bg-white text-[#211c59] shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]'
 
   return (
     <div
       role="listitem"
-      className={`flex flex-col gap-0.5 rounded-lg border px-3 py-2 ${toneClass}`}
+      className={`flex flex-col gap-1 rounded-2xl p-3 ${toneClass}`}
     >
-      <div className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider opacity-90">
+      <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider opacity-90">
         {icon}
         {label}
       </div>
-      <div className="text-lg font-semibold tabular-nums leading-none">{value}</div>
+      <div className="text-2xl font-bold tabular-nums leading-none mt-1">{value}</div>
     </div>
   )
 }
