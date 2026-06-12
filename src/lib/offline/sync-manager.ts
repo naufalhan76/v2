@@ -248,10 +248,13 @@ async function classifyResponse(res: Response): Promise<ClassifyResult> {
     return { action: 'needs-attention', status: 'auth-error', message }
   }
 
-  if (res.status === 409 || res.status === 422) {
-    if (res.status === 409 && /cancel|reassign/i.test(message ?? '')) {
-      return { action: 'conflict-cancelled', message }
-    }
+  if (res.status === 409) {
+    return /cancel|reassign/i.test(message ?? '')
+      ? { action: 'conflict-cancelled', message }
+      : { action: 'permanent-fail', message }
+  }
+
+  if (res.status === 422) {
     return { action: 'needs-attention', status: 'needs-attention', message }
   }
 
@@ -368,7 +371,6 @@ export async function drainQueue(options: DrainQueueOptions = {}): Promise<Drain
           attempts: record.attempts + 1,
           lastAttemptAt: Date.now(),
           lastError: res ? `HTTP ${res.status}` : 'network error',
-          status: 'pending',
         })
       } else if (classify.action === 'conflict-cancelled') {
         const cloned = res ? res.clone() : null
@@ -518,6 +520,7 @@ export async function drainQueue(options: DrainQueueOptions = {}): Promise<Drain
           attempts: record.attempts + 1,
           lastAttemptAt: Date.now(),
           lastError: res ? `HTTP ${res.status}` : 'network error',
+          status: 'pending',
         })
       } else if (classify.action === 'conflict-cancelled') {
         const cloned = res ? res.clone() : null

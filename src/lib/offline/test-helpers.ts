@@ -127,6 +127,7 @@ export async function seedFakeReport(
     attempts: 0,
     lastAttemptAt: null,
     lastError: null,
+    status: 'pending',
     createdAt: now,
   }
 

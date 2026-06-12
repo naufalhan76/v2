@@ -156,7 +156,6 @@ function pendingTransition(overrides: Partial<PendingTransitionRecord> = {}): Pe
     attempts: 0,
     lastAttemptAt: null,
     lastError: null,
-    status: 'pending',
     createdAt: Date.now(),
     ...overrides,
   }
@@ -416,7 +415,7 @@ describe('sync-manager current queue behavior', () => {
   it('keeps reports queued when photo upload fails', async () => {
     dbState.photos = [pendingPhoto('before-photo-id', 'before', 0)]
     dbState.reports = [pendingReport({ photoIds: ['before-photo-id'] })]
-    storageState.upload.mockResolvedValueOnce({ data: null, error: { message: 'bucket unavailable' } })
+    storageState.upload.mockResolvedValueOnce({ data: null, error: { message: 'bucket unavailable' } } as never)
     const fetchMock = vi.fn(async () => jsonResponse(200, { success: true }))
     vi.stubGlobal('fetch', fetchMock)
 
