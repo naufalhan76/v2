@@ -14,7 +14,10 @@ Web-based management system for AC service operations. Includes admin dashboard 
 ### Technician Mobile App (PWA)
 - Offline-first with IndexedDB queue (works without internet)
 - Job list with status and customer details
-- Service report form: before/after photos, materials entry, digital signature
+- **3-Phase Service Wizard**: foto before + AC identity → timer with minimum duration → detail entry + foto after + signature + submit
+- **Persistent work timer** (survives page refresh, app close, phone restart)
+- **Swipe-to-action** for departure transition (ASSIGNED → EN_ROUTE)
+- **Dark mode** support (light/dark/system preference)
 - Push notifications for new jobs and updates
 - **AC Completion Contract**: Branch behavior per-AC unit — existing complete AC (read-only identity), existing incomplete (fill missing fields), new AC (full input). Source of truth: `order_items.ac_unit_id`.
 

@@ -1,7 +1,7 @@
 # Arsitektur Teknis — MSN ERP
 
 > **Technical Architecture Document**
-> Versi: 1.1 | Tanggal: 2026-06-10
+> Versi: 1.2 | Tanggal: 2026-06-13
 
 ---
 
@@ -213,17 +213,23 @@ src/
 │   │   ├── cancel-modal.tsx      #     Cancel confirmation
 │   │   └── ...                   #     (order-filters, list-view, badges, etc.)
 │   ├── invoices/                 #   Invoice components
-│   ├── technician/               #   Technician mobile components (20 files)
-│   │   ├── bottom-tab-bar.tsx    #     Mobile nav
-│   │   ├── job-detail-content.tsx#     Job detail + transitions
-│   │   ├── job-completion-wizard.tsx#  4-step completion wizard
+│   ├── technician/               #   Technician mobile components
+│   │   ├── bottom-tab-bar.tsx    #     Mobile nav (4 tabs: Home/History/Profile)
+│   │   ├── home-header.tsx       #     Home page header
+│   │   ├── today-job-card.tsx    #     Today job card (redesigned)
+│   │   ├── job-detail-content.tsx#     Job detail + GPS transition
+│   │   ├── wizard-phase-a.tsx    #     Phase A: foto before + AC identity per unit
+│   │   ├── wizard-phase-b.tsx    #     Phase B: timer dengan blocking
+│   │   ├── wizard-phase-c.tsx    #     Phase C: detail + foto after + signature + submit
+│   │   ├── swipe-to-action.tsx   #     Swipe gesture (ASSIGNED → EN_ROUTE only)
 │   │   ├── ac-unit-form.tsx      #     Per-AC data entry
 │   │   ├── photo-upload-offline.tsx#   Offline photo capture
 │   │   ├── material-input.tsx    #     Material addon search
 │   │   ├── signature-pad.tsx     #     Canvas signature
 │   │   ├── sync-status.tsx       #     Sync indicator
 │   │   ├── conflict-resolution.tsx#    Offline conflict dialog
-│   │   └── ...                   #     (profile, history, skeletons)
+│   │   ├── skeleton-*.tsx        #     Loading skeleton states
+│   │   └── ...                   #     (profile, history)
 │   └── ...                       #
 │
 ├── hooks/                        # Custom React hooks
@@ -231,6 +237,7 @@ src/
 │   ├── use-invoice-mutation.ts   #   Invoice CRUD mutations
 │   ├── use-online-sync.ts        #   Offline queue drain manager
 │   ├── use-conflicts.ts          #   Conflict loader
+│   ├── use-technician-theme.ts   #   Technician dark mode (light/dark/system)
 │   ├── use-optimistic.ts         #   Generic optimistic update utilities
 │   ├── use-sortable-table.ts     #   Generic sort hook
 │   └── use-toast.ts              #   Toast notification system
@@ -288,7 +295,8 @@ src/
 │   │   └── html.ts               #     HTML entity escape
 │   └── offline/                  #   Offline support
 │       ├── db.ts                 #     IndexedDB schema
-│       ├── sync-manager.ts       #     Queue + sync logic
+│       ├── sync-manager.ts       #     Queue + sync logic (422/403 → needs-attention)
+│       ├── timer.ts              #     Persistent timer (localStorage timestamps)
 │       └── auth-refresh.ts       #     Offline auth refresh
 │
 ├── middleware.ts                 # Next.js middleware (auth guard + role routing)
@@ -602,22 +610,25 @@ Semua endpoint mengembalikan:
   <QueryProvider>
     <TechnicianLayout>            ← PWA manifest, viewport
       <main>
+        <HomeHeader />            ← greeting + status badge
         <TodayJobsList>           ← auto-refresh 60s
-          <TodayJobCard />        ← active pulse indicator
+          <TodayJobCard />        ← redesigned card + active pulse
           <EmptyTodayJobs />
           <TodayJobsSkeleton />
         </TodayJobsList>
 
-        <JobDetailContent>        ← state-driven actions
-          <PhotoUpload />         ← arrival photos
-          <JobCompletionWizard>   ← 4-step wizard (primary — AC completion contract)
+        <JobDetailContent>        ← GPS-first transition flow
+          <SwipeToAction />       ← swipe gesture (ASSIGNED → EN_ROUTE only)
+          <WizardPhaseA>          ← Phase A: foto before + AC identity per unit
+          <WizardPhaseB>          ← Phase B: timer blocking (minimum duration)
+          <WizardPhaseC>          ← Phase C: detail + foto after + signature + submit
             <AcUnitForm>          ← branches on AC source (existing vs new)
               <PhotoUploadOffline /> ← IndexedDB
               <MaterialInput />      ← addon catalog search + pending request
             </AcUnitForm>
             <SignaturePad />
             <SyncStatus />
-          </JobCompletionWizard>
+          </WizardPhaseC>
         </JobDetailContent>
 
         <HistoryList>
@@ -628,7 +639,7 @@ Semua endpoint mengembalikan:
           <PushToggle />
         </ProfileContent>
       </main>
-      <BottomTabBar />            ← 3 tabs: Hari Ini / Riwayat / Profil
+      <BottomTabBar />            ← 4 tabs: Home / History / Profile
       <SyncStatus />              ← connectivity/sync badge
       <ConflictResolution />      ← offline conflict dialog
     </TechnicianLayout>
@@ -681,6 +692,44 @@ Conflict? → simpan ke ConflictRecord → tampilkan ConflictResolution dialog
    c. Update pending report dengan URL (bukan blob)
 5. Hapus dari IndexedDB setelah sukses
 ```
+
+### 9.5 Persistent Work Timer
+
+File: `src/lib/offline/timer.ts`. Timer kerja teknisi disimpan via localStorage agar survive refresh, close app, bahkan restart HP.
+
+```
+localStorage key: msn-tech-timer-{jobId}
+Stored value:     ISO string dari waktu start (work_started_at)
+
+Aturan:
+  - Hanya 1 timer aktif di satu waktu (mulai job kedua diblokir)
+  - Timer dihitung dari timestamp tersimpan, bukan setInterval
+  - Saat Phase B: UI baca timestamp → hitung elapsed → block kalau belum
+    mencapai durasi minimum
+  - Timer dihapus dari localStorage saat report berhasil di-submit
+```
+
+### 9.6 Sync Manager — Error Handling (422/403)
+
+File: `src/lib/offline/sync-manager.ts`.
+
+| Response | Lama (BUG) | Baru |
+|----------|-----------|------|
+| 422 / 403 | Hapus queued report dari IndexedDB (**data loss**) | Tandai report dengan status `needs-attention`, data dipertahankan di queue |
+
+Laporan bertanda `needs-attention` muncul di UI sehingga teknisi bisa menghubungi admin untuk resolve konflik state secara manual, alih-alih kehilangan data.
+
+### 9.7 Technician Dark Mode
+
+Terpisah dari admin theme (admin pakai `next-themes` ThemeProvider).
+
+| Aspek | Implementasi |
+|-------|--------------|
+| Hook | `src/hooks/use-technician-theme.ts` |
+| localStorage key | `msn-tech-theme` |
+| Opsi | `light` / `dark` / `system` |
+| CSS variables | `--tech-bg: #0f0e1a`, `--tech-card: #1a1833`, dll di `globals.css` |
+| Scope | Hanya route `/technician/*`, tidak mempengaruhi admin |
 
 ---
 

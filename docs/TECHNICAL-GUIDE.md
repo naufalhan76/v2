@@ -331,7 +331,10 @@ order_items.ac_unit_id
 
 **Key files:**
 - Branching logic: `src/components/technician/ac-unit-form.tsx`
-- Orchestration: `src/components/technician/job-completion-wizard.tsx`
+- Orchestration (3-phase wizard):
+  - `src/components/technician/wizard-phase-a.tsx` — Foto Before + AC Identity
+  - `src/components/technician/wizard-phase-b.tsx` — Timer with blocking
+  - `src/components/technician/wizard-phase-c.tsx` — Detail entry + Foto After + Signature + Submit
 - Draft guard: `hasRestoredRef` prevents fetched job context from overwriting saved drafts
 
 ### Backend Enforcement (RPC)
@@ -944,6 +947,28 @@ interface QueuedRequest {
 4. **Retry Logic**: Exponential backoff for failed syncs
 5. **Conflict Resolution**: Last-write-wins for conflicts
 
+**Error Handling (422/403):**
+
+File: `src/lib/offline/sync-manager.ts`
+
+When the sync manager encounters a 422 or 403 response from the server, the queued report is now marked with a `needs-attention` status instead of being deleted. This prevents data loss when the server rejects a submission due to validation errors or permission issues. Technicians can see these reports in the UI and contact admin to resolve state conflicts manually.
+
+**Persistent Work Timer:**
+
+File: `src/lib/offline/timer.ts`
+
+Technician work sessions are tracked using a persistent timer stored in localStorage:
+
+```typescript
+// Storage key pattern
+const TIMER_KEY = `msn-tech-timer-${jobId}`
+
+// Stored value
+localStorage.setItem(TIMER_KEY, new Date().toISOString())
+```
+
+The timer survives page refreshes, app closures, and phone restarts. Only one active timer is allowed at a time (attempting to start a second job is blocked). During Phase B of the wizard, the UI reads the stored timestamp and calculates elapsed time, blocking progression until the minimum required duration is met. The timer is cleared from localStorage when the service report is successfully submitted.
+
 **Service Worker Registration:**
 ```typescript
 if ('serviceWorker' in navigator) {
@@ -992,6 +1017,70 @@ async function syncQueue() {
   }
 }
 ```
+
+---
+
+## Technician PWA Design
+
+### 3-Phase Wizard Flow
+
+The technician service completion workflow uses a 3-phase wizard structure:
+
+**Phase A** (`wizard-phase-a.tsx`):
+- Capture "before" photos
+- Enter AC unit identity (brand, model, serial number, PK per unit)
+- Branching behavior based on `order_items.ac_unit_id` (existing vs new AC)
+
+**Phase B** (`wizard-phase-b.tsx`):
+- Timer display with blocking mechanism
+- Technicians must complete minimum required work duration before proceeding
+- Timer persists across page refresh and app restarts
+
+**Phase C** (`wizard-phase-c.tsx`):
+- Detail entry (materials used, addons, notes)
+- Capture "after" photos
+- Digital signature
+- Submit service report
+
+**Job Detail Flow:**
+
+The "Mulai Kerja" (Start Work) button now captures GPS coordinates immediately without an arrival photo modal. The flow is:
+
+```
+Click "Mulai Kerja" → GPS capture → transition to IN_PROGRESS → open Phase A
+```
+
+**Swipe-to-Action:**
+
+File: `src/components/technician/swipe-to-action.tsx`
+
+Swipe gestures are used only for the ASSIGNED → EN_ROUTE transition ("Berangkat" / departure). All other state transitions use regular buttons for clarity and reliability.
+
+### Dark Mode
+
+The technician PWA has its own dark mode implementation, separate from the admin dashboard:
+
+| Aspect | Implementation |
+|--------|----------------|
+| Hook | `src/hooks/use-technician-theme.ts` |
+| Storage | `localStorage` key: `msn-tech-theme` |
+| Options | `light` / `dark` / `system` |
+| CSS Variables | Defined in `globals.css` with `--tech-*` prefix |
+| Scope | Only `/technician/*` routes |
+
+**Design System:**
+- Font: Lexend (loaded in technician layout)
+- Color palette: Indigo Navy (`#0f0e1a` background, `#1a1833` cards)
+- Touch targets: Minimum 44px for mobile accessibility
+
+**Bottom Tab Bar:**
+
+File: `src/components/technician/bottom-tab-bar.tsx`
+
+The navigation bar provides 4 main tabs:
+1. Home (today's jobs)
+2. History (completed jobs)
+3. Profile (settings, push notifications)
 
 ---
 
