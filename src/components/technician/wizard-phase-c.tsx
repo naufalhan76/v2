@@ -20,6 +20,7 @@ import type { PhaseADraft } from './wizard-phase-a'
 type WizardPhaseCProps = {
   orderId: string
   phaseADraft: PhaseADraft
+  technicianId: string
   onComplete: () => void
 }
 
@@ -99,7 +100,7 @@ function ConfirmationModal({ open, onConfirm, onCancel, submitting }: Confirmati
 // Component
 // ---------------------------------------------------------------------------
 
-export function WizardPhaseC({ orderId, phaseADraft, onComplete }: WizardPhaseCProps): React.JSX.Element {
+export function WizardPhaseC({ orderId, phaseADraft, technicianId, onComplete }: WizardPhaseCProps): React.JSX.Element {
   // --- Per-unit state ---
   const [unitStates, setUnitStates] = useState<UnitState[]>(() =>
     phaseADraft.units.map(() => ({
@@ -279,7 +280,6 @@ export function WizardPhaseC({ orderId, phaseADraft, onComplete }: WizardPhaseCP
       }
 
       // 7. Enqueue report
-      const technicianId = 'current-technician' // From auth context in parent
       await enqueueReport({
         orderId,
         technicianId,

@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { JobDetailContent } from '@/components/technician/job-detail-content'
-import { JobCompletionWizard } from '@/components/technician/job-completion-wizard'
+import { WizardOrchestrator } from '@/components/technician/wizard-orchestrator'
 import { JobDetailSkeleton } from '@/components/technician/job-detail-skeleton'
 
 interface JobDetailPageProps {
@@ -20,7 +20,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     <div className="min-h-full bg-bg-gray-faded dark:bg-[#0f0e1a] pb-20">
       <Suspense fallback={<JobDetailSkeleton />}>
         {isComplete ? (
-          <JobCompletionWizard orderId={id} />
+          <WizardOrchestrator orderId={id} />
         ) : (
           <div className="px-6 pt-6 pb-20">
             <JobDetailContent orderId={id} />
