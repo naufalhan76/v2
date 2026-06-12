@@ -48,32 +48,34 @@ export function HistoryJobCard({ job }: HistoryJobCardProps) {
   return (
     <Link
       href={`/technician/job/${job.order_id}`}
-      className="block rounded-xl border border-hairline bg-background p-4 shadow-sm transition-colors active:bg-canvas-soft hover:bg-canvas-soft"
+      className="block rounded-[32px] border border-gray-100 bg-white p-6 shadow dark:bg-[#1a1833] dark:border-gray-700 transition-colors active:bg-gray-50 hover:bg-gray-50 dark:active:bg-[#252243] dark:hover:bg-[#252243]"
     >
-      {/* Top row: order id + status */}
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-xs font-mono font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{job.order_id}</span>
-        <StatusBadge status={job.status} size="sm" />
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <span className="text-xs font-mono font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded dark:bg-slate-800 dark:text-slate-400">{job.order_id}</span>
+        {job.status === 'CANCELLED' ? (
+          <span className="bg-red-50 text-red-500 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-red-500/10">Dibatalkan</span>
+        ) : (
+          <span className="bg-green-50 text-green-600 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-green-500/10">Selesai</span>
+        )}
       </div>
 
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="font-bold text-lg truncate flex-1">{customerName}</h3>
+      <div className="flex items-start justify-between gap-2 mb-4">
+        <h3 className="font-bold text-xl text-[#1e1b4b] dark:text-white truncate flex-1">{customerName}</h3>
       </div>
 
-      {/* Details */}
-      <div className="space-y-1">
-        <div className="flex items-center gap-1.5 text-xs text-ink-mute">
-          <Wrench className="h-3 w-3 shrink-0" aria-hidden="true" />
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <Wrench className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
           <span>{serviceType}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-ink-mute">
-          <Calendar className="h-3 w-3 shrink-0" aria-hidden="true" />
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <Calendar className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
           <span>{scheduledDate}</span>
         </div>
         {actualPrice > 0 && (
-          <div className="flex items-center gap-1.5 text-xs text-ink-mute">
-            <Banknote className="h-3 w-3 shrink-0" aria-hidden="true" />
-            <span className="font-medium text-foreground">{formatCurrency(actualPrice)}</span>
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <Banknote className="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+            <span className="font-medium text-[#1e1b4b] dark:text-white">{formatCurrency(actualPrice)}</span>
           </div>
         )}
       </div>

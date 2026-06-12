@@ -67,19 +67,18 @@ export function HistoryList() {
   const totalCount = data?.pages?.[0]?.pagination?.total ?? null
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-2">
+    <div className="space-y-6">
+      <div className="bg-white p-1 rounded-[32px] shadow border border-gray-100 -mt-10 relative z-10 dark:bg-[#1a1833] flex gap-1">
         {FILTER_TABS.map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key)}
             className={cn(
-              'flex-1 rounded-full px-4 py-2 text-sm font-medium transition-colors',
-              'min-h-[40px]',
+              'flex-1 py-3 text-center text-sm transition-colors',
               activeTab === tab.key
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-background text-foreground hover:bg-canvas-soft'
+                ? 'font-semibold bg-[#211c59] text-white rounded-[28px]'
+                : 'font-semibold text-gray-600 rounded-full dark:text-gray-400'
             )}
           >
             {tab.label}
@@ -87,20 +86,14 @@ export function HistoryList() {
         ))}
       </div>
 
-      {/* Total count chip (only when data loaded) */}
-      {!isLoading && !isError && totalCount !== null && (
-        <div
-          className="flex items-center gap-2 rounded-md border border-hairline bg-canvas-soft px-3 py-2 text-xs"
-          role="status"
-        >
-          <ListChecks className="h-3.5 w-3.5 text-ink-mute" aria-hidden="true" />
-          <span className="text-ink-mute">Total:</span>
-          <span className="font-semibold tabular-nums text-foreground">{totalCount}</span>
-          <span className="text-ink-mute">
-            pekerjaan{activeTab !== 'all' ? ` (${currentFilter.label.toLowerCase()})` : ''}
-          </span>
-        </div>
-      )}
+      <div className="flex justify-between items-center px-1">
+        <h2 className="text-lg font-bold text-[#1e1b4b] dark:text-white">Daftar Pekerjaan</h2>
+        {!isLoading && !isError && totalCount !== null && (
+          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Total: {totalCount} pekerjaan
+          </div>
+        )}
+      </div>
 
       {/* Content */}
       {isLoading && <TodayJobsSkeleton />}
