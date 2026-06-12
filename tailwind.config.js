@@ -19,6 +19,7 @@ module.exports = {
   	},
       extend: {
       fontFamily: {
+        lexend: ['Lexend', 'sans-serif'],
         heading: ['Lexend', ...defaultTheme.fontFamily.sans],
         body: ['Lexend', ...defaultTheme.fontFamily.sans],
       },

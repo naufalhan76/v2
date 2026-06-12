@@ -71,6 +71,11 @@
     --status-paid: 158 64% 52%;
     --status-cancelled: 0 72% 51%;
 
+    --tech-primary: #211c59;
+    --tech-bg: #F8FAFC;
+    --tech-card: #ffffff;
+    --tech-text: #1e1b4b;
+    --tech-text-secondary: #4B5563;
   }
 
   .dark {

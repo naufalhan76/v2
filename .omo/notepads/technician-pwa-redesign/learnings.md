@@ -15,6 +15,7 @@
 - `/technician` routes load Lexend through `next/font` in `src/app/technician/layout.tsx`, leaving admin body font unchanged.
 - 2026-06-12: Technician theme infrastructure lives in `src/hooks/use-technician-theme.ts`; it defaults invalid/missing preferences to `system`, persists every selected mode to `msn-tech-theme`, resolves system mode through `(prefers-color-scheme: dark)`, and includes an inline script for pre-hydration `<html class="dark">` sync.
 - Tailwind exposes technician font utilities as `font-heading` and `font-body`, both backed by Lexend with the default sans fallback stack.
+- 2026-06-12: Technician RGB CSS variables are defined in `:root` and `.technician`; `.dark` plus `.dark .technician`/`.technician.dark` override background, card, text, and secondary text values.
 - 2026-06-12: Backend transition IN_PROGRESS now requires GPS only; `arrival_photos` is optional and may be omitted or empty.
 - 2026-06-12: Technician theme infrastructure exports `TechTheme` (`light`/`dark`/`system`), persists preference under `msn-tech-theme`, applies `.dark` on `<html>`, and uses an inline technician theme script in `/technician` layout to avoid initial wrong-theme flash.
 
