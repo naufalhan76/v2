@@ -3,6 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
+import { TechnicianThemeToggle } from '@/components/technician/theme-toggle'
+import { SyncStatus } from '@/components/technician/sync-status'
+import { useOnlineSync } from '@/hooks/use-online-sync'
 import {
   Phone,
   Mail,
@@ -113,6 +116,7 @@ function getInitials(name: string): string {
 export function ProfileContent() {
   const router = useRouter()
   const { toast } = useToast()
+  const { pending, lastResult } = useOnlineSync()
   const [loggingOut, setLoggingOut] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [push, setPush] = useState<PushUiState>({ kind: 'loading' })
@@ -263,80 +267,104 @@ export function ProfileContent() {
     push.kind === 'denied' ||
     push.kind === 'busy'
 
+  const pendingCount = pending.reports + pending.transitions + pending.photos
+  const lastSyncTime = lastResult ? new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Belum sinkronisasi'
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Profile info card */}
-      <div className="rounded-lg border border-hairline bg-background p-4 space-y-4">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-[#1a1833] dark:border-gray-700 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-lg font-semibold">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#211c59] text-white text-xl font-semibold dark:bg-indigo-500">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="font-semibold text-base truncate">{technician?.technician_name ?? 'Teknisi'}</h2>
+            <h2 className="font-bold text-xl truncate dark:text-white">{technician?.technician_name ?? 'Teknisi'}</h2>
             {technician?.company && (
-              <p className="text-xs text-ink-mute truncate">{technician.company}</p>
+              <p className="text-sm text-gray-500 truncate dark:text-gray-400">{technician.company}</p>
             )}
           </div>
         </div>
 
-        <div className="space-y-2.5 pt-2 border-t">
+        <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800">
           {technician?.contact_number && (
-            <div className="flex items-center gap-2 text-sm">
-              <Phone className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
-              <span className="truncate">{technician.contact_number}</span>
+            <div className="flex items-center gap-3 text-sm dark:text-gray-300">
+              <Phone className="h-4 w-4 text-gray-400 shrink-0" aria-hidden="true" />
+              <span className="truncate font-medium">{technician.contact_number}</span>
             </div>
           )}
           {technician?.email && (
-            <div className="flex items-center gap-2 text-sm">
-              <Mail className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
-              <span className="truncate">{technician.email}</span>
-            </div>
-          )}
-          {technician?.company && (
-            <div className="flex items-center gap-2 text-sm">
-              <Info className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
-              <span className="truncate">{technician.company}</span>
+            <div className="flex items-center gap-3 text-sm dark:text-gray-300">
+              <Mail className="h-4 w-4 text-gray-400 shrink-0" aria-hidden="true" />
+              <span className="truncate font-medium">{technician.email}</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div
-        className="grid grid-cols-2 gap-2"
-        role="list"
-        aria-label="Statistik pekerjaan"
-      >
-        <StatCard
-          icon={<Briefcase className="h-3.5 w-3.5" aria-hidden="true" />}
-          label="Total Selesai"
-          value={stats?.totalCompleted}
-          tone="primary"
-        />
-        <StatCard
-          icon={<TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />}
-          label="Bulan Ini"
-          value={stats?.monthCompleted}
-          tone="muted"
-        />
+      {/* Sync status section */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-[#1a1833] dark:border-gray-700 space-y-4">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          Status Sinkronisasi
+        </h3>
+        
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold dark:text-white">Item Tertunda</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{pendingCount} item</p>
+          </div>
+          <div className="space-y-1 text-right">
+            <p className="text-sm font-semibold dark:text-white">Terakhir Sinkron</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{lastSyncTime}</p>
+          </div>
+        </div>
+        
+        <button 
+          onClick={() => {
+            const btn = document.querySelector('[aria-label*="sinkronkan sekarang"]') as HTMLButtonElement
+            if (btn) btn.click()
+            else {
+               const syncBtn = document.querySelector('[role="status"]') as HTMLElement;
+               if (syncBtn && syncBtn.tagName === 'BUTTON') {
+                 syncBtn.click();
+               }
+            }
+          }}
+          className="w-full border-2 border-gray-200 dark:border-gray-700 rounded-xl py-3 font-semibold text-[#211c59] dark:text-indigo-300 flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+        >
+          <SyncStatus variant="compact" className="border-0 bg-transparent text-inherit p-0 h-auto" />
+          Sinkronkan Sekarang
+        </button>
       </div>
 
       {/* Settings card */}
-      <div className="rounded-lg border border-hairline bg-background p-4 space-y-4">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-ink-mute">
-          Pengaturan
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 dark:bg-[#1a1833] dark:border-gray-700 space-y-5">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          Pengaturan Tampilan
+        </h3>
+        <TechnicianThemeToggle />
+
+        <div className="h-px bg-gray-100 dark:bg-gray-800 my-2" />
+
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          Pengaturan Notifikasi
         </h3>
 
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            {push.kind === 'enabled' ? (
-              <Bell className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
-            ) : (
-              <BellOff className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
-            )}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={cn(
+              "p-2 rounded-lg", 
+              push.kind === 'enabled' ? "bg-indigo-50 dark:bg-indigo-500/10 text-[#211c59] dark:text-indigo-300" : "bg-gray-50 dark:bg-gray-800 text-gray-400"
+            )}>
+              {push.kind === 'enabled' ? (
+                <Bell className="h-5 w-5 shrink-0" aria-hidden="true" />
+              ) : (
+                <BellOff className="h-5 w-5 shrink-0" aria-hidden="true" />
+              )}
+            </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium">Notifikasi Push</p>
-              <p className="text-xs text-ink-mute line-clamp-1">{pushHelpText(push)}</p>
+              <p className="text-sm font-semibold dark:text-white">Notifikasi Push</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{pushHelpText(push)}</p>
             </div>
           </div>
           <Switch
@@ -348,7 +376,7 @@ export function ProfileContent() {
         </div>
 
         {push.kind === 'denied' && (
-          <div className="flex gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+          <div className="flex gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-xs text-destructive">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
             <p>
               Notifikasi diblokir oleh browser. Buka pengaturan situs di browser kamu, izinkan
@@ -357,7 +385,7 @@ export function ProfileContent() {
           </div>
         )}
         {push.kind === 'unsupported' && (
-          <div className="flex gap-2 rounded-md border border-hairline bg-canvas-soft p-3 text-xs text-ink-mute">
+          <div className="flex gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 text-xs text-gray-500 dark:text-gray-400">
             <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
             <p>
               Browser ini tidak mendukung notifikasi push. Coba pakai Chrome atau Safari versi
@@ -373,17 +401,13 @@ export function ProfileContent() {
         variant="outline"
         onClick={() => setConfirmOpen(true)}
         disabled={loggingOut}
-        className={cn(
-          'w-full h-11 text-destructive border-destructive/30',
-          'hover:text-destructive hover:bg-destructive/10 hover:border-destructive/40',
-          'cursor-pointer transition-colors'
-        )}
+        className="w-full bg-red-50 text-red-600 font-semibold py-6 rounded-xl border border-red-100 hover:bg-red-100 hover:text-red-700 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors"
       >
-        <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
-        Keluar
+        <LogOut className="mr-2 h-5 w-5" aria-hidden="true" />
+        Keluar Akun
       </Button>
 
-      <p className="text-center text-xs text-ink-mute pt-2">
+      <p className="text-center text-xs text-gray-400 dark:text-gray-500 pt-2 font-medium">
         MSN Tech v2.0.0-beta
       </p>
 
