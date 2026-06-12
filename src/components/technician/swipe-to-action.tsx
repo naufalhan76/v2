@@ -2,22 +2,20 @@
 
 import React, { useRef, useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
-import { ChevronRight, Loader2, Check } from 'lucide-react'
+import { ChevronRight, Loader2 } from 'lucide-react'
 
-interface SwipeToActionProps {
-  onAction: () => Promise<void> | void
-  text?: string
-  completedText?: string
-  isLoading?: boolean
-  className?: string
+export interface SwipeToActionProps {
+  onComplete: () => void | Promise<void>
+  label?: string
+  disabled?: boolean
+  loading?: boolean
 }
 
 export function SwipeToAction({
-  onAction,
-  text = 'Geser untuk berangkat',
-  completedText = 'Berangkat!',
-  isLoading = false,
-  className
+  onComplete,
+  label = 'Geser untuk Berangkat',
+  disabled = false,
+  loading = false
 }: SwipeToActionProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -28,20 +26,22 @@ export function SwipeToAction({
   
   useEffect(() => {
     if (containerRef.current) {
-      // 56px is the width of the thumb (14 * 4), plus 4px padding on each side (8px total)
-      maxTravel.current = containerRef.current.clientWidth - 56 - 8
+      // Container width minus thumb width (48px) and paddings (8px left + 8px right = 16px)
+      maxTravel.current = containerRef.current.clientWidth - 48 - 16
     }
   }, [])
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (isCompleted || isLoading) return
+    if (disabled || loading || isCompleted) return
     setIsDragging(true)
     startX.current = e.clientX - xPos
-    e.currentTarget.setPointerCapture(e.pointerId)
+    if (e.currentTarget.setPointerCapture) {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    }
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging || isCompleted || isLoading) return
+    if (!isDragging || disabled || loading || isCompleted) return
     
     let newX = e.clientX - startX.current
     if (newX < 0) newX = 0
@@ -53,14 +53,22 @@ export function SwipeToAction({
   const handlePointerUp = async (e: React.PointerEvent) => {
     if (!isDragging) return
     setIsDragging(false)
-    e.currentTarget.releasePointerCapture(e.pointerId)
+    if (e.currentTarget.releasePointerCapture) {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    }
 
-    if (xPos >= maxTravel.current * 0.85) {
+    if (xPos >= maxTravel.current * 0.8) {
       // Snap to end
       setXPos(maxTravel.current)
       setIsCompleted(true)
+      
+      // Haptic feedback
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(50)
+      }
+      
       try {
-        await onAction()
+        await onComplete()
       } catch (_err) {
         setIsCompleted(false)
         setXPos(0)
@@ -75,66 +83,41 @@ export function SwipeToAction({
     <div 
       ref={containerRef}
       className={cn(
-        "relative h-16 w-full rounded-full bg-canvas-soft overflow-hidden select-none touch-none border border-hairline transition-colors duration-300",
-        isCompleted && "bg-primary border-primary dark:bg-primary dark:border-primary shadow-inner",
-        className
+        "relative h-16 w-full rounded-full bg-[#211c59] p-2 overflow-hidden select-none touch-pan-y transition-colors duration-300",
+        (disabled || loading) && "opacity-70 cursor-not-allowed"
       )}
     >
-      {/* Progress Track Fill */}
-      <div 
-        className={cn(
-          "absolute left-0 top-0 bottom-0 bg-primary/20 dark:bg-primary/20 border-r border-primary/30",
-          !isDragging && "transition-all duration-300 cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-          isCompleted && "bg-primary dark:bg-primary border-none",
-          isLoading && "bg-primary/20 dark:bg-primary/20 border-none animate-pulse"
-        )}
-        style={{ width: isCompleted ? '100%' : isLoading ? '100%' : `${xPos + 56 + 8}px` }}
-      />
-
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-        <span 
-          className={cn(
-            "text-[15px] font-medium transition-opacity duration-200 text-ink-mute"
-          )}
-          style={{ 
-            opacity: isLoading || isCompleted ? 0 : Math.max(0, 1 - (xPos / (maxTravel.current || 1)) * 1.5)
-          }}
-        >
-          {text}
-        </span>
+        {loading ? (
+          <Loader2 className="h-5 w-5 animate-spin text-white" />
+        ) : (
+          <span 
+            className="text-white font-semibold text-sm transition-opacity duration-200"
+            style={{ 
+              opacity: isCompleted ? 0 : Math.max(0, 1 - (xPos / (maxTravel.current || 1)) * 1.5)
+            }}
+          >
+            {label}
+          </span>
+        )}
       </div>
 
-      {(isLoading || isCompleted) && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 animate-in fade-in zoom-in-95 duration-300">
-          {isLoading ? (
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          ) : (
-            <div className="flex items-center gap-2 text-white animate-in slide-in-from-bottom-2 duration-300 delay-75">
-              <Check className="h-5 w-5" />
-              <span className="font-semibold">{completedText}</span>
-            </div>
-          )}
-        </div>
-      )}
-
       <div
+        data-testid="swipe-thumb"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         className={cn(
-          "absolute left-1 top-1 bottom-1 w-14 rounded-full bg-primary flex items-center justify-center cursor-grab active:cursor-grabbing shadow-lg z-30",
-          !isDragging && "transition-transform duration-300 cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-          (isCompleted || isLoading) && "opacity-0 scale-50 pointer-events-none transition-all duration-300"
+          "absolute left-2 top-2 bottom-2 w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md z-30 touch-none",
+          !isDragging && "transition-transform duration-300 ease-out",
+          !disabled && !loading && "cursor-grab active:cursor-grabbing",
+          isCompleted && "opacity-0 scale-50 transition-all duration-300"
         )}
         style={{ transform: `translateX(${xPos}px)` }}
       >
-        {/* Pulsing ring inside the thumb to invite interaction */}
-        {!isDragging && !isCompleted && !isLoading && (
-          <span className="absolute inset-0 rounded-full bg-primary-foreground/20 animate-ping opacity-60 pointer-events-none" />
-        )}
         <ChevronRight className={cn(
-          "h-6 w-6 text-primary-foreground transition-transform duration-300",
+          "h-6 w-6 text-[#211c59] transition-transform duration-300",
           isDragging && "scale-110"
         )} />
       </div>
