@@ -262,10 +262,9 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
             {isPending && (
               <div className="mb-4">
                 <SwipeToAction
-                  onAction={handleSwipe}
-                  text="Geser untuk Berangkat"
-                  completedText="Berangkat!"
-                  isLoading={transitionMutation.isPending}
+                  onComplete={handleSwipe}
+                  label="Geser untuk Berangkat"
+                  loading={transitionMutation.isPending}
                 />
               </div>
             )}
