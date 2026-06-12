@@ -160,7 +160,7 @@ export function SignaturePad({ onChange, onBlobChange, value, disabled = false, 
           size="sm"
           onClick={handleClear}
           disabled={disabled || isEmpty}
-          className="h-9 px-3 text-xs font-medium text-destructive hover:text-destructive hover:bg-destructive/10 transition-all duration-200 active:scale-[0.96]"
+          className="h-9 px-3 text-xs font-medium text-destructive hover:text-destructive hover:bg-red-50 dark:hover:bg-red-950 transition-all duration-200 active:scale-[0.96]"
         >
           <Eraser className="mr-1.5 h-3.5 w-3.5" />
           Hapus
@@ -170,8 +170,8 @@ export function SignaturePad({ onChange, onBlobChange, value, disabled = false, 
       <div
         className={cn(
           'relative rounded-lg border-2 border-dashed border-hairline dark:border-gray-600 bg-background dark:bg-[#252243] overflow-hidden',
-          disabled ? 'opacity-50 pointer-events-none' : 'hover:border-primary/50 transition-colors duration-200',
-          !isEmpty && 'border-solid border-primary/40 dark:border-indigo-400/40'
+          disabled ? 'opacity-50 pointer-events-none' : 'hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors duration-200',
+          !isEmpty && 'border-solid border-indigo-300 dark:border-indigo-600'
         )}
       >
         <canvas

@@ -151,8 +151,8 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
       className={cn(
         'block rounded-xl border border-hairline shadow-sm transition-colors duration-200 overflow-hidden',
         isActive
-          ? 'border-primary bg-background ring-1 ring-primary/20'
-          : 'bg-background hover:border-primary/40'
+          ? 'border-primary bg-background ring-1 ring-indigo-200 dark:ring-indigo-800'
+          : 'bg-background hover:border-indigo-300 dark:hover:border-indigo-700'
       )}
     >
       <button
@@ -170,7 +170,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
               'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-colors',
               isActive
                 ? 'bg-primary text-primary-foreground'
-                : 'bg-canvas-soft text-ink-mute group-hover:bg-primary/10 group-hover:text-primary'
+                : 'bg-canvas-soft text-ink-mute group-hover:bg-indigo-50 group-hover:text-primary dark:group-hover:bg-[#252243]'
             )}
             aria-hidden="true"
           >
@@ -237,7 +237,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
               <div className="flex gap-2 mb-4">
                   <Button
                     variant="outline"
-                    className="flex-1 bg-status-completed/10 text-status-completed border-status-completed/20 hover:bg-status-completed/20 hover:text-status-completed dark:bg-status-completed/10 dark:border-status-completed/30 dark:text-status-completed dark:hover:bg-status-completed/20"
+                    className="flex-1 bg-indigo-50 text-[#211c59] border-indigo-200 hover:bg-indigo-100 dark:bg-[#252243] dark:text-white dark:border-indigo-800 dark:hover:bg-[#2d2a5e]"
                     asChild
                   >
                     <a href={`https://wa.me/${waPhone}?text=${waMessage}`} target="_blank" rel="noopener noreferrer">
@@ -247,7 +247,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex-1 bg-status-assigned/10 text-status-assigned border-status-assigned/20 hover:bg-status-assigned/20 hover:text-status-assigned dark:bg-status-assigned/10 dark:border-status-assigned/30 dark:text-status-assigned dark:hover:bg-status-assigned/20"
+                    className="flex-1 bg-white text-[#211c59] border-indigo-200 hover:bg-indigo-50 dark:bg-[#1a1833] dark:text-white dark:border-indigo-800 dark:hover:bg-[#252243]"
                     asChild
                   >
                     <a href={`tel:${phoneRaw}`}>

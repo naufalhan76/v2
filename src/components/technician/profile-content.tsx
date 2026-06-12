@@ -376,7 +376,7 @@ export function ProfileContent() {
         </div>
 
         {push.kind === 'denied' && (
-          <div className="flex gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-xs text-destructive">
+          <div className="flex gap-2 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 p-4 text-xs text-destructive">
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
             <p>
               Notifikasi diblokir oleh browser. Buka pengaturan situs di browser kamu, izinkan
@@ -433,7 +433,7 @@ export function ProfileContent() {
             <AlertDialogAction
               onClick={handleLogout}
               disabled={loggingOut}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
+              className="bg-destructive text-destructive-foreground hover:bg-red-700 cursor-pointer"
             >
               {loggingOut ? 'Memproses...' : 'Ya, keluar'}
             </AlertDialogAction>

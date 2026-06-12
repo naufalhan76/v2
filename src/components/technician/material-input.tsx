@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
-import { Plus, Trash2, Package, Search } from 'lucide-react'
+import { Plus, Trash2, Package, Search, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getActiveAddons } from '@/lib/actions/addons'
@@ -385,7 +385,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
       {addonsLoading && value.length === 0 && (
         <div className="flex items-center justify-center py-6 text-center border rounded-lg border-dashed dark:border-gray-700">
           <div className="flex flex-col items-center gap-2">
-            <div className="h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            <div className="h-5 w-5 border-2 border-indigo-200 border-t-indigo-600 dark:border-indigo-800 dark:border-t-indigo-400 rounded-full animate-spin" />
             <p className="text-sm text-ink-mute">Memuat katalog material...</p>
           </div>
         </div>
@@ -461,7 +461,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                         variant="ghost"
                         size="icon"
                         onClick={() => removeRow(index)}
-                        className="h-11 w-11 sm:h-10 sm:w-10 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10 active:scale-[0.96] transition-transform"
+                        className="h-11 w-11 sm:h-10 sm:w-10 shrink-0 text-destructive hover:text-destructive hover:bg-red-50 dark:hover:bg-red-950 active:scale-[0.96] transition-transform"
                         aria-label={`Hapus material ${index + 1}`}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -469,7 +469,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                     )}
                   </div>
 
-                  <p className="text-[10px] text-primary/70 font-medium flex items-center gap-1.5">
+                  <p className="text-[10px] text-indigo-600 dark:text-indigo-300 font-medium flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                     Katalog: {item.category || 'PARTS'} ({formatCurrency(item.unit_price)}/{item.unit_of_measure || 'pcs'})
                   </p>
@@ -507,9 +507,9 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                 // Manual/Custom Row Layout (Full customizable proposed inputs)
                 <div className="space-y-3 border-l-2 border-status-pending pl-3">
                   <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-status-pending/10 px-2.5 py-0.5 text-[10px] font-semibold text-status-pending dark:text-status-pending">
-                      <span className="h-1.5 w-1.5 rounded-full bg-status-pending" />
-                      ⏳ Harga Menunggu Review Admin
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-950 px-2.5 py-0.5 text-[10px] font-semibold text-status-pending dark:text-status-pending">
+                      <Clock className="h-3 w-3" aria-hidden="true" />
+                      Harga Menunggu Review Admin
                     </span>
                     {!disabled && (
                       <Button
@@ -517,7 +517,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
                         variant="ghost"
                         size="icon"
                         onClick={() => removeRow(index)}
-                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                         aria-label={`Hapus material ${index + 1}`}
                       >
                         <Trash2 className="h-4 w-4" />

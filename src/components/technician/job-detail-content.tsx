@@ -233,7 +233,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
       {/* Work timer (IN_PROGRESS only) */}
       {canonicalStatus === 'IN_PROGRESS' && (
-        <div className="rounded-lg border border-violet-soft/30 bg-canvas-soft dark:border-violet-soft/20 dark:bg-violet-soft/10 p-4 text-center">
+        <div className="rounded-lg border border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-[#252243] p-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Timer className="h-4 w-4 text-primary" aria-hidden="true" />
             <span className="text-sm font-medium text-primary">

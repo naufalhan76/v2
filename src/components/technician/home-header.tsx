@@ -91,11 +91,11 @@ export function HomeHeader() {
       {/* Greeting */}
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
-          <h1 className="text-white font-medium tracking-tight text-lg">
+          <h1 className="text-white font-semibold tracking-tight text-xl">
             {greeting || '...'}
             {firstName ? <span className="font-bold opacity-80">, {firstName}</span> : null}
           </h1>
-          <p className="text-white opacity-60 mt-1 text-xs capitalize tabular-nums">
+          <p className="text-white opacity-60 mt-1 text-sm capitalize tabular-nums">
             {longDate}
           </p>
         </div>

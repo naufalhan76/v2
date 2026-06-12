@@ -82,7 +82,7 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
         onClick={() => void syncNow({ bypassBackoff: true })}
         className={cn(
           baseClass,
-          'border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer'
+          'border-destructive bg-destructive text-destructive-foreground hover:bg-red-700 cursor-pointer'
         )}
         aria-label={`Sinkronisasi gagal: ${lastError}. Ketuk untuk coba lagi.`}
       >
@@ -114,7 +114,7 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
         onClick={() => void syncNow({ bypassBackoff: true })}
         className={cn(
           baseClass,
-          'border-status-pending bg-status-pending text-white hover:bg-status-pending/90 cursor-pointer'
+          'border-status-pending bg-status-pending text-white hover:bg-amber-600 cursor-pointer'
         )}
         aria-label={`${pendingCount} item tertunda${needsAttention > 0 ? `, ${needsAttention} perlu perhatian` : ''}. Ketuk untuk sinkronkan sekarang.`}
       >

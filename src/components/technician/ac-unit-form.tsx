@@ -138,7 +138,7 @@ export function AcUnitForm({ orderId, initialUnits, formUnits, onChange, onPhoto
               onClick={() => toggleExpand(field.id)}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-[#211c59] dark:bg-[#252243] dark:text-indigo-300">
                   <Snowflake className="h-4 w-4" />
                 </div>
                   <div>
