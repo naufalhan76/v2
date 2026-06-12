@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase-browser'
-import { Briefcase, Clock, Sparkles } from 'lucide-react'
-import { SyncStatus } from '@/components/technician/sync-status'
+import { Briefcase, Clock, Sparkles, RefreshCw } from 'lucide-react'
 import type { OrderStatus } from '@/lib/order-status'
+import { useOnlineSync } from '@/hooks/use-online-sync'
 
 interface TodayJob {
   order_id: string
@@ -66,6 +66,9 @@ export function HomeHeader() {
     refetchInterval: 60_000,
   })
 
+  const { pending } = useOnlineSync()
+  const syncPendingCount = pending.reports + pending.transitions + pending.photos
+
   const activeCount =
     jobs?.filter((j) => j.canonical_status === 'EN_ROUTE' || j.canonical_status === 'IN_PROGRESS')
       .length ?? 0
@@ -84,23 +87,26 @@ export function HomeHeader() {
   const hasJobs = (jobs?.length ?? 0) > 0
 
   return (
-    <div className="space-y-3" data-testid="technician-home-header">
+    <div className="bg-[#211c59] pt-12 pb-32 px-6 rounded-b-[40px] space-y-3" data-testid="technician-home-header">
       {/* Greeting */}
-      <div className="flex items-start gap-3">
-        <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <Sparkles className="h-4 w-4" aria-hidden="true" />
-        </div>
+      <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
-          <h1 className="text-3xl sm:text-4xl font-[540] tracking-tight">
+          <h1 className="text-white font-medium tracking-tight text-lg">
             {greeting || '...'}
-            {firstName ? <span className="text-primary-foreground/80">, {firstName}</span> : null}
-            <span className="text-primary-foreground/60">.</span>
+            {firstName ? <span className="font-bold opacity-80">, {firstName}</span> : null}
           </h1>
-          <p className="text-lg text-ink-mute capitalize tabular-nums">
+          <p className="text-white opacity-60 mt-1 text-xs capitalize tabular-nums">
             {longDate}
           </p>
         </div>
-        <SyncStatus variant="compact" className="shrink-0 mt-0.5" />
+        
+        {/* Sync Badge overlay logic */}
+        {(syncPendingCount > 0) && (
+          <div className="bg-[#f59e0b] px-3 py-1.5 rounded-full text-white font-bold text-sm flex items-center gap-1.5 shrink-0 mt-0.5">
+             <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+             {syncPendingCount}
+          </div>
+        )}
       </div>
 
       {/* Quick stats */}

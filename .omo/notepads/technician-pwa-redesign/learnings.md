@@ -40,3 +40,20 @@
 - 2026-06-12: Technician transition route keeps GPS required for IN_PROGRESS while accepting omitted or empty `arrival_photos`.
 - 2026-06-12 Task 5: `src/lib/offline/timer.ts` keeps one active technician timer in localStorage, returns rounded duration via `computeWorkDurationMinutes()`, and `stopTimer()` removes active state after returning completion metadata.
 - 2026-06-12 Task 5: `src/lib/offline/timer.ts` is localStorage-only, intentionally not IndexedDB; `stopTimer()` removes active state after returning `{ work_completed_at, durationMinutes }` so next job can start.
+- Task 7: Redesigned `BottomTabBar` to pill-shape, updated icons (CalendarDays, Clock, User), and applied design system tokens.
+
+## UI Redesign Findings — 2026-06-12
+- Technician redesign requires converting skeletons to new design language to prevent layout shifts.
+- Skeletons updated with new visual tokens: indigo shimmer (`bg-indigo-50 dark:bg-gray-700`), high border radii (`rounded-[32px]`), and layout parity with new dashboard components (curved header `rounded-b-[40px]`, stat cards).
+- Created `history-skeleton.tsx` corresponding to updated history view with `rounded-b-[80px]` headers.
+
+
+### Swipe-to-Action Redesign (Task 10)
+- Redesigned `SwipeToAction` component according to ui-style-reference.md
+- Used tech-primary (`#211c59`) for the track, white thumb with ChevronRight
+- Updated props: `onComplete`, `label`, `disabled`, `loading`
+- Switched to native pointer events (`setPointerCapture`, `releasePointerCapture`) for smooth dragging
+- Added touch-action handling (`touch-pan-y` on container, `touch-none` on thumb) to prevent vertical scroll conflict while dragging
+- Added vibration feedback on complete
+- Fixed React testing library mock for `setPointerCapture` in Vitest environment
+- Tests cover full swipe past threshold and early release scenarios

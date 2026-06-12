@@ -27,13 +27,15 @@ import {
 export type UseOnlineSyncState = {
   isOnline: boolean
   syncing: boolean
-  pending: { reports: number; transitions: number; photos: number }
+  pending: { reports: number; transitions: number; photos: number; needsAttention: number }
   lastResult: DrainResult | null
+  errors: DrainResult['errors']
+  needsAttention: number
   lastError: string | null
-  syncNow: () => Promise<void>
+  syncNow: (options?: { bypassBackoff?: boolean }) => Promise<void>
 }
 
-const ZERO_PENDING = { reports: 0, transitions: 0, photos: 0 }
+const ZERO_PENDING = { reports: 0, transitions: 0, photos: 0, needsAttention: 0 }
 
 export function useOnlineSync(): UseOnlineSyncState {
   const [isOnline, setIsOnline] = useState<boolean>(() =>
@@ -57,13 +59,13 @@ export function useOnlineSync(): UseOnlineSyncState {
     }
   }, [])
 
-  const syncNow = useCallback(async () => {
+  const syncNow = useCallback(async (options: { bypassBackoff?: boolean } = {}) => {
     if (inFlight.current) return
     inFlight.current = true
     setSyncing(true)
     setLastError(null)
     try {
-      const result = await drainQueue()
+      const result = await drainQueue(options)
       setLastResult(result)
     } catch (err) {
       setLastError(err instanceof Error ? err.message : String(err))
@@ -130,6 +132,8 @@ export function useOnlineSync(): UseOnlineSyncState {
     syncing,
     pending,
     lastResult,
+    errors: lastResult?.errors ?? [],
+    needsAttention: pending.needsAttention,
     lastError,
     syncNow,
   }

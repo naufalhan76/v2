@@ -86,7 +86,7 @@ vi.mock('@/lib/supabase-browser', () => ({
   }),
 }))
 
-import { drainQueue, enqueuePhoto, enqueueReport } from './sync-manager'
+import { drainQueue, enqueuePhoto, enqueueReport, type DrainResult } from './sync-manager'
 
 function reportPayload(overrides: Partial<TechnicianReportPayload> = {}): TechnicianReportPayload {
   return {
@@ -132,6 +132,7 @@ function pendingReport(overrides: Partial<PendingReportRecord> = {}): PendingRep
     attempts: 0,
     lastAttemptAt: null,
     lastError: null,
+    status: 'pending',
     createdAt: Date.now(),
     ...overrides,
   }
@@ -155,6 +156,7 @@ function pendingTransition(overrides: Partial<PendingTransitionRecord> = {}): Pe
     attempts: 0,
     lastAttemptAt: null,
     lastError: null,
+    status: 'pending',
     createdAt: Date.now(),
     ...overrides,
   }
@@ -198,6 +200,7 @@ describe('sync-manager current queue behavior', () => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
     vi.stubGlobal('navigator', {
+      onLine: false,
       serviceWorker: {
         ready: Promise.resolve({ active: { postMessage: swState.postMessage } }),
       },
@@ -286,16 +289,54 @@ describe('sync-manager current queue behavior', () => {
     expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/technician/jobs/WO-SYNC-001/report', expect.objectContaining({ method: 'POST' }))
   })
 
-  it.each([422, 403])('drainQueue treats HTTP %s report responses as permanent failures and deletes the report', async (status) => {
+  it('drainQueue preserves 422 report responses as needs-attention with server error details', async () => {
     dbState.reports = [pendingReport()]
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(status, { error: 'invalid payload' })))
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(422, { error: 'material quantity is invalid' })))
 
     const result = await drainQueue()
 
     expect(result.reportsAttempted).toBe(1)
     expect(result.reportsSynced).toBe(0)
-    expect(result.errors).toEqual([{ kind: 'report', key: '11111111-1111-4111-8111-111111111111', message: `HTTP ${status}` }])
-    expect(dbState.reports).toEqual([])
+    expect(result.errors).toEqual([
+      {
+        kind: 'report',
+        key: '11111111-1111-4111-8111-111111111111',
+        message: 'NEEDS_ATTENTION: material quantity is invalid',
+        status: 'needs-attention',
+      },
+    ])
+    expect(dbState.reports).toHaveLength(1)
+    expect(dbState.reports[0]).toMatchObject({
+      status: 'needs-attention',
+      attempts: 1,
+      lastAttemptAt: expect.any(Number),
+      lastError: 'material quantity is invalid',
+    })
+  })
+
+  it('drainQueue preserves 403 report responses as auth-error with re-login guidance', async () => {
+    dbState.reports = [pendingReport()]
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(403, { message: 'technician session is not allowed' })))
+
+    const result = await drainQueue()
+
+    expect(result.reportsAttempted).toBe(1)
+    expect(result.reportsSynced).toBe(0)
+    expect(result.errors).toEqual([
+      {
+        kind: 'report',
+        key: '11111111-1111-4111-8111-111111111111',
+        message: 'AUTH_ERROR: technician session is not allowed',
+        status: 'auth-error',
+      },
+    ])
+    expect(dbState.reports).toHaveLength(1)
+    expect(dbState.reports[0]).toMatchObject({
+      status: 'auth-error',
+      attempts: 1,
+      lastAttemptAt: expect.any(Number),
+      lastError: 'technician session is not allowed',
+    })
   })
 
   it('drainQueue retries 5xx report responses without deleting and records exponential backoff state', async () => {
@@ -370,6 +411,86 @@ describe('sync-manager current queue behavior', () => {
     expect(postedPayload.ac_units[0].photos_after).toEqual(['https://storage.test/service-photos/WO-SYNC-001/after-photo-id.jpeg'])
     expect(dbState.reports).toEqual([])
     expect(dbState.photos).toEqual([])
+  })
+
+  it('keeps reports queued when photo upload fails', async () => {
+    dbState.photos = [pendingPhoto('before-photo-id', 'before', 0)]
+    dbState.reports = [pendingReport({ photoIds: ['before-photo-id'] })]
+    storageState.upload.mockResolvedValueOnce({ data: null, error: { message: 'bucket unavailable' } })
+    const fetchMock = vi.fn(async () => jsonResponse(200, { success: true }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await drainQueue()
+
+    expect(result.reportsAttempted).toBe(1)
+    expect(result.reportsSynced).toBe(0)
+    expect(result.errors).toEqual([
+      {
+        kind: 'report',
+        key: '11111111-1111-4111-8111-111111111111',
+        message: 'photo upload failed',
+        status: 'pending',
+      },
+    ])
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(dbState.reports).toHaveLength(1)
+    expect(dbState.reports[0]).toMatchObject({
+      status: 'pending',
+      attempts: 1,
+      lastError: 'photo upload failed',
+    })
+  })
+
+  it('manual drain bypasses retry backoff and drains immediately', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-11T10:00:00.000Z'))
+    dbState.reports = [pendingReport({ attempts: 2, lastAttemptAt: Date.now() })]
+    const fetchMock = vi.fn(async () => jsonResponse(200, { success: true }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await drainQueue({ bypassBackoff: true })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(result.reportsSynced).toBe(1)
+    expect(dbState.reports).toEqual([])
+  })
+
+  it('enqueueReport triggers an immediate drain when browser is online', async () => {
+    vi.stubGlobal('navigator', {
+      onLine: true,
+      serviceWorker: {
+        ready: Promise.resolve({ active: { postMessage: swState.postMessage } }),
+      },
+      storage: { estimate: vi.fn(async () => ({ usage: 0, quota: 100 })) },
+    })
+    const fetchMock = vi.fn(async () => jsonResponse(200, { success: true }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await enqueueReport({
+      orderId: 'WO-SYNC-001',
+      technicianId: 'tech-1',
+      payload: reportPayload(),
+      photoIds: [],
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/technician/jobs/WO-SYNC-001/report', expect.objectContaining({ method: 'POST' }))
+    expect(dbState.reports).toEqual([])
+  })
+
+  it('DrainResult exposes typed errors for UI surfaces', async () => {
+    dbState.reports = [pendingReport()]
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(422, { error: 'customer signature is missing' })))
+
+    const result: DrainResult = await drainQueue()
+
+    expect(result.errors).toEqual([
+      {
+        kind: 'report',
+        key: '11111111-1111-4111-8111-111111111111',
+        message: 'NEEDS_ATTENTION: customer signature is missing',
+        status: 'needs-attention',
+      },
+    ])
   })
 })
 

@@ -32,6 +32,7 @@ import {
   putTransition,
   type PendingPhotoRecord,
   type PendingReportRecord,
+  type PendingReportStatus,
   type PendingTransitionRecord,
   type PhotoKind,
 } from '@/lib/offline/db'
@@ -131,10 +132,14 @@ export async function enqueueReport(
     attempts: 0,
     lastAttemptAt: null,
     lastError: null,
+    status: 'pending',
     createdAt: Date.now(),
   }
   await putReport(record)
   await requestBackgroundSync('msn-tech-sync-reports')
+  if (typeof navigator !== 'undefined' && navigator.onLine) {
+    await drainQueue({ bypassBackoff: true })
+  }
   return record
 }
 
@@ -217,36 +222,50 @@ async function uploadPhotoBlob(record: PendingPhotoRecord): Promise<string> {
 }
 
 type ClassifyResult =
-  | 'success'
-  | 'idempotent'
-  | 'conflict-cancelled'
-  | 'auth-fail'
-  | 'retry'
-  | 'permanent-fail'
+  | { action: 'success' }
+  | { action: 'idempotent' }
+  | { action: 'conflict-cancelled'; message: string | null }
+  | { action: 'auth-fail'; message: string | null }
+  | { action: 'retry'; message: string | null }
+  | { action: 'needs-attention'; status: PendingReportStatus; message: string | null }
+  | { action: 'permanent-fail'; message: string | null }
 
 /**
  * Classify an HTTP response into a sync outcome.
  * Clones the response before reading the body so the original remains readable.
  */
 async function classifyResponse(res: Response): Promise<ClassifyResult> {
+  const body = await res.clone().json().catch(() => ({}))
+  const message = responseMessage(body)
+
   if (res.ok) {
-    const cloned = res.clone()
-    const body = await cloned.json().catch(() => ({}))
-    return body.idempotent_replay ? 'idempotent' : 'success'
+    return body.idempotent_replay ? { action: 'idempotent' } : { action: 'success' }
   }
 
-  if (res.status === 401) return 'auth-fail'
+  if (res.status === 401) return { action: 'auth-fail', message }
+
+  if (res.status === 403) {
+    return { action: 'needs-attention', status: 'auth-error', message }
+  }
 
   if (res.status === 409 || res.status === 422) {
-    const cloned = res.clone()
-    const body = await cloned.json().catch(() => ({}))
-    const msg: string = body.error ?? body.message ?? ''
-    return /cancel|reassign/i.test(msg) ? 'conflict-cancelled' : 'permanent-fail'
+    if (res.status === 409 && /cancel|reassign/i.test(message ?? '')) {
+      return { action: 'conflict-cancelled', message }
+    }
+    return { action: 'needs-attention', status: 'needs-attention', message }
   }
 
-  if (res.status >= 500) return 'retry'
+  if (res.status >= 500) return { action: 'retry', message }
 
-  return 'permanent-fail'
+  return { action: 'permanent-fail', message }
+}
+
+function responseMessage(body: unknown): string | null {
+  if (!body || typeof body !== 'object') return null
+  const payload = body as { error?: unknown; message?: unknown }
+  if (typeof payload.error === 'string' && payload.error.length > 0) return payload.error
+  if (typeof payload.message === 'string' && payload.message.length > 0) return payload.message
+  return null
 }
 
 // =============================================================================
@@ -258,7 +277,12 @@ export type DrainResult = {
   transitionsAttempted: number
   reportsSynced: number
   transitionsSynced: number
-  errors: Array<{ kind: 'report' | 'transition'; key: string; message: string }>
+  errors: Array<{
+    kind: 'report' | 'transition'
+    key: string
+    message: string
+    status?: PendingReportStatus
+  }>
 }
 
 let draining = false
@@ -272,7 +296,11 @@ let draining = false
  *  2. Process transitions with backoff + response classification.
  *  3. Upload photos then POST reports with backoff + classification.
  */
-export async function drainQueue(): Promise<DrainResult> {
+export type DrainQueueOptions = {
+  bypassBackoff?: boolean
+}
+
+export async function drainQueue(options: DrainQueueOptions = {}): Promise<DrainResult> {
   const result: DrainResult = {
     reportsAttempted: 0,
     transitionsAttempted: 0,
@@ -313,10 +341,10 @@ export async function drainQueue(): Promise<DrainResult> {
     for (const record of transitions) {
       const now = Date.now()
       const lastAttempt = record.lastAttemptAt ?? 0
-      if (lastAttempt + backoffMs(record.attempts) > now) continue
+      if (!options.bypassBackoff && lastAttempt + backoffMs(record.attempts) > now) continue
 
       let res: Response | null = null
-      let classify: ClassifyResult = 'retry'
+      let classify: ClassifyResult = { action: 'retry', message: null }
 
       try {
         res = await fetch(`/api/technician/jobs/${encodeURIComponent(record.orderId)}/transition`, {
@@ -328,20 +356,21 @@ export async function drainQueue(): Promise<DrainResult> {
         })
         classify = await classifyResponse(res)
       } catch {
-        classify = 'retry'
+        classify = { action: 'retry', message: null }
       }
 
-      if (classify === 'success' || classify === 'idempotent') {
+      if (classify.action === 'success' || classify.action === 'idempotent') {
         await deleteTransition(record.idempotencyKey)
         result.transitionsSynced++
-      } else if (classify === 'retry') {
+      } else if (classify.action === 'retry') {
         await putTransition({
           ...record,
           attempts: record.attempts + 1,
           lastAttemptAt: Date.now(),
           lastError: res ? `HTTP ${res.status}` : 'network error',
+          status: 'pending',
         })
-      } else if (classify === 'conflict-cancelled') {
+      } else if (classify.action === 'conflict-cancelled') {
         const cloned = res ? res.clone() : null
         const body = cloned ? await cloned.json().catch(() => ({})) : {}
         await putConflict({
@@ -354,7 +383,7 @@ export async function drainQueue(): Promise<DrainResult> {
           createdAt: Date.now(),
         })
         await deleteTransition(record.idempotencyKey)
-      } else if (classify === 'auth-fail') {
+      } else if (classify.action === 'auth-fail') {
         result.errors.push({
           kind: 'transition',
           key: record.idempotencyKey,
@@ -377,7 +406,7 @@ export async function drainQueue(): Promise<DrainResult> {
     for (const record of reports) {
       const now = Date.now()
       const lastAttempt = record.lastAttemptAt ?? 0
-      if (lastAttempt + backoffMs(record.attempts) > now) continue
+      if (!options.bypassBackoff && lastAttempt + backoffMs(record.attempts) > now) continue
 
       // Upload photos first
       let photoFailed = false
@@ -401,6 +430,13 @@ export async function drainQueue(): Promise<DrainResult> {
           attempts: record.attempts + 1,
           lastAttemptAt: Date.now(),
           lastError: 'photo upload failed',
+          status: 'pending',
+        })
+        result.errors.push({
+          kind: 'report',
+          key: record.idempotencyKey,
+          message: 'photo upload failed',
+          status: 'pending',
         })
         continue
       }
@@ -458,7 +494,7 @@ export async function drainQueue(): Promise<DrainResult> {
       }
 
       let res: Response | null = null
-      let classify: ClassifyResult = 'retry'
+      let classify: ClassifyResult = { action: 'retry', message: null }
 
       try {
         res = await fetch(`/api/technician/jobs/${encodeURIComponent(record.orderId)}/report`, {
@@ -470,20 +506,20 @@ export async function drainQueue(): Promise<DrainResult> {
         })
         classify = await classifyResponse(res)
       } catch {
-        classify = 'retry'
+        classify = { action: 'retry', message: null }
       }
 
-      if (classify === 'success' || classify === 'idempotent') {
+      if (classify.action === 'success' || classify.action === 'idempotent') {
         await cleanupAfterSync(record.orderId)
         result.reportsSynced++
-      } else if (classify === 'retry') {
+      } else if (classify.action === 'retry') {
         await putReport({
           ...record,
           attempts: record.attempts + 1,
           lastAttemptAt: Date.now(),
           lastError: res ? `HTTP ${res.status}` : 'network error',
         })
-      } else if (classify === 'conflict-cancelled') {
+      } else if (classify.action === 'conflict-cancelled') {
         const cloned = res ? res.clone() : null
         const body = cloned ? await cloned.json().catch(() => ({})) : {}
         await putConflict({
@@ -497,18 +533,34 @@ export async function drainQueue(): Promise<DrainResult> {
         })
         // Keep photos for export — do NOT delete photos here
         await deleteReport(record.idempotencyKey)
-      } else if (classify === 'auth-fail') {
+      } else if (classify.action === 'auth-fail') {
         result.errors.push({
           kind: 'report',
           key: record.idempotencyKey,
           message: 'AUTH_REQUIRED: session expired during sync',
+        })
+      } else if (classify.action === 'needs-attention') {
+        const message = classify.message ?? (res ? `HTTP ${res.status}` : 'needs attention')
+        const prefix = classify.status === 'auth-error' ? 'AUTH_ERROR' : 'NEEDS_ATTENTION'
+        await putReport({
+          ...record,
+          attempts: record.attempts + 1,
+          lastAttemptAt: Date.now(),
+          lastError: message,
+          status: classify.status,
+        })
+        result.errors.push({
+          kind: 'report',
+          key: record.idempotencyKey,
+          message: `${prefix}: ${message}`,
+          status: classify.status,
         })
       } else {
         // permanent-fail
         result.errors.push({
           kind: 'report',
           key: record.idempotencyKey,
-          message: res ? `HTTP ${res.status}` : 'permanent failure',
+          message: classify.message ?? (res ? `HTTP ${res.status}` : 'permanent failure'),
         })
         await deleteReport(record.idempotencyKey)
       }
@@ -545,12 +597,17 @@ export async function getPendingCount(): Promise<{
   reports: number
   transitions: number
   photos: number
+  needsAttention: number
 }> {
   const db = await getDb()
-  const [r, t, p] = await Promise.all([
+  const [reports, transitions, photos, reportRecords] = await Promise.all([
     db.count('pendingReports'),
     db.count('pendingTransitions'),
     db.count('pendingPhotos'),
+    getAllReports(),
   ])
-  return { reports: r, transitions: t, photos: p }
+  const needsAttention = reportRecords.filter(
+    (report) => report.status === 'needs-attention' || report.status === 'auth-error'
+  ).length
+  return { reports, transitions, photos, needsAttention }
 }

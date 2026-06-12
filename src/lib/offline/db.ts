@@ -61,6 +61,8 @@ export type PendingPhotoRecord = {
   createdAt: number
 }
 
+export type PendingReportStatus = 'pending' | 'needs-attention' | 'auth-error'
+
 export type PendingReportRecord = {
   /** UUID v4 — must match the value sent on the wire. */
   idempotencyKey: string
@@ -73,6 +75,7 @@ export type PendingReportRecord = {
   attempts: number
   lastAttemptAt: number | null
   lastError: string | null
+  status: PendingReportStatus
   createdAt: number
 }
 
