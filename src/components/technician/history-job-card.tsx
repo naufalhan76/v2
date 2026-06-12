@@ -51,7 +51,7 @@ export function HistoryJobCard({ job }: HistoryJobCardProps) {
       className="block rounded-[32px] border border-gray-100 bg-white p-6 shadow dark:bg-[#1a1833] dark:border-gray-700 transition-colors active:bg-gray-50 hover:bg-gray-50 dark:active:bg-[#252243] dark:hover:bg-[#252243]"
     >
       <div className="flex items-center justify-between gap-2 mb-3">
-        <span className="text-xs font-mono font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded dark:bg-slate-800 dark:text-slate-400">{job.order_id}</span>
+        <span className="text-xs font-mono font-medium text-gray-500 dark:text-[#a5a3b5] bg-gray-100 dark:bg-[#252243] px-2 py-1 rounded">{job.order_id}</span>
         {job.status === 'CANCELLED' ? (
           <span className="bg-red-50 text-red-500 text-xs font-medium px-2.5 py-1 rounded-full dark:bg-red-500/10 dark:text-red-400">Dibatalkan</span>
         ) : (

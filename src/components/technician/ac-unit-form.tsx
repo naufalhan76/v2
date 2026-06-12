@@ -288,7 +288,7 @@ export function AcUnitForm({ orderId, initialUnits, formUnits, onChange, onPhoto
                         <Input
                           id={`room-${index}`}
                           placeholder="Kamar Tidur Utama, Ruang Tamu..."
-                          className={cn("h-11", hasData('room_location') && "bg-slate-50 text-slate-500 cursor-not-allowed")}
+                          className={cn("h-11", hasData('room_location') && "bg-gray-50 dark:bg-[#252243] text-gray-500 dark:text-[#a5a3b5] cursor-not-allowed")}
                           readOnly={hasData('room_location')}
                           {...register(`units.${index}.room_location`)}
                         />
@@ -299,7 +299,7 @@ export function AcUnitForm({ orderId, initialUnits, formUnits, onChange, onPhoto
                         <Input
                           id={`floor-${index}`}
                           placeholder="Lantai 1, Lantai 2..."
-                          className={cn("h-11", hasData('floor_level') && "bg-slate-50 text-slate-500 cursor-not-allowed")}
+                          className={cn("h-11", hasData('floor_level') && "bg-gray-50 dark:bg-[#252243] text-gray-500 dark:text-[#a5a3b5] cursor-not-allowed")}
                           readOnly={hasData('floor_level')}
                           {...register(`units.${index}.floor_level`)}
                         />
@@ -310,7 +310,7 @@ export function AcUnitForm({ orderId, initialUnits, formUnits, onChange, onPhoto
                         <Input
                           id={`posdetail-${index}`}
                           placeholder="Dekat jendela, sebelah lemari..."
-                          className={cn("h-11", hasData('position_detail') && "bg-slate-50 text-slate-500 cursor-not-allowed")}
+                          className={cn("h-11", hasData('position_detail') && "bg-gray-50 dark:bg-[#252243] text-gray-500 dark:text-[#a5a3b5] cursor-not-allowed")}
                           readOnly={hasData('position_detail')}
                           {...register(`units.${index}.position_detail`)}
                         />
@@ -321,7 +321,7 @@ export function AcUnitForm({ orderId, initialUnits, formUnits, onChange, onPhoto
                         <Input
                           id={`model-${index}`}
                           placeholder="Model number..."
-                          className={cn("h-11", hasData('model_number') && "bg-slate-50 text-slate-500 cursor-not-allowed")}
+                          className={cn("h-11", hasData('model_number') && "bg-gray-50 dark:bg-[#252243] text-gray-500 dark:text-[#a5a3b5] cursor-not-allowed")}
                           readOnly={hasData('model_number')}
                           {...register(`units.${index}.model_number`)}
                         />
@@ -332,7 +332,7 @@ export function AcUnitForm({ orderId, initialUnits, formUnits, onChange, onPhoto
                         <Input
                           id={`serial-${index}`}
                           placeholder="Serial number..."
-                          className={cn("h-11", hasData('serial_number') && "bg-slate-50 text-slate-500 cursor-not-allowed")}
+                          className={cn("h-11", hasData('serial_number') && "bg-gray-50 dark:bg-[#252243] text-gray-500 dark:text-[#a5a3b5] cursor-not-allowed")}
                           readOnly={hasData('serial_number')}
                           {...register(`units.${index}.serial_number`)}
                         />

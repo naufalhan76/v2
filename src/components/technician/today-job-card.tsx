@@ -180,7 +180,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2 mb-1">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 px-1.5 py-0.5 rounded">{job.order_id}</span>
+                <span className="text-xs font-mono font-medium text-gray-500 dark:text-[#a5a3b5] bg-gray-100 dark:bg-[#252243] px-1.5 py-0.5 rounded">{job.order_id}</span>
                 <div className="flex items-center gap-1.5 text-xs text-ink-mute">
                   <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                   <span className="tabular-nums tracking-tight font-medium">{scheduledTime}</span>
@@ -200,7 +200,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
             <div className="flex items-start justify-between gap-2 mb-1">
               <h3 className="font-bold text-xl truncate text-balance">{customerName}</h3>
               {totalAmount > 0 && (
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap mt-1">
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap mt-1">
                   Rp {totalAmount.toLocaleString('id-ID')}
                 </span>
               )}

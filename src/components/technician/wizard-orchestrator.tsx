@@ -329,10 +329,10 @@ export function WizardOrchestrator({ orderId, snapshot }: WizardOrchestratorProp
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#F8FAFC] px-5 dark:bg-[#0f1024]">
         <AlertCircle className="mb-3 h-10 w-10 text-destructive" />
-        <p className="mb-2 text-center text-sm font-medium text-slate-900 dark:text-white">
+        <p className="mb-2 text-center text-sm font-medium text-gray-900 dark:text-white">
           {error || 'Data pekerjaan tidak ditemukan'}
         </p>
-        <p className="mb-4 text-sm text-slate-500 dark:text-gray-400">
+        <p className="mb-4 text-sm text-gray-500 dark:text-[#a5a3b5]">
           Tidak dapat memuat detail pekerjaan
         </p>
         <button

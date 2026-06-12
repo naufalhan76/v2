@@ -40,15 +40,30 @@ Dockerfile
 docker-compose*.yml
 .dockerignore
 
-# Brainstorming artifacts
+# AI / dev tooling
 .superpowers/
+.omo/
+.opencode/
+.claude/
+.codegraph/
+.agents/
+
+# Scripts (dev utilities, not needed in image)
+scripts/
 
 # Supabase migrations (run separately)
 supabase/
 
-# Test outputs
+# Test files and outputs
 coverage
 .nyc_output
+**/*.test.ts
+**/*.test.tsx
+**/tests/
+**/e2e/
+**/__tests__/
+vitest.config.ts
+playwright.config.ts
 
 # Misc
 .cloudflared/
