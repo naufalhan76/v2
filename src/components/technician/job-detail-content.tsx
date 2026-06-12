@@ -15,11 +15,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { PhotoUpload } from '@/components/technician/photo-upload'
 import { useState, useEffect } from 'react'
 import type { OrderStatus } from '@/lib/order-status'
 import { captureGps } from '@/lib/utils/geolocation'
 import type { GpsResult } from '@/lib/utils/geolocation'
+import { SwipeToAction } from '@/components/technician/swipe-to-action'
 import { jobToSnapshot, lockJobSnapshot, saveJobSnapshot } from '@/lib/offline/snapshot'
 
 interface JobDetailContentProps {
@@ -40,16 +40,14 @@ type TransitionPayload = {
   to_status: string
   idempotency_key: string
   gps: GpsResult
-  arrival_photos?: string[]
 }
 
-async function buildTransitionPayload(toStatus: string, arrivalPhotos?: string[]): Promise<TransitionPayload> {
+async function buildTransitionPayload(toStatus: string): Promise<TransitionPayload> {
   const gps = await captureGps({ timeoutMs: 5_000 })
   return {
     to_status: toStatus,
     idempotency_key: crypto.randomUUID(),
     gps,
-    arrival_photos: arrivalPhotos,
   }
 }
 
@@ -81,9 +79,9 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
   })
 
   const transitionMutation = useMutation({
-    mutationFn: async (params: { toStatus: string; arrivalPhotos?: string[] }) => {
+    mutationFn: async (params: { toStatus: string }) => {
       await lockJobSnapshot(orderId)
-      const payload = await buildTransitionPayload(params.toStatus, params.arrivalPhotos)
+      const payload = await buildTransitionPayload(params.toStatus)
       return transitionJob(orderId, payload)
     },
     onSuccess: () => {
