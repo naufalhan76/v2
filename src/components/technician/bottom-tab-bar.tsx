@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarDays, History, UserCircle } from 'lucide-react'
+import { CalendarDays, Clock, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
@@ -15,13 +15,13 @@ const tabs = [
   {
     label: 'Riwayat',
     href: '/technician/history',
-    icon: History,
+    icon: Clock,
     matchExact: false,
   },
   {
     label: 'Profil',
     href: '/technician/profile',
-    icon: UserCircle,
+    icon: User,
     matchExact: false,
   },
 ] as const
@@ -43,44 +43,44 @@ export function BottomTabBar() {
   }
 
   return (
-    <div className="fixed inset-x-6 bottom-4 z-50 pb-safe pointer-events-none">
+    <div className="fixed bottom-6 left-6 right-6 z-50 pb-safe pointer-events-none">
       <nav
-        className="pointer-events-auto bg-white rounded-3xl shadow-[0_4px_15px_rgba(0,0,0,0.05)]"
+        className="pointer-events-auto bg-white dark:bg-[#1a1833] rounded-[32px] shadow-2xl p-2 flex justify-between items-center"
         aria-label="Navigasi utama"
       >
-        <div className="mx-auto flex items-center justify-around h-[72px] px-2">
-          {tabs.map((tab) => {
-            const active = isActive(tab)
-            const Icon = tab.icon
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
+        {tabs.map((tab) => {
+          const active = isActive(tab)
+          const Icon = tab.icon
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={cn(
+                'group flex flex-col items-center justify-center transition-transform duration-200 active:scale-[0.96] min-h-[44px]',
+                active 
+                  ? 'bg-[#211c59] rounded-[28px] py-2 flex-1 mx-1 px-8 text-white' 
+                  : 'py-2 flex-1 mx-1 text-gray-400'
+              )}
+              aria-current={active ? 'page' : undefined}
+            >
+              <Icon
                 className={cn(
-                  'group flex flex-col items-center justify-center gap-1 transition-transform duration-200 active:scale-[0.96]',
-                  active ? 'bg-navy-deep text-white rounded-xl py-3 px-4 flex-1 font-semibold' : 'text-gray-600 font-semibold py-3 flex-1 text-center'
+                  'h-6 w-6 transition-colors duration-200',
+                  active ? 'text-white' : 'text-gray-400'
                 )}
-                aria-current={active ? 'page' : undefined}
+                aria-hidden="true"
+              />
+              <span
+                className={cn(
+                  'text-[10px] mt-1 font-medium transition-colors duration-200',
+                  active ? 'text-white' : 'text-gray-400'
+                )}
               >
-                <Icon
-                  className={cn(
-                    'h-5 w-5 transition-colors duration-200',
-                    active ? 'text-white' : 'text-gray-400'
-                  )}
-                  aria-hidden="true"
-                />
-                <span
-                  className={cn(
-                    'text-xs transition-colors duration-200',
-                    active ? 'text-white' : 'text-gray-500'
-                  )}
-                >
-                  {tab.label}
-                </span>
-              </Link>
-            )
-          })}
-        </div>
+                {tab.label}
+              </span>
+            </Link>
+          )
+        })}
       </nav>
     </div>
   )
