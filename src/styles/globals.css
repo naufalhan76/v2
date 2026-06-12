@@ -71,11 +71,11 @@
     --status-paid: 158 64% 52%;
     --status-cancelled: 0 72% 51%;
 
-    --tech-primary: #211c59;
-    --tech-bg: #F8FAFC;
-    --tech-card: #ffffff;
-    --tech-text: #1e1b4b;
-    --tech-text-secondary: #4B5563;
+    --tech-primary: 33 28 89;
+    --tech-bg: 248 250 252;
+    --tech-card: 255 255 255;
+    --tech-text: 30 27 75;
+    --tech-text-secondary: 75 85 99;
   }
 
   .dark {
@@ -141,26 +141,26 @@
     --status-paid: 158 64% 60%;
     --status-cancelled: 0 72% 60%;
 
-    --tech-bg: #0f0e1a;
-    --tech-card: #1a1833;
-    --tech-text: #e8e6f0;
-    --tech-text-secondary: #a5a3b5;
+    --tech-bg: 15 14 26;
+    --tech-card: 26 24 51;
+    --tech-text: 232 230 240;
+    --tech-text-secondary: 165 163 181;
   }
 
   .technician {
-    --tech-primary: #211c59;
-    --tech-bg: #F8FAFC;
-    --tech-card: #ffffff;
-    --tech-text: #1e1b4b;
-    --tech-text-secondary: #4B5563;
+    --tech-primary: 33 28 89;
+    --tech-bg: 248 250 252;
+    --tech-card: 255 255 255;
+    --tech-text: 30 27 75;
+    --tech-text-secondary: 75 85 99;
   }
 
   .dark .technician,
   .technician.dark {
-    --tech-bg: #0f0e1a;
-    --tech-card: #1a1833;
-    --tech-text: #e8e6f0;
-    --tech-text-secondary: #a5a3b5;
+    --tech-bg: 15 14 26;
+    --tech-card: 26 24 51;
+    --tech-text: 232 230 240;
+    --tech-text-secondary: 165 163 181;
   }
 }
 
