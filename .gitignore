@@ -89,6 +89,7 @@ tsc_output_2.txt
 .agents/
 .next/
 .opencode/
+.codegraph/
 skills-lock.json
 
 # V1 / superseded docs (kept locally for reference, not pushed)
