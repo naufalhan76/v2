@@ -8,7 +8,7 @@ export default function TechnicianProfilePage() {
       {/* Header */}
       <div className="bg-[#211c59] text-white px-6 pt-12 pb-24 rounded-b-[40px]">
         <div className="flex items-start gap-3">
-          <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 text-white">
+          <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2d2a75] text-white">
             <UserCircle2 className="h-4 w-4" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">

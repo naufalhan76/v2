@@ -58,20 +58,19 @@ export function WizardPhaseB({ orderId, jobSummary, onComplete }: WizardPhaseBPr
         <h1 className="mt-2 text-2xl font-bold">Timer Pekerjaan</h1>
         <p className="mt-1 text-sm text-white/80">Waktu kerja berjalan sampai laporan detail diisi.</p>
 
-        <div className="mt-6 flex items-center gap-3" aria-label="Wizard stepper">
+        <div className="mt-6 flex items-center" aria-label="Wizard stepper">
           {[1, 2, 3].map((step) => (
-            <div key={step} className="flex flex-1 items-center">
+            <div key={step} className={cn('flex items-center', step < 3 ? 'flex-1' : 'flex-none')}>
               <span
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
-                  step < 2 && 'bg-white text-[#1A1C4E] ring-4 ring-white/30',
-                  step === 2 && 'bg-white text-[#1A1C4E] ring-4 ring-white/40',
-                  step > 2 && 'border-2 border-white/50 text-white/70'
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                  step <= 2 && 'bg-white text-[#1A1C4E]',
+                  step > 2 && 'border-2 border-indigo-300 text-indigo-200'
                 )}
               >
                 {step}
               </span>
-              {step < 3 && <span className="ml-3 h-0.5 flex-1 rounded-full bg-white/30" />}
+              {step < 3 && <span className="mx-3 h-0.5 flex-1 rounded-full bg-indigo-400" />}
             </div>
           ))}
         </div>
@@ -121,7 +120,7 @@ type SummaryRowProps = {
 function SummaryRow({ icon: Icon, label, value }: SummaryRowProps): React.JSX.Element {
   return (
     <div className="flex items-start gap-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#211c59]/10 text-[#211c59] dark:bg-white/10 dark:text-white">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-[#211c59] dark:bg-[#252243] dark:text-white">
         <Icon className="h-5 w-5" aria-hidden />
       </span>
       <div className="min-w-0 text-left">

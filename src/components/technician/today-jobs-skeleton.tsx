@@ -5,17 +5,17 @@ export function TodayJobsSkeleton() {
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-tech-bg-dark pb-24">
       {/* Curved Header Area */}
       <div className="bg-[#211c59] pt-12 pb-32 px-6 rounded-b-[40px]">
-        <Skeleton className="h-7 w-48 bg-indigo-800/50 mb-2" />
-        <Skeleton className="h-4 w-32 bg-indigo-800/50 rounded-full" />
+        <Skeleton className="h-7 w-48 bg-indigo-800 mb-2" />
+        <Skeleton className="h-4 w-32 bg-indigo-800 rounded-full" />
       </div>
 
       {/* Stat Cards 3-col Grid */}
       <div className="grid grid-cols-3 gap-3 px-6 -mt-24 relative z-10">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={`stat-${i}`} className={`p-3 rounded-2xl ${i === 0 ? 'bg-[#211c59]' : 'bg-white dark:bg-[#1a1833] shadow'}`}>
-            <Skeleton className={`h-8 w-8 rounded-full mb-2 ${i === 0 ? 'bg-indigo-800/50' : 'bg-indigo-50 dark:bg-[#252243] animate-pulse'}`} />
-            <Skeleton className={`h-3 w-16 mb-1 ${i === 0 ? 'bg-indigo-800/50' : 'bg-indigo-50 dark:bg-[#252243] animate-pulse'}`} />
-            <Skeleton className={`h-6 w-10 ${i === 0 ? 'bg-indigo-800/50' : 'bg-indigo-50 dark:bg-[#252243] animate-pulse'}`} />
+            <Skeleton className={`h-8 w-8 rounded-full mb-2 ${i === 0 ? 'bg-indigo-800' : 'bg-indigo-50 dark:bg-[#252243] animate-pulse'}`} />
+            <Skeleton className={`h-3 w-16 mb-1 ${i === 0 ? 'bg-indigo-800' : 'bg-indigo-50 dark:bg-[#252243] animate-pulse'}`} />
+            <Skeleton className={`h-6 w-10 ${i === 0 ? 'bg-indigo-800' : 'bg-indigo-50 dark:bg-[#252243] animate-pulse'}`} />
           </div>
         ))}
       </div>

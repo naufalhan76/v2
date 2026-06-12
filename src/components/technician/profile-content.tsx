@@ -330,7 +330,7 @@ export function ProfileContent() {
                }
             }
           }}
-          className="w-full border-2 border-gray-200 dark:border-gray-700 rounded-xl py-3 font-semibold text-[#211c59] dark:text-indigo-300 flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+          className="w-full border-2 border-gray-200 dark:border-gray-700 rounded-xl py-3 font-semibold text-[#211c59] dark:text-indigo-300 flex items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-[#252243] transition-colors"
         >
           <SyncStatus variant="compact" className="border-0 bg-transparent text-inherit p-0 h-auto" />
           Sinkronkan Sekarang
@@ -354,7 +354,7 @@ export function ProfileContent() {
           <div className="flex items-center gap-3 min-w-0">
             <div className={cn(
               "p-2 rounded-lg", 
-              push.kind === 'enabled' ? "bg-indigo-50 dark:bg-indigo-500/10 text-[#211c59] dark:text-indigo-300" : "bg-gray-50 dark:bg-gray-800 text-gray-400"
+              push.kind === 'enabled' ? "bg-indigo-50 dark:bg-[#252243] text-[#211c59] dark:text-indigo-300" : "bg-gray-50 dark:bg-gray-800 text-gray-400"
             )}>
               {push.kind === 'enabled' ? (
                 <Bell className="h-5 w-5 shrink-0" aria-hidden="true" />
@@ -385,7 +385,7 @@ export function ProfileContent() {
           </div>
         )}
         {push.kind === 'unsupported' && (
-          <div className="flex gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1a1833] p-4 text-xs text-gray-500 dark:text-gray-400">
             <Info className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
             <p>
               Browser ini tidak mendukung notifikasi push. Coba pakai Chrome atau Safari versi
@@ -401,7 +401,7 @@ export function ProfileContent() {
         variant="outline"
         onClick={() => setConfirmOpen(true)}
         disabled={loggingOut}
-        className="w-full bg-red-50 text-red-600 font-semibold py-6 rounded-xl border border-red-100 hover:bg-red-100 hover:text-red-700 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors"
+        className="w-full bg-red-50 text-red-600 font-semibold py-6 rounded-xl border border-red-100 hover:bg-red-100 hover:text-red-700 dark:bg-red-950 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900 transition-colors"
       >
         <LogOut className="mr-2 h-5 w-5" aria-hidden="true" />
         Keluar Akun

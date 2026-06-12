@@ -329,20 +329,18 @@ export function WizardPhaseC({ orderId, phaseADraft, technicianId, onComplete }:
           Isi material, foto sesudah, tanda tangan, dan jadwal servis berikutnya.
         </p>
 
-        <div className="mt-6 flex items-center gap-3" aria-label="Wizard stepper">
+        <div className="mt-6 flex items-center" aria-label="Wizard stepper">
           {[1, 2, 3].map((step) => (
-            <div key={step} className="flex flex-1 items-center">
+            <div key={step} className={cn('flex items-center', step < 3 ? 'flex-1' : 'flex-none')}>
               <span
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
-                  step < 3
-                    ? 'bg-white text-[#1A1C4E] ring-4 ring-white/30'
-                    : 'bg-white text-[#1A1C4E] ring-4 ring-white/40'
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                  'bg-white text-[#1A1C4E]'
                 )}
               >
                 {step}
               </span>
-              {step < 3 && <span className="ml-3 h-0.5 flex-1 rounded-full bg-white/30" />}
+              {step < 3 && <span className="mx-3 h-0.5 flex-1 rounded-full bg-indigo-400" />}
             </div>
           ))}
         </div>
@@ -362,7 +360,7 @@ export function WizardPhaseC({ orderId, phaseADraft, technicianId, onComplete }:
             >
               {/* Unit header */}
               <div className="mb-5 flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1A1C4E]/10 text-[#1A1C4E]">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-[#1A1C4E] dark:bg-[#252243] dark:text-indigo-300">
                   <Snowflake className="h-5 w-5" />
                 </div>
                 <div>
@@ -404,7 +402,7 @@ export function WizardPhaseC({ orderId, phaseADraft, technicianId, onComplete }:
         {/* Signature section */}
         <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#1a1833]">
           <div className="mb-4 flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1A1C4E]/10 text-[#1A1C4E]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-[#1A1C4E] dark:bg-[#252243] dark:text-indigo-300">
               <ClipboardList className="h-5 w-5" />
             </div>
             <div>
@@ -443,7 +441,7 @@ export function WizardPhaseC({ orderId, phaseADraft, technicianId, onComplete }:
         {/* Next service date & notes */}
         <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#1a1833]">
           <div className="mb-4 flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1A1C4E]/10 text-[#1A1C4E]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-[#1A1C4E] dark:bg-[#252243] dark:text-indigo-300">
               <CalendarDays className="h-5 w-5" />
             </div>
             <div>

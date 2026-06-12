@@ -156,20 +156,20 @@ export function WizardPhaseA({ orderId, acUnits, onComplete }: WizardPhaseAProps
       <header className="bg-[#1A1C4E] px-5 pt-8 pb-16 text-white rounded-b-[40px]">
         <p className="text-sm font-semibold text-white/80">Langkah 1 dari 3</p>
         <h1 className="mt-2 text-2xl font-bold">Foto & Detail AC</h1>
-        <div className="mt-6 flex items-center gap-3" aria-label="Wizard stepper">
+        <div className="mt-6 flex items-center" aria-label="Wizard stepper">
           {[1, 2, 3].map((step) => (
-            <div key={step} className="flex flex-1 items-center">
+            <div key={step} className={cn('flex items-center', step < 3 ? 'flex-1' : 'flex-none')}>
               <span
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold',
                   step === 1
-                    ? 'bg-white text-[#1A1C4E] ring-4 ring-white/30'
-                    : 'border-2 border-white/50 text-white/70'
+                    ? 'bg-white text-[#1A1C4E]'
+                    : 'border-2 border-indigo-300 text-indigo-200'
                 )}
               >
                 {step}
               </span>
-              {step < 3 && <span className="ml-3 h-0.5 flex-1 rounded-full bg-white/30" />}
+              {step < 3 && <span className="mx-3 h-0.5 flex-1 rounded-full bg-indigo-400" />}
             </div>
           ))}
         </div>
@@ -177,7 +177,7 @@ export function WizardPhaseA({ orderId, acUnits, onComplete }: WizardPhaseAProps
 
       <main className="-mt-10 space-y-5 px-5">
         {errors.length > 0 && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-900/30 p-4 text-sm text-red-700 dark:text-red-300" role="alert">
+          <div className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950 p-4 text-sm text-red-700 dark:text-red-300" role="alert">
             {errors.map((error) => (
               <p key={error}>{error}</p>
             ))}
@@ -239,7 +239,7 @@ function UnitCard({ index, orderId, unit, initialUnit, dimensions, onUpdate }: U
       className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:bg-[#1a1833]"
     >
       <div className="mb-5 flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1A1C4E]/10 text-[#1A1C4E]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-[#1A1C4E] dark:bg-[#252243] dark:text-indigo-300">
           <Snowflake className="h-5 w-5" />
         </div>
         <div>
@@ -263,7 +263,7 @@ function UnitCard({ index, orderId, unit, initialUnit, dimensions, onUpdate }: U
 
         {showMissingFields && (
           <div className="space-y-4">
-            <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 p-3 text-sm text-amber-800 dark:text-amber-300">
+            <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-3 text-sm text-amber-800 dark:text-amber-300">
               <p className="font-bold">Data AC eksisting belum lengkap</p>
               <p>Lengkapi field yang masih kosong sebelum lanjut.</p>
             </div>

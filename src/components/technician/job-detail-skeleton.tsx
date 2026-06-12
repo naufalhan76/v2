@@ -6,8 +6,8 @@ export function JobDetailSkeleton() {
       {/* Curved Header Area with Back + status */}
       <div className="bg-[#211c59] pt-10 pb-8 px-5 rounded-b-[40px]">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-28 bg-indigo-800/50" />
-          <Skeleton className="h-10 w-32 bg-indigo-800/50 rounded-lg" />
+          <Skeleton className="h-10 w-28 bg-indigo-800" />
+          <Skeleton className="h-10 w-32 bg-indigo-800 rounded-lg" />
         </div>
       </div>
 

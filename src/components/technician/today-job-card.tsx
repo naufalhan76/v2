@@ -160,7 +160,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
         aria-expanded={isExpanded}
           className={cn(
             "group flex w-full text-left p-4 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
-            isExpanded ? (isActive ? 'bg-primary/5' : 'bg-canvas-soft') : (isActive ? 'hover:bg-primary/5' : 'hover:bg-canvas-soft')
+            isExpanded ? (isActive ? 'bg-indigo-50 dark:bg-[#252243]' : 'bg-canvas-soft') : (isActive ? 'hover:bg-indigo-50 dark:hover:bg-[#252243]' : 'hover:bg-canvas-soft')
           )}
       >
         <div className="flex w-full items-start gap-3">
