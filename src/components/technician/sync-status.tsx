@@ -27,11 +27,14 @@ export type SyncStatusProps = {
 }
 
 export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
-  const { isOnline, syncing, pending, lastResult, lastError, syncNow } = useOnlineSync()
+  const { isOnline, syncing, pending, lastResult, lastError, syncNow, errors, needsAttention } = useOnlineSync()
   const [showSuccess, setShowSuccess] = React.useState(false)
 
   const pendingCount = pending.reports + pending.transitions + pending.photos
   const hasPending = pendingCount > 0
+  const authError = errors.find((error) => error.status === 'auth-error')
+  const attentionErrors = errors.filter((error) => error.status === 'needs-attention')
+  const hasSyncErrors = errors.length > 0
 
   React.useEffect(() => {
     if (isOnline && !syncing && pendingCount === 0 && lastResult && lastResult.errors.length === 0) {
@@ -76,7 +79,7 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
     return (
       <button
         type="button"
-        onClick={() => void syncNow()}
+        onClick={() => void syncNow({ bypassBackoff: true })}
         className={cn(
           baseClass,
           'border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer'
@@ -108,20 +111,29 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
     const trigger = (
       <button
         type="button"
-        onClick={() => void syncNow()}
+        onClick={() => void syncNow({ bypassBackoff: true })}
         className={cn(
           baseClass,
           'border-status-pending bg-status-pending text-white hover:bg-status-pending/90 cursor-pointer'
         )}
-        aria-label={`${pendingCount} item tertunda. Ketuk untuk sinkronkan sekarang.`}
+        aria-label={`${pendingCount} item tertunda${needsAttention > 0 ? `, ${needsAttention} perlu perhatian` : ''}. Ketuk untuk sinkronkan sekarang.`}
       >
         <span className="relative flex h-2 w-2 shrink-0">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
           <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
         </span>
         <RefreshCw className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        {!isCompact && <span className="tabular-nums">{pendingCount} tertunda</span>}
-        {isCompact && (
+        {!isCompact && (
+          <span className="tabular-nums">
+            {authError ? 'Login ulang diperlukan' : needsAttention > 0 ? `${needsAttention} perlu perhatian` : `${pendingCount} tertunda`}
+          </span>
+        )}
+        {needsAttention > 0 && (
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white text-status-pending px-1.5 text-[10px] font-bold tabular-nums">
+            {needsAttention}
+          </span>
+        )}
+        {isCompact && needsAttention === 0 && (
           <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white text-status-pending px-1.5 text-[10px] font-bold tabular-nums">
             {pendingCount}
           </span>
@@ -147,6 +159,20 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
               <ArrowRightLeft className="h-3 w-3 text-ink-mute" />
               <span>{pending.transitions} transisi</span>
             </div>
+            {hasSyncErrors && (
+              <div className="space-y-1 border-t pt-1">
+                {authError && (
+                  <p className="text-xs font-medium text-destructive">
+                    Login ulang diperlukan: {authError.message.replace(/^AUTH_ERROR:\s*/, '')}
+                  </p>
+                )}
+                {attentionErrors.map((error) => (
+                  <p key={`${error.kind}-${error.key}`} className="text-xs font-medium text-status-pending">
+                    Perlu perhatian: {error.message.replace(/^NEEDS_ATTENTION:\s*/, '')}
+                  </p>
+                ))}
+              </div>
+            )}
             <p className="text-[10px] text-ink-mute pt-1 border-t">
               Klik untuk sinkronkan sekarang
             </p>
