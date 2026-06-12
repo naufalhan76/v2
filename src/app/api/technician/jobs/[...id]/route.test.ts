@@ -25,6 +25,8 @@ type QueryResult = { data: unknown; error: unknown }
 
 class QueryBuilder {
   private filters: Array<[string, unknown]> = []
+  private mutation: 'update' | 'insert' | null = null
+  private mutationPayload: Record<string, unknown> | null = null
 
   constructor(
     private table: string,
@@ -46,12 +48,34 @@ class QueryBuilder {
     return this
   }
 
+  update(payload: Record<string, unknown>) {
+    this.mutation = 'update'
+    this.mutationPayload = payload
+    return this
+  }
+
+  insert(payload: Record<string, unknown>) {
+    this.mutation = 'insert'
+    this.mutationPayload = payload
+    return this
+  }
+
+  mutationResult() {
+    if (this.table === 'orders' && this.mutation === 'update') {
+      return { data: { status: this.mutationPayload?.status }, error: null }
+    }
+    if (this.table === 'order_status_transitions' && this.mutation === 'insert') {
+      return { data: { to_status: this.mutationPayload?.to_status }, error: null }
+    }
+    return this.results[this.table]
+  }
+
   maybeSingle() {
-    return Promise.resolve(this.results[this.table])
+    return Promise.resolve(this.mutationResult())
   }
 
   single() {
-    return Promise.resolve(this.results[this.table])
+    return Promise.resolve(this.mutationResult())
   }
 }
 
@@ -68,6 +92,14 @@ function createSupabaseMock(results: Record<string, QueryResult>, rpc: unknown =
 
 function request() {
   return new NextRequest('http://localhost/api/technician/jobs/order-1')
+}
+
+
+function postTransitionRequest(body: unknown) {
+  return new NextRequest('http://localhost/api/technician/jobs/order-1/transition', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
 }
 
 function postReportRequest(body: unknown) {
@@ -323,6 +355,93 @@ describe('GET /api/technician/jobs/[orderId] AC hydration', () => {
 
     expect(response.status).toBe(500)
     expect(body.error).toContain('different location')
+  })
+})
+
+
+describe('POST /api/technician/jobs/[orderId]/transition', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  function mockTransitionPost(currentStatus = 'EN_ROUTE') {
+    return createSupabaseMock({
+      order_technicians: { data: { role: 'lead' }, error: null },
+      order_status_transitions: { data: null, error: null },
+      orders: { data: { status: currentStatus }, error: null },
+    })
+  }
+
+  const gps = {
+    lat: -6.2,
+    lng: 106.8,
+    accuracy_m: 12,
+    captured_at: '2026-06-10T08:00:00.000Z',
+  }
+
+  it('starts work with GPS only and no arrival photos', async () => {
+    const supabase = mockTransitionPost()
+
+    const response = await POST(
+      postTransitionRequest({
+        to_status: 'IN_PROGRESS',
+        idempotency_key: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        gps,
+      }),
+      { params: Promise.resolve({ id: ['order-1', 'transition'] }) }
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body).toMatchObject({ success: true, data: { order_id: 'order-1', new_status: 'IN_PROGRESS' } })
+    expect(supabase.from).toHaveBeenCalledWith('orders')
+  })
+
+  it('rejects starting work when GPS capture is missing', async () => {
+    mockTransitionPost()
+
+    const response = await POST(
+      postTransitionRequest({
+        to_status: 'IN_PROGRESS',
+        idempotency_key: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+      }),
+      { params: Promise.resolve({ id: ['order-1', 'transition'] }) }
+    )
+    const body = await response.json()
+
+    expect(response.status).toBe(400)
+    expect(body.error).toContain('gps required')
+  })
+
+  it('starts work when arrival photos are an empty array', async () => {
+    mockTransitionPost()
+
+    const response = await POST(
+      postTransitionRequest({
+        to_status: 'IN_PROGRESS',
+        idempotency_key: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        gps,
+        arrival_photos: [],
+      }),
+      { params: Promise.resolve({ id: ['order-1', 'transition'] }) }
+    )
+
+    expect(response.status).toBe(200)
+  })
+
+  it('keeps ASSIGNED to EN_ROUTE transition working', async () => {
+    mockTransitionPost('ASSIGNED')
+
+    const response = await POST(
+      postTransitionRequest({
+        to_status: 'EN_ROUTE',
+        idempotency_key: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+        gps,
+      }),
+      { params: Promise.resolve({ id: ['order-1', 'transition'] }) }
+    )
+
+    expect(response.status).toBe(200)
   })
 })
 

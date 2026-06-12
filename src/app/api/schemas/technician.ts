@@ -126,8 +126,8 @@ export const TechnicianTransitionSchema = z.object({
   /** UUID v4 — required so retries dedupe server-side. */
   idempotency_key: z.string().uuid().optional().nullable(),
   gps: GpsCaptureSchema.optional().nullable(),
-  /** Arrival photos for EN_ROUTE → IN_PROGRESS. Min 1, max 3. */
-  arrival_photos: z.array(z.string()).min(1).max(3).optional(),
+  /** Optional arrival photos retained for transition audit metadata. */
+  arrival_photos: z.array(z.string()).max(3).optional(),
 })
 
 export type TechnicianTransitionPayload = z.infer<

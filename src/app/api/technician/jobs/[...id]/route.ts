@@ -331,9 +331,8 @@ export async function POST(
 
       const { to_status, idempotency_key, gps, arrival_photos } = parsed.data
 
-      // Arrival photos required for EN_ROUTE → IN_PROGRESS transition
-      if (to_status === 'IN_PROGRESS' && (!arrival_photos || arrival_photos.length < 1)) {
-        return jsonError('arrival_photos required for Mulai Kerja (min 1, max 3)', 400)
+      if (to_status === 'IN_PROGRESS' && !gps) {
+        return jsonError('gps required for Mulai Kerja', 400)
       }
 
       const { data: assignment, error: assignError } = await supabase
