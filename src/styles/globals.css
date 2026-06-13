@@ -26,7 +26,7 @@
     --secondary: 40 20% 96%;
     --secondary-foreground: var(--navy-deep);
     --muted: 40 14% 94%;
-    --muted-foreground: 30 3% 44%;
+    --muted-foreground: 30 3% 37%;
     --accent: 40 14% 94%;
     --accent-foreground: var(--navy-deep);
     --destructive: var(--status-red-text);
@@ -46,8 +46,8 @@
     --teal-deep: 180 52% 12%;
     --teal-mid: 180 60% 21%;
     --canvas-soft: 40 20% 98%;
-    --ink-mute: 30 3% 44%;
-    --ink-faint: 30 3% 60%;
+    --ink-mute: 30 3% 37%;
+    --ink-faint: 30 3% 43%;
     --hairline: 40 14% 89%;
     --hairline-dark: 252 18% 28%;
 

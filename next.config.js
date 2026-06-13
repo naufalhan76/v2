@@ -19,6 +19,9 @@ const nextConfig = {
       '@radix-ui/react-popover',
       '@radix-ui/react-select',
       '@radix-ui/react-tabs',
+      'framer-motion',
+      '@tanstack/react-query',
+      '@tanstack/react-table',
     ],
   },
 
