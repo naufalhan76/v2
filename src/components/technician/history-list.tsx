@@ -104,7 +104,7 @@ export function HistoryList() {
           <p className="text-sm text-ink-mute mb-4">
             {error instanceof Error ? error.message : 'Terjadi kesalahan'}
           </p>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="h-11">
+          <Button onClick={() => refetch()} className="border-2 border-gray-200 rounded-xl px-4 py-2.5 font-semibold text-[#211c59] hover:bg-gray-50 transition-colors h-auto dark:border-gray-700 dark:text-white dark:hover:bg-[#252243]">
             <RefreshCw className="mr-2 h-4 w-4" />
             Coba Lagi
           </Button>
@@ -133,10 +133,9 @@ export function HistoryList() {
           {hasNextPage && (
             <div className="pt-2 text-center">
               <Button
-                variant="outline"
                 onClick={() => fetchNextPage()}
                 disabled={isFetchingNextPage}
-                className="h-11 w-full"
+                className="w-full border-2 border-gray-200 rounded-xl py-3 font-semibold text-[#211c59] hover:bg-gray-50 transition-colors h-auto disabled:opacity-60 dark:border-gray-700 dark:text-white dark:hover:bg-[#252243]"
               >
                 {isFetchingNextPage ? (
                   <>

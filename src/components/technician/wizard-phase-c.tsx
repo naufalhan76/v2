@@ -70,7 +70,7 @@ function ConfirmationModal({ open, onConfirm, onCancel, submitting }: Confirmati
             type="button"
             onClick={onConfirm}
             disabled={submitting}
-            className="flex w-full items-center justify-center rounded-xl bg-[#1A1C4E] dark:bg-[#2d2a75] py-4 font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-60"
+            className="flex w-full items-center justify-center bg-[#211c59] text-white font-semibold py-4 rounded-xl shadow-sm hover:bg-[#2d2a75] transition-colors active:scale-[0.98] disabled:opacity-60 dark:bg-[#2d2a75] dark:hover:bg-[#3d3a85]"
           >
             {submitting ? (
               <>
@@ -86,7 +86,7 @@ function ConfirmationModal({ open, onConfirm, onCancel, submitting }: Confirmati
             type="button"
             onClick={onCancel}
             disabled={submitting}
-            className="w-full rounded-xl border-2 border-[#1A1C4E] dark:border-indigo-400 bg-white dark:bg-[#252243] py-4 font-bold text-[#1A1C4E] dark:text-white transition-all active:scale-[0.98] disabled:opacity-60"
+            className="w-full border-2 border-gray-200 rounded-xl py-4 font-semibold text-[#211c59] hover:bg-gray-50 transition-colors active:scale-[0.98] disabled:opacity-60 dark:border-gray-700 dark:text-white dark:bg-transparent dark:hover:bg-[#252243]"
           >
             Kembali
           </button>
@@ -520,7 +520,7 @@ export function WizardPhaseC({ orderId, phaseADraft, technicianId, onComplete }:
           onClick={handleSubmitClick}
           disabled={submitting}
           className={cn(
-            'w-full rounded-xl bg-[#1A1C4E] py-4 font-bold text-white shadow-sm transition-all active:scale-[0.99] disabled:opacity-60',
+            'w-full bg-[#211c59] text-white font-semibold py-4 rounded-xl shadow-sm hover:bg-[#2d2a75] transition-colors active:scale-[0.98] disabled:opacity-60 dark:bg-[#2d2a75] dark:hover:bg-[#3d3a85]',
             submitting && 'cursor-wait'
           )}
           aria-label="Submit Laporan Akhir"

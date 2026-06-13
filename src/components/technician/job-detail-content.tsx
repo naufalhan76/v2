@@ -114,7 +114,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
         <p className="text-sm text-destructive mb-4">
           {error instanceof Error ? error.message : 'Terjadi kesalahan'}
         </p>
-        <Button variant="outline" onClick={() => router.back()} className="h-11">
+        <Button onClick={() => router.back()} className="bg-[#211c59] text-white flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:bg-[#2d2a75] transition-colors h-auto">
           Kembali
         </Button>
       </div>
@@ -147,7 +147,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
     <div className="space-y-4">
       {/* Back button + status */}
       <div className="flex items-center justify-between">
-        <Button variant="outline" size="sm" className="rounded-md" asChild>
+        <Button className="bg-[#211c59] text-white flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:bg-[#2d2a75] transition-colors h-auto" asChild>
           <Link href="/technician">
             <ArrowLeft className="h-4 w-4" />
             <span className="ml-1">Kembali</span>
@@ -252,7 +252,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
           <Button
             onClick={() => transitionMutation.mutate({ toStatus: 'EN_ROUTE' })}
             disabled={transitionMutation.isPending}
-            className="w-full h-12 text-base font-medium transition-all duration-200 active:scale-[0.98]"
+            className="w-full bg-[#211c59] text-white font-semibold py-4 rounded-xl shadow-sm hover:bg-[#2d2a75] transition-colors h-auto text-base active:scale-[0.98] disabled:opacity-60"
             size="lg"
           >
             {transitionMutation.isPending ? 'Memproses...' : 'Berangkat'}
@@ -265,7 +265,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
               transitionMutation.mutate({ toStatus: 'IN_PROGRESS' })
             }}
             disabled={transitionMutation.isPending}
-            className="w-full h-12 text-base font-medium transition-all duration-200 active:scale-[0.98]"
+            className="w-full bg-[#211c59] text-white font-semibold py-4 rounded-xl shadow-sm hover:bg-[#2d2a75] transition-colors h-auto text-base active:scale-[0.98] disabled:opacity-60"
             size="lg"
           >
             {transitionMutation.isPending ? 'Memproses...' : 'Mulai Kerja'}
@@ -279,7 +279,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
                   router.push(`/technician/job/${orderId}/complete`)
                 })
               }}
-            className="w-full h-12 text-base font-medium transition-all duration-200 active:scale-[0.98]"
+            className="w-full bg-[#211c59] text-white font-semibold py-4 rounded-xl shadow-sm hover:bg-[#2d2a75] transition-colors h-auto text-base active:scale-[0.98]"
             size="lg"
           >
             Selesai Kerja

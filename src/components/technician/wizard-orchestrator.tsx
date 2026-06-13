@@ -338,7 +338,7 @@ export function WizardOrchestrator({ orderId, snapshot }: WizardOrchestratorProp
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="rounded-xl border border-[#1A1C4E] bg-white px-6 py-3 text-sm font-bold text-[#1A1C4E] dark:border-indigo-400 dark:bg-[#252243] dark:text-white"
+          className="border-2 border-gray-200 rounded-xl px-6 py-3 text-sm font-semibold text-[#211c59] hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-white dark:hover:bg-[#252243]"
         >
           Coba Lagi
         </button>

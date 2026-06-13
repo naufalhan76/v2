@@ -401,7 +401,7 @@ export function ProfileContent() {
         variant="outline"
         onClick={() => setConfirmOpen(true)}
         disabled={loggingOut}
-        className="w-full bg-red-50 text-red-600 font-semibold py-6 rounded-xl border border-red-100 hover:bg-red-100 hover:text-red-700 dark:bg-red-950 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900 transition-colors"
+        className="w-full bg-red-50 text-red-600 font-semibold py-4 rounded-xl border-2 border-red-200 hover:bg-red-100 hover:text-red-700 transition-colors h-auto dark:bg-red-950 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900"
       >
         <LogOut className="mr-2 h-5 w-5" aria-hidden="true" />
         Keluar Akun

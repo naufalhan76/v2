@@ -217,7 +217,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
             </div>
 
             {isActive && !isExpanded && (
-              <div className="mt-3 flex items-center gap-2 text-xs font-medium text-primary">
+              <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-[#211c59] dark:text-white">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
@@ -237,7 +237,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
               <div className="flex gap-2 mb-4">
                   <Button
                     variant="outline"
-                    className="flex-1 bg-indigo-50 text-[#211c59] border-indigo-200 hover:bg-indigo-100 dark:bg-[#252243] dark:text-white dark:border-indigo-800 dark:hover:bg-[#2d2a5e]"
+                    className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-200 rounded-xl py-3 font-semibold text-[#211c59] hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-white dark:hover:bg-[#252243]"
                     asChild
                   >
                     <a href={`https://wa.me/${waPhone}?text=${waMessage}`} target="_blank" rel="noopener noreferrer">
@@ -247,7 +247,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex-1 bg-white text-[#211c59] border-indigo-200 hover:bg-indigo-50 dark:bg-[#1a1833] dark:text-white dark:border-indigo-800 dark:hover:bg-[#252243]"
+                    className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-200 rounded-xl py-3 font-semibold text-[#211c59] hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-white dark:hover:bg-[#252243]"
                     asChild
                   >
                     <a href={`tel:${phoneRaw}`}>
@@ -271,8 +271,12 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
 
             {/* Navigate to Details */}
             <Button
-              className="w-full transition-all duration-200 active:scale-[0.98]"
-              variant={isActive ? "default" : "secondary"}
+              className={cn(
+                "w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-colors",
+                isActive
+                  ? "bg-[#211c59] text-white hover:bg-[#2d2a75]"
+                  : "border-2 border-gray-200 text-[#211c59] hover:bg-gray-50 dark:border-gray-700 dark:text-white dark:hover:bg-[#252243]"
+              )}
               asChild
             >
               <Link href={`/technician/job/${job.order_id}`}>

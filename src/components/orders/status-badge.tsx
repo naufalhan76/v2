@@ -43,7 +43,7 @@ export function StatusBadge({ status, size = 'default', className }: StatusBadge
         colors.bg,
         colors.text,
         colors.border,
-        'font-medium',
+        'font-bold',
         size === 'sm' ? 'rounded-full text-[10px] px-2 py-1' : 'rounded-md px-2.5 py-0.5',
         className
       )}

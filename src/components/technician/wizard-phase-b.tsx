@@ -101,7 +101,7 @@ export function WizardPhaseB({ orderId, jobSummary, onComplete }: WizardPhaseBPr
 
         <button
           type="button"
-          className="w-full rounded-xl bg-[#211c59] py-4 font-bold text-white shadow-sm active:scale-[0.99] dark:bg-[#2d2a75]"
+          className="w-full bg-[#211c59] text-white font-semibold py-4 rounded-xl shadow-sm hover:bg-[#2d2a75] transition-colors active:scale-[0.98] dark:bg-[#2d2a75] dark:hover:bg-[#3d3a85]"
           onClick={onComplete}
         >
           Isi Detail Pekerjaan

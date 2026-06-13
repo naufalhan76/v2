@@ -166,44 +166,44 @@ export function getStatusLabel(status: string): string {
  */
 export const ORDER_STATUS_COLORS: Record<OrderStatus, { bg: string; text: string; border: string }> = {
   PENDING: {
-    bg: 'bg-status-pending/12',
-    text: 'text-status-pending',
-    border: 'border-status-pending/30',
+    bg: 'bg-amber-50',
+    text: 'text-amber-600',
+    border: 'border border-amber-100',
   },
   ASSIGNED: {
-    bg: 'bg-status-assigned/12',
-    text: 'text-status-assigned',
-    border: 'border-status-assigned/30',
+    bg: 'bg-blue-50',
+    text: 'text-blue-600',
+    border: 'border border-blue-100',
   },
   EN_ROUTE: {
-    bg: 'bg-status-en-route/12',
-    text: 'text-status-en-route',
-    border: 'border-status-en-route/30',
+    bg: 'bg-violet-50',
+    text: 'text-violet-600',
+    border: 'border border-violet-100',
   },
   IN_PROGRESS: {
-    bg: 'bg-status-in-progress/12',
-    text: 'text-status-in-progress',
-    border: 'border-status-in-progress/30',
+    bg: 'bg-teal-50',
+    text: 'text-teal-600',
+    border: 'border border-teal-100',
   },
   COMPLETED: {
-    bg: 'bg-status-completed/12',
-    text: 'text-status-completed',
-    border: 'border-status-completed/30',
+    bg: 'bg-green-50',
+    text: 'text-green-600',
+    border: 'border border-green-100',
   },
   INVOICED: {
-    bg: 'bg-status-invoiced/12',
-    text: 'text-status-invoiced',
-    border: 'border-status-invoiced/30',
+    bg: 'bg-cyan-50',
+    text: 'text-cyan-600',
+    border: 'border border-cyan-100',
   },
   PAID: {
-    bg: 'bg-status-paid/12',
-    text: 'text-status-paid',
-    border: 'border-status-paid/30',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-600',
+    border: 'border border-emerald-100',
   },
   CANCELLED: {
-    bg: 'bg-status-cancelled/12',
-    text: 'text-status-cancelled',
-    border: 'border-status-cancelled/30',
+    bg: 'bg-red-50',
+    text: 'text-red-500',
+    border: 'border border-red-100',
   },
 }
 

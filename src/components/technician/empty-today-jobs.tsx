@@ -26,7 +26,7 @@ export function EmptyTodayJobs() {
       <button
         type="button"
         onClick={handleRefresh}
-        className="flex items-center justify-center border-2 border-gray-200 dark:border-white/10 rounded-2xl py-3 text-[#211c59] dark:text-white font-semibold px-8 hover:bg-gray-50 dark:hover:bg-[#252243] transition-colors"
+        className="flex items-center justify-center border-2 border-gray-200 rounded-xl py-3 text-[#211c59] font-semibold px-8 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-white dark:hover:bg-[#252243]"
       >
         <RefreshCw className="mr-2 h-5 w-5" aria-hidden="true" />
         Coba Lagi
