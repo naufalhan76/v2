@@ -87,7 +87,7 @@ export function HomeHeader() {
   const hasJobs = (jobs?.length ?? 0) > 0
 
   return (
-    <div className="bg-[#211c59] pt-12 pb-32 px-6 rounded-b-[40px] space-y-3 relative" data-testid="technician-home-header">
+    <div className="bg-[#211c59] pt-12 pb-24 px-6 rounded-b-[80px] space-y-3 relative" data-testid="technician-home-header">
       {/* Greeting */}
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">

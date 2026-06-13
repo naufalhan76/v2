@@ -6,7 +6,7 @@ export default function TechnicianProfilePage() {
   return (
     <div className="min-h-full bg-bg-gray-faded dark:bg-[#0f0e1a] pb-20" data-testid="technician-profile">
       {/* Header */}
-      <div className="bg-[#211c59] text-white px-6 pt-12 pb-24 rounded-b-[40px]">
+      <div className="bg-[#211c59] text-white px-6 pt-12 pb-24 rounded-b-[80px]">
         <div className="flex items-start gap-3">
           <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2d2a75] text-white">
             <UserCircle2 className="h-4 w-4" aria-hidden="true" />
