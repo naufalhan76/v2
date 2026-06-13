@@ -12,8 +12,8 @@ export default function TechnicianProfilePage() {
             <UserCircle2 className="h-4 w-4" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold tracking-tight">Profil</h1>
-            <p className="text-sm text-gray-300 leading-tight mt-1">Kelola akun dan preferensi kamu</p>
+            <h1 className="text-2xl font-bold tracking-tight mb-2">Profil</h1>
+            <p className="text-sm text-gray-300 leading-tight">Kelola akun dan preferensi kamu</p>
           </div>
         </div>
       </div>
