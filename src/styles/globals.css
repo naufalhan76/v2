@@ -236,4 +236,64 @@
       padding-bottom: env(safe-area-inset-bottom);
     }
   }
+
+  /* Toast enter/exit animations */
+  @keyframes toast-enter {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes toast-exit {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+
+  .toast-enter {
+    animation: toast-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Empty state staggered fade-in */
+  @keyframes empty-state-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .empty-state-item {
+    opacity: 0;
+    animation: empty-state-fade-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .empty-state-item:nth-child(1) { animation-delay: 0ms; }
+  .empty-state-item:nth-child(2) { animation-delay: 100ms; }
+  .empty-state-item:nth-child(3) { animation-delay: 200ms; }
+  .empty-state-item:nth-child(4) { animation-delay: 300ms; }
+  .empty-state-item:nth-child(5) { animation-delay: 400ms; }
+
+  /* Loading fade-in (replaces framer-motion initial/animate) */
+  @keyframes loading-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .loading-fade-in {
+    animation: loading-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { getStatusByDay } from '@/lib/actions/dashboard'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -18,13 +19,31 @@ import {
   QuickActionsTooltip,
 } from '@/components/dashboard/dashboard-onboarding'
 import { StatsCards } from '@/components/dashboard/stats-cards'
-import { OrdersRevenueAreaChart } from '@/components/dashboard/orders-revenue-area-chart'
-import { StatusBreakdownDonut } from '@/components/dashboard/status-breakdown-donut'
-import { StatusByDayBar, type DailyStatusData } from '@/components/dashboard/status-by-day-bar'
-import { RevenueTrendLine } from '@/components/dashboard/revenue-trend-line'
-import { TopTechniciansList } from '@/components/dashboard/top-technicians-list'
 import { RecentOrdersTable } from '@/components/dashboard/recent-orders-table'
 import { OrdersActivityFeed } from '@/components/dashboard/orders-activity-feed'
+import { TopTechniciansList } from '@/components/dashboard/top-technicians-list'
+import type { DailyStatusData } from '@/components/dashboard/status-by-day-bar'
+
+const ChartSkeleton = () => (
+  <div className="h-[380px] w-full rounded-xl bg-muted animate-pulse" />
+)
+
+const OrdersRevenueAreaChart = dynamic(
+  () => import('@/components/dashboard/orders-revenue-area-chart').then(m => m.OrdersRevenueAreaChart),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+)
+const StatusBreakdownDonut = dynamic(
+  () => import('@/components/dashboard/status-breakdown-donut').then(m => m.StatusBreakdownDonut),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+)
+const StatusByDayBar = dynamic(
+  () => import('@/components/dashboard/status-by-day-bar').then(m => m.StatusByDayBar),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+)
+const RevenueTrendLine = dynamic(
+  () => import('@/components/dashboard/revenue-trend-line').then(m => m.RevenueTrendLine),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+)
 
 export default function DashboardPage() {
   const [userName, setUserName] = useState('Admin')

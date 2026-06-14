@@ -1,7 +1,6 @@
 "use client"
 
 import { type LucideIcon } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -22,26 +21,6 @@ interface EmptyStateProps {
   className?: string
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.05,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] as const },
-  },
-}
-
 /**
  * Reusable empty state component for tables, lists, and board columns.
  * Displays an icon, title, optional description, and optional action button
@@ -49,34 +28,20 @@ const itemVariants = {
  */
 export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
   return (
-    <motion.div
-      className={cn('flex flex-col items-center justify-center py-10 sm:py-12 px-4 text-center', className)}
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      <motion.div
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-canvas-soft mb-4"
-        variants={itemVariants}
-      >
+    <div className={cn('flex flex-col items-center justify-center py-10 sm:py-12 px-4 text-center', className)}>
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-canvas-soft mb-4 empty-state-item">
         <Icon className="h-6 w-6 text-ink-faint" />
-      </motion.div>
-      <motion.h3
-        className="text-lg font-[460] text-foreground mb-1"
-        variants={itemVariants}
-      >
+      </div>
+      <h3 className="text-lg font-[460] text-foreground mb-1 empty-state-item">
         {title}
-      </motion.h3>
+      </h3>
       {description && (
-        <motion.p
-          className="text-sm text-ink-mute max-w-[280px] sm:max-w-sm mb-4"
-          variants={itemVariants}
-        >
+        <p className="text-sm text-ink-mute max-w-[280px] sm:max-w-sm mb-4 empty-state-item">
           {description}
-        </motion.p>
+        </p>
       )}
       {action && (
-        <motion.div variants={itemVariants}>
+        <div className="empty-state-item">
           <Button
             variant="outline"
             size="sm"
@@ -86,8 +51,8 @@ export function EmptyState({ icon: Icon, title, description, action, className }
             {action.icon && <action.icon className="mr-2 h-4 w-4" />}
             {action.label}
           </Button>
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   )
 }
