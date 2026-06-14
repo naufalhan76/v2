@@ -208,10 +208,10 @@ export default function DashboardPage() {
             className="animate-enter grid grid-cols-1 gap-4 lg:grid-cols-3"
             style={{ animationDelay: '120ms' }}
           >
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2" role="img" aria-label="Orders and revenue trend area chart">
               <OrdersRevenueAreaChart />
             </div>
-            <div>
+            <div role="img" aria-label="Order status breakdown donut chart">
               <StatusBreakdownDonut startDate={dateRangeStr.start} endDate={dateRangeStr.end} />
             </div>
           </div>
@@ -230,7 +230,9 @@ export default function DashboardPage() {
             className="animate-enter grid grid-cols-1 gap-4 lg:grid-cols-2"
             style={{ animationDelay: '240ms' }}
           >
-            <RevenueTrendLine startDate={dateRangeStr.start} endDate={dateRangeStr.end} />
+            <div role="img" aria-label="Revenue trend line chart">
+              <RevenueTrendLine startDate={dateRangeStr.start} endDate={dateRangeStr.end} />
+            </div>
             <TopTechniciansList startDate={dateRangeStr.start} endDate={dateRangeStr.end} />
           </div>
 
@@ -239,7 +241,9 @@ export default function DashboardPage() {
             {statusByDayLoading ? (
               <Skeleton className="h-[380px] w-full rounded-xl" />
             ) : (
-              <StatusByDayBar data={statusByDay} />
+              <div role="img" aria-label="Daily order status stacked bar chart">
+                <StatusByDayBar data={statusByDay} />
+              </div>
             )}
           </div>
 

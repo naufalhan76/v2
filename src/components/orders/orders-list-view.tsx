@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import {
-  type ColumnDef,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
@@ -10,35 +9,23 @@ import {
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table'
-import { format } from 'date-fns'
-import { id as localeId } from 'date-fns/locale'
-import { ArrowUpDown, MoreHorizontal, Trash2, SearchX, Inbox, Calendar as CalendarIcon, User as UserIcon } from 'lucide-react'
+import { Trash2, SearchX, Inbox } from 'lucide-react'
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { StatusBadge } from '@/components/orders/status-badge'
-import { ServiceTypeBadge } from '@/components/orders/service-type-badge'
 import { CancelModal } from '@/components/orders/cancel-modal'
-import {
-  type OrderForDisplay,
-  getLeadTechnicianName,
-  getPrimaryServiceType,
-} from '@/lib/order-utils'
+import { type OrderForDisplay } from '@/lib/order-utils'
+import { createOrdersListColumns } from './orders-list-columns'
+import { OrdersListMobileCard } from './orders-list-mobile-card'
 
 interface OrdersListViewProps {
   orders: OrderForDisplay[]
@@ -53,130 +40,7 @@ export function OrdersListView({ orders, isLoading, hasFilters, onRowClick }: Or
   const [bulkCancelOpen, setBulkCancelOpen] = useState(false)
   const [bulkCancelOrderId, setBulkCancelOrderId] = useState<string | null>(null)
 
-  const columns: ColumnDef<OrderForDisplay>[] = useMemo(
-    () => [
-      {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && 'indeterminate')
-            }
-            onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
-            aria-label="Pilih semua"
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(v) => row.toggleSelected(!!v)}
-            aria-label="Pilih baris"
-            onClick={(e) => e.stopPropagation()}
-          />
-        ),
-        enableSorting: false,
-      },
-      {
-        accessorKey: 'order_id',
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="-ml-3"
-          >
-            Order ID <ArrowUpDown className="ml-2 h-3 w-3" />
-          </Button>
-        ),
-        cell: ({ row }) => <span className="font-mono text-xs">{row.original.order_id}</span>,
-      },
-      {
-        id: 'customer',
-        header: 'Customer',
-        cell: ({ row }) => (
-          <span className="text-sm">{row.original.customers?.customer_name ?? '-'}</span>
-        ),
-      },
-      {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => <StatusBadge status={row.original.status} size="sm" />,
-      },
-      {
-        id: 'service_type',
-        header: 'Service',
-        cell: ({ row }) => {
-          const t = getPrimaryServiceType(row.original)
-          return t ? <ServiceTypeBadge serviceType={t} size="sm" /> : '-'
-        },
-      },
-      {
-        accessorKey: 'scheduled_visit_date',
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            className="-ml-3"
-          >
-            Jadwal <ArrowUpDown className="ml-2 h-3 w-3" />
-          </Button>
-        ),
-        cell: ({ row }) => {
-          const d = row.original.scheduled_visit_date ?? row.original.req_visit_date
-          return d ? (
-            <span className="text-xs">
-              {format(new Date(d), 'd MMM yyyy', { locale: localeId })}
-            </span>
-          ) : (
-            '-'
-          )
-        },
-      },
-      {
-        id: 'technician',
-        header: 'Teknisi',
-        cell: ({ row }) => (
-          <span className="text-sm">{getLeadTechnicianName(row.original) ?? '-'}</span>
-        ),
-      },
-      {
-        id: 'actions',
-        header: '',
-        cell: ({ row }) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon" className="h-7 w-7">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRowClick(row.original.order_id)
-                }}
-              >
-                Lihat Detail
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setBulkCancelOrderId(row.original.order_id)
-                }}
-                className="text-destructive"
-              >
-                Batalkan
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ),
-        enableSorting: false,
-      },
-    ],
-    [onRowClick]
-  )
+  const columns = useMemo(() => createOrdersListColumns(onRowClick, setBulkCancelOrderId), [onRowClick])
 
   const table = useReactTable({
     data: orders,
@@ -236,6 +100,7 @@ export function OrdersListView({ orders, isLoading, hasFilters, onRowClick }: Or
 
       <div className="rounded-lg border hidden md:block">
         <Table>
+          <TableCaption className="sr-only">Orders list</TableCaption>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id}>
@@ -251,7 +116,12 @@ export function OrdersListView({ orders, isLoading, hasFilters, onRowClick }: Or
             {table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
+                tabIndex={0}
+                role="link"
                 onClick={() => onRowClick(row.original.order_id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onRowClick(row.original.order_id)
+                }}
                 className="cursor-pointer"
               >
                 {row.getVisibleCells().map((cell) => (
@@ -265,100 +135,15 @@ export function OrdersListView({ orders, isLoading, hasFilters, onRowClick }: Or
         </Table>
       </div>
 
-      {/* Mobile card list */}
       <div className="md:hidden space-y-2">
-        {table.getRowModel().rows.map((row) => {
-          const order = row.original
-          const dateStr = order.scheduled_visit_date ?? order.req_visit_date
-          const tech = getLeadTechnicianName(order)
-          const serviceType = getPrimaryServiceType(order)
-          const isSelected = row.getIsSelected()
-          return (
-            <div
-              key={row.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => onRowClick(order.order_id)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  onRowClick(order.order_id)
-                }
-              }}
-              className="rounded-lg border border-hairline bg-background p-3 shadow-sm active:bg-canvas-soft transition-colors cursor-pointer"
-            >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="flex items-start gap-2 min-w-0 flex-1">
-                  <div onClick={(e) => e.stopPropagation()} className="pt-0.5">
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={(v) => row.toggleSelected(!!v)}
-                      aria-label="Pilih order"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xl font-bold text-foreground truncate">
-                      {order.customers?.customer_name ?? 'Customer'}
-                    </p>
-                    <p className="font-mono text-xs text-ink-mute truncate">
-                      {order.order_id}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <StatusBadge status={order.status} size="sm" />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onRowClick(order.order_id)
-                        }}
-                      >
-                        Lihat Detail
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setBulkCancelOrderId(order.order_id)
-                        }}
-                        className="text-destructive"
-                      >
-                        Batalkan
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                {serviceType && <ServiceTypeBadge serviceType={serviceType} size="sm" />}
-              </div>
-
-              <div className="space-y-1 text-base text-ink-mute">
-                {dateStr && (
-                  <div className="flex items-center gap-1.5">
-                    <CalendarIcon className="h-3 w-3 shrink-0" />
-                    <span>
-                      {format(new Date(dateStr), 'd MMM yyyy', { locale: localeId })}
-                    </span>
-                  </div>
-                )}
-                {tech && (
-                  <div className="flex items-center gap-1.5">
-                    <UserIcon className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{tech}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })}
+        {table.getRowModel().rows.map((row) => (
+          <OrdersListMobileCard
+            key={row.id}
+            row={row}
+            onRowClick={onRowClick}
+            onCancel={setBulkCancelOrderId}
+          />
+        ))}
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

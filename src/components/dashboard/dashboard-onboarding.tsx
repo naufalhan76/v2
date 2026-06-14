@@ -51,9 +51,9 @@ export function DashboardOnboarding({ children }: { children: React.ReactNode })
                 <Lightbulb className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-xl font-[540] leading-tight text-foreground mb-2">
+                <div className="text-xl font-[540] leading-tight text-foreground mb-2">
                   Selamat datang di Dashboard MSN ERP
-                </h3>
+                </div>
                 <p className="text-sm text-ink-mute leading-relaxed">
                   Halaman ini menampilkan order yang memerlukan perhatian Anda. Gunakan filter tanggal untuk melihat periode tertentu, dan klik &quot;Buat Order&quot; atau &quot;Tugaskan&quot; untuk mengelola pekerjaan.
                 </p>

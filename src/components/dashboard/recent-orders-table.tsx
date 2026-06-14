@@ -11,6 +11,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -121,6 +122,7 @@ export function RecentOrdersTable({ limit = 5 }: { limit?: number }) {
         ) : (
           <div className="max-h-[320px] overflow-y-auto">
             <Table>
+              <TableCaption className="sr-only">Recent orders</TableCaption>
               <TableHeader>
                 <TableRow>
                   <TableHead>Pelanggan</TableHead>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -95,6 +96,7 @@ export function PendingOrdersTable({
           ) : (
             <div className='data-table-container'>
               <Table>
+                <TableCaption className="sr-only">Pending orders</TableCaption>
                 <TableHeader>
                   <TableRow>
                     <SortableTableHead sortKey="order_id" currentSort={sortConfig} onSort={requestSort}>
