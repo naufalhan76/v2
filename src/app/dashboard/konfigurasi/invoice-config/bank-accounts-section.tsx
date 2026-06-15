@@ -4,10 +4,9 @@ import { useState } from 'react'
 import type { BankAccount } from '@/lib/bank-accounts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Plus, Trash2, Edit2, Check, X } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { BankAccountItem } from './_components/bank-account-item'
+import { AddBankAccountForm } from './_components/add-bank-account-form'
 
 export type { BankAccount } from '@/lib/bank-accounts'
 
@@ -19,28 +18,16 @@ interface BankAccountsSectionProps {
 export function BankAccountsSection({ accounts, onChange }: BankAccountsSectionProps) {
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    account_label: '',
-    bank: '',
-    account_number: '',
-    account_name: '',
-    tax_percentage: '11',
-  })
+  const [formData, setFormData] = useState({ account_label: '', bank: '', account_number: '', account_name: '', tax_percentage: '11' })
 
   const handleAdd = () => {
     if (!formData.bank || !formData.account_number || !formData.account_name) return
-
     const accountLabel = formData.account_label || `Payment Account ${accounts.length + 1}`
-
     const newAccount: BankAccount = {
-      id: Date.now().toString(),
-      account_label: accountLabel,
-      bank: formData.bank,
-      account_number: formData.account_number,
-      account_name: formData.account_name,
+      id: Date.now().toString(), account_label: accountLabel, bank: formData.bank,
+      account_number: formData.account_number, account_name: formData.account_name,
       tax_percentage: parseFloat(formData.tax_percentage) || 11,
     }
-
     onChange([...accounts, newAccount])
     setFormData({ account_label: '', bank: '', account_number: '', account_name: '', tax_percentage: '11' })
     setIsAdding(false)
@@ -49,26 +36,14 @@ export function BankAccountsSection({ accounts, onChange }: BankAccountsSectionP
   const handleEdit = (account: BankAccount) => {
     setEditingId(account.id)
     setFormData({
-      account_label: account.account_label,
-      bank: account.bank,
-      account_number: account.account_number,
-      account_name: account.account_name,
-      tax_percentage: account.tax_percentage?.toString() || '11',
+      account_label: account.account_label, bank: account.bank, account_number: account.account_number,
+      account_name: account.account_name, tax_percentage: account.tax_percentage?.toString() || '11',
     })
   }
 
   const handleUpdate = (id: string) => {
     const updatedAccounts = accounts.map((acc) =>
-      acc.id === id
-        ? { 
-            ...acc, 
-            account_label: formData.account_label,
-            bank: formData.bank,
-            account_number: formData.account_number,
-            account_name: formData.account_name,
-            tax_percentage: parseFloat(formData.tax_percentage) || 11,
-          }
-        : acc
+      acc.id === id ? { ...acc, account_label: formData.account_label, bank: formData.bank, account_number: formData.account_number, account_name: formData.account_name, tax_percentage: parseFloat(formData.tax_percentage) || 11 } : acc
     )
     onChange(updatedAccounts)
     setEditingId(null)
@@ -76,237 +51,70 @@ export function BankAccountsSection({ accounts, onChange }: BankAccountsSectionP
   }
 
   const handleDelete = (id: string) => {
-    const remainingAccounts = accounts.filter((acc) => acc.id !== id)
-    onChange(remainingAccounts)
+    onChange(accounts.filter((acc) => acc.id !== id))
   }
 
   const handleCancel = () => {
-    setIsAdding(false)
-    setEditingId(null)
+    setIsAdding(false); setEditingId(null)
     setFormData({ account_label: '', bank: '', account_number: '', account_name: '', tax_percentage: '11' })
   }
 
   return (
     <div className="space-y-6">
-      {/* Bank Accounts */}
       <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-lg font-semibold text-foreground">Rekening Bank</CardTitle>
-              <CardDescription>
-                Kelola rekening bank untuk pembayaran invoice (bisa lebih dari 1)
-              </CardDescription>
+              <CardDescription>Kelola rekening bank untuk pembayaran invoice (bisa lebih dari 1)</CardDescription>
             </div>
-          {!isAdding && (
-            <Button onClick={() => setIsAdding(true)} size="sm" className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Rekening
-            </Button>
+            {!isAdding && (
+              <Button onClick={() => setIsAdding(true)} size="sm" className="w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />Tambah Rekening
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {accounts.length > 0 && (
+            <div className="space-y-3">
+              {accounts.map((account) => (
+                <div key={account.id} className="space-y-3 rounded-xl border border-border/50 p-4 shadow-sm">
+                  <BankAccountItem
+                    account={account}
+                    isEditing={editingId === account.id}
+                    formData={formData}
+                    onFormDataChange={setFormData}
+                    onEdit={() => handleEdit(account)}
+                    onUpdate={() => handleUpdate(account.id)}
+                    onDelete={() => handleDelete(account.id)}
+                    onCancel={handleCancel}
+                  />
+                </div>
+              ))}
+            </div>
           )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Existing Accounts */}
-        {accounts.length > 0 && (
-          <div className="space-y-3">
-            {accounts.map((account) => (
-              <div
-                key={account.id}
-                className="space-y-3 rounded-xl border border-border/50 p-4 shadow-sm"
-              >
-                {editingId === account.id ? (
-                  // Edit Mode
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-sm font-medium text-foreground">Label Akun *</Label>
-                      <Input
-                        value={formData.account_label}
-                        onChange={(e) => setFormData({ ...formData, account_label: e.target.value })}
-                        placeholder="Payment Account 1"
-                        className="h-10"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-foreground">Nama Bank *</Label>
-                      <Input
-                        value={formData.bank}
-                        onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
-                        placeholder="Bank Mandiri"
-                        className="h-10"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-foreground">Nomor Rekening</Label>
-                      <Input
-                        value={formData.account_number}
-                        onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
-                        placeholder="1234567890"
-                        className="h-10"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-foreground">Atas Nama *</Label>
-                      <Input
-                        value={formData.account_name}
-                        onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
-                        placeholder="PT. AC Service Indonesia"
-                        className="h-10"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-foreground">PPN (%) *</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={formData.tax_percentage}
-                        onChange={(e) => setFormData({ ...formData, tax_percentage: e.target.value })}
-                        placeholder="11"
-                        className="h-10"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Tarif PPN yang berlaku untuk payment account ini
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button onClick={() => handleUpdate(account.id)} size="sm">
-                        <Check className="h-4 w-4 mr-2" />
-                        Simpan
-                      </Button>
-                      <Button onClick={handleCancel} variant="outline" size="sm">
-                        <X className="h-4 w-4 mr-2" />
-                        Batal
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  // View Mode
-                  <div>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-2">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <Badge variant="outline" className="text-sm font-semibold">
-                            {account.account_label}
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            PPN {account.tax_percentage}%
-                          </Badge>
-                        </div>
-                        <h4 className="font-semibold mb-1">{account.bank}</h4>
-                        <p className="text-sm text-muted-foreground break-all">
-                          {account.account_number}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          a/n {account.account_name}
-                        </p>
-                      </div>
-                      <div className="flex gap-2 sm:shrink-0">
-                        <Button
-                          onClick={() => handleEdit(account)}
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 sm:flex-none min-h-[44px] sm:min-h-9"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => handleDelete(account.id)}
-                          variant="destructive"
-                          size="sm"
-                          className="flex-1 sm:flex-none min-h-[44px] sm:min-h-9"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
 
-        {/* Add New Account Form */}
-        {isAdding && (
-          <div className="space-y-3 rounded-xl border border-border/50 bg-muted/50 p-4 shadow-sm">
-            <h4 className="text-lg font-semibold text-foreground">Tambah Rekening Baru</h4>
-            <div>
-              <Label className="text-sm font-medium text-foreground">Label Akun (opsional)</Label>
-              <Input
-                value={formData.account_label}
-                onChange={(e) => setFormData({ ...formData, account_label: e.target.value })}
-                placeholder={`Payment Account ${accounts.length + 1}`}
-                className="h-10"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Kosongkan untuk auto-generate: Payment Account {accounts.length + 1}
-              </p>
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-foreground">Nama Bank *</Label>
-              <Input
-                value={formData.bank}
-                onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
-                placeholder="Bank Mandiri"
-                className="h-10"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-foreground">Nomor Rekening *</Label>
-              <Input
-                value={formData.account_number}
-                onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
-                placeholder="1234567890"
-                className="h-10"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-foreground">Atas Nama *</Label>
-              <Input
-                value={formData.account_name}
-                onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
-                placeholder="PT. AC Service Indonesia"
-                className="h-10"
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-foreground">PPN (%) *</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={formData.tax_percentage}
-                onChange={(e) => setFormData({ ...formData, tax_percentage: e.target.value })}
-                placeholder="11"
-                className="h-10"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Tarif PPN yang berlaku (default 11%)
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleAdd} size="sm">
-                <Check className="h-4 w-4 mr-2" />
-                Tambah
-              </Button>
-              <Button onClick={handleCancel} variant="outline" size="sm">
-                <X className="h-4 w-4 mr-2" />
-                Batal
+          {isAdding && (
+            <AddBankAccountForm
+              accountsCount={accounts.length}
+              formData={formData}
+              onFormDataChange={setFormData}
+              onAdd={handleAdd}
+              onCancel={handleCancel}
+            />
+          )}
+
+          {accounts.length === 0 && !isAdding && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Belum ada rekening bank yang ditambahkan</p>
+              <Button onClick={() => setIsAdding(true)} variant="outline" size="sm" className="mt-4">
+                <Plus className="h-4 w-4 mr-2" />Tambah Rekening Pertama
               </Button>
             </div>
-          </div>
-        )}
-
-        {accounts.length === 0 && !isAdding && (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Belum ada rekening bank yang ditambahkan</p>
-            <Button onClick={() => setIsAdding(true)} variant="outline" size="sm" className="mt-4">
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Rekening Pertama
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

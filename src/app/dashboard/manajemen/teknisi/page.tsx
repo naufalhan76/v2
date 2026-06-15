@@ -3,50 +3,24 @@
 import { useState, useEffect } from 'react'
 import { getTechnicians, createTechnician, updateTechnician, deleteTechnician } from '@/lib/actions/technicians'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { SortableTableHead } from '@/components/ui/sortable-table-head'
-import { useSortableTable } from '@/hooks/use-sortable-table'
-import { Edit, Trash2, Search, Plus, Wrench } from 'lucide-react'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
-import { formatPhone } from '@/lib/utils'
-import { EmptyState } from '@/components/ui/empty-state'
-import { TableSkeleton } from '@/components/ui/skeleton'
+import { useSortableTable } from '@/hooks/use-sortable-table'
+import { TechnicianTable, type Technician } from './_components/technician-table'
+import { TechnicianFilters } from './_components/technician-filters'
+import { TechnicianFormModal } from './_components/technician-form-modal'
 
-interface Technician {
-  technician_id: string
-  technician_name: string
-  contact_number: string
-  email?: string
-  company?: string
+interface TechnicianFormData {
+  technician_name: string; contact_number: string; email: string; password: string; company: string
 }
+
+const emptyFormData: TechnicianFormData = { technician_name: '', contact_number: '', email: '', password: '', company: '' }
 
 export default function TechniciansPage() {
   const { toast } = useToast()
@@ -55,25 +29,17 @@ export default function TechniciansPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formData, setFormData] = useState<TechnicianFormData>(emptyFormData)
 
-  // Apply sorting
   const { sortedData: techniciansSorted, sortConfig, requestSort } = useSortableTable(techniciansBase as unknown as Record<string, unknown>[], {
     key: 'technician_name',
     direction: 'asc'
   })
   const technicians = techniciansSorted as unknown as Technician[]
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-  const [selectedTechnician, setSelectedTechnician] = useState<Technician | null>(null)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const [formData, setFormData] = useState({
-    technician_name: '',
-    contact_number: '',
-    email: '',
-    password: '',
-    company: '',
-  })
 
   useEffect(() => {
     fetchTechnicians()
@@ -83,150 +49,71 @@ export default function TechniciansPage() {
   const fetchTechnicians = async () => {
     setLoading(true)
     try {
-      const result = await getTechnicians({
-        search: searchQuery,
-        limit: 100,
-      })
-      if (result.success) {
-        setTechnicians(result.data)
-      }
+      const result = await getTechnicians({ search: searchQuery, limit: 100 })
+      if (result.success) setTechnicians(result.data)
     } catch (error) {
       logger.error('Error fetching technicians:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch technicians',
-        variant: 'destructive',
-      })
-    } finally {
-      setLoading(false)
-    }
+      toast({ title: 'Error', description: 'Failed to fetch technicians', variant: 'destructive' })
+    } finally { setLoading(false) }
   }
 
-  const handleCreate = () => {
-    setFormData({
-      technician_name: '',
-      contact_number: '',
-      email: '',
-      password: '',
-      company: '',
-    })
-    setIsCreateOpen(true)
-  }
+  const handleCreate = () => { setFormData(emptyFormData); setIsCreateOpen(true) }
 
   const handleEdit = (technician: Technician) => {
     setSelectedTechnician(technician)
-    setFormData({
-      technician_name: technician.technician_name,
-      contact_number: technician.contact_number,
-      email: technician.email || '',
-      password: '',
-      company: technician.company || '',
-    })
+    setFormData({ technician_name: technician.technician_name, contact_number: technician.contact_number, email: technician.email || '', password: '', company: technician.company || '' })
     setIsEditOpen(true)
   }
 
-  const handleDelete = (technicianId: string) => {
-    setDeleteId(technicianId)
-    setIsDeleteOpen(true)
-  }
+  const handleDelete = (technicianId: string) => { setDeleteId(technicianId); setIsDeleteOpen(true) }
 
   const confirmDelete = async () => {
     if (!deleteId) return
-
     setIsSubmitting(true)
     try {
       const result = await deleteTechnician(deleteId)
-      
       if (result.success) {
-        toast({
-          title: 'Success',
-          description: 'Technician deleted successfully',
-        })
+        toast({ title: 'Success', description: 'Technician deleted successfully' })
         setIsDeleteOpen(false)
         setDeleteId(null)
         fetchTechnicians()
       } else {
-        toast({
-          title: 'Error',
-          description: result.error || 'Failed to delete technician',
-          variant: 'destructive',
-        })
+        toast({ title: 'Error', description: result.error || 'Failed to delete technician', variant: 'destructive' })
       }
     } catch (error) {
       logger.error('Error deleting technician:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to delete technician',
-        variant: 'destructive',
-      })
+      toast({ title: 'Error', description: 'Failed to delete technician', variant: 'destructive' })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent, mode: 'create' | 'edit') => {
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      const result = await createTechnician(formData)
-      
+      const result = mode === 'create'
+        ? await createTechnician(formData)
+        : selectedTechnician
+          ? await updateTechnician(selectedTechnician.technician_id, {
+              technician_name: formData.technician_name,
+              contact_number: formData.contact_number,
+              email: formData.email,
+              company: formData.company,
+            })
+          : { success: false, error: 'No technician selected' }
+
       if (result.success) {
-        toast({
-          title: 'Success',
-          description: 'Technician created successfully',
-        })
-        setIsCreateOpen(false)
+        toast({ title: 'Success', description: mode === 'create' ? 'Technician created successfully' : 'Technician updated successfully' })
+        if (mode === 'create') setIsCreateOpen(false)
+        else { setIsEditOpen(false); setSelectedTechnician(null) }
         fetchTechnicians()
       } else {
-        toast({
-          title: 'Error',
-          description: result.error || 'Failed to create technician',
-          variant: 'destructive',
-        })
+        toast({ title: 'Error', description: result.error || `Failed to ${mode} technician`, variant: 'destructive' })
       }
     } catch (error) {
-      logger.error('Error creating technician:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to create technician',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedTechnician) return
-
-    setIsSubmitting(true)
-    try {
-      const { technician_name, contact_number, email, company } = formData
-      const result = await updateTechnician(selectedTechnician.technician_id, { technician_name, contact_number, email, company })
-      
-      if (result.success) {
-        toast({
-          title: 'Success',
-          description: 'Technician updated successfully',
-        })
-        setIsEditOpen(false)
-        setSelectedTechnician(null)
-        fetchTechnicians()
-      } else {
-        toast({
-          title: 'Error',
-          description: result.error || 'Failed to update technician',
-          variant: 'destructive',
-        })
-      }
-    } catch (error) {
-      logger.error('Error updating technician:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to update technician',
-        variant: 'destructive',
-      })
+      logger.error(`Error ${mode === 'create' ? 'creating' : 'updating'} technician:`, error)
+      toast({ title: 'Error', description: `Failed to ${mode} technician`, variant: 'destructive' })
     } finally {
       setIsSubmitting(false)
     }
@@ -250,291 +137,41 @@ export default function TechniciansPage() {
           <CardTitle>Technicians List</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Search by name, phone, email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {loading ? (
-            <TableSkeleton rows={5} columns={5} />
-          ) : technicians.length === 0 ? (
-            <EmptyState
-              icon={Wrench}
-              title="Belum ada teknisi"
-              description="Tambahkan teknisi untuk mulai menugaskan order."
-              action={{
-                label: 'Tambah Teknisi',
-                icon: Plus,
-                onClick: () => setIsCreateOpen(true),
-              }}
-            />
-          ) : (
-            <>
-              {/* Mobile cards */}
-              <div className="md:hidden space-y-3">
-                {technicians.map((technician) => (
-                  <div
-                    key={technician.technician_id}
-                    className="rounded-lg border p-3 space-y-2"
-                  >
-                    <div className="space-y-1">
-                      <h3 className="font-semibold">{technician.technician_name}</h3>
-                      <p className="text-sm text-muted-foreground" data-testid="phone-cell">
-                        {formatPhone(technician.contact_number)}
-                      </p>
-                      {technician.email && (
-                        <p className="text-sm text-muted-foreground break-all">
-                          {technician.email}
-                        </p>
-                      )}
-                      {technician.company && (
-                        <p className="text-xs text-muted-foreground">
-                          {technician.company}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex justify-end gap-2 pt-2 border-t">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-10"
-                        onClick={() => handleEdit(technician)}
-                      >
-                        <Edit className="h-4 w-4 mr-1.5" />
-                        Ubah
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="h-10"
-                        onClick={() => handleDelete(technician.technician_id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1.5" />
-                        Hapus
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Desktop table */}
-              <div className="hidden md:block data-table-container overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <SortableTableHead sortKey="technician_name" currentSort={sortConfig} onSort={requestSort}>
-                        Name
-                      </SortableTableHead>
-                      <SortableTableHead sortKey="contact_number" currentSort={sortConfig} onSort={requestSort}>
-                        Contact Number
-                      </SortableTableHead>
-                      <SortableTableHead sortKey="email" currentSort={sortConfig} onSort={requestSort} className="hidden lg:table-cell">
-                        Email
-                      </SortableTableHead>
-                      <SortableTableHead sortKey="company" currentSort={sortConfig} onSort={requestSort} className="hidden lg:table-cell">
-                        Company
-                      </SortableTableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {technicians.map((technician) => (
-                      <TableRow key={technician.technician_id}>
-                        <TableCell className="font-medium">{technician.technician_name}</TableCell>
-                        <TableCell data-testid="phone-cell">{formatPhone(technician.contact_number)}</TableCell>
-                        <TableCell className="hidden lg:table-cell">{technician.email || '-'}</TableCell>
-                        <TableCell className="hidden lg:table-cell">{technician.company || '-'}</TableCell>
-                        <TableCell className="text-right w-[180px]">
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                              variant="outline"
-                              aria-label="Edit"
-                              className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
-                              onClick={() => handleEdit(technician)}
-                            >
-                              <Edit className="h-4 w-4 flex-shrink-0" />
-                              <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                Ubah
-                              </span>
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              aria-label="Hapus"
-                              className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
-                              onClick={() => handleDelete(technician.technician_id)}
-                            >
-                              <Trash2 className="h-4 w-4 flex-shrink-0" />
-                              <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                Hapus
-                              </span>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </>
-          )}
+          <TechnicianFilters searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+          <TechnicianTable
+            technicians={technicians}
+            loading={loading}
+            sortConfig={sortConfig}
+            onRequestSort={requestSort}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onAddClick={() => setIsCreateOpen(true)}
+          />
         </CardContent>
       </Card>
 
-      {/* Create Sheet */}
-      <Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <SheetContent className="w-full max-w-full sm:max-w-md overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Add New Technician</SheetTitle>
-            <SheetDescription>
-              Create a new technician profile
-            </SheetDescription>
-          </SheetHeader>
-          <form onSubmit={handleCreateSubmit} className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="create-name">Name *</Label>
-              <Input
-                id="create-name"
-                value={formData.technician_name}
-                onChange={(e) => setFormData({ ...formData, technician_name: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-phone">Contact Number *</Label>
-              <Input
-                id="create-phone"
-                value={formData.contact_number}
-                onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-email">Email *</Label>
-              <Input
-                id="create-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-password">Password *</Label>
-              <Input
-                id="create-password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-              />
-              <p className="text-xs text-muted-foreground">Teknisi login pakai email & password ini di aplikasi teknisi.</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-company">Company</Label>
-              <Input
-                id="create-company"
-                value={formData.company}
-                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                placeholder="e.g., CoolAir, ACindo"
-              />
-            </div>
-            <div className="flex gap-2 pt-4">
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-1"
-              >
-                {isSubmitting ? 'Creating...' : 'Create Technician'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsCreateOpen(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </SheetContent>
-      </Sheet>
+      <TechnicianFormModal
+        mode="create"
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        technician={null}
+        formData={formData}
+        onFormDataChange={setFormData}
+        onSubmit={(e) => handleFormSubmit(e, 'create')}
+        isSubmitting={isSubmitting}
+      />
 
-      {/* Edit Sheet */}
-      <Sheet open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <SheetContent className="w-full max-w-full sm:max-w-md overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Edit Technician</SheetTitle>
-            <SheetDescription>
-              Update technician information
-            </SheetDescription>
-          </SheetHeader>
-          <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Name *</Label>
-              <Input
-                id="edit-name"
-                value={formData.technician_name}
-                onChange={(e) => setFormData({ ...formData, technician_name: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-phone">Contact Number *</Label>
-              <Input
-                id="edit-phone"
-                value={formData.contact_number}
-                onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-email">Email</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-company">Company</Label>
-              <Input
-                id="edit-company"
-                value={formData.company}
-                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                placeholder="e.g., CoolAir, ACindo"
-              />
-            </div>
-            <div className="flex gap-2 pt-4">
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-1"
-              >
-                {isSubmitting ? 'Updating...' : 'Update Technician'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditOpen(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </SheetContent>
-      </Sheet>
+      <TechnicianFormModal
+        mode="edit"
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        technician={selectedTechnician}
+        formData={formData}
+        onFormDataChange={setFormData}
+        onSubmit={(e) => handleFormSubmit(e, 'edit')}
+        isSubmitting={isSubmitting}
+      />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

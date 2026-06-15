@@ -149,10 +149,10 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
       onMouseEnter={handleMouseEnter}
       onTouchStart={handleMouseEnter}
       className={cn(
-        'block rounded-xl border border-hairline shadow-sm transition-colors duration-200 overflow-hidden',
+        'block rounded-xl border border-border shadow-sm transition-colors duration-200 overflow-hidden',
         isActive
-          ? 'border-primary bg-background ring-1 ring-indigo-200 dark:ring-indigo-800'
-          : 'bg-background hover:border-indigo-300 dark:hover:border-indigo-700'
+          ? 'border-primary bg-background ring-1 ring-brand-200 dark:ring-primary'
+          : 'bg-background hover:border-primary dark:hover:border-primary'
       )}
     >
       <button
@@ -160,7 +160,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
         aria-expanded={isExpanded}
           className={cn(
             "group flex w-full text-left p-4 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
-            isExpanded ? (isActive ? 'bg-indigo-50 dark:bg-[#252243]' : 'bg-canvas-soft') : (isActive ? 'hover:bg-indigo-50 dark:hover:bg-[#252243]' : 'hover:bg-canvas-soft')
+            isExpanded ? (isActive ? 'bg-brand-50 dark:bg-surface' : 'bg-surface-muted') : (isActive ? 'hover:bg-brand-50 dark:hover:bg-surface' : 'hover:bg-surface-muted')
           )}
       >
         <div className="flex w-full items-start gap-3">
@@ -170,7 +170,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
               'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-colors',
               isActive
                 ? 'bg-primary text-primary-foreground'
-                : 'bg-canvas-soft text-ink-mute group-hover:bg-indigo-50 group-hover:text-primary dark:group-hover:bg-[#252243]'
+                : 'bg-surface-muted text-muted-foreground group-hover:bg-brand-50 group-hover:text-primary dark:group-hover:bg-surface'
             )}
             aria-hidden="true"
           >
@@ -180,8 +180,8 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2 mb-1">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-medium text-gray-500 dark:text-[#a5a3b5] bg-gray-100 dark:bg-[#252243] px-1.5 py-0.5 rounded">{job.order_id}</span>
-                <div className="flex items-center gap-1.5 text-xs text-ink-mute">
+                <span className="text-xs font-mono font-medium text-muted-foreground dark:text-muted-foreground bg-muted dark:bg-surface px-1.5 py-0.5 rounded">{job.order_id}</span>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                   <span className="tabular-nums tracking-tight font-medium">{scheduledTime}</span>
                 </div>
@@ -190,7 +190,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
                 <StatusBadge status={job.status} size="sm" />
                 <ChevronDown
                   className={cn(
-                    "h-4 w-4 text-ink-mute transition-transform duration-300",
+                    "h-4 w-4 text-muted-foreground transition-transform duration-300",
                     isExpanded && "rotate-180"
                   )}
                 />
@@ -200,24 +200,24 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
             <div className="flex items-start justify-between gap-2 mb-1">
               <h3 className="font-bold text-xl truncate text-balance">{customerName}</h3>
               {totalAmount > 0 && (
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap mt-1">
+                <span className="text-sm font-semibold text-foreground dark:text-muted-foreground whitespace-nowrap mt-1">
                   Rp {totalAmount.toLocaleString('id-ID')}
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-1.5 text-lg text-ink-mute mb-0.5">
+            <div className="flex items-center gap-1.5 text-lg text-muted-foreground mb-0.5">
               <Wrench className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span className="truncate">{serviceType}</span>
             </div>
 
-            <div className="flex items-start gap-1.5 text-lg text-ink-mute">
+            <div className="flex items-start gap-1.5 text-lg text-muted-foreground">
               <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden="true" />
               <span className="line-clamp-2">{address}</span>
             </div>
 
             {isActive && !isExpanded && (
-              <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-[#211c59] dark:text-white">
+              <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-primary dark:text-foreground">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
@@ -231,13 +231,13 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
 
       {isExpanded && (
         <div className="px-4 pb-4 animate-in slide-in-from-top-2 fade-in duration-200">
-          <div className="pt-3 border-t border-hairline">
+          <div className="pt-3 border-t border-border">
             {/* Contact Shortcuts */}
             {phoneRaw && (
               <div className="flex gap-2 mb-4">
                   <Button
                     variant="outline"
-                    className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-200 rounded-xl py-3 font-semibold text-[#211c59] hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-white dark:hover:bg-[#252243]"
+                    className="flex-1 flex items-center justify-center gap-2 border-2 border-border rounded-xl py-3 font-semibold text-primary hover:bg-muted transition-colors dark:border-border dark:text-foreground dark:hover:bg-surface"
                     asChild
                   >
                     <a href={`https://wa.me/${waPhone}?text=${waMessage}`} target="_blank" rel="noopener noreferrer">
@@ -247,7 +247,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-200 rounded-xl py-3 font-semibold text-[#211c59] hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-white dark:hover:bg-[#252243]"
+                    className="flex-1 flex items-center justify-center gap-2 border-2 border-border rounded-xl py-3 font-semibold text-primary hover:bg-muted transition-colors dark:border-border dark:text-foreground dark:hover:bg-surface"
                     asChild
                   >
                     <a href={`tel:${phoneRaw}`}>
@@ -274,8 +274,8 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
               className={cn(
                 "w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-colors",
                 isActive
-                  ? "bg-[#211c59] text-white hover:bg-[#2d2a75]"
-                  : "border-2 border-gray-200 text-[#211c59] hover:bg-gray-50 dark:border-gray-700 dark:text-white dark:hover:bg-[#252243]"
+                  ? "bg-primary text-white hover:bg-primary-hover"
+                  : "border-2 border-border text-primary hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-surface"
               )}
               asChild
             >

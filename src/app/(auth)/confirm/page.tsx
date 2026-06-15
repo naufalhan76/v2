@@ -61,11 +61,11 @@ function ConfirmPageContent() {
   }, [searchParams, router, toast])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#1b1938] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background dark:bg-background px-4">
       <Card className="w-full max-w-md bg-white !rounded-xl shadow-lg border-0">
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center mb-6">
-            {status === 'loading' && <Loader2 className="h-12 w-12 text-violet-soft animate-spin" />}
+            {status === 'loading' && <Loader2 className="h-12 w-12 text-primary animate-spin" />}
             {status === 'success' && <CheckCircle className="h-12 w-12 text-status-completed" />}
             {status === 'error' && <XCircle className="h-12 w-12 text-destructive" />}
           </div>
@@ -78,7 +78,7 @@ function ConfirmPageContent() {
             {status === 'error' && 'Konfirmasi Gagal'}
           </CardTitle>
           <CardDescription
-            className="text-lg mt-2 text-ink-mute"
+            className="text-lg mt-2 text-muted-foreground"
             style={{ fontVariationSettings: "'wght' 460" }}
           >
             {status === 'loading' && 'Mohon tunggu, kami sedang memverifikasi alamat email Anda...'}
@@ -88,13 +88,13 @@ function ConfirmPageContent() {
         </CardHeader>
         <CardContent className="text-center">
           {status === 'success' && (
-            <p className="text-base text-ink-mute mb-4">
+            <p className="text-base text-muted-foreground mb-4">
               Anda akan dialihkan ke halaman masuk dalam beberapa saat...
             </p>
           )}
           {status === 'error' && (
             <div className="space-y-4">
-              <p className="text-base text-ink-mute">
+              <p className="text-base text-muted-foreground">
                 Silakan coba lagi atau hubungi dukungan jika masalah berlanjut.
               </p>
               <Button
@@ -114,11 +114,11 @@ function ConfirmPageContent() {
 export default function ConfirmPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-[#1b1938] px-4">
+      <div className="flex min-h-screen items-center justify-center bg-background dark:bg-background px-4">
         <Card className="w-full max-w-md bg-white !rounded-xl shadow-lg border-0">
           <CardHeader className="text-center pb-2">
             <div className="flex justify-center mb-6">
-              <Loader2 className="h-12 w-12 text-violet-soft animate-spin" />
+              <Loader2 className="h-12 w-12 text-primary animate-spin" />
             </div>
             <CardTitle
               className="text-[28px] leading-tight"

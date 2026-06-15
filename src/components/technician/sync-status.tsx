@@ -82,7 +82,7 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
         onClick={() => void syncNow({ bypassBackoff: true })}
         className={cn(
           baseClass,
-          'border-destructive bg-destructive text-destructive-foreground hover:bg-red-700 cursor-pointer'
+          'border-destructive bg-destructive text-destructive-foreground hover:bg-destructive cursor-pointer'
         )}
         aria-label={`Sinkronisasi gagal: ${lastError}. Ketuk untuk coba lagi.`}
       >
@@ -114,7 +114,7 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
         onClick={() => void syncNow({ bypassBackoff: true })}
         className={cn(
           baseClass,
-          'border-status-pending bg-status-pending text-white hover:bg-amber-600 cursor-pointer'
+          'border-status-pending bg-status-pending text-white hover:bg-status-pending cursor-pointer'
         )}
         aria-label={`${pendingCount} item tertunda${needsAttention > 0 ? `, ${needsAttention} perlu perhatian` : ''}. Ketuk untuk sinkronkan sekarang.`}
       >
@@ -148,15 +148,15 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
           <TooltipContent side="bottom" align="end" className="space-y-1.5">
             <p className="text-xs font-semibold">Detail Tertunda</p>
             <div className="flex items-center gap-2 text-xs">
-              <FileText className="h-3 w-3 text-ink-mute" />
+              <FileText className="h-3 w-3 text-muted-foreground" />
               <span>{pending.reports} laporan</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
-              <ImageIcon className="h-3 w-3 text-ink-mute" />
+              <ImageIcon className="h-3 w-3 text-muted-foreground" />
               <span>{pending.photos} foto</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
-              <ArrowRightLeft className="h-3 w-3 text-ink-mute" />
+              <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
               <span>{pending.transitions} transisi</span>
             </div>
             {hasSyncErrors && (
@@ -173,7 +173,7 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
                 ))}
               </div>
             )}
-            <p className="text-[10px] text-ink-mute pt-1 border-t">
+            <p className="text-[10px] text-muted-foreground pt-1 border-t">
               Klik untuk sinkronkan sekarang
             </p>
           </TooltipContent>

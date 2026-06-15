@@ -58,12 +58,12 @@ export function RevenueTrendLine({
 
   if (loading) {
     return (
-      <Card className="border-hairline shadow-none bg-background animate-pulse">
+      <Card className="border-border shadow-none bg-background animate-pulse">
         <CardHeader className="pb-2">
-          <div className="h-5 w-48 bg-canvas-soft rounded" />
+          <div className="h-5 w-48 bg-surface-muted rounded" />
         </CardHeader>
         <CardContent>
-          <div className="h-[240px] bg-canvas-soft rounded" />
+          <div className="h-[240px] bg-surface-muted rounded" />
         </CardContent>
       </Card>
     )
@@ -79,7 +79,7 @@ export function RevenueTrendLine({
         ease: [0.16, 1, 0.3, 1],
       }}
     >
-      <Card className="border-hairline shadow-none bg-background transition-shadow hover:shadow-md">
+      <Card className="border-border shadow-none bg-background transition-shadow hover:shadow-md">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-status-completed" />
@@ -90,22 +90,22 @@ export function RevenueTrendLine({
         </CardHeader>
         <CardContent>
           {data.length === 0 ? (
-            <div className="flex items-center justify-center h-[240px] text-sm text-ink-mute">
+            <div className="flex items-center justify-center h-[240px] text-sm text-muted-foreground">
               Tidak ada data
             </div>
           ) : (
             <div className="h-[240px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data} margin={{ top: 24, right: 8, left: -12, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--hairline))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="formattedDate"
-                    tick={{ fontSize: 11, fill: 'hsl(var(--ink-mute))' }}
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: 'hsl(var(--ink-mute))' }}
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(v: number) => `Rp${(v / 1000000).toFixed(1)}M`}
@@ -113,7 +113,7 @@ export function RevenueTrendLine({
                   <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--hairline))',
+                      border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
                       fontSize: '12px',
                     }}
@@ -135,7 +135,7 @@ export function RevenueTrendLine({
                       dataKey="revenue"
                       position="top"
                       fontSize={10}
-                      fill="hsl(var(--ink-mute))"
+                      fill="hsl(var(--muted-foreground))"
                       formatter={(v: number) => `Rp${(v / 1000000).toFixed(1)}M`}
                     />
                   </Line>

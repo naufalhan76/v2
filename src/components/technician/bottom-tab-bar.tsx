@@ -45,7 +45,7 @@ export function BottomTabBar() {
   return (
     <div className="fixed bottom-6 left-6 right-6 z-50 pb-safe pointer-events-none">
       <nav
-        className="pointer-events-auto bg-white dark:bg-[#1a1833] rounded-[32px] shadow-2xl p-2 flex justify-between items-center"
+        className="pointer-events-auto bg-white dark:bg-surface-muted rounded-[32px] shadow-2xl p-2 flex justify-between items-center"
         aria-label="Navigasi utama"
       >
         {tabs.map((tab) => {
@@ -58,22 +58,22 @@ export function BottomTabBar() {
               className={cn(
                 'group flex flex-col items-center justify-center transition-transform duration-200 active:scale-[0.96] min-h-[44px]',
                 active 
-                  ? 'bg-[#211c59] rounded-[28px] py-2 flex-1 mx-1 px-8 text-white' 
-                  : 'py-2 flex-1 mx-1 text-gray-400'
+                  ? 'bg-primary rounded-[28px] py-2 flex-1 mx-1 px-8 text-white' 
+                  : 'py-2 flex-1 mx-1 text-muted-foreground'
               )}
               aria-current={active ? 'page' : undefined}
             >
               <Icon
                 className={cn(
                   'h-6 w-6 transition-colors duration-200',
-                  active ? 'text-white' : 'text-gray-400'
+                  active ? 'text-white' : 'text-muted-foreground'
                 )}
                 aria-hidden="true"
               />
               <span
                 className={cn(
                   'text-[10px] mt-1 font-medium transition-colors duration-200',
-                  active ? 'text-white' : 'text-gray-400'
+                  active ? 'text-white' : 'text-muted-foreground'
                 )}
               >
                 {tab.label}

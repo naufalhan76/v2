@@ -7,40 +7,16 @@ import { getOrders, getOrderById, assignOrdersToTechnician } from '@/lib/actions
 import { getTechnicians } from '@/lib/actions/technicians'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
 import { Calendar } from '@/components/ui/calendar'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { useSortableTable } from '@/hooks/use-sortable-table'
-import { MultiSelectDropdown } from '@/components/ui/multi-select-dropdown'
-import { ChevronLeft, ChevronRight, Eye, MapPin, User } from 'lucide-react'
 import { format } from 'date-fns'
-import { cn, formatPhone } from '@/lib/utils'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { cn } from '@/lib/utils'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import { useToast } from '@/hooks/use-toast'
-import { ServiceTypeBadge } from '@/components/orders/service-type-badge'
-import { StatusBadge } from '@/components/orders/status-badge'
 import { logger } from '@/lib/logger'
-
-const SERVICE_TYPES = [
-  { value: 'REFILL_FREON', label: 'Refill Freon', dot: 'bg-blue-500' },
-  { value: 'CLEANING', label: 'Cleaning', dot: 'bg-green-500' },
-  { value: 'REPAIR', label: 'Repair', dot: 'bg-orange-500' },
-  { value: 'INSTALLATION', label: 'Installation', dot: 'bg-purple-500' },
-  { value: 'INSPECTION', label: 'Inspection', dot: 'bg-cyan-500' },
-]
+import { OrderSelectionTable } from './_components/order-selection-table'
+import { TechnicianSelector } from './_components/technician-selector'
+import { OrderDetailDialog } from './_components/order-detail-dialog'
+import { ConfirmAssignmentDialog } from './_components/confirm-assignment-dialog'
 
 export default function AssignOrderPage() {
   const router = useRouter()
@@ -53,12 +29,9 @@ export default function AssignOrderPage() {
   const [selectedHelpers, setSelectedHelpers] = useState<string[]>([])
   const [filterServiceType, setFilterServiceType] = useState<string>('ALL')
   const [filterStatus, setFilterStatus] = useState<string>('ALL')
-  const [technicianSearch, setTechnicianSearch] = useState<string>('')
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null)
   const [today, setToday] = useState<Date>()
-  useEffect(() => {
-    setToday(new Date(new Date().setHours(0, 0, 0, 0)))
-  }, [])
+  useEffect(() => { setToday(new Date(new Date().setHours(0, 0, 0, 0))) }, [])
   const [showConfirm, setShowConfirm] = useState(false)
   const [isAssigning, setIsAssigning] = useState(false)
 
@@ -66,13 +39,11 @@ export default function AssignOrderPage() {
     queryKey: ['orders', 'assignable'],
     queryFn: () => getOrders({ statusIn: 'PENDING', limit: 100 })
   })
-
   const { data: orderDetail } = useQuery({
     queryKey: ['order', detailOrderId],
     queryFn: () => getOrderById(detailOrderId!),
     enabled: !!detailOrderId
   })
-
   const { data: techniciansData } = useQuery({
     queryKey: ['technicians'],
     queryFn: () => getTechnicians({ limit: 100 })
@@ -85,100 +56,56 @@ export default function AssignOrderPage() {
     const matchesStatus = filterStatus === 'ALL' || order.status === filterStatus
     return matchesServiceType && matchesStatus
   })
-
-  // Apply sorting
-  const { sortedData: filteredOrders, sortConfig: _sortConfig, requestSort: _requestSort } = useSortableTable(filteredOrdersBase, {
-    key: 'order_id',
-    direction: 'desc'
-  })
+  const { sortedData: filteredOrders } = useSortableTable(filteredOrdersBase, { key: 'order_id', direction: 'desc' })
 
   const orderCounts = SERVICE_TYPES.reduce((acc, type) => {
     acc[type.value] = orders.filter((o: unknown) => (o as Record<string, unknown>).order_type === type.value).length
     return acc
   }, {} as Record<string, number>)
-
   const acceptedCount = orders.filter((o: unknown) => (o as Record<string, unknown>).status === 'ACCEPTED').length
   const rescheduleCount = orders.filter((o: unknown) => (o as Record<string, unknown>).status === 'RESCHEDULE').length
-
-  // Filter technicians by search
   const technicians = techniciansData?.data || []
-  const filteredTechnicians = technicians.filter((tech: unknown) => {
-    const t = tech as Record<string, unknown>
-    if (!technicianSearch) return true
-    const searchLower = technicianSearch.toLowerCase()
-    return (
-      (t.technician_name as string)?.toLowerCase().includes(searchLower) ||
-      (t.company as string)?.toLowerCase().includes(searchLower) ||
-      (t.contact_number as string)?.toLowerCase().includes(searchLower)
-    )
-  })
+  const selectedTechnicianData = techniciansData?.data?.find((t: unknown) => (t as Record<string, unknown>).technician_id === selectedTechnician) as Record<string, unknown> & { technician_name?: string } | undefined
 
   const handleNextStep = () => {
     if (currentStep === 1 && !selectedDate) {
-      toast({ title: 'Warning', description: 'Please select a visit date', variant: 'destructive' })
-      return
+      toast({ title: 'Warning', description: 'Please select a visit date', variant: 'destructive' }); return
     }
     if (currentStep === 2 && selectedOrders.length === 0) {
-      toast({ title: 'Warning', description: 'Please select at least one order', variant: 'destructive' })
-      return
+      toast({ title: 'Warning', description: 'Please select at least one order', variant: 'destructive' }); return
     }
     if (currentStep === 3 && !selectedTechnician) {
-      toast({ title: 'Warning', description: 'Please select a technician', variant: 'destructive' })
-      return
+      toast({ title: 'Warning', description: 'Please select a technician', variant: 'destructive' }); return
     }
-    if (currentStep === 3) {
-      setShowConfirm(true)
-    } else {
-      setCurrentStep(currentStep + 1)
-    }
+    if (currentStep === 3) { setShowConfirm(true) } else { setCurrentStep(currentStep + 1) }
   }
 
   const handleConfirmAssign = async () => {
     if (selectedDate && selectedTechnician && selectedOrders.length > 0) {
       try {
         setIsAssigning(true)
-        logger.debug('Starting assignment...')
         const formattedDate = format(selectedDate, 'yyyy-MM-dd')
-        
-        // Call server action directly
         const result = await assignOrdersToTechnician({
-          orderIds: selectedOrders,
-          technicianId: selectedTechnician,
+          orderIds: selectedOrders, technicianId: selectedTechnician,
           helperTechnicianIds: selectedHelpers.length > 0 ? selectedHelpers : undefined,
           scheduledDate: formattedDate
         })
-        
-        logger.debug('Assignment result:', result)
-        
         if (result.success) {
           toast({ title: 'Success', description: result.message })
           queryClient.invalidateQueries({ queryKey: ['orders'] })
-          
-          // Redirect to success page with details
           const params = new URLSearchParams({
-            ids: selectedOrders.join(','),
-            tech: selectedTechnician,
-            helpers: selectedHelpers.join(','),
-            date: formattedDate
+            ids: selectedOrders.join(','), tech: selectedTechnician,
+            helpers: selectedHelpers.join(','), date: formattedDate
           })
           router.push(`/dashboard/operasional/assign-order/success?${params.toString()}`)
         } else {
           toast({ title: 'Error', description: result.error || 'Failed to assign orders', variant: 'destructive' })
         }
       } catch (error) {
-        logger.error('Assignment error:', error)
-        toast({ 
-          title: 'Error', 
-          description: error instanceof Error ? error.message : 'Failed to assign orders',
-          variant: 'destructive' 
-        })
-      } finally {
-        setIsAssigning(false)
-      }
+        toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to assign orders', variant: 'destructive' })
+      } finally { setIsAssigning(false) }
     }
   }
-
-  const selectedTechnicianData = techniciansData?.data?.find((t: unknown) => (t as Record<string, unknown>).technician_id === selectedTechnician)
 
   return (
     <div className='p-6'>
@@ -196,373 +123,56 @@ export default function AssignOrderPage() {
       </div>
       <div className='max-w-5xl mx-auto'>
         {currentStep === 1 && (
-          <Card><CardHeader><CardTitle>Step 1: Select Visit Date</CardTitle><CardDescription>Choose the scheduled visit date for the orders</CardDescription></CardHeader>
-          <CardContent className='flex justify-center'><div data-testid='schedule-date-picker'><Calendar mode='single' selected={selectedDate} onSelect={setSelectedDate} disabled={today ? (date) => date < today : undefined} className='rounded-md border' /></div></CardContent>
-          <div className='p-6 pt-0'>{selectedDate && <p className='text-center text-sm text-muted-foreground mb-4'>Selected: {format(selectedDate, 'PPP')}</p>}
-          <div className='flex justify-end'><Button onClick={handleNextStep} disabled={!selectedDate}>Next <ChevronRight className='ml-2 h-4 w-4' /></Button></div></div></Card>
-        )}
-        {currentStep === 2 && (
-          <div className='space-y-6'><Card><CardHeader><CardTitle>Step 2: Select Orders</CardTitle><CardDescription>Choose orders to assign from ACCEPTED and RESCHEDULE status</CardDescription></CardHeader></Card>
-          
-          {/* Status Filter Cards */}
-          <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
-            <Card className={cn('cursor-pointer transition-all hover:shadow-md', filterStatus === 'ALL' && 'ring-2 ring-primary')} onClick={() => setFilterStatus('ALL')}>
-              <CardContent className='p-4 text-center'>
-                <div className='text-2xl font-bold'>{orders.length}</div>
-                <div className='text-xs text-muted-foreground mt-1'>All Status</div>
-              </CardContent>
-            </Card>
-            <Card className={cn('cursor-pointer transition-all hover:shadow-md', filterStatus === 'ACCEPTED' && 'ring-2 ring-primary')} onClick={() => setFilterStatus('ACCEPTED')}>
-              <CardContent className='p-4 text-center'>
-                <div className='w-3 h-3 rounded-full mx-auto mb-2 bg-blue-500' />
-                <div className='text-2xl font-bold'>{acceptedCount}</div>
-                <div className='text-xs text-muted-foreground mt-1'>Accepted</div>
-              </CardContent>
-            </Card>
-            <Card className={cn('cursor-pointer transition-all hover:shadow-md', filterStatus === 'RESCHEDULE' && 'ring-2 ring-primary')} onClick={() => setFilterStatus('RESCHEDULE')}>
-              <CardContent className='p-4 text-center'>
-                <div className='w-3 h-3 rounded-full mx-auto mb-2 bg-amber-500' />
-                <div className='text-2xl font-bold'>{rescheduleCount}</div>
-                <div className='text-xs text-muted-foreground mt-1'>Reschedule</div>
-              </CardContent>
-            </Card>
-          </div>
-          <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4'>
-            <Card className={cn('cursor-pointer transition-all hover:shadow-md', filterServiceType === 'ALL' && 'ring-2 ring-primary')} onClick={() => setFilterServiceType('ALL')}>
-              <CardContent className='p-4 text-center'><div className='text-2xl font-bold'>{orders.length}</div><div className='text-xs text-muted-foreground mt-1'>All Orders</div></CardContent></Card>
-            {SERVICE_TYPES.map((type) => (<Card key={type.value} className={cn('cursor-pointer transition-all hover:shadow-md', filterServiceType === type.value && 'ring-2 ring-primary')} onClick={() => setFilterServiceType(type.value)}>
-              <CardContent className='p-4 text-center'><div className={cn('w-3 h-3 rounded-full mx-auto mb-2', type.dot)} /><div className='text-2xl font-bold'>{orderCounts[type.value] || 0}</div>
-              <div className='text-xs text-muted-foreground mt-1'>{type.label}</div></CardContent></Card>))}
-          </div>
-          <div className='grid gap-4'>{ordersLoading ? <p>Loading orders...</p> : filteredOrders.length === 0 ? (<Card><CardContent className='p-8 text-center text-muted-foreground'>No orders found for assignment</CardContent></Card>) : (
-            filteredOrders.map((order: unknown) => {const o = order as Record<string, unknown> & { customers?: { customer_name?: string }; order_id: string; order_date?: string; req_visit_date?: string; order_type?: string; status: string }; const isSelected = selectedOrders.includes(o.order_id)
-            return (<Card key={o.order_id} className={cn('transition-all', isSelected && 'ring-2 ring-primary', o.status === 'RESCHEDULE' && 'bg-amber-50 border-t-2 border-t-amber-500')}><CardContent className='p-4'><div className='flex items-start gap-4'>
-              <Checkbox checked={isSelected} onCheckedChange={(checked) => {if (checked) {setSelectedOrders([...selectedOrders, o.order_id])} else {setSelectedOrders(selectedOrders.filter(id => id !== o.order_id))}}} className='mt-1' />
-              <div className='flex-1 grid grid-cols-2 md:grid-cols-6 gap-4'><div><div className='text-xs text-muted-foreground'>Order ID</div><div className='font-semibold'>{o.order_id}</div></div>
-              <div><div className='text-xs text-muted-foreground'>Customer</div><div className='font-medium'>{o.customers?.customer_name}</div></div>
-              <div><div className='text-xs text-muted-foreground'>Status</div><StatusBadge status={o.status} /></div>
-              <div><div className='text-xs text-muted-foreground'>Order Date</div><div>{o.order_date ? format(new Date(o.order_date), 'dd MMM yyyy') : '-'}</div></div>
-              <div><div className='text-xs text-muted-foreground'>Req. Visit Date</div><div>{o.req_visit_date ? format(new Date(o.req_visit_date), 'dd MMM yyyy') : '-'}</div></div>
-              <div><div className='text-xs text-muted-foreground'>Service Type</div><ServiceTypeBadge serviceType={o.order_type} /></div></div>
-              <Button variant='outline' size='sm' onClick={() => setDetailOrderId(o.order_id)}><Eye className='h-4 w-4' /></Button></div></CardContent></Card>)}))}</div>
-          <div className='flex justify-between'><Button variant='outline' onClick={() => setCurrentStep(1)}><ChevronLeft className='mr-2 h-4 w-4' /> Back</Button>
-          <Button onClick={handleNextStep} disabled={selectedOrders.length === 0}>Next ({selectedOrders.length} selected) <ChevronRight className='ml-2 h-4 w-4' /></Button></div></div>
-        )}
-
-        {/* Step 3: Select Technician */}
-        {currentStep === 3 && (
           <Card>
-            <CardHeader>
-              <CardTitle>Step 3: Select Technician</CardTitle>
-              <CardDescription>Choose a lead technician and optional helpers to assign {selectedOrders.length} order(s)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Search Bar */}
-              <div className='mb-4 relative'>
-                <User className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
-                <Input
-                  placeholder='Search technician by name, company, or contact...'
-                  value={technicianSearch}
-                  onChange={(e) => setTechnicianSearch(e.target.value)}
-                  className='pl-9'
-                />
+            <CardHeader><CardTitle>Step 1: Select Visit Date</CardTitle><CardDescription>Choose the scheduled visit date for the orders</CardDescription></CardHeader>
+            <CardContent className='flex justify-center'>
+              <div data-testid='schedule-date-picker'>
+                <Calendar mode='single' selected={selectedDate} onSelect={setSelectedDate} disabled={today ? (date) => date < today : undefined} className='rounded-md border' />
               </div>
-
-              {filteredTechnicians.length === 0 ? (
-                <div className='text-center py-8 text-muted-foreground'>
-                  {technicianSearch ? 'No technicians found matching your search' : 'No technicians available'}
-                </div>
-              ) : (
-                <div className='space-y-6'>
-                  {/* Lead Technician Selection */}
-                  <div>
-                    <h3 className='font-semibold mb-3'>Lead Technician <span className='text-red-500'>*</span></h3>
-                    <RadioGroup value={selectedTechnician} onValueChange={setSelectedTechnician}>
-                      <div className='grid gap-4 max-h-[300px] overflow-y-auto pr-2'>
-                        {filteredTechnicians.map((technician: unknown) => {
-                          const tech = technician as Record<string, unknown> & { technician_id: string; technician_name: string; company?: string; contact_number?: string }
-                          return (
-                          <div
-                            key={tech.technician_id}
-                            className={cn(
-                              'flex items-center space-x-4 rounded-lg p-4 cursor-pointer transition-all',
-                              selectedTechnician === tech.technician_id
-                                ? 'border-2 border-primary bg-muted'
-                                : 'border border-border hover:bg-muted/50'
-                            )}
-                            onClick={() => setSelectedTechnician(tech.technician_id)}
-                          >
-                            <RadioGroupItem value={tech.technician_id} id={tech.technician_id} />
-                            <Label htmlFor={tech.technician_id} className='flex-1 cursor-pointer'>
-                              <div className='flex items-center justify-between'>
-                                <div>
-                                  <div className='font-semibold'>{tech.technician_name}</div>
-                                  {tech.company && (
-                                    <div className='text-sm text-muted-foreground'>{tech.company}</div>
-                                  )}
-                                  {tech.contact_number && (
-                                    <div className='text-sm text-muted-foreground'>{formatPhone(tech.contact_number as string | number | null | undefined)}</div>
-                                  )}
-                                </div>
-                                <User className='h-8 w-8 text-muted-foreground' />
-                              </div>
-                            </Label>
-                          </div>
-                          )
-                        })}
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  {/* Helper Technicians Selection */}
-                  {selectedTechnician && (
-                    <div>
-                      <h3 className='font-semibold mb-3'>
-                        Helper Technicians <span className='text-muted-foreground text-sm font-normal'>(Optional)</span>
-                      </h3>
-                      <MultiSelectDropdown
-                        options={filteredTechnicians.flatMap((tech: unknown) => {
-                            const t = tech as Record<string, unknown> & { technician_id: string; technician_name: string; company?: string; contact_number?: string }
-                            if (t.technician_id === selectedTechnician) return []
-                            return [{
-                              id: t.technician_id,
-                              label: t.technician_name,
-                              secondaryLabel: t.company || formatPhone(t.contact_number)
-                            }]
-                          })}
-                        selected={selectedHelpers}
-                        onSelectionChange={setSelectedHelpers}
-                        placeholder='Select helper technicians...'
-                        searchPlaceholder='Search technicians...'
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
             </CardContent>
-            <div className='p-6 pt-0 flex justify-between'>
-              <Button variant='outline' onClick={() => setCurrentStep(2)}>
-                <ChevronLeft className='mr-2 h-4 w-4' /> Back
-              </Button>
-              <Button onClick={handleNextStep} disabled={!selectedTechnician}>
-                Confirm Assignment
-              </Button>
+            <div className='p-6 pt-0'>
+              {selectedDate && <p className='text-center text-sm text-muted-foreground mb-4'>Selected: {format(selectedDate, 'PPP')}</p>}
+              <div className='flex justify-end'>
+                <Button onClick={handleNextStep} disabled={!selectedDate}>Next</Button>
+              </div>
             </div>
           </Card>
         )}
+        {currentStep === 2 && (
+          <OrderSelectionTable
+            orders={orders} filteredOrders={filteredOrders} ordersLoading={ordersLoading}
+            filterStatus={filterStatus} filterServiceType={filterServiceType}
+            selectedOrders={selectedOrders} acceptedCount={acceptedCount} rescheduleCount={rescheduleCount}
+            orderCounts={orderCounts}
+            onFilterStatusChange={setFilterStatus} onFilterServiceTypeChange={setFilterServiceType}
+            onOrderSelect={(id, checked) => checked ? setSelectedOrders([...selectedOrders, id]) : setSelectedOrders(selectedOrders.filter(i => i !== id))}
+            onDetailOrder={setDetailOrderId} onNext={handleNextStep} onBack={() => setCurrentStep(1)}
+          />
+        )}
+        {currentStep === 3 && (
+          <TechnicianSelector
+            technicians={technicians} selectedOrdersCount={selectedOrders.length}
+            selectedTechnician={selectedTechnician} selectedHelpers={selectedHelpers}
+            onTechnicianChange={setSelectedTechnician} onHelpersChange={setSelectedHelpers}
+            onBack={() => setCurrentStep(2)} onConfirm={handleNextStep}
+          />
+        )}
       </div>
-      <Dialog open={!!detailOrderId} onOpenChange={(open) => !open && setDetailOrderId(null)}>
-        <DialogContent className='max-w-2xl max-h-[80vh] overflow-y-auto'>
-          <DialogHeader>
-            <DialogTitle>Order Details</DialogTitle>
-            <DialogDescription>Complete information about this order</DialogDescription>
-          </DialogHeader>
-          {orderDetail?.data && (() => {
-            // Group order_items by location
-            const groupedByLocation = (orderDetail.data.order_items || []).reduce((acc: Record<string, { location: unknown; items: unknown[] }>, item: unknown) => {
-              const i = item as Record<string, unknown>
-              const locationId = (i.location_id as string) || 'unknown'
-              if (!acc[locationId]) {
-                acc[locationId] = {
-                  location: i.locations,
-                  items: []
-                }
-              }
-              acc[locationId].items.push(item)
-              return acc
-            }, {})
-
-            const totalEstimated = (orderDetail.data.order_items || []).reduce((sum: number, item: unknown) => {
-              const i = item as Record<string, unknown>
-              return sum + ((i.estimated_price as number) || 0)
-            }, 0)
-
-            const SERVICE_TYPES = [
-              { value: 'REFILL_FREON', label: 'Refill Freon' },
-              { value: 'CLEANING', label: 'Cleaning' },
-              { value: 'REPAIR', label: 'Repair' },
-              { value: 'INSTALLATION', label: 'Installation' },
-              { value: 'INSPECTION', label: 'Inspection' },
-            ]
-
-            return (
-              <div className='space-y-4'>
-                {/* Order Info */}
-                <div className='space-y-2'>
-                  <h3 className='font-semibold text-lg'>Order Information</h3>
-                  <div className='grid grid-cols-2 gap-3 text-sm'>
-                    <div>
-                      <span className='text-muted-foreground'>Order ID:</span>
-                      <p className='font-mono font-semibold'>{orderDetail.data.order_id}</p>
-                    </div>
-                    <div>
-                      <span className='text-muted-foreground'>Status:</span>
-                      <div className='mt-1'>
-                        <Badge>{orderDetail.data.status}</Badge>
-                      </div>
-                    </div>
-                    <div>
-                      <span className='text-muted-foreground'>Order Date:</span>
-                      <p className='font-semibold'>
-                        {orderDetail.data.order_date ? format(new Date(orderDetail.data.order_date), 'dd MMM yyyy') : '-'}
-                      </p>
-                    </div>
-                    <div>
-                      <span className='text-muted-foreground'>Requested Visit:</span>
-                      <p className='font-semibold'>
-                        {orderDetail.data.req_visit_date ? format(new Date(orderDetail.data.req_visit_date), 'dd MMM yyyy') : '-'}
-                      </p>
-                    </div>
-                  </div>
-                  {orderDetail.data.notes && (
-                    <div className='pt-2'>
-                      <span className='text-muted-foreground text-sm'>Notes:</span>
-                      <p className='text-sm mt-1 p-3 bg-muted rounded-md'>{orderDetail.data.notes}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Customer Info */}
-                <div className='space-y-2'>
-                  <div className='flex items-center gap-2'>
-                    <User className='w-5 h-5 text-muted-foreground' />
-                    <h3 className='font-semibold text-lg'>Customer Information</h3>
-                  </div>
-                  <div className='bg-muted/50 rounded-lg p-4 space-y-2'>
-                    <div>
-                      <span className='text-sm font-semibold text-muted-foreground'>Name: </span>
-                      <span className='font-medium'>{orderDetail.data.customers?.customer_name}</span>
-                    </div>
-                    {orderDetail.data.customers?.primary_contact_person && (
-                      <div>
-                        <span className='text-sm font-semibold text-muted-foreground'>Contact Person: </span>
-                        <span>{orderDetail.data.customers.primary_contact_person}</span>
-                      </div>
-                    )}
-                    <div className='flex gap-4 text-sm'>
-                      {orderDetail.data.customers?.phone_number && (
-                        <div className='flex items-center gap-1'>
-                          <span className='text-muted-foreground'>Phone:</span>
-                          {formatPhone(orderDetail.data.customers.phone_number)}
-                        </div>
-                      )}
-                      {orderDetail.data.customers?.email && (
-                        <div className='flex items-center gap-1'>
-                          <span className='text-muted-foreground'>Email:</span>
-                          {orderDetail.data.customers.email}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Locations & Services */}
-                <div className='space-y-2'>
-                  <div className='flex items-center gap-2'>
-                    <MapPin className='w-5 h-5 text-muted-foreground' />
-                    <h3 className='font-semibold text-lg'>Locations & Services ({Object.keys(groupedByLocation).length} locations)</h3>
-                  </div>
-                  <div className='space-y-3'>
-                    {Object.entries(groupedByLocation).map(([locationId, data]: [string, unknown]) => {
-                      const d = data as { location: Record<string, unknown>; items: unknown[] }
-                      return (
-                      <div key={locationId} className='border rounded-lg p-4 space-y-3'>
-                        <div className='flex items-start gap-2'>
-                          <div className='flex-1'>
-                            <p className='font-semibold'>{(d.location?.building_name as string) || 'Unknown Location'}</p>
-                            <p className='text-sm text-muted-foreground'>
-                              Floor {String(d.location?.floor ?? '')} - Room {String(d.location?.room_number ?? '')}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className='space-y-2 pl-0'>
-                          <p className='text-sm font-semibold text-muted-foreground'>Services:</p>
-                          {d.items.map((item: unknown, idx: number) => {
-                            const it = item as Record<string, unknown> & { ac_units?: Record<string, unknown> }
-                            return (
-                            <div key={idx} className='flex justify-between items-start text-sm p-2 bg-muted/50 rounded'>
-                              <div className='space-y-1'>
-                                <div className='flex items-center gap-2'>
-                                  <Badge variant='outline' className='text-xs'>
-                                    {SERVICE_TYPES.find(t => t.value === it.service_type)?.label || it.service_type as string}
-                                  </Badge>
-                                  <span className='text-muted-foreground'>×{it.quantity as number}</span>
-                                </div>
-                                {it.ac_units && (
-                                  <p className='text-xs text-muted-foreground'>
-                                    AC: {String((it.ac_units as Record<string, unknown>).brand ?? '')} {String((it.ac_units as Record<string, unknown>).model_number ?? '')}
-                                    {!!(it.ac_units as Record<string, unknown>).serial_number && ` (SN: ${String((it.ac_units as Record<string, unknown>).serial_number)})`}
-                                  </p>
-                                )}
-                              </div>
-                              <div className='font-semibold'>
-                                Rp {(it.estimated_price as number)?.toLocaleString('id-ID') || '0'}
-                              </div>
-                            </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                      )
-                    })}
-                  </div>
-                  
-                  <div className='flex justify-between items-center pt-3 border-t font-semibold'>
-                    <span>Total Estimated Price:</span>
-                    <span className='text-lg'>Rp {totalEstimated.toLocaleString('id-ID')}</span>
-                  </div>
-                </div>
-              </div>
-            )
-          })()}
-        </DialogContent>
-      </Dialog>
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Assignment</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className='space-y-3'>
-                <p>
-                  Are you sure you want to assign <strong>{selectedOrders.length}</strong> order(s) to:
-                </p>
-                <div className='bg-muted rounded-lg p-3 space-y-2'>
-                  <div>
-                    <span className='text-sm text-muted-foreground'>Lead Technician: </span>
-                    <strong>{selectedTechnicianData?.technician_name}</strong>
-                  </div>
-                  {selectedHelpers.length > 0 && (
-                    <div>
-                      <span className='text-sm text-muted-foreground'>Helper Technicians: </span>
-                      <div className='mt-1'>
-                        {selectedHelpers.map((helperId, _index) => {
-                          const helper = technicians.find((t: unknown) => (t as Record<string, unknown>).technician_id === helperId) as Record<string, unknown> | undefined
-                          return (
-                            <Badge key={helperId} variant='outline' className='mr-1 mb-1'>
-                              {helper?.technician_name as string}
-                            </Badge>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  <div className='pt-2 border-t'>
-                    <span className='text-sm text-muted-foreground'>Visit Date: </span>
-                    <strong>{selectedDate && format(selectedDate, 'PPP')}</strong>
-                  </div>
-                </div>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isAssigning}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmAssign} disabled={isAssigning}>
-              {isAssigning ? 'Assigning...' : 'Confirm'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <OrderDetailDialog detailOrderId={detailOrderId} orderDetail={orderDetail} onClose={() => setDetailOrderId(null)} />
+      <ConfirmAssignmentDialog
+        showConfirm={showConfirm} selectedOrders={selectedOrders}
+        selectedTechnicianData={selectedTechnicianData} selectedHelpers={selectedHelpers}
+        technicians={technicians} selectedDate={selectedDate}
+        isAssigning={isAssigning} onConfirm={handleConfirmAssign} onCancel={() => setShowConfirm(false)}
+      />
     </div>
   )
 }
+
+const SERVICE_TYPES = [
+  { value: 'REFILL_FREON', label: 'Refill Freon' },
+  { value: 'CLEANING', label: 'Cleaning' },
+  { value: 'REPAIR', label: 'Repair' },
+  { value: 'INSTALLATION', label: 'Installation' },
+  { value: 'INSPECTION', label: 'Inspection' },
+]

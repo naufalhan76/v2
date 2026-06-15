@@ -225,7 +225,7 @@ function TechnicianSection({ orderTechs, onOpenAddHelper, onOpenRemoveHelper, is
               const tc = tech as Record<string, unknown>
               const technicians = tc.technicians as Record<string, unknown> | undefined
               return (
-                <div key={tc.id as string} className="flex items-center justify-between p-2 bg-background rounded border border-hairline">
+                <div key={tc.id as string} className="flex items-center justify-between p-2 bg-background rounded border border-border">
                   <div className="flex-1">
                     <div className="font-medium text-sm">{(technicians?.technician_name as string) || 'Unknown'}</div>
                     {!!technicians?.contact_number && (
@@ -243,7 +243,7 @@ function TechnicianSection({ orderTechs, onOpenAddHelper, onOpenRemoveHelper, is
                       onClick={() => onOpenRemoveHelper(tc.technician_id as string)}
                       disabled={isProcessing}
                     >
-                      <X className="w-4 h-4 text-red-500" />
+                      <X className="w-4 h-4 text-destructive" />
                     </Button>
                   </div>
                 </div>

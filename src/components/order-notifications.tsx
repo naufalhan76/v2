@@ -186,7 +186,7 @@ export function OrderNotifications() {
           <div className="flex items-center gap-2 mb-1">
             <span className="font-semibold text-sm truncate">{notification.customer_name}</span>
             {!notification.read && (
-              <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+              <div className="w-2 h-2 bg-destructive rounded-full flex-shrink-0" />
             )}
           </div>
           <p className="font-mono text-xs text-muted-foreground mb-1">
@@ -215,7 +215,7 @@ export function OrderNotifications() {
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -241,7 +241,7 @@ export function OrderNotifications() {
             <TabsTrigger value="rescheduled" className="flex items-center justify-center gap-1.5">
               Dijadwal Ulang
               {unreadRescheduled > 0 && (
-                <span className="inline-flex h-5 min-w-5 px-1 rounded-full bg-orange-500 text-white text-xs font-bold items-center justify-center leading-none">
+                <span className="inline-flex h-5 min-w-5 px-1 rounded-full bg-status-pending text-white text-xs font-bold items-center justify-center leading-none">
                   {unreadRescheduled}
                 </span>
               )}
@@ -249,7 +249,7 @@ export function OrderNotifications() {
             <TabsTrigger value="cancelled" className="flex items-center justify-center gap-1.5">
               Dibatalkan
               {unreadCancelled > 0 && (
-                <span className="inline-flex h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold items-center justify-center leading-none">
+                <span className="inline-flex h-5 min-w-5 px-1 rounded-full bg-destructive text-destructive-foreground text-xs font-bold items-center justify-center leading-none">
                   {unreadCancelled}
                 </span>
               )}

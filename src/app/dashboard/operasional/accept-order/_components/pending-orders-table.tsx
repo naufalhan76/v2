@@ -153,7 +153,7 @@ export function PendingOrdersTable({
                           </Button>
                           <Button
                             variant='default'
-                            className='group relative overflow-hidden transition-all duration-300 ease-in-out bg-blue-600 hover:bg-blue-700 text-white w-10 hover:w-28 flex items-center justify-start px-2'
+                            className='group relative overflow-hidden transition-all duration-300 ease-in-out bg-info hover:bg-info/90 text-white w-10 hover:w-28 flex items-center justify-start px-2'
                             onClick={() => onAcceptClick(o.order_id)}
                           >
                             <Check className='w-4 h-4 flex-shrink-0' />

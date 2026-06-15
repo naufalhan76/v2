@@ -113,9 +113,9 @@ curl http://localhost:2785/api/health`}
             3. Menu <strong>API Keys → Generate Key</strong>, simpan nilainya
             dengan aman (hanya muncul sekali)
           </p>
-          <div className="flex gap-2 rounded-md border bg-yellow-50 dark:bg-yellow-950/30 p-3">
-            <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
-            <p className="text-xs text-yellow-900 dark:text-yellow-200">
+          <div className="flex gap-2 rounded-md border bg-status-pending-bg dark:bg-status-pending-bg p-3">
+            <AlertCircle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+            <p className="text-xs text-warning dark:text-warning">
               API key ini nanti dimasukkan ke <code>.env.local</code> MSN ERP
               sebagai <code>OPENWA_API_KEY</code>. Treat as secret.
             </p>
@@ -156,9 +156,9 @@ curl http://localhost:2785/api/health`}
             Session tetap aktif meskipun HP offline (pakai websocket ke
             WhatsApp servers).
           </p>
-          <div className="flex gap-2 rounded-md border bg-blue-50 dark:bg-blue-950/30 p-3">
-            <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-            <p className="text-xs text-blue-900 dark:text-blue-200">
+          <div className="flex gap-2 rounded-md border bg-status-assigned-bg dark:bg-status-assigned-bg p-3">
+            <AlertCircle className="h-4 w-4 text-info mt-0.5 shrink-0" />
+            <p className="text-xs text-info dark:text-info">
               <strong>Penting:</strong> Jangan pakai nomor WhatsApp utama lo.
               Pakai nomor terpisah khusus untuk bot (mis. nomor customer service
               bisnis). WhatsApp bisa ban nomor yang kirim massal tanpa persetujuan.

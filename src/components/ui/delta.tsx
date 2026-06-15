@@ -16,7 +16,7 @@ function Delta({ value, variant = 'badge', className, children, ...props }: Delt
     ? 'text-status-completed'
     : isNegative
       ? 'text-status-cancelled'
-      : 'text-ink-mute'
+      : 'text-muted-foreground'
 
   const Icon = isPositive ? TrendingUp : isNegative ? TrendingDown : null
 
@@ -27,7 +27,7 @@ function Delta({ value, variant = 'badge', className, children, ...props }: Delt
       ? 'bg-status-completed/12'
       : isNegative
         ? 'bg-status-cancelled/12'
-        : 'bg-canvas-soft'
+        : 'bg-surface-muted'
 
     return (
       <div

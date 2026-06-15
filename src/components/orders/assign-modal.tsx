@@ -204,7 +204,7 @@ export function AssignModal({
                   type="button"
                   className={cn(
                     'h-11 w-full justify-start text-left font-normal sm:h-9',
-                    !scheduledDate && 'text-ink-mute'
+                    !scheduledDate && 'text-muted-foreground'
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -239,7 +239,7 @@ export function AssignModal({
 
           {/* Technician query error */}
           {techQueryError && (
-            <div className="flex items-center gap-2 rounded-lg border border-status-pending/30 bg-[#fef3c7] dark:bg-amber-950/30 p-3 text-sm text-[#d97706] dark:text-amber-400">
+            <div className="flex items-center gap-2 rounded-lg border border-status-pending/30 bg-status-pending-bg dark:bg-status-pending-bg/30 p-3 text-sm text-status-pending dark:text-status-pending">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>Gagal memuat daftar teknisi. Silakan coba lagi.</span>
             </div>

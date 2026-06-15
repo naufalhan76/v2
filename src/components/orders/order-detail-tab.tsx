@@ -55,7 +55,7 @@ export function OrderDetailTab({ order }: OrderDetailTabProps) {
 
   return (
     <div className="space-y-4">
-      <Card className="border-hairline">
+      <Card className="border-border">
         <CardContent className="pt-4 space-y-3">
           <div className="flex items-center gap-2 text-lg font-[540] text-foreground">
             <Building2 className="h-4 w-4" />
@@ -64,25 +64,25 @@ export function OrderDetailTab({ order }: OrderDetailTabProps) {
           <div className="space-y-1 text-lg text-foreground">
             <p className="font-medium">{order.customers?.customer_name ?? '-'}</p>
             {order.customers?.primary_contact_person && (
-              <p className="flex items-center gap-1.5 text-ink-mute">
+              <p className="flex items-center gap-1.5 text-muted-foreground">
                 <User className="h-3 w-3" />
                 {order.customers.primary_contact_person}
               </p>
             )}
             {order.customers?.phone_number && (
-              <p className="flex items-center gap-1.5 text-ink-mute">
+              <p className="flex items-center gap-1.5 text-muted-foreground">
                 <Phone className="h-3 w-3" />
                 {order.customers.phone_number}
               </p>
             )}
             {order.customers?.email && (
-              <p className="text-ink-mute">{order.customers.email}</p>
+              <p className="text-muted-foreground">{order.customers.email}</p>
             )}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-hairline">
+      <Card className="border-border">
         <CardContent className="pt-4 space-y-3">
           <div className="flex items-center gap-2 text-lg font-[540] text-foreground">
             <Calendar className="h-4 w-4" />
@@ -96,7 +96,7 @@ export function OrderDetailTab({ order }: OrderDetailTabProps) {
         </CardContent>
       </Card>
 
-      <Card className="border-hairline">
+      <Card className="border-border">
         <CardContent className="pt-4 space-y-3">
           <div className="flex items-center gap-2 text-lg font-[540] text-foreground">
             <Wrench className="h-4 w-4" />
@@ -107,7 +107,7 @@ export function OrderDetailTab({ order }: OrderDetailTabProps) {
               <p>
                 <span className="font-medium">Lead:</span> {lead.technicians.technician_name}
                 {lead.technicians.contact_number && (
-                  <span className="text-ink-mute ml-2">
+                  <span className="text-muted-foreground ml-2">
                     {lead.technicians.contact_number}
                   </span>
                 )}
@@ -120,12 +120,12 @@ export function OrderDetailTab({ order }: OrderDetailTabProps) {
               )}
             </div>
           ) : (
-            <p className="text-lg text-ink-mute">Belum di-assign</p>
+            <p className="text-lg text-muted-foreground">Belum di-assign</p>
           )}
         </CardContent>
       </Card>
 
-      <Card className="border-hairline">
+      <Card className="border-border">
         <CardContent className="pt-4 space-y-3">
           <div className="flex items-center gap-2 text-lg font-[540] text-foreground">
             <MapPin className="h-4 w-4" />
@@ -138,23 +138,23 @@ export function OrderDetailTab({ order }: OrderDetailTabProps) {
                 <div className="flex items-center gap-2">
                   {item.service_type && <ServiceTypeBadge serviceType={item.service_type} size="sm" />}
                   {item.quantity && (
-                    <span className="text-base text-ink-mute">Qty {item.quantity}</span>
+                    <span className="text-base text-muted-foreground">Qty {item.quantity}</span>
                   )}
                 </div>
                 {item.locations?.full_address && (
-                  <p className="text-ink-mute">
+                  <p className="text-muted-foreground">
                     {item.locations.full_address}
                     {item.locations.city ? `, ${item.locations.city}` : ''}
                   </p>
                 )}
                 {item.ac_units?.brand && (
-                  <p className="text-base text-ink-mute">
+                  <p className="text-base text-muted-foreground">
                     AC: {item.ac_units.brand} {item.ac_units.model_number ?? ''}
                     {item.ac_units.serial_number ? ` (SN: ${item.ac_units.serial_number})` : ''}
                   </p>
                 )}
                 {item.description && (
-                  <p className="text-base text-ink-mute italic">{item.description}</p>
+                  <p className="text-base text-muted-foreground italic">{item.description}</p>
                 )}
                 {item.estimated_price != null && (
                   <p className="text-base">
@@ -165,16 +165,16 @@ export function OrderDetailTab({ order }: OrderDetailTabProps) {
             </div>
           ))}
           {(!order.order_items || order.order_items.length === 0) && (
-            <p className="text-lg text-ink-mute">Tidak ada item</p>
+            <p className="text-lg text-muted-foreground">Tidak ada item</p>
           )}
         </CardContent>
       </Card>
 
       {order.notes && (
-        <Card className="border-hairline">
+        <Card className="border-border">
           <CardContent className="pt-4 space-y-2">
             <p className="text-lg font-[540] text-foreground">Catatan</p>
-            <p className="text-lg text-ink-mute whitespace-pre-wrap">{order.notes}</p>
+            <p className="text-lg text-muted-foreground whitespace-pre-wrap">{order.notes}</p>
           </CardContent>
         </Card>
       )}

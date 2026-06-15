@@ -58,19 +58,19 @@ export default async function CreateInvoiceFromOrderPage({ params }: PageProps) 
         </Button>
       </div>
 
-      <Card className="border-amber-200 bg-amber-50/50">
+      <Card className="border-warning/30 bg-status-pending-bg">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-amber-900">
+          <CardTitle className="flex items-center gap-2 text-warning">
             <AlertTriangle className="h-5 w-5" />
             Tidak dapat auto-populate invoice
           </CardTitle>
-          <CardDescription className="text-amber-800">
+          <CardDescription className="text-warning">
             {errorMessage ?? 'Terjadi kesalahan saat membuat invoice dari order ini.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {isReportMissing && (
-            <p className="text-sm text-amber-900">
+            <p className="text-sm text-warning">
               Order ini belum memiliki service report dari teknisi. Anda bisa:
             </p>
           )}

@@ -41,16 +41,16 @@ export function OrderHistoryTab({ orderId }: OrderHistoryTabProps) {
   }
 
   return (
-    <ol className="relative border-l border-hairline ml-3 space-y-4">
+    <ol className="relative border-l border-border ml-3 space-y-4">
       {transitions.map((t) => (
         <li key={t.id} className="ml-4">
           <span className="absolute -left-1.5 mt-1 h-3 w-3 rounded-full bg-primary border-2 border-background" />
           <div className="flex flex-wrap items-center gap-2 mb-1">
             {t.from_status && <StatusBadge status={t.from_status} size="sm" />}
-            <span className="text-base text-ink-mute">→</span>
+            <span className="text-base text-muted-foreground">→</span>
             <StatusBadge status={t.to_status} size="sm" />
           </div>
-          <p className="text-base text-ink-mute">
+          <p className="text-base text-muted-foreground">
             {format(new Date(t.transition_date), 'd MMM yyyy, HH:mm', { locale: localeId })}
           </p>
           {t.notes && <p className="text-lg text-foreground mt-1">{t.notes}</p>}

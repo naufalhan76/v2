@@ -100,8 +100,8 @@ export function LoginForm({ showPassword, onTogglePassword }: LoginFormProps) {
 
   return (
     <LoadingOverlay isLoading={isLoading} message={loadingMessage || 'Memuat...'} fullscreen>
-      <div className="min-h-screen bg-canvas-soft flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-6xl md:h-[700px] flex flex-col md:flex-row bg-card border-hairline shadow-lg rounded-2xl overflow-hidden">
+      <div className="min-h-screen bg-surface-muted flex items-center justify-center p-4 sm:p-8">
+        <div className="w-full max-w-6xl md:h-[700px] flex flex-col md:flex-row bg-card border-border shadow-lg rounded-2xl overflow-hidden">
           <div className="relative w-full md:w-1/2 h-48 sm:h-64 md:h-full flex-shrink-0 animate-in fade-in slide-in-from-left-4 duration-700 ease-out">
             <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url("https://pasteimg.com/images/2026/06/10/imageaa28b3b8097f142f.png")' }} />
             <div className="absolute inset-0 bg-black/20" />

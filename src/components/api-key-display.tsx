@@ -135,8 +135,8 @@ export function ApiKeyDisplay() {
           <CardDescription>Use this key to authenticate API requests. Keep it secret!</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-10 bg-slate-950 rounded-lg">
-            <span className="text-slate-400 text-sm">Loading...</span>
+          <div className="flex items-center justify-center h-10 bg-background rounded-lg">
+            <span className="text-muted-foreground text-sm">Loading...</span>
           </div>
         </CardContent>
       </Card>
@@ -173,8 +173,8 @@ export function ApiKeyDisplay() {
         <CardContent>
           <div className="space-y-3">
             {/* Key Display Box */}
-            <div className="flex items-center gap-3 bg-slate-950 rounded-lg p-3 border border-slate-800">
-              <code className="flex-1 text-sm font-mono text-slate-300 break-all">
+            <div className="flex items-center gap-3 bg-background rounded-lg p-3 border border-border">
+              <code className="flex-1 text-sm font-mono text-muted-foreground break-all">
                 {isVisible ? apiKey : apiKey.replace(/./g, '•')}
               </code>
               <div className="flex gap-1 shrink-0">
@@ -182,7 +182,7 @@ export function ApiKeyDisplay() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsVisible(!isVisible)}
-                  className="h-8 w-8 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
                   title={isVisible ? 'Hide' : 'Show'}
                 >
                   {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -191,7 +191,7 @@ export function ApiKeyDisplay() {
                   variant="ghost"
                   size="icon"
                   onClick={handleCopyKey}
-                  className="h-8 w-8 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
                   title="Copy to clipboard"
                 >
                   <Copy className="w-4 h-4" />
@@ -201,7 +201,7 @@ export function ApiKeyDisplay() {
                   size="icon"
                   onClick={() => setShowResetDialog(true)}
                   disabled={isLoading}
-                  className="h-8 w-8 text-slate-400 hover:text-slate-200 hover:bg-slate-800 disabled:opacity-50"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50"
                   title="Reset API key"
                 >
                   <RotateCcw className="w-4 h-4" />
@@ -210,9 +210,9 @@ export function ApiKeyDisplay() {
             </div>
 
             {/* Info */}
-            <div className="text-xs text-slate-500 space-y-1">
+            <div className="text-xs text-muted-foreground space-y-1">
               <p>This key is safe to use in a browser if you have enabled Row Level Security for your tables and configured policies.</p>
-              <p>Prefer using <a href="#" className="text-blue-500 hover:underline">Publishable API keys</a> instead.</p>
+              <p>Prefer using <a href="#" className="text-status-assigned hover:underline">Publishable API keys</a> instead.</p>
             </div>
           </div>
         </CardContent>

@@ -7,51 +7,83 @@
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
+
   :root {
-    --navy-deep: 247 52% 25%;
-    --navy-light: 244 52% 31%;
-    --bg-gray-faded: 210 40% 98%;
-    --success-green: 142 71% 45%;
-    --status-red-bg: 0 93% 94%;
-    --status-red-text: 0 84% 60%;
+    /* ===== BRAND SCALE — Navy (single source of truth) ===== */
+    --brand-50:  244 60% 97%;
+    --brand-100: 244 55% 92%;
+    --brand-200: 244 50% 84%;
+    --brand-500: 247 52% 25%;
+    --brand-600: 244 52% 31%;
+    --brand-700: 247 52% 18%;
+    --brand-900: 247 53% 8%;
 
-    --background: var(--bg-gray-faded);
-    --foreground: 30 2% 16%;
-    --card: 0 0% 100%;
-    --card-foreground: 30 2% 16%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 30 2% 16%;
-    --primary: var(--navy-deep);
+    /* ===== SEMANTIC (shadcn-compatible) ===== */
+    --background: 210 40% 98%;
+    --foreground: 247 53% 12%;
+    --surface: 0 0% 100%;
+    --surface-muted: 40 20% 98%;
+    --surface-elevated: 0 0% 100%;
+
+    --card: var(--surface);
+    --card-foreground: var(--foreground);
+    --popover: var(--surface);
+    --popover-foreground: var(--foreground);
+
+    --primary: var(--brand-500);
     --primary-foreground: 0 0% 100%;
+    --primary-hover: var(--brand-600);
+
     --secondary: 40 20% 96%;
-    --secondary-foreground: var(--navy-deep);
+    --secondary-foreground: var(--foreground);
+
     --muted: 40 14% 94%;
-    --muted-foreground: 30 3% 37%;
+    --muted-foreground: 247 15% 38%;
+
     --accent: 40 14% 94%;
-    --accent-foreground: var(--navy-deep);
-    --destructive: var(--status-red-text);
-    --destructive-foreground: 0 0% 98%;
+    --accent-foreground: var(--foreground);
+
     --border: 40 14% 89%;
+    --border-strong: 40 14% 80%;
     --input: 40 14% 89%;
-    --ring: var(--navy-light);
+    --ring: var(--brand-600);
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
     --radius: 0.5rem;
-    --chart-1: var(--navy-deep);
-    --chart-2: var(--navy-light);
-    --chart-3: 180 60% 21%;
-    --chart-4: 32 95% 43%;
-    --chart-5: var(--status-red-text);
 
-    /* Superhuman extended tokens */
-    --violet-soft: 264 89% 84%;
-    --teal-deep: 180 52% 12%;
-    --teal-mid: 180 60% 21%;
-    --canvas-soft: 40 20% 98%;
-    --ink-mute: 30 3% 37%;
-    --ink-faint: 30 3% 43%;
-    --hairline: 40 14% 89%;
-    --hairline-dark: 252 18% 28%;
+    /* ===== STATUS TOKENS (foreground + bg pairs) ===== */
+    --status-pending: 32 95% 43%;
+    --status-pending-bg: 38 92% 95%;
+    --status-assigned: 217 91% 50%;
+    --status-assigned-bg: 214 95% 95%;
+    --status-en-route: 258 90% 60%;
+    --status-en-route-bg: 258 90% 95%;
+    --status-in-progress: 174 72% 38%;
+    --status-in-progress-bg: 174 72% 94%;
+    --status-completed: 142 71% 38%;
+    --status-completed-bg: 142 71% 94%;
+    --status-invoiced: 189 94% 38%;
+    --status-invoiced-bg: 189 94% 94%;
+    --status-paid: 158 64% 40%;
+    --status-paid-bg: 158 64% 94%;
+    --status-cancelled: 0 72% 51%;
+    --status-cancelled-bg: 0 93% 94%;
 
-    /* Spacing tokens */
+    /* ===== ALIASES ===== */
+    --success: var(--status-completed);
+    --warning: var(--status-pending);
+    --info: var(--status-assigned);
+
+    /* ===== CHART (preserve existing 5-slot pattern) ===== */
+    --chart-1: var(--brand-500);
+    --chart-2: var(--brand-600);
+    --chart-3: var(--status-in-progress);
+    --chart-4: var(--status-pending);
+    --chart-5: var(--status-cancelled);
+
+    /* ===== SPACING (preserve existing — DO NOT CHANGE) ===== */
     --space-xxs: 2px;
     --space-xs: 4px;
     --space-sm: 8px;
@@ -60,68 +92,60 @@
     --space-xl: 24px;
     --space-xxl: 32px;
     --space-huge: 64px;
-
-    /* Status badge tokens */
-    --status-pending: 32 95% 43%;
-    --status-assigned: 239 84% 67%;
-    --status-en-route: 258 90% 66%;
-    --status-in-progress: 174 72% 38%;
-    --status-completed: 160 84% 39%;
-    --status-invoiced: 189 94% 43%;
-    --status-paid: 158 64% 52%;
-    --status-cancelled: 0 72% 51%;
-
-    --tech-primary: 33 28 89;
-    --tech-bg: 248 250 252;
-    --tech-card: 255 255 255;
-    --tech-text: 30 27 75;
-    --tech-text-secondary: 75 85 99;
   }
 
   .dark {
-    --navy-deep: 247 52% 25%;
-    --navy-light: 244 52% 31%;
-    --bg-gray-faded: 248 37% 10%;
-    --success-green: 142 71% 45%;
-    --status-red-bg: 0 72% 22%;
-    --status-red-text: 0 84% 70%;
-
-    --background: var(--bg-gray-faded);
+    --background: 248 37% 8%;
     --foreground: 40 10% 92%;
-    --card: 248 37% 12%;
-    --card-foreground: 40 10% 92%;
-    --popover: 248 37% 12%;
-    --popover-foreground: 40 10% 92%;
-    --primary: var(--navy-light);
+    --surface: 248 37% 12%;
+    --surface-muted: 248 30% 16%;
+    --surface-elevated: 248 37% 14%;
+
+    --card: var(--surface);
+    --card-foreground: var(--foreground);
+    --popover: var(--surface);
+    --popover-foreground: var(--foreground);
+
+    --primary: var(--brand-600);
     --primary-foreground: 0 0% 100%;
+    --primary-hover: 244 60% 40%;
+
     --secondary: 248 30% 16%;
-    --secondary-foreground: 40 10% 92%;
+    --secondary-foreground: var(--foreground);
+
     --muted: 248 30% 16%;
-    --muted-foreground: 30 3% 60%;
+    --muted-foreground: 247 12% 65%;
+
     --accent: 248 30% 16%;
-    --accent-foreground: 40 10% 92%;
-    --destructive: var(--status-red-text);
-    --destructive-foreground: 0 0% 98%;
+    --accent-foreground: var(--foreground);
+
     --border: 252 18% 22%;
+    --border-strong: 252 18% 32%;
     --input: 252 18% 22%;
-    --ring: var(--navy-light);
-    --chart-1: var(--navy-light);
-    --chart-2: 248 37% 70%;
-    --chart-3: 180 60% 40%;
-    --chart-4: 32 95% 55%;
-    --chart-5: var(--status-red-text);
+    --ring: var(--brand-600);
 
-    /* Superhuman extended tokens */
-    --violet-soft: 264 89% 70%;
-    --teal-deep: 180 52% 20%;
-    --teal-mid: 180 60% 30%;
-    --canvas-soft: 248 30% 14%;
-    --ink-mute: 30 3% 60%;
-    --ink-faint: 30 3% 50%;
-    --hairline: 252 18% 22%;
-    --hairline-dark: 252 18% 35%;
+    --destructive: 0 84% 70%;
+    --destructive-foreground: 0 0% 98%;
 
-    /* Spacing tokens */
+    /* Status colors get +12% lightness in dark for visibility */
+    --status-pending: 32 95% 60%;
+    --status-pending-bg: 32 80% 18%;
+    --status-assigned: 217 91% 70%;
+    --status-assigned-bg: 217 80% 18%;
+    --status-en-route: 258 90% 75%;
+    --status-en-route-bg: 258 70% 20%;
+    --status-in-progress: 174 72% 55%;
+    --status-in-progress-bg: 174 60% 18%;
+    --status-completed: 142 71% 55%;
+    --status-completed-bg: 142 60% 16%;
+    --status-invoiced: 189 94% 55%;
+    --status-invoiced-bg: 189 70% 18%;
+    --status-paid: 158 64% 60%;
+    --status-paid-bg: 158 60% 16%;
+    --status-cancelled: 0 84% 70%;
+    --status-cancelled-bg: 0 60% 22%;
+
+    /* Spacing tokens identical to :root (preserve existing) */
     --space-xxs: 2px;
     --space-xs: 4px;
     --space-sm: 8px;
@@ -130,37 +154,6 @@
     --space-xl: 24px;
     --space-xxl: 32px;
     --space-huge: 64px;
-
-    /* Status badge tokens */
-    --status-pending: 32 95% 55%;
-    --status-assigned: 239 84% 75%;
-    --status-en-route: 258 90% 74%;
-    --status-in-progress: 174 72% 50%;
-    --status-completed: 160 84% 50%;
-    --status-invoiced: 189 94% 55%;
-    --status-paid: 158 64% 60%;
-    --status-cancelled: 0 72% 60%;
-
-    --tech-bg: 15 14 26;
-    --tech-card: 26 24 51;
-    --tech-text: 232 230 240;
-    --tech-text-secondary: 165 163 181;
-  }
-
-  .technician {
-    --tech-primary: 33 28 89;
-    --tech-bg: 248 250 252;
-    --tech-card: 255 255 255;
-    --tech-text: 30 27 75;
-    --tech-text-secondary: 75 85 99;
-  }
-
-  .dark .technician,
-  .technician.dark {
-    --tech-bg: 15 14 26;
-    --tech-card: 26 24 51;
-    --tech-text: 232 230 240;
-    --tech-text-secondary: 165 163 181;
   }
 }
 
@@ -187,7 +180,7 @@
   }
   
   .data-table-container {
-    @apply bg-card rounded-lg border border-hairline shadow-none overflow-hidden;
+    @apply bg-card rounded-lg border border-border shadow-none overflow-hidden;
   }
   
   .sidebar-item {

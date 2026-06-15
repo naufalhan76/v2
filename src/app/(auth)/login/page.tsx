@@ -11,7 +11,7 @@ export default function LoginPage() {
   return (
     <main>
       <Suspense fallback={
-        <div className="min-h-screen bg-canvas-soft flex items-center justify-center p-4">
+        <div className="min-h-screen bg-surface-muted flex items-center justify-center p-4">
           <div className="text-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
             <p className="text-muted-foreground font-medium">Memuat...</p>

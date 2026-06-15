@@ -97,38 +97,35 @@ export function formatReminderMessage(
   })
 }
 
-/**
- * Color tokens for reminder statuses. Mirrors the shape used by
- * `ORDER_STATUS_COLORS` and `INVOICE_STATUS_COLORS` so badges share styling.
- */
+/** Token classes; values resolve via CSS vars. See DESIGN.md. */
 export const REMINDER_STATUS_COLORS: Record<
   ReminderStatus,
   { bg: string; text: string; border: string }
 > = {
   PENDING: {
-    bg: 'bg-amber-100 dark:bg-amber-950/40',
-    text: 'text-amber-700 dark:text-amber-300',
-    border: 'border-amber-200 dark:border-amber-800',
+    bg: 'bg-status-pending-bg',
+    text: 'text-status-pending',
+    border: 'border-status-pending/30',
   },
   SENT: {
-    bg: 'bg-green-100 dark:bg-green-950/40',
-    text: 'text-green-700 dark:text-green-300',
-    border: 'border-green-200 dark:border-green-800',
+    bg: 'bg-status-completed-bg',
+    text: 'text-status-completed',
+    border: 'border-status-completed/30',
   },
   FAILED: {
-    bg: 'bg-red-100 dark:bg-red-950/40',
-    text: 'text-red-700 dark:text-red-300',
-    border: 'border-red-200 dark:border-red-800',
+    bg: 'bg-status-cancelled-bg',
+    text: 'text-status-cancelled',
+    border: 'border-status-cancelled/30',
   },
   CANCELLED: {
-    bg: 'bg-gray-100 dark:bg-gray-800/40',
-    text: 'text-gray-500 dark:text-gray-400',
-    border: 'border-gray-200 dark:border-gray-700',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
+    border: 'border-border',
   },
   DISMISSED: {
-    bg: 'bg-gray-100 dark:bg-gray-800/40',
-    text: 'text-gray-700 dark:text-gray-300',
-    border: 'border-gray-200 dark:border-gray-700',
+    bg: 'bg-muted',
+    text: 'text-foreground',
+    border: 'border-border',
   },
 }
 

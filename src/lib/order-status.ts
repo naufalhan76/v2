@@ -167,49 +167,50 @@ export function getStatusLabel(status: string): string {
 }
 
 /**
- * Color tokens for each status: Tailwind classes for bg, text, and border.
+ * Token classes for each status: bg, text, and border.
+ * Values resolve via CSS vars in src/styles/globals.css.
  * Used by StatusBadge component.
  */
 export const ORDER_STATUS_COLORS: Record<OrderStatus, { bg: string; text: string; border: string }> = {
   PENDING: {
-    bg: 'bg-amber-50',
-    text: 'text-amber-600',
-    border: 'border border-amber-100',
+    bg: 'bg-status-pending-bg',
+    text: 'text-status-pending',
+    border: 'border border-status-pending/30',
   },
   ASSIGNED: {
-    bg: 'bg-blue-50',
-    text: 'text-blue-600',
-    border: 'border border-blue-100',
+    bg: 'bg-status-assigned-bg',
+    text: 'text-status-assigned',
+    border: 'border border-status-assigned/30',
   },
   EN_ROUTE: {
-    bg: 'bg-violet-50',
-    text: 'text-violet-600',
-    border: 'border border-violet-100',
+    bg: 'bg-status-en-route-bg',
+    text: 'text-status-en-route',
+    border: 'border border-status-en-route/30',
   },
   IN_PROGRESS: {
-    bg: 'bg-teal-50',
-    text: 'text-teal-600',
-    border: 'border border-teal-100',
+    bg: 'bg-status-in-progress-bg',
+    text: 'text-status-in-progress',
+    border: 'border border-status-in-progress/30',
   },
   COMPLETED: {
-    bg: 'bg-green-50',
-    text: 'text-green-600',
-    border: 'border border-green-100',
+    bg: 'bg-status-completed-bg',
+    text: 'text-status-completed',
+    border: 'border border-status-completed/30',
   },
   INVOICED: {
-    bg: 'bg-cyan-50',
-    text: 'text-cyan-600',
-    border: 'border border-cyan-100',
+    bg: 'bg-status-invoiced-bg',
+    text: 'text-status-invoiced',
+    border: 'border border-status-invoiced/30',
   },
   PAID: {
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-600',
-    border: 'border border-emerald-100',
+    bg: 'bg-status-paid-bg',
+    text: 'text-status-paid',
+    border: 'border border-status-paid/30',
   },
   CANCELLED: {
-    bg: 'bg-red-50',
-    text: 'text-red-500',
-    border: 'border border-red-100',
+    bg: 'bg-status-cancelled-bg',
+    text: 'text-status-cancelled',
+    border: 'border border-status-cancelled/30',
   },
 }
 

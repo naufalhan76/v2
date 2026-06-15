@@ -39,7 +39,7 @@ function JakartaTime() {
   }, [])
 
   return (
-    <div className="flex items-center gap-2 text-sm text-ink-mute">
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
       <Clock className="h-4 w-4" />
       <div className="text-right">
         <div className="font-mono font-medium text-foreground">{time}</div>
@@ -62,7 +62,7 @@ export function Navbar({ onOpenCommandPalette }: { onOpenCommandPalette?: () => 
   }
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b border-hairline bg-background px-4 lg:h-[60px] lg:px-6">
+    <header className="flex h-14 items-center gap-4 border-b border-border bg-background px-4 lg:h-[60px] lg:px-6">
       <div className="w-full flex-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -77,7 +77,7 @@ export function Navbar({ onOpenCommandPalette }: { onOpenCommandPalette?: () => 
             <button
               type="button"
               onClick={onOpenCommandPalette}
-              className="hidden md:flex items-center gap-1.5 rounded-md border border-hairline bg-background px-2 py-1 text-xs text-ink-mute hover:text-foreground hover:bg-canvas-soft transition-colors"
+              className="hidden md:flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-surface-muted transition-colors"
             >
               <Command className="h-3 w-3" />
               <span className="font-medium">K</span>

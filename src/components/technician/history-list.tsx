@@ -68,7 +68,7 @@ export function HistoryList() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-1 rounded-[32px] shadow border border-gray-100 -mt-10 relative z-10 dark:bg-[#1a1833] flex gap-1">
+      <div className="bg-white p-1 rounded-[32px] shadow border border-border -mt-10 relative z-10 dark:bg-surface-muted flex gap-1">
         {FILTER_TABS.map((tab) => (
           <button
             key={tab.key}
@@ -77,8 +77,8 @@ export function HistoryList() {
             className={cn(
               'flex-1 py-3 text-center text-sm transition-colors',
               activeTab === tab.key
-                ? 'font-semibold bg-[#211c59] text-white rounded-[28px]'
-                : 'font-semibold text-gray-600 rounded-full dark:text-gray-400'
+                ? 'font-semibold bg-primary text-white rounded-[28px]'
+                : 'font-semibold text-muted-foreground rounded-full dark:text-muted-foreground'
             )}
           >
             {tab.label}
@@ -87,9 +87,9 @@ export function HistoryList() {
       </div>
 
       <div className="flex justify-between items-center px-1">
-        <h2 className="text-lg font-bold text-[#1e1b4b] dark:text-white">Daftar Pekerjaan</h2>
+        <h2 className="text-lg font-bold text-primary dark:text-foreground">Daftar Pekerjaan</h2>
         {!isLoading && !isError && totalCount !== null && (
-          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          <div className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">
             Total: {totalCount} pekerjaan
           </div>
         )}
@@ -101,10 +101,10 @@ export function HistoryList() {
       {isError && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <AlertCircle className="h-10 w-10 text-destructive mb-3" />
-          <p className="text-sm text-ink-mute mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             {error instanceof Error ? error.message : 'Terjadi kesalahan'}
           </p>
-          <Button onClick={() => refetch()} className="border-2 border-gray-200 rounded-xl px-4 py-2.5 font-semibold text-[#211c59] hover:bg-gray-50 transition-colors h-auto dark:border-gray-700 dark:text-white dark:hover:bg-[#252243]">
+          <Button onClick={() => refetch()} className="border-2 border-border rounded-xl px-4 py-2.5 font-semibold text-primary hover:bg-muted transition-colors h-auto dark:border-border dark:text-foreground dark:hover:bg-surface">
             <RefreshCw className="mr-2 h-4 w-4" />
             Coba Lagi
           </Button>
@@ -113,11 +113,11 @@ export function HistoryList() {
 
       {!isLoading && !isError && allJobs.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-canvas-soft dark:bg-[#252243] mb-4">
-            <History className="h-7 w-7 text-ink-faint" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface-muted dark:bg-surface mb-4">
+            <History className="h-7 w-7 text-muted-foreground" />
           </div>
-          <h3 className="text-2xl font-[460] mb-1 dark:text-white">Belum Ada Riwayat</h3>
-          <p className="text-lg text-ink-mute max-w-[240px]">
+          <h3 className="text-2xl font-[460] mb-1 dark:text-foreground">Belum Ada Riwayat</h3>
+          <p className="text-lg text-muted-foreground max-w-[240px]">
             Riwayat pekerjaan Anda akan muncul di sini setelah menyelesaikan job.
           </p>
         </div>
@@ -135,7 +135,7 @@ export function HistoryList() {
               <Button
                 onClick={() => fetchNextPage()}
                 disabled={isFetchingNextPage}
-                className="w-full border-2 border-gray-200 rounded-xl py-3 font-semibold text-[#211c59] hover:bg-gray-50 transition-colors h-auto disabled:opacity-60 dark:border-gray-700 dark:text-white dark:hover:bg-[#252243]"
+                className="w-full border-2 border-border rounded-xl py-3 font-semibold text-primary hover:bg-muted transition-colors h-auto disabled:opacity-60 dark:border-border dark:text-foreground dark:hover:bg-surface"
               >
                 {isFetchingNextPage ? (
                   <>

@@ -57,7 +57,7 @@ export const URGENCY_BORDER: Record<Urgency, string> = {
   overdue: 'border-t-2 border-t-destructive',
   today: 'border-t-2 border-t-status-pending',
   future: 'border-t-2 border-t-status-completed',
-  terminal: 'border-t-2 border-t-ink-faint',
+  terminal: 'border-t-2 border-t-muted-foreground',
 }
 
 /**

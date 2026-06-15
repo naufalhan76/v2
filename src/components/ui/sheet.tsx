@@ -35,12 +35,12 @@ const sheetVariants = cva(
   {
     variants: {
       side: {
-        top: "inset-x-0 top-0 border-b border-hairline data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top max-h-[90vh] rounded-b-xl",
+        top: "inset-x-0 top-0 border-b border-border data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top max-h-[90vh] rounded-b-xl",
         bottom:
-          "inset-x-0 bottom-0 border-t border-hairline data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom max-h-[90vh] pb-safe rounded-t-xl",
-        left: "inset-y-0 left-0 h-full w-full border-r border-hairline data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-xl rounded-r-xl",
+          "inset-x-0 bottom-0 border-t border-border data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom max-h-[90vh] pb-safe rounded-t-xl",
+        left: "inset-y-0 left-0 h-full w-full border-r border-border data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-xl rounded-r-xl",
         right:
-          "inset-y-0 right-0 h-full w-full border-l border-hairline data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-xl rounded-l-xl",
+          "inset-y-0 right-0 h-full w-full border-l border-border data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-xl rounded-l-xl",
       },
     },
     defaultVariants: {

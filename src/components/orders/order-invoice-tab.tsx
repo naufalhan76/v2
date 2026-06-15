@@ -76,16 +76,16 @@ export function OrderInvoiceTab({ orderId, orderStatus, onCreateInvoice }: Order
   return (
     <div className="space-y-3">
       {data.map((inv) => (
-        <Card key={inv.invoice_id} className="border-hairline">
+        <Card key={inv.invoice_id} className="border-border">
           <CardContent className="pt-4 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-xl font-bold text-foreground">{inv.invoice_number ?? inv.invoice_id}</p>
-                <p className="text-base text-ink-mute">
+                <p className="text-base text-muted-foreground">
                   Total: Rp {Number(inv.total_amount).toLocaleString('id-ID')}
                 </p>
                 {inv.paid_amount != null && Number(inv.paid_amount) > 0 && (
-                  <p className="text-base text-ink-mute">
+                  <p className="text-base text-muted-foreground">
                     Dibayar: Rp {Number(inv.paid_amount).toLocaleString('id-ID')}
                   </p>
                 )}

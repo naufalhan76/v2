@@ -4,10 +4,9 @@ import { createClient } from '@/lib/supabase-server'
 import { logInvoiceCommunication } from '@/lib/actions/invoice-communications'
 import { parseBankAccounts } from '@/lib/bank-accounts'
 import { logger } from '@/lib/logger'
-import { formatPhone } from '@/lib/utils'
 import { getInvoiceStatusLabel, isOverdue } from '@/lib/invoice-status'
 import { requireFinanceRoleAPI } from '@/app/api/middleware/auth'
-import { escapeHtml } from '@/lib/utils/html'
+import { buildInvoiceEmailHtml, sendInvoiceEmail, validateSenderEmail } from './email-template'
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,37 +22,22 @@ export async function POST(request: NextRequest) {
     }
 
     const resend = new Resend(process.env.RESEND_API_KEY)
-
     const supabase = await createClient()
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const { invoiceId } = body
-
     if (!invoiceId) {
       return NextResponse.json({ error: 'Invoice ID required' }, { status: 400 })
     }
 
-    // Get invoice data
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
-      .select(`
-        *,
-        customers (
-          customer_id,
-          customer_name,
-          email,
-          phone_number
-        )
-      `)
+      .select(`*, customers (customer_id, customer_name, email, phone_number)`)
       .eq('invoice_id', invoiceId)
       .single()
 
@@ -61,26 +45,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
     }
 
-    // Get invoice items
-    const { data: items } = await supabase
-      .from('invoice_items')
-      .select('*')
-      .eq('invoice_id', invoiceId)
-      .order('item_id')
-
-    // Get payments
-    const { data: payments } = await supabase
-      .from('payment_records')
-      .select('*')
-      .eq('invoice_id', invoiceId)
-      .order('payment_date', { ascending: false })
-
-    // Get invoice config
-    const { data: config } = await supabase
-      .from('invoice_configuration')
-      .select('*')
-      .eq('is_active', true)
-      .single()
+    const { data: items } = await supabase.from('invoice_items').select('*').eq('invoice_id', invoiceId).order('item_id')
+    const { data: payments } = await supabase.from('payment_records').select('*').eq('invoice_id', invoiceId).order('payment_date', { ascending: false })
+    const { data: config } = await supabase.from('invoice_configuration').select('*').eq('is_active', true).single()
 
     const customerName = invoice.customers?.customer_name || invoice.customer_name_override || 'Customer'
     const customerAddress = invoice.customer_address_override || ''
@@ -88,264 +55,45 @@ export async function POST(request: NextRequest) {
     const customerEmail = invoice.customers?.email || invoice.customer_email_override || ''
 
     if (!customerEmail) {
-      return NextResponse.json(
-        { error: 'Customer email not found' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Customer email not found' }, { status: 400 })
     }
 
-    // Calculate totals
     const amountPaid = payments?.reduce((sum, p) => sum + p.amount, 0) || 0
     const balanceDue = invoice.total_amount - amountPaid
-
-    // Get company info
     const companyName = config?.company_name || 'AC Service Dashboard'
     const companyAddress = config?.company_address || ''
     const companyPhone = config?.company_phone || ''
     const companyWebsite = config?.company_website || ''
-    
-    // Validated sender email - MUST use verified domain
-    // If company_email uses unverified domain (gmail.com, yahoo.com, etc), fallback to verified domain
-    let companyEmail = config?.company_email || 'noreply@yaleya.biz.id'
-    
-    // Check if email uses common email providers (not allowed by Resend)
-    const invalidDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com', 'aol.com']
-    const emailDomain = companyEmail.split('@')[1]?.toLowerCase()
-    
-    if (invalidDomains.includes(emailDomain)) {
-      logger.warn(`Company email uses invalid domain (${emailDomain}), using fallback: noreply@yaleya.biz.id`)
-      companyEmail = 'noreply@yaleya.biz.id'
-    }
+    const companyEmail = validateSenderEmail(config?.company_email || 'noreply@yaleya.biz.id')
 
     const bankAccounts = parseBankAccounts(config?.bank_accounts)
     const displayStatus = isOverdue(invoice) ? 'OVERDUE' : invoice.status
     const displayStatusLabel = getInvoiceStatusLabel(displayStatus)
+    const termsConditions = config?.terms_conditions_template || null
 
-    const safeInvoiceNumber = escapeHtml(invoice.invoice_number)
-    const safeCustomerName = escapeHtml(customerName)
-    const safeCustomerAddress = escapeHtml(customerAddress)
-    const safeCustomerEmail = escapeHtml(customerEmail)
-    const safeCompanyName = escapeHtml(companyName)
-    const safeCompanyAddress = escapeHtml(companyAddress)
-    const safeCompanyPhone = escapeHtml(companyPhone)
-    const safeCompanyEmail = escapeHtml(companyEmail)
-    const safeCompanyWebsite = escapeHtml(companyWebsite)
-    const safeDisplayStatusLabel = escapeHtml(displayStatusLabel)
-    const safeTermsConditions = escapeHtml(config?.terms_conditions_template).replace(/\n/g, '<br>')
-
-    // Format currency
-    const formatCurrency = (amount: number) => {
-      return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-      }).format(amount)
-    }
-
-    // Format date
-    const formatDate = (date: string) => {
-      return new Date(date).toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
-    }
-
-    // Generate HTML email
-    const htmlEmail = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Invoice ${safeInvoiceNumber}</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background-color: #fafaf8;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fafaf8; padding: 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background-color: #1b1938; padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: bold;">INVOICE</h1>
-              <p style="margin: 10px 0 0 0; color: #c8c5e0; font-size: 18px;">${safeCompanyName}</p>
-            </td>
-          </tr>
-
-          <!-- Invoice Details -->
-          <tr>
-            <td style="padding: 30px;">
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="width: 50%; vertical-align: top;">
-                    <p style="margin: 0 0 5px 0; color: #292827; font-size: 11px; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;">Tagihan Kepada</p>
-                    <p style="margin: 0 0 5px 0; color: #292827; font-size: 18px; font-weight: bold;">${safeCustomerName}</p>
-                    ${safeCustomerAddress ? `<p style="margin: 0 0 5px 0; color: #292827; font-size: 14px;">${safeCustomerAddress}</p>` : ''}
-                    ${customerPhone ? `<p style="margin: 0 0 5px 0; color: #292827; font-size: 14px;">${escapeHtml(formatPhone(customerPhone))}</p>` : ''}
-                    <p style="margin: 0; color: #292827; font-size: 14px;">${safeCustomerEmail}</p>
-                  </td>
-                  <td style="width: 50%; vertical-align: top; text-align: right;">
-                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fafaf8; border-radius: 6px; padding: 15px;">
-                      <tr>
-                        <td style="padding: 3px 0; color: #292827; font-size: 12px;">No. Invoice:</td>
-                        <td style="padding: 3px 0; color: #292827; font-size: 14px; font-weight: bold; text-align: right;">${safeInvoiceNumber}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 3px 0; color: #292827; font-size: 12px;">Tanggal:</td>
-                        <td style="padding: 3px 0; color: #292827; font-size: 14px; text-align: right;">${formatDate(invoice.invoice_date)}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 3px 0; color: #292827; font-size: 12px;">Jatuh Tempo:</td>
-                        <td style="padding: 3px 0; color: #b91c1c; font-size: 14px; font-weight: bold; text-align: right;">${formatDate(invoice.due_date)}</td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 3px 0; color: #292827; font-size: 12px;">Status:</td>
-                        <td style="padding: 3px 0; text-align: right;">
-                          <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; 
-                            ${displayStatus === 'PAID' ? 'background-color: #d1fae5; color: #065f46;' : 
-                              displayStatus === 'SENT' ? 'background-color: #e0e7ff; color: #1b1938;' : 
-                              displayStatus === 'OVERDUE' ? 'background-color: #fee2e2; color: #991b1b;' : 
-                              'background-color: #fafaf8; color: #292827;'}">${safeDisplayStatusLabel}</span>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Items Table -->
-          <tr>
-            <td style="padding: 0 30px 30px 30px;">
-              <h2 style="margin: 0 0 15px 0; color: #292827; font-size: 18px; font-weight: bold;">Rincian Layanan</h2>
-              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
-                <thead>
-                  <tr style="background-color: #1b1938;">
-                    <th style="padding: 12px; text-align: left; color: #ffffff; font-size: 13px; font-weight: bold;">Deskripsi</th>
-                    <th style="padding: 12px; text-align: center; color: #ffffff; font-size: 13px; font-weight: bold; width: 60px;">Qty</th>
-                    <th style="padding: 12px; text-align: right; color: #ffffff; font-size: 13px; font-weight: bold; width: 120px;">Harga Satuan</th>
-                    <th style="padding: 12px; text-align: right; color: #ffffff; font-size: 13px; font-weight: bold; width: 120px;">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${items?.map((item, index) => `
-                    <tr style="background-color: ${index % 2 === 0 ? '#fafaf8' : '#ffffff'}; border-bottom: 1px solid #e8e4dd;">
-                      <td style="padding: 12px; color: #292827; font-size: 14px;">${escapeHtml(item.description)}</td>
-                      <td style="padding: 12px; text-align: center; color: #292827; font-size: 14px;">${item.quantity}</td>
-                      <td style="padding: 12px; text-align: right; color: #292827; font-size: 14px;">${formatCurrency(item.unit_price)}</td>
-                      <td style="padding: 12px; text-align: right; color: #292827; font-size: 14px; font-weight: bold;">${formatCurrency(item.total_price)}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Summary -->
-          <tr>
-            <td style="padding: 0 30px 30px 30px;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fafaf8; border-radius: 8px; padding: 20px;">
-                <tr>
-                  <td style="padding: 5px 0; color: #292827; font-size: 14px;">Subtotal:</td>
-                  <td style="padding: 5px 0; text-align: right; color: #292827; font-size: 14px;">${formatCurrency(invoice.subtotal)}</td>
-                </tr>
-                ${invoice.discount_amount > 0 ? `
-                <tr>
-                  <td style="padding: 5px 0; color: #292827; font-size: 14px;">Diskon:</td>
-                  <td style="padding: 5px 0; text-align: right; color: #b91c1c; font-size: 14px;">-${formatCurrency(invoice.discount_amount)}</td>
-                </tr>
-                ` : ''}
-                <tr>
-                  <td style="padding: 5px 0; color: #292827; font-size: 14px;">Pajak (${invoice.tax_percentage}%):</td>
-                  <td style="padding: 5px 0; text-align: right; color: #292827; font-size: 14px;">${formatCurrency(invoice.tax_amount)}</td>
-                </tr>
-                ${amountPaid > 0 ? `
-                <tr>
-                  <td style="padding: 5px 0; color: #292827; font-size: 14px;">Jumlah Dibayar:</td>
-                  <td style="padding: 5px 0; text-align: right; color: #065f46; font-size: 14px;">-${formatCurrency(amountPaid)}</td>
-                </tr>
-                ` : ''}
-                <tr>
-                  <td colspan="2" style="padding: 10px 0 5px 0;"><hr style="border: none; border-top: 2px solid #1b1938; margin: 0;"></td>
-                </tr>
-                <tr>
-                  <td style="padding: 5px 0; color: #292827; font-size: 18px; font-weight: bold;">${balanceDue > 0 ? 'Sisa Tagihan:' : 'LUNAS'}</td>
-                  <td style="padding: 5px 0; text-align: right; color: ${balanceDue > 0 ? '#b91c1c' : '#065f46'}; font-size: 20px; font-weight: bold;">${formatCurrency(balanceDue)}</td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          ${balanceDue > 0 && bankAccounts.length > 0 ? `
-          <!-- Payment Info -->
-          <tr>
-            <td style="padding: 0 30px 30px 30px;">
-              <div style="background-color: #f0eff7; border-left: 4px solid #1b1938; padding: 20px; border-radius: 6px;">
-                <h3 style="margin: 0 0 15px 0; color: #1b1938; font-size: 16px; font-weight: bold;">Informasi Pembayaran</h3>
-                <p style="margin: 0 0 15px 0; color: #292827; font-size: 13px; font-style: italic;">Silakan transfer ke salah satu rekening berikut dan cantumkan No. Invoice (${safeInvoiceNumber}) dalam keterangan transfer.</p>
-                ${bankAccounts.map((account, index) => { return `
-                  <div style="margin-bottom: 15px; padding: 12px; background-color: #ffffff; border-radius: 6px;">
-                    <p style="margin: 0 0 5px 0; color: #1b1938; font-size: 15px; font-weight: bold;">${index + 1}. ${escapeHtml(account.account_label)}</p>
-                    <p style="margin: 0 0 3px 0; color: #292827; font-size: 14px;">Bank: <strong>${escapeHtml(account.bank)}</strong></p>
-                    <p style="margin: 0 0 3px 0; color: #292827; font-size: 14px;">No. Rekening: <strong>${escapeHtml(account.account_number)}</strong></p>
-                    <p style="margin: 0; color: #292827; font-size: 14px;">Atas Nama: <strong>${escapeHtml(account.account_name)}</strong></p>
-                    <p style="margin: 4px 0 0 0; color: #292827; font-size: 12px;">PPN ${account.tax_percentage}%</p>
-                  </div>
-                `}).join('')}
-              </div>
-            </td>
-          </tr>
-          ` : ''}
-
-          ${safeTermsConditions ? `
-          <!-- Terms & Conditions -->
-          <tr>
-            <td style="padding: 0 30px 30px 30px;">
-              <h3 style="margin: 0 0 10px 0; color: #292827; font-size: 14px; font-weight: bold; text-transform: uppercase;">Syarat dan Ketentuan</h3>
-              <p style="margin: 0; color: #292827; font-size: 13px; line-height: 1.6;">${safeTermsConditions}</p>
-            </td>
-          </tr>
-          ` : ''}
-
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #fafaf8; padding: 20px 30px; border-top: 1px solid #e8e4dd;">
-              <p style="margin: 0 0 10px 0; color: #292827; font-size: 13px;">Jika ada pertanyaan, silakan hubungi kami:</p>
-              ${safeCompanyAddress ? `<p style="margin: 0 0 5px 0; color: #292827; font-size: 13px;">${safeCompanyAddress}</p>` : ''}
-              ${safeCompanyPhone ? `<p style="margin: 0 0 5px 0; color: #292827; font-size: 13px;">${safeCompanyPhone}</p>` : ''}
-              ${safeCompanyEmail ? `<p style="margin: 0 0 5px 0; color: #292827; font-size: 13px;">${safeCompanyEmail}</p>` : ''}
-              ${safeCompanyWebsite ? `<p style="margin: 0 0 15px 0; color: #1b1938; font-size: 13px;">${safeCompanyWebsite}</p>` : ''}
-              <p style="margin: 0; color: #292827; font-size: 12px; font-style: italic;">Terima kasih atas kepercayaan Anda!</p>
-            </td>
-          </tr>
-
-        </table>
-
-        <!-- Footer Note -->
-        <table width="600" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
-          <tr>
-            <td style="text-align: center; color: #292827; font-size: 12px;">
-              <p style="margin: 0;">Invoice ini digenerate otomatis oleh sistem ${safeCompanyName}</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-    `
-
-    // Send email
-    const { data: emailData, error: emailError } = await resend.emails.send({
-      from: `${companyName} <${companyEmail}>`,
-      to: customerEmail,
-      subject: `Invoice ${invoice.invoice_number} - ${companyName}`,
-      html: htmlEmail,
+    const htmlEmail = buildInvoiceEmailHtml({
+      invoiceNumber: invoice.invoice_number,
+      customerName, customerAddress, customerPhone, customerEmail,
+      invoiceDate: invoice.invoice_date,
+      dueDate: invoice.due_date,
+      displayStatusLabel, displayStatus,
+      companyName, companyAddress, companyPhone, companyEmail, companyWebsite,
+      bankAccounts, termsConditions,
+      items: items || [],
+      subtotal: invoice.subtotal,
+      discountAmount: invoice.discount_amount,
+      taxPercentage: invoice.tax_percentage,
+      taxAmount: invoice.tax_amount,
+      amountPaid, balanceDue,
     })
+
+    const { data: emailData, error: emailError } = await sendInvoiceEmail(
+      resend,
+      `${companyName} <${companyEmail}>`,
+      customerEmail,
+      `Invoice ${invoice.invoice_number} - ${companyName}`,
+      htmlEmail
+    )
 
     if (emailError) {
       logger.error('Resend error:', emailError)
@@ -355,7 +103,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Log communication to database
     try {
       await logInvoiceCommunication({
         invoiceId,
@@ -366,7 +113,6 @@ export async function POST(request: NextRequest) {
       })
     } catch (logError) {
       logger.error('Failed to log communication:', logError)
-      // Don't fail the request if logging fails
     }
 
     return NextResponse.json({

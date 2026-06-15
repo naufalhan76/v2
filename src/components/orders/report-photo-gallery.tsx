@@ -26,15 +26,15 @@ export function ReportPhotoGallery({ title, photos, className }: ReportPhotoGall
   return (
     <div className={cn('space-y-2', className)}>
       <div className="flex items-center gap-2 text-lg font-[540] text-foreground">
-        <Camera className="h-4 w-4 text-ink-mute" />
+        <Camera className="h-4 w-4 text-muted-foreground" />
         {title}
-        <span className="text-base font-normal text-ink-mute">
+        <span className="text-base font-normal text-muted-foreground">
           ({photos.length})
         </span>
       </div>
 
       {photos.length === 0 ? (
-        <div className="flex h-24 items-center justify-center rounded-md border border-dashed border-hairline text-base text-ink-mute">
+        <div className="flex h-24 items-center justify-center rounded-md border border-dashed border-border text-base text-muted-foreground">
           <ImageOff className="mr-2 h-4 w-4" />
           Tidak ada foto
         </div>
@@ -45,7 +45,7 @@ export function ReportPhotoGallery({ title, photos, className }: ReportPhotoGall
               key={url + idx}
               type="button"
               onClick={() => setActiveIndex(idx)}
-              className="relative aspect-square overflow-hidden rounded-md border border-hairline bg-canvas-soft transition hover:brightness-95"
+              className="relative aspect-square overflow-hidden rounded-md border border-border bg-surface-muted transition hover:brightness-95"
               aria-label={`${title} ${idx + 1}`}
             >
               <Image

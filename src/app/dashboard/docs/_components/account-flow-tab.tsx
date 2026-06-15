@@ -73,9 +73,9 @@ export function AccountFlowTab() {
             </li>
             <li>Share kredensial ke user (via WhatsApp /电话 saja, bukan email)</li>
           </ol>
-          <div className="flex gap-2 rounded-md border bg-blue-50 dark:bg-blue-950/30 p-3">
-            <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-            <p className="text-xs text-blue-900 dark:text-blue-200">
+          <div className="flex gap-2 rounded-md border bg-status-assigned-bg dark:bg-status-assigned-bg p-3">
+            <AlertCircle className="h-4 w-4 text-info mt-0.5 shrink-0" />
+            <p className="text-xs text-info dark:text-info">
               <strong>Catatan:</strong> Akun <code>SUPERADMIN</code> tidak bisa
               dibuat dari dashboard. Hanya via{' '}
               <code>scripts/bootstrap-staging.mjs</code> untuk mencegah
@@ -179,9 +179,9 @@ export function AccountFlowTab() {
           <p>
             3. User klik link di email → masuk password baru → otomatis login
           </p>
-          <div className="flex gap-2 rounded-md border bg-yellow-50 dark:bg-yellow-950/30 p-3">
-            <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
-            <p className="text-xs text-yellow-900 dark:text-yellow-200">
+          <div className="flex gap-2 rounded-md border bg-status-pending-bg dark:bg-status-pending-bg p-3">
+            <AlertCircle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+            <p className="text-xs text-warning dark:text-warning">
               Tanpa konfigurasi SMTP, email reset tidak akan terkirim. Lo bisa
               reset manual via dashboard Supabase (Auth → Users → pilih user →
               &quot;Send password recovery&quot;).

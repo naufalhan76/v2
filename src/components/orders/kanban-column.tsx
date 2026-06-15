@@ -58,8 +58,8 @@ export function KanbanColumn({
   }
 
   return (
-    <div className="flex flex-col w-[280px] sm:w-72 shrink-0 snap-start sm:snap-none bg-background rounded-lg border border-hairline">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-hairline bg-background">
+    <div className="flex flex-col w-[280px] sm:w-72 shrink-0 snap-start sm:snap-none bg-background rounded-lg border border-border">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-background">
         <div className="flex items-center gap-2">
           {isSelectionMode && (
             <Checkbox
@@ -70,7 +70,7 @@ export function KanbanColumn({
           )}
           <h3 className="text-2xl font-[460] text-foreground">{title}</h3>
         </div>
-        <Badge variant="secondary" className="text-sm bg-canvas-soft text-ink-mute">
+        <Badge variant="secondary" className="text-sm bg-surface-muted text-muted-foreground">
           {orders.length}
         </Badge>
       </div>
@@ -80,7 +80,7 @@ export function KanbanColumn({
           ref={setNodeRef}
           className={cn(
             'p-2 space-y-2 min-h-[200px] transition-colors',
-            isOver && acceptsDrops && 'bg-violet-soft/20 border-2 border-dashed border-violet-soft rounded-lg'
+            isOver && acceptsDrops && 'bg-brand-100/20 border-2 border-dashed border-brand-200 rounded-lg'
           )}
         >
           {orders.length === 0 ? (
@@ -104,7 +104,7 @@ export function KanbanColumn({
                   />
                 )
               )}
-              <p className="text-sm text-center text-ink-mute py-2">
+              <p className="text-sm text-center text-muted-foreground py-2">
                 +{orders.length - 5} order lainnya
               </p>
             </>

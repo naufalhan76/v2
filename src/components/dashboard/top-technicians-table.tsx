@@ -48,19 +48,19 @@ export function TopTechniciansTable({
 
   if (loading) {
     return (
-      <Card className="border-hairline shadow-none bg-background animate-pulse">
+      <Card className="border-border shadow-none bg-background animate-pulse">
         <CardHeader className="pb-2">
-          <div className="h-5 w-48 bg-canvas-soft rounded" />
+          <div className="h-5 w-48 bg-surface-muted rounded" />
         </CardHeader>
         <CardContent>
-          <div className="h-[200px] bg-canvas-soft rounded" />
+          <div className="h-[200px] bg-surface-muted rounded" />
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <Card className="border-hairline shadow-none bg-background transition-shadow hover:shadow-md">
+    <Card className="border-border shadow-none bg-background transition-shadow hover:shadow-md">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <Medal className="h-4 w-4 text-status-pending" />
@@ -71,8 +71,8 @@ export function TopTechniciansTable({
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-sm text-ink-mute gap-2">
-            <Wrench className="h-6 w-6 text-ink-faint" />
+          <div className="flex flex-col items-center justify-center py-10 text-sm text-muted-foreground gap-2">
+            <Wrench className="h-6 w-6 text-muted-foreground" />
             <span>Belum ada data teknisi</span>
           </div>
         ) : (
@@ -80,19 +80,19 @@ export function TopTechniciansTable({
             <Table>
               <TableHeader>
                 <TableRow className="border-0 hover:bg-transparent">
-                  <TableHead className="text-xs font-semibold text-ink-mute uppercase tracking-wider w-12">
+                  <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider w-12">
                     #
                   </TableHead>
-                  <TableHead className="text-xs font-semibold text-ink-mute uppercase tracking-wider">
+                  <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Nama
                   </TableHead>
-                  <TableHead className="text-xs font-semibold text-ink-mute uppercase tracking-wider text-right">
+                  <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">
                     Selesai
                   </TableHead>
-                  <TableHead className="text-xs font-semibold text-ink-mute uppercase tracking-wider text-right">
+                  <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">
                     Total
                   </TableHead>
-                  <TableHead className="text-xs font-semibold text-ink-mute uppercase tracking-wider text-right w-24">
+                  <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right w-24">
                     Rate
                   </TableHead>
                 </TableRow>
@@ -104,18 +104,18 @@ export function TopTechniciansTable({
                     <TableRow
                       key={tech.id}
                       className={cn(
-                        'border-0 transition-colors hover:bg-canvas-soft',
-                        index < 3 && 'bg-canvas-soft'
+                        'border-0 transition-colors hover:bg-surface-muted',
+                        index < 3 && 'bg-surface-muted'
                       )}
                     >
-                      <TableCell className="text-sm font-bold text-ink-mute">
+                      <TableCell className="text-sm font-bold text-muted-foreground">
                         {index + 1}
                       </TableCell>
                       <TableCell className="text-sm">{tech.name}</TableCell>
                       <TableCell className="text-sm text-right tabular-nums font-semibold text-status-completed">
                         {tech.completed}
                       </TableCell>
-                      <TableCell className="text-sm text-right tabular-nums text-ink-mute">
+                      <TableCell className="text-sm text-right tabular-nums text-muted-foreground">
                         {tech.total}
                       </TableCell>
                       <TableCell className="text-right">

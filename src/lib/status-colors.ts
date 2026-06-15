@@ -14,38 +14,39 @@ export type InvoiceStatus =
   | 'CANCELLED'
 
 /**
- * Color tokens for invoice statuses.
+ * Unified token classes for invoice statuses.
+ * DRAFT maps to muted/border (no status equivalent).
  */
 export const INVOICE_STATUS_COLORS: Record<InvoiceStatus, { bg: string; text: string; border: string }> = {
   DRAFT: {
-    bg: 'bg-canvas-soft dark:bg-canvas-soft',
-    text: 'text-ink-mute dark:text-ink-mute',
-    border: 'border-hairline dark:border-hairline',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
+    border: 'border-border',
   },
   SENT: {
-    bg: 'bg-indigo-100 dark:bg-indigo-950/40',
-    text: 'text-indigo-700 dark:text-indigo-300',
-    border: 'border-indigo-200 dark:border-indigo-800',
+    bg: 'bg-status-assigned-bg',
+    text: 'text-status-assigned',
+    border: 'border-status-assigned/30',
   },
   PARTIAL_PAID: {
-    bg: 'bg-amber-100 dark:bg-amber-950/40',
-    text: 'text-amber-700 dark:text-amber-300',
-    border: 'border-amber-200 dark:border-amber-800',
+    bg: 'bg-status-pending-bg',
+    text: 'text-status-pending',
+    border: 'border-status-pending/30',
   },
   PAID: {
-    bg: 'bg-green-100 dark:bg-green-950/40',
-    text: 'text-green-700 dark:text-green-300',
-    border: 'border-green-200 dark:border-green-800',
+    bg: 'bg-status-paid-bg',
+    text: 'text-status-paid',
+    border: 'border-status-paid/30',
   },
   OVERDUE: {
-    bg: 'bg-red-100 dark:bg-red-950/40',
-    text: 'text-red-700 dark:text-red-300',
-    border: 'border-red-200 dark:border-red-800',
+    bg: 'bg-status-cancelled-bg',
+    text: 'text-status-cancelled',
+    border: 'border-status-cancelled/30',
   },
   CANCELLED: {
-    bg: 'bg-red-100 dark:bg-red-950/40',
-    text: 'text-red-700 dark:text-red-300',
-    border: 'border-red-200 dark:border-red-800',
+    bg: 'bg-status-cancelled-bg',
+    text: 'text-status-cancelled',
+    border: 'border-status-cancelled/30',
   },
 }
 
@@ -77,48 +78,49 @@ export type ServiceType =
   | 'MAINTENANCE'
 
 /**
- * Color tokens for service types.
+ * Token classes; service-type mappings reuse status tokens semantically.
+ * See DESIGN.md.
  */
 export const SERVICE_TYPE_COLORS: Record<ServiceType, { bg: string; text: string; border: string }> = {
   REFILL_FREON: {
-    bg: 'bg-blue-100 dark:bg-blue-950/40',
-    text: 'text-blue-700 dark:text-blue-300',
-    border: 'border-blue-200 dark:border-blue-800',
+    bg: 'bg-status-assigned-bg',
+    text: 'text-status-assigned',
+    border: 'border-status-assigned/30',
   },
   CLEANING: {
-    bg: 'bg-green-100 dark:bg-green-950/40',
-    text: 'text-green-700 dark:text-green-300',
-    border: 'border-green-200 dark:border-green-800',
+    bg: 'bg-status-paid-bg',
+    text: 'text-status-paid',
+    border: 'border-status-paid/30',
   },
   REPAIR: {
-    bg: 'bg-orange-100 dark:bg-orange-950/40',
-    text: 'text-orange-700 dark:text-orange-300',
-    border: 'border-orange-200 dark:border-orange-800',
+    bg: 'bg-status-pending-bg',
+    text: 'text-status-pending',
+    border: 'border-status-pending/30',
   },
   INSTALLATION: {
-    bg: 'bg-purple-100 dark:bg-purple-950/40',
-    text: 'text-purple-700 dark:text-purple-300',
-    border: 'border-purple-200 dark:border-purple-800',
+    bg: 'bg-status-en-route-bg',
+    text: 'text-status-en-route',
+    border: 'border-status-en-route/30',
   },
   INSPECTION: {
-    bg: 'bg-cyan-100 dark:bg-cyan-950/40',
-    text: 'text-cyan-700 dark:text-cyan-300',
-    border: 'border-cyan-200 dark:border-cyan-800',
+    bg: 'bg-status-invoiced-bg',
+    text: 'text-status-invoiced',
+    border: 'border-status-invoiced/30',
   },
   CHECKING: {
-    bg: 'bg-teal-100 dark:bg-teal-950/40',
-    text: 'text-teal-700 dark:text-teal-300',
-    border: 'border-teal-200 dark:border-teal-800',
+    bg: 'bg-status-in-progress-bg',
+    text: 'text-status-in-progress',
+    border: 'border-status-in-progress/30',
   },
   UNINSTALL: {
-    bg: 'bg-rose-100 dark:bg-rose-950/40',
-    text: 'text-rose-700 dark:text-rose-300',
-    border: 'border-rose-200 dark:border-rose-800',
+    bg: 'bg-status-cancelled-bg',
+    text: 'text-status-cancelled',
+    border: 'border-status-cancelled/30',
   },
   MAINTENANCE: {
-    bg: 'bg-teal-100 dark:bg-teal-950/40',
-    text: 'text-teal-700 dark:text-teal-300',
-    border: 'border-teal-200 dark:border-teal-800',
+    bg: 'bg-status-in-progress-bg',
+    text: 'text-status-in-progress',
+    border: 'border-status-in-progress/30',
   },
 }
 

@@ -37,13 +37,13 @@ export default function ServiceCatalogPage() {
         </Button>
       </div>
 
-      <Card className="border-amber-200 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-950/20">
+      <Card className="border-warning/30 bg-status-pending-bg dark:border-warning/30 dark:bg-status-pending-bg">
         <CardContent className="pt-4 flex gap-2 items-start">
-          <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-          <p className="text-sm text-amber-800 dark:text-amber-200">
+          <AlertCircle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+          <p className="text-sm text-warning dark:text-warning">
             Halaman ini menggantikan <strong>Service Config</strong>. Seluruh
             data layanan kini terpusat di tabel{' '}
-            <code className="rounded bg-amber-100 px-1 py-0.5 text-xs dark:bg-amber-900/40">
+            <code className="rounded bg-status-pending-bg px-1 py-0.5 text-xs dark:bg-status-pending-bg">
               service_catalog
             </code>
             .

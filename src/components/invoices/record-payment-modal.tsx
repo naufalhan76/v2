@@ -137,13 +137,13 @@ export function RecordPaymentModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-lg border border-hairline bg-canvas-soft p-3 text-sm">
+        <div className="rounded-lg border border-border bg-surface-muted p-3 text-sm">
           <div className="flex justify-between gap-2">
-            <span className="text-ink-mute">Total Invoice</span>
+            <span className="text-muted-foreground">Total Invoice</span>
             <span className="font-semibold">{formatCurrency(invoice.total_amount)}</span>
           </div>
           <div className="flex justify-between gap-2">
-            <span className="text-ink-mute">Sudah Dibayar</span>
+            <span className="text-muted-foreground">Sudah Dibayar</span>
             <span className="font-semibold text-status-paid">
               {formatCurrency(invoice.paid_amount)}
             </span>

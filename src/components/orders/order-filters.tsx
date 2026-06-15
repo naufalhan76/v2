@@ -94,9 +94,9 @@ export function OrderFilters() {
     !!dateTo
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center bg-background border border-hairline rounded-lg p-3 sm:p-2">
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center bg-background border border-border rounded-lg p-3 sm:p-2">
       <div className="relative w-full sm:min-w-[240px] sm:flex-1 sm:max-w-sm">
-        <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-mute" />
+        <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Cari order ID, customer, alamat..."
           value={search}
@@ -153,7 +153,7 @@ export function OrderFilters() {
             <Button
               variant="outline"
               className={cn(
-                !dateFrom && 'text-ink-mute',
+                !dateFrom && 'text-muted-foreground',
                 'h-11 w-full justify-start sm:h-9 sm:w-auto sm:min-w-[120px] sm:justify-center'
               )}
             >
@@ -176,7 +176,7 @@ export function OrderFilters() {
             <Button
               variant="outline"
               className={cn(
-                !dateTo && 'text-ink-mute',
+                !dateTo && 'text-muted-foreground',
                 'h-11 w-full justify-start sm:h-9 sm:w-auto sm:min-w-[120px] sm:justify-center'
               )}
             >

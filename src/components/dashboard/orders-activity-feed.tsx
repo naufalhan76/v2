@@ -110,18 +110,18 @@ export function OrdersActivityFeed({ limit = 10 }: { limit?: number }) {
 
   if (loading) {
     return (
-      <Card className="border-hairline shadow-none bg-background animate-pulse">
+      <Card className="border-border shadow-none bg-background animate-pulse">
         <CardHeader className="pb-2">
-          <div className="h-5 w-44 bg-canvas-soft rounded" />
+          <div className="h-5 w-44 bg-surface-muted rounded" />
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="h-8 w-8 bg-canvas-soft rounded-full" />
+                <div className="h-8 w-8 bg-surface-muted rounded-full" />
                 <div className="flex-1 space-y-1">
-                  <div className="h-3.5 w-36 bg-canvas-soft rounded" />
-                  <div className="h-3 w-24 bg-canvas-soft rounded" />
+                  <div className="h-3.5 w-36 bg-surface-muted rounded" />
+                  <div className="h-3 w-24 bg-surface-muted rounded" />
                 </div>
               </div>
             ))}
@@ -132,7 +132,7 @@ export function OrdersActivityFeed({ limit = 10 }: { limit?: number }) {
   }
 
   return (
-    <Card className="border-hairline shadow-none bg-background transition-shadow hover:shadow-md">
+    <Card className="border-border shadow-none bg-background transition-shadow hover:shadow-md">
       <CardHeader className="pb-2 flex flex-row items-center gap-2">
         <Activity className="h-4 w-4 text-primary" />
         <CardTitle className="text-base font-semibold tracking-tight text-foreground">
@@ -141,8 +141,8 @@ export function OrdersActivityFeed({ limit = 10 }: { limit?: number }) {
       </CardHeader>
       <CardContent>
         {needsAttention.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-sm text-ink-mute gap-2">
-            <Activity className="h-6 w-6 text-ink-faint" />
+          <div className="flex flex-col items-center justify-center py-10 text-sm text-muted-foreground gap-2">
+            <Activity className="h-6 w-6 text-muted-foreground" />
             <span>Tidak ada order yang perlu perhatian</span>
           </div>
         ) : (
@@ -162,7 +162,7 @@ export function OrdersActivityFeed({ limit = 10 }: { limit?: number }) {
                       delay: index * 0.05,
                       ease: [0.16, 1, 0.3, 1],
                     }}
-                    className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-canvas-soft"
+                    className="flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-surface-muted"
                   >
                     <span
                       className={cn(
@@ -176,12 +176,12 @@ export function OrdersActivityFeed({ limit = 10 }: { limit?: number }) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm truncate text-foreground">
                         {order.customer_name}
-                        <span className="mx-1.5 text-ink-faint">·</span>
-                        <span className="text-ink-mute">
+                        <span className="mx-1.5 text-muted-foreground">·</span>
+                        <span className="text-muted-foreground">
                           {getStatusLabel(order.status)}
                         </span>
                       </p>
-                      <p className="text-sm text-ink-faint tabular-nums">
+                      <p className="text-sm text-muted-foreground tabular-nums">
                         {formatTimestamp(order.created_at)}
                       </p>
                     </div>

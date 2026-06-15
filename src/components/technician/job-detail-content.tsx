@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, MapPin, Phone, User, Wrench, FileText, Timer } from 'lucide-react'
+import { ArrowLeft, Timer } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/orders/status-badge'
@@ -12,6 +12,8 @@ import type { OrderStatus } from '@/lib/order-status'
 import { captureGps } from '@/lib/utils/geolocation'
 import type { GpsResult } from '@/lib/utils/geolocation'
 import { jobToSnapshot, lockJobSnapshot, saveJobSnapshot } from '@/lib/offline/snapshot'
+import { CustomerInfoCard } from './customer-info-card'
+import { ServiceInfoCard } from './service-info-card'
 
 interface JobDetailContentProps {
   orderId: string
@@ -114,7 +116,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
         <p className="text-sm text-destructive mb-4">
           {error instanceof Error ? error.message : 'Terjadi kesalahan'}
         </p>
-        <Button onClick={() => router.back()} className="bg-[#211c59] text-white flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:bg-[#2d2a75] transition-colors h-auto">
+        <Button onClick={() => router.back()} className="bg-primary text-white flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:bg-primary-hover transition-colors h-auto">
           Kembali
         </Button>
       </div>
@@ -147,7 +149,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
     <div className="space-y-4">
       {/* Back button + status */}
       <div className="flex items-center justify-between">
-        <Button className="bg-[#211c59] text-white flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:bg-[#2d2a75] transition-colors h-auto" asChild>
+        <Button className="bg-primary text-white flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm hover:bg-primary-hover transition-colors h-auto" asChild>
           <Link href="/technician">
             <ArrowLeft className="h-4 w-4" />
             <span className="ml-1">Kembali</span>
@@ -157,74 +159,19 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
       </div>
 
       {/* Customer info card */}
-      <div className="rounded-lg border border-hairline dark:border-gray-700 bg-background dark:bg-[#1a1833] p-4 space-y-3">
-        <h2 className="font-semibold text-lg text-balance dark:text-white">{customer?.customer_name ?? 'Customer'}</h2>
-
-        {customer?.primary_contact_person && (
-          <div className="flex items-center gap-2 text-sm">
-            <User className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
-            <span>{customer.primary_contact_person}</span>
-          </div>
-        )}
-
-        {customer?.phone_number && (
-          <div className="flex items-center gap-2 text-sm">
-            <Phone className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
-            <a
-              href={`tel:${customer.phone_number}`}
-              className="text-primary underline-offset-2 hover:underline"
-            >
-              {customer.phone_number}
-            </a>
-          </div>
-        )}
-
-        {location && (
-          <div className="flex items-start gap-2 text-sm">
-            <MapPin className="h-4 w-4 text-ink-mute shrink-0 mt-0.5" aria-hidden="true" />
-            <span>{location.full_address}{location.city ? `, ${location.city}` : ''}</span>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 text-sm">
-          <Clock className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
-          <span>{scheduledTime}</span>
-        </div>
-      </div>
+      <CustomerInfoCard
+        customer={customer}
+        location={location}
+        scheduledTime={scheduledTime}
+      />
 
       {/* Service info card */}
-      <div className="rounded-lg border border-hairline dark:border-gray-700 bg-background dark:bg-[#1a1833] p-4 space-y-3">
-        <h3 className="font-medium text-sm text-ink-mute uppercase tracking-wide dark:text-[#a5a3b5]">
-          Detail Layanan
-        </h3>
-
-        <div className="flex items-center gap-2 text-sm">
-          <Wrench className="h-4 w-4 text-ink-mute shrink-0" aria-hidden="true" />
-          <span className="font-medium">{orderItem?.service_type ?? '-'}</span>
-        </div>
-
-        {acUnit && (
-          <div className="text-sm space-y-1 pl-6">
-            <p><span className="text-ink-mute">Merk:</span> {acUnit.brand ?? '-'}</p>
-            <p><span className="text-ink-mute">Model:</span> {acUnit.model_number ?? '-'}</p>
-            {acUnit.serial_number && (
-              <p><span className="text-ink-mute">S/N:</span> {acUnit.serial_number}</p>
-            )}
-          </div>
-        )}
-
-        {orderItem?.description && (
-          <div className="flex items-start gap-2 text-sm">
-            <FileText className="h-4 w-4 text-ink-mute shrink-0 mt-0.5" aria-hidden="true" />
-            <span>{orderItem.description}</span>
-          </div>
-        )}
-      </div>
+      <ServiceInfoCard orderItem={orderItem} />
 
       {/* Notes */}
       {job.notes && (
-        <div className="rounded-lg border border-hairline dark:border-gray-700 bg-background dark:bg-[#1a1833] p-4">
-          <h3 className="font-medium text-sm text-ink-mute uppercase tracking-wide mb-2 dark:text-[#a5a3b5]">
+        <div className="rounded-lg border border-border dark:border-border bg-background dark:bg-surface-muted p-4">
+          <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-2 dark:text-muted-foreground">
             Catatan
           </h3>
           <p className="text-sm text-pretty whitespace-pre-wrap leading-relaxed">{job.notes}</p>
@@ -233,7 +180,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
       {/* Work timer (IN_PROGRESS only) */}
       {canonicalStatus === 'IN_PROGRESS' && (
-        <div className="rounded-lg border border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-[#252243] p-4 text-center">
+        <div className="rounded-lg border border-brand-200 bg-brand-50 dark:border-primary dark:bg-surface p-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Timer className="h-4 w-4 text-primary" aria-hidden="true" />
             <span className="text-sm font-medium text-primary">
@@ -252,7 +199,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
           <Button
             onClick={() => transitionMutation.mutate({ toStatus: 'EN_ROUTE' })}
             disabled={transitionMutation.isPending}
-            className="w-full bg-[#211c59] text-white font-semibold py-4 rounded-xl shadow-sm hover:bg-[#2d2a75] transition-colors h-auto text-base active:scale-[0.98] disabled:opacity-60"
+            className="w-full bg-primary text-white font-semibold py-4 rounded-xl shadow-sm hover:bg-primary-hover transition-colors h-auto text-base active:scale-[0.98] disabled:opacity-60"
             size="lg"
           >
             {transitionMutation.isPending ? 'Memproses...' : 'Berangkat'}
@@ -265,7 +212,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
               transitionMutation.mutate({ toStatus: 'IN_PROGRESS' })
             }}
             disabled={transitionMutation.isPending}
-            className="w-full bg-[#211c59] text-white font-semibold py-4 rounded-xl shadow-sm hover:bg-[#2d2a75] transition-colors h-auto text-base active:scale-[0.98] disabled:opacity-60"
+            className="w-full bg-primary text-white font-semibold py-4 rounded-xl shadow-sm hover:bg-primary-hover transition-colors h-auto text-base active:scale-[0.98] disabled:opacity-60"
             size="lg"
           >
             {transitionMutation.isPending ? 'Memproses...' : 'Mulai Kerja'}
@@ -279,7 +226,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
                   router.push(`/technician/job/${orderId}/complete`)
                 })
               }}
-            className="w-full bg-[#211c59] text-white font-semibold py-4 rounded-xl shadow-sm hover:bg-[#2d2a75] transition-colors h-auto text-base active:scale-[0.98]"
+            className="w-full bg-primary text-white font-semibold py-4 rounded-xl shadow-sm hover:bg-primary-hover transition-colors h-auto text-base active:scale-[0.98]"
             size="lg"
           >
             Selesai Kerja
@@ -287,7 +234,7 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
         )}
 
         {canonicalStatus === 'COMPLETED' && job.has_report && (
-          <div className="text-center text-sm text-ink-mute py-2">
+          <div className="text-center text-sm text-muted-foreground py-2">
             Laporan sudah disubmit
           </div>
         )}

@@ -1,17 +1,7 @@
 import type { LineItem } from './line-items'
+import type { InvoiceOrder, InvoiceType } from '@/types/invoices'
 
-export type InvoiceType = 'PROFORMA' | 'FINAL'
-
-export interface InvoiceOrder {
-  order_id: string
-  customer_id: string
-  status: string
-  order_type: string
-  customers?: {
-    customer_name?: string | null
-    phone_number?: string | null
-  } | null
-}
+export type { InvoiceOrder, InvoiceType }
 
 export interface InvoicePrefillDefaults {
   requestedInvoiceType: InvoiceType | null

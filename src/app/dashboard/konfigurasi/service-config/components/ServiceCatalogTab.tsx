@@ -8,53 +8,27 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Plus, Pencil, Trash2, Search, UploadCloud, Download } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from '@/components/ui/alert-dialog'
-import { 
-  getServiceCatalog, 
-  createServiceCatalogEntry, 
-  updateServiceCatalogEntry, 
-  deleteServiceCatalogEntry, 
-  bulkImportServiceCatalog,
-  bulkUpdateServiceCatalog,
+import { Loader2, Plus, Search, UploadCloud, Download } from 'lucide-react'
+import {
+  getServiceCatalog,
   getUnitTypes,
   getCapacityRanges,
-  getServiceTypes
+  getServiceTypes,
+  bulkImportServiceCatalog,
+  bulkUpdateServiceCatalog,
 } from '@/lib/actions/service-config'
 import { BulkImportDialog } from './BulkImportDialog'
-
-interface ServiceCatalogItem {
-  catalog_id: string
-  msn_code: string
-  unit_type_id: string
-  capacity_id: string
-  service_type_id: string
-  service_name: string
-  base_price: number
-  description?: string | null
-  is_active: boolean
-  unit_types?: { name: string }
-  capacity_ranges?: { capacity_label: string }
-  service_types?: { name: string }
-}
+import { ServiceCatalogTable, type ServiceCatalogItem } from './service-catalog-table'
+import { ServiceCatalogForm } from './service-catalog-form'
 
 export function ServiceCatalogTab() {
   const [items, setItems] = useState<ServiceCatalogItem[]>([])
-
-  // Master data
   const [unitTypes, setUnitTypes] = useState<{ unit_type_id: string; name: string }[]>([])
   const [capacityRanges, setCapacityRanges] = useState<{ capacity_id: string; unit_type_id: string; capacity_label: string }[]>([])
   const [serviceTypes, setServiceTypes] = useState<{ service_type_id: string; name: string }[]>([])
-
-  // Filters
   const [filterUnitTypeId, setFilterUnitTypeId] = useState<string>('ALL')
   const [filterCapacityId, setFilterCapacityId] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
-
-  // UI State
-  const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false)
@@ -62,31 +36,13 @@ export function ServiceCatalogTab() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<ServiceCatalogItem | null>(null)
   const [deletingItem, setDeletingItem] = useState<ServiceCatalogItem | null>(null)
-  
-  // Form State
-  const [msnCode, setMsnCode] = useState('')
-  const [unitTypeId, setUnitTypeId] = useState('')
-  const [capacityId, setCapacityId] = useState('')
-  const [serviceTypeId, setServiceTypeId] = useState('')
-  const [serviceName, setServiceName] = useState('')
-  const [basePrice, setBasePrice] = useState('')
-  const [description, setDescription] = useState('')
-  const [isActive, setIsActive] = useState(true)
-
   const { toast } = useToast()
 
   useEffect(() => { loadMasterData() }, [])
-  useEffect(() => {
-    loadData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterUnitTypeId, filterCapacityId, searchQuery])
+  useEffect(() => { loadData() }, [filterUnitTypeId, filterCapacityId, searchQuery])
 
   const loadMasterData = async () => {
-    const [uRes, cRes, sRes] = await Promise.all([
-      getUnitTypes(),
-      getCapacityRanges(),
-      getServiceTypes()
-    ])
+    const [uRes, cRes, sRes] = await Promise.all([getUnitTypes(), getCapacityRanges(), getServiceTypes()])
     if (uRes.success) setUnitTypes(uRes.data || [])
     if (cRes.success) setCapacityRanges(cRes.data || [])
     if (sRes.success) setServiceTypes(sRes.data || [])
@@ -97,76 +53,25 @@ export function ServiceCatalogTab() {
     const res = await getServiceCatalog({
       unitTypeId: filterUnitTypeId !== 'ALL' ? filterUnitTypeId : undefined,
       capacityId: filterCapacityId !== 'ALL' ? filterCapacityId : undefined,
-      search: searchQuery || undefined
+      search: searchQuery || undefined,
     })
     if (res.success) setItems(res.data || [])
     setIsFetching(false)
   }
 
   const handleOpenDialog = (item?: ServiceCatalogItem) => {
-    if (item) {
-      setEditingItem(item)
-      setMsnCode(item.msn_code)
-      setUnitTypeId(item.unit_type_id)
-      setCapacityId(item.capacity_id)
-      setServiceTypeId(item.service_type_id)
-      setServiceName(item.service_name)
-      setBasePrice(item.base_price.toString())
-      setDescription(item.description || '')
-      setIsActive(item.is_active)
-    } else {
-      setEditingItem(null)
-      setMsnCode('')
-      setUnitTypeId(filterUnitTypeId !== 'ALL' ? filterUnitTypeId : '')
-      setCapacityId(filterCapacityId !== 'ALL' ? filterCapacityId : '')
-      setServiceTypeId('')
-      setServiceName('')
-      setBasePrice('')
-      setDescription('')
-      setIsActive(true)
-    }
+    setEditingItem(item || null)
     setIsDialogOpen(true)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!unitTypeId || !capacityId || !serviceTypeId) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Silakan lengkapi pilihan Unit Type, Capacity, dan Tipe Service' })
-      return
-    }
-
-    setIsLoading(true)
-    const input = {
-      msn_code: msnCode,
-      unit_type_id: unitTypeId,
-      capacity_id: capacityId,
-      service_type_id: serviceTypeId,
-      service_name: serviceName,
-      base_price: parseFloat(basePrice) || 0,
-      description: description || null,
-      is_active: isActive
-    }
-
-    let res;
-    if (editingItem) {
-      res = await updateServiceCatalogEntry(editingItem.catalog_id, input)
-    } else {
-      res = await createServiceCatalogEntry(input)
-    }
-
-    if (res.success) {
-      toast({ title: 'Berhasil', description: 'Data disimpan.' })
-      setIsDialogOpen(false)
-      loadData()
-    } else {
-      toast({ variant: 'destructive', title: 'Error', description: res.error })
-    }
-    setIsLoading(false)
+  const handleDeleteItem = (item: ServiceCatalogItem) => {
+    setDeletingItem(item)
+    setIsDeleteDialogOpen(true)
   }
 
-  const handleDelete = async () => {
+  const handleDeleteConfirm = async () => {
     if (!deletingItem) return
-    setIsLoading(true)
+    const { deleteServiceCatalogEntry } = await import('@/lib/actions/service-config')
     const res = await deleteServiceCatalogEntry(deletingItem.catalog_id)
     if (res.success) {
       toast({ title: 'Berhasil', description: 'Data dihapus.' })
@@ -175,61 +80,44 @@ export function ServiceCatalogTab() {
     } else {
       toast({ variant: 'destructive', title: 'Error', description: res.error })
     }
-    setIsLoading(false)
   }
 
   const handleBulkImport = async (csvText: string) => {
-    setIsLoading(true)
     const res = await bulkImportServiceCatalog(csvText)
     if (res.success) {
-       toast({ title: 'Import Berhasil', description: res.message })
-       setIsBulkDialogOpen(false)
-       loadMasterData()
-       loadData()
+      toast({ title: 'Import Berhasil', description: res.message })
+      setIsBulkDialogOpen(false)
+      loadMasterData()
+      loadData()
     } else {
-       toast({ variant: 'destructive', title: 'Import Gagal', description: res.error })
+      toast({ variant: 'destructive', title: 'Import Gagal', description: res.error })
     }
-    setIsLoading(false)
   }
 
   const handleBulkUpdate = async (csvText: string) => {
-    setIsLoading(true)
     const res = await bulkUpdateServiceCatalog(csvText)
     if (res.success) {
-       toast({ title: 'Update Berhasil', description: res.message })
-       setIsBulkUpdateDialogOpen(false)
-       loadData()
+      toast({ title: 'Update Berhasil', description: res.message })
+      setIsBulkUpdateDialogOpen(false)
+      loadData()
     } else {
-       toast({ variant: 'destructive', title: 'Update Gagal', description: res.error })
+      toast({ variant: 'destructive', title: 'Update Gagal', description: res.error })
     }
-    setIsLoading(false)
   }
 
   const downloadTemplate = () => {
     const headers = ['catalog_id', 'msn_code', 'service_name', 'base_price', 'description', 'is_active']
-    const rows = items.map(item => [
-      item.catalog_id,
-      item.msn_code,
-      item.service_name,
-      item.base_price,
-      item.description || '',
-      item.is_active ? 'TRUE' : 'FALSE'
-    ])
+    const rows = items.map(item => [item.catalog_id, item.msn_code, item.service_name, item.base_price, item.description || '', item.is_active ? 'TRUE' : 'FALSE'])
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
-    a.download = 'service-catalog-template.csv'
-    a.click()
+    a.href = url; a.download = 'service-catalog-template.csv'; a.click()
     URL.revokeObjectURL(url)
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount)
-  }
-
-  const _availableCapacities = capacityRanges.filter(c => c.unit_type_id === (editingItem ? unitTypeId : filterUnitTypeId === 'ALL' ? unitTypeId : filterUnitTypeId || unitTypeId));
+  const filteredCapacities = capacityRanges.filter(c => c.unit_type_id === filterUnitTypeId)
+  const capacityDisabled = filterUnitTypeId === 'ALL'
 
   return (
     <div className="space-y-4">
@@ -239,16 +127,8 @@ export function ServiceCatalogTab() {
             <div className="w-[200px] space-y-2">
               <Label className="text-sm font-medium text-foreground">Filter Type AC</Label>
               {unitTypes.length > 3 ? (
-                <SearchableSelect
-                  options={[
-                    { id: 'ALL', label: 'Semua Type AC' },
-                    ...unitTypes.map(ut => ({ id: ut.unit_type_id, label: ut.name })),
-                  ]}
-                  value={filterUnitTypeId}
-                  onValueChange={setFilterUnitTypeId}
-                  placeholder="Semua Type"
-                  searchPlaceholder="Cari type AC..."
-                />
+                <SearchableSelect options={[{ id: 'ALL', label: 'Semua Type AC' }, ...unitTypes.map(ut => ({ id: ut.unit_type_id, label: ut.name }))]}
+                  value={filterUnitTypeId} onValueChange={setFilterUnitTypeId} placeholder="Semua Type" searchPlaceholder="Cari type AC..." />
               ) : (
                 <Select value={filterUnitTypeId} onValueChange={setFilterUnitTypeId}>
                   <SelectTrigger className="h-10"><SelectValue placeholder="Semua Type" /></SelectTrigger>
@@ -261,36 +141,19 @@ export function ServiceCatalogTab() {
             </div>
             <div className="w-[200px] space-y-2">
               <Label className="text-sm font-medium text-foreground">Filter Capacity</Label>
-              {(() => {
-                const filtered = capacityRanges.filter(c => c.unit_type_id === filterUnitTypeId)
-                const disabled = filterUnitTypeId === 'ALL'
-                if (filtered.length > 3) {
-                  return (
-                    <SearchableSelect
-                      options={[
-                        { id: 'ALL', label: 'Semua Capacity' },
-                        ...filtered.map(c => ({ id: c.capacity_id, label: c.capacity_label })),
-                      ]}
-                      value={filterCapacityId}
-                      onValueChange={setFilterCapacityId}
-                      placeholder="Semua Capacity"
-                      searchPlaceholder="Cari capacity..."
-                      className={disabled ? 'pointer-events-none opacity-50' : ''}
-                    />
-                  )
-                }
-                return (
-                  <Select value={filterCapacityId} onValueChange={setFilterCapacityId} disabled={disabled}>
-                    <SelectTrigger className="h-10"><SelectValue placeholder="Semua Capacity" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">Semua Capacity</SelectItem>
-                      {filtered.map(c =>
-                        <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                )
-              })()}
+              {filteredCapacities.length > 3 ? (
+                <SearchableSelect options={[{ id: 'ALL', label: 'Semua Capacity' }, ...filteredCapacities.map(c => ({ id: c.capacity_id, label: c.capacity_label }))]}
+                  value={filterCapacityId} onValueChange={setFilterCapacityId} placeholder="Semua Capacity" searchPlaceholder="Cari capacity..."
+                  className={capacityDisabled ? 'pointer-events-none opacity-50' : ''} />
+              ) : (
+                <Select value={filterCapacityId} onValueChange={setFilterCapacityId} disabled={capacityDisabled}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Semua Capacity" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Semua Capacity</SelectItem>
+                    {filteredCapacities.map(c => <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="flex-1 space-y-2">
               <Label className="text-sm font-medium text-foreground">Cari (MSN / Nama)</Label>
@@ -300,18 +163,10 @@ export function ServiceCatalogTab() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button onClick={downloadTemplate} variant="outline" className="gap-2">
-                <Download className="h-4 w-4" /> Download Template
-              </Button>
-              <Button onClick={() => setIsBulkUpdateDialogOpen(true)} variant="outline" className="gap-2">
-                <UploadCloud className="h-4 w-4" /> Bulk Update
-              </Button>
-              <Button onClick={() => setIsBulkDialogOpen(true)} variant="outline" className="gap-2">
-                 <UploadCloud className="h-4 w-4" /> Bulk Import
-              </Button>
-              <Button onClick={() => handleOpenDialog()} className="gap-2">
-                <Plus className="h-4 w-4" /> Tambah
-              </Button>
+              <Button onClick={downloadTemplate} variant="outline" className="gap-2"><Download className="h-4 w-4" /> Download Template</Button>
+              <Button onClick={() => setIsBulkUpdateDialogOpen(true)} variant="outline" className="gap-2"><UploadCloud className="h-4 w-4" /> Bulk Update</Button>
+              <Button onClick={() => setIsBulkDialogOpen(true)} variant="outline" className="gap-2"><UploadCloud className="h-4 w-4" /> Bulk Import</Button>
+              <Button onClick={() => handleOpenDialog()} className="gap-2"><Plus className="h-4 w-4" /> Tambah</Button>
             </div>
           </div>
         </CardContent>
@@ -323,185 +178,28 @@ export function ServiceCatalogTab() {
           <CardDescription>Master data harga berdasarkan MSN code, Unit Type, dan Capacity</CardDescription>
         </CardHeader>
         <CardContent>
-          {isFetching ? (
-            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-          ) : (
-            <div className="overflow-hidden rounded-xl border border-border/50 shadow-sm bg-card">
-            <Table>
-              <TableHeader className="[&_tr]:border-0">
-                <TableRow className="border-0">
-                  <TableHead>MSN Code</TableHead>
-                  <TableHead>Type AC</TableHead>
-                  <TableHead>Capacity</TableHead>
-                  <TableHead>Service Group</TableHead>
-                  <TableHead>Deskripsi Service</TableHead>
-                  <TableHead>Harga Base</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.catalog_id} className="border-0 hover:bg-muted/50">
-                    <TableCell className="font-mono font-bold text-primary">{item.msn_code}</TableCell>
-                    <TableCell>{item.unit_types?.name}</TableCell>
-                    <TableCell>{item.capacity_ranges?.capacity_label}</TableCell>
-                    <TableCell><span className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-xs">{item.service_types?.name}</span></TableCell>
-                    <TableCell className="font-medium">{item.service_name}</TableCell>
-                    <TableCell>{formatCurrency(item.base_price)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenDialog(item)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="sm" onClick={() => { setDeletingItem(item); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {items.length === 0 && (
-                  <TableRow className="border-0 hover:bg-muted/50">
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Tidak ada data catalog.</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-            </div>
-          )}
-
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="max-w-2xl rounded-xl border border-border/50 shadow-sm">
-              <DialogHeader>
-                <DialogTitle className="text-lg font-semibold text-foreground">{editingItem ? 'Edit' : 'Tambah'} Service Catalog</DialogTitle>
-                <DialogDescription>Input kombinasi service baru. Pastikan MSN Code unik.</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                     <Label className="text-sm font-medium text-foreground">MSN Code *</Label>
-                     <Input value={msnCode} onChange={e => setMsnCode(e.target.value)} required placeholder="Misal: CARERA001" className="h-10" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-foreground">Base Price *</Label>
-                      <Input type="number" value={basePrice} onChange={e => setBasePrice(e.target.value)} required placeholder="Misal: 150000" className="h-10" />
-                    </div>
-                 </div>
-                
-                 <div className="grid grid-cols-3 gap-4">
-                   <div className="space-y-2">
-                     <Label className="text-sm font-medium text-foreground">Type AC *</Label>
-                     {unitTypes.length > 3 ? (
-                       <SearchableSelect
-                         options={unitTypes.map(ut => ({ id: ut.unit_type_id, label: ut.name }))}
-                         value={unitTypeId}
-                         onValueChange={setUnitTypeId}
-                         placeholder="Pilih type AC"
-                         searchPlaceholder="Cari type AC..."
-                       />
-                     ) : (
-                       <Select value={unitTypeId} onValueChange={setUnitTypeId}>
-                         <SelectTrigger className="h-10"><SelectValue placeholder="Pilih type AC" /></SelectTrigger>
-                         <SelectContent>
-                           {unitTypes.map(ut => <SelectItem key={ut.unit_type_id} value={ut.unit_type_id}>{ut.name}</SelectItem>)}
-                         </SelectContent>
-                       </Select>
-                     )}
-                   </div>
-                   <div className="space-y-2">
-                     <Label className="text-sm font-medium text-foreground">Capacity *</Label>
-                     {(() => {
-                       const filtered = capacityRanges.filter(c => c.unit_type_id === unitTypeId)
-                       if (filtered.length > 3) {
-                         return (
-                           <SearchableSelect
-                             options={filtered.map(c => ({ id: c.capacity_id, label: c.capacity_label }))}
-                             value={capacityId}
-                             onValueChange={setCapacityId}
-                             placeholder="Pilih capacity"
-                             searchPlaceholder="Cari capacity..."
-                             className={!unitTypeId ? 'pointer-events-none opacity-50' : ''}
-                           />
-                         )
-                       }
-                       return (
-                         <Select value={capacityId} onValueChange={setCapacityId} disabled={!unitTypeId}>
-                           <SelectTrigger className="h-10"><SelectValue placeholder="Pilih capacity" /></SelectTrigger>
-                           <SelectContent>
-                             {filtered.map(c =>
-                               <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>
-                             )}
-                           </SelectContent>
-                         </Select>
-                       )
-                     })()}
-                   </div>
-                   <div className="space-y-2">
-                     <Label className="text-sm font-medium text-foreground">Master Service Type *</Label>
-                     {serviceTypes.length > 3 ? (
-                       <SearchableSelect
-                         options={serviceTypes.map(st => ({ id: st.service_type_id, label: st.name }))}
-                         value={serviceTypeId}
-                         onValueChange={setServiceTypeId}
-                         placeholder="Pilih service type"
-                         searchPlaceholder="Cari service type..."
-                       />
-                     ) : (
-                       <Select value={serviceTypeId} onValueChange={setServiceTypeId}>
-                         <SelectTrigger className="h-10"><SelectValue placeholder="Pilih service type" /></SelectTrigger>
-                         <SelectContent>
-                           {serviceTypes.map(st => <SelectItem key={st.service_type_id} value={st.service_type_id}>{st.name}</SelectItem>)}
-                         </SelectContent>
-                       </Select>
-                     )}
-                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground">Nama Service (di Invoice/Tampilan) *</Label>
-                  <Input value={serviceName} onChange={e => setServiceName(e.target.value)} required placeholder="Misal: Jasa Service Room Air (Checking)" className="h-10" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground">Keterangan Tambahan / Deskripsi</Label>
-                  <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Opsional" className="h-10" />
-                </div>
-
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
-                  <Button type="submit" disabled={isLoading}>{isLoading ? 'Menyimpan...' : 'Simpan'}</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          <BulkImportDialog 
-            open={isBulkDialogOpen}
-            onOpenChange={setIsBulkDialogOpen}
-            title="Bulk Import Service Catalog (CSV)"
-            description={<span>Paste data CSV dari Excel atau Drop File di atas. Sesuai format: <code>MSN Code, Type AC, Capacity, Tipe Service, Price</code></span>}
-            placeholder={"MSN Code,Type AC,Capacity,Tipe Service,Price\nCARERA001P,Room Air,0.5 - 1.5 HP,Jasa Service Room Air (Checking),100000"}
-            onImport={handleBulkImport}
-            isLoading={isLoading}
-          />
-
-          <BulkImportDialog 
-            open={isBulkUpdateDialogOpen}
-            onOpenChange={setIsBulkUpdateDialogOpen}
-            title="Bulk Update Service Catalog (CSV)"
-            description={<span>Update data catalog yang sudah ada. Format: <code>catalog_id, msn_code, service_name, base_price, description, is_active</code></span>}
-            placeholder={"catalog_id,msn_code,service_name,base_price,description,is_active\n123e4567,CARERA001,Jasa Service Room Air,100000,Checking AC,TRUE"}
-            onImport={handleBulkUpdate}
-            isLoading={isLoading}
-          />
-
-          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader><AlertDialogTitle>Hapus Data Harga?</AlertDialogTitle></AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Batal</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Hapus</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <ServiceCatalogTable items={items} isFetching={isFetching} onEdit={handleOpenDialog} onDelete={handleDeleteItem} />
         </CardContent>
       </Card>
+
+      <ServiceCatalogForm
+        open={isDialogOpen} onOpenChange={setIsDialogOpen} editingItem={editingItem}
+        unitTypes={unitTypes} capacityRanges={capacityRanges} serviceTypes={serviceTypes}
+        onSave={loadData} deleteItem={deletingItem} onDeleteDialogOpen={isDeleteDialogOpen}
+        onDeleteDialogChange={setIsDeleteDialogOpen} onDeleteConfirm={handleDeleteConfirm}
+      />
+
+      <BulkImportDialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}
+        title="Bulk Import Service Catalog (CSV)"
+        description={<span>Paste data CSV dari Excel atau Drop File di atas. Sesuai format: <code>MSN Code, Type AC, Capacity, Tipe Service, Price</code></span>}
+        placeholder={"MSN Code,Type AC,Capacity,Tipe Service,Price\nCARERA001P,Room Air,0.5 - 1.5 HP,Jasa Service Room Air (Checking),100000"}
+        onImport={handleBulkImport} isLoading={false} />
+
+      <BulkImportDialog open={isBulkUpdateDialogOpen} onOpenChange={setIsBulkUpdateDialogOpen}
+        title="Bulk Update Service Catalog (CSV)"
+        description={<span>Update data catalog yang sudah ada. Format: <code>catalog_id, msn_code, service_name, base_price, description, is_active</code></span>}
+        placeholder={"catalog_id,msn_code,service_name,base_price,description,is_active\n123e4567,CARERA001,Jasa Service Room Air,100000,Checking AC,TRUE"}
+        onImport={handleBulkUpdate} isLoading={false} />
     </div>
   )
 }

@@ -75,11 +75,11 @@ export const OrderCard = forwardRef<HTMLDivElement, OrderCardProps>(function Ord
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={cn(
-        'rounded-md bg-background border border-hairline p-3 shadow-sm cursor-pointer',
-        'hover:shadow-md hover:border-hairline transition-shadow',
+        'rounded-md bg-background border border-border p-3 shadow-sm cursor-pointer',
+        'hover:shadow-md hover:border-border transition-shadow',
         URGENCY_BORDER[urgency],
         isDragging && 'opacity-50 ring-2 ring-primary',
-        isSelectionMode && isSelected && 'ring-2 ring-primary bg-canvas-soft',
+        isSelectionMode && isSelected && 'ring-2 ring-primary bg-surface-muted',
         isFocused && 'ring-2 ring-primary/70',
         className
       )}
@@ -99,7 +99,7 @@ export const OrderCard = forwardRef<HTMLDivElement, OrderCardProps>(function Ord
             <p className="text-xl font-bold text-foreground truncate">
               {order.customers?.customer_name ?? 'Customer'}
             </p>
-            <p className="text-base text-ink-mute truncate">{order.order_id}</p>
+            <p className="text-base text-muted-foreground truncate">{order.order_id}</p>
           </div>
         </div>
         {!hideStatusBadge && <StatusBadge status={order.status} size="sm" />}
@@ -109,7 +109,7 @@ export const OrderCard = forwardRef<HTMLDivElement, OrderCardProps>(function Ord
         {serviceType && <ServiceTypeBadge serviceType={serviceType} size="sm" />}
       </div>
 
-      <div className="space-y-1 text-base text-ink-mute">
+      <div className="space-y-1 text-base text-muted-foreground">
         {dateStr && (
           <div className="flex items-center gap-1.5">
             <Calendar className="h-3 w-3" />

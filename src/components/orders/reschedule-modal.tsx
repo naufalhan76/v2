@@ -114,7 +114,7 @@ export function RescheduleModal({
                   type="button"
                   className={cn(
                     'h-11 w-full justify-start text-left font-normal sm:h-9',
-                    !newDate && 'text-ink-mute'
+                    !newDate && 'text-muted-foreground'
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />

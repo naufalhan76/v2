@@ -6,7 +6,7 @@ function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("rounded-md bg-canvas-soft animate-pulse", className)}
+      className={cn("rounded-md bg-surface-muted animate-pulse", className)}
       {...props}
     />
   )
@@ -15,7 +15,7 @@ function Skeleton({
 // Card Skeleton untuk mencegah layout shift
 export function CardSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn("rounded-lg border border-hairline bg-background text-foreground", className)}>
+    <div className={cn("rounded-lg border border-border bg-background text-foreground", className)}>
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between space-y-0 pb-2">
           <Skeleton className="h-4 w-[100px]" />
@@ -33,7 +33,7 @@ export function CardSkeleton({ className }: { className?: string }) {
 export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
   return (
     <div className="w-full">
-      <div className="border-b border-hairline">
+      <div className="border-b border-border">
         <div className="flex items-center p-3 sm:p-4 gap-3 sm:gap-4">
           {Array.from({ length: columns }).map((_, i) => (
             <Skeleton
@@ -47,7 +47,7 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
           ))}
         </div>
       </div>
-      <div className="divide-y divide-hairline">
+      <div className="divide-y divide-border">
         {Array.from({ length: rows }).map((_, rowIndex) => (
           <div key={rowIndex} className="flex items-center p-3 sm:p-4 gap-3 sm:gap-4">
             {Array.from({ length: columns }).map((_, colIndex) => (
@@ -68,8 +68,8 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
 
 export function KpiCardSkeleton() {
   return (
-    <div className="relative overflow-hidden rounded-xl border-0 bg-canvas-soft p-5">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-soft" />
+    <div className="relative overflow-hidden rounded-xl border-0 bg-surface-muted p-5">
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-100" />
       <div className="flex items-center justify-between pl-3">
         <div className="flex items-center gap-3">
           <Skeleton className="h-10 w-10 rounded-full shrink-0" />
@@ -86,7 +86,7 @@ export function KpiCardSkeleton() {
 
 export function ChartSkeleton({ height = 400 }: { height?: number }) {
   return (
-    <div className="rounded-lg border border-hairline bg-background">
+    <div className="rounded-lg border border-border bg-background">
       <div className="p-6 space-y-4">
         <div className="space-y-2">
           <Skeleton className="h-6 w-[200px]" />
@@ -127,7 +127,7 @@ export function ListSkeleton({ items = 5 }: { items?: number }) {
   return (
     <div className="space-y-4">
       {Array.from({ length: items }).map((_, i) => (
-        <div key={i} className="flex items-center space-x-4 p-4 border border-hairline rounded-lg">
+        <div key={i} className="flex items-center space-x-4 p-4 border border-border rounded-lg">
           <Skeleton className="h-10 w-10 rounded-full" />
           <div className="space-y-2 flex-1">
             <Skeleton className="h-4 w-[200px]" />

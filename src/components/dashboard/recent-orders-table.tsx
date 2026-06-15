@@ -86,17 +86,17 @@ export function RecentOrdersTable({ limit = 5 }: { limit?: number }) {
 
   if (loading) {
     return (
-      <Card className="border-hairline shadow-none bg-background animate-pulse">
+      <Card className="border-border shadow-none bg-background animate-pulse">
         <CardHeader className="pb-2">
-          <div className="h-5 w-40 bg-canvas-soft rounded" />
+          <div className="h-5 w-40 bg-surface-muted rounded" />
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="h-4 w-32 bg-canvas-soft rounded" />
-                <div className="h-4 w-20 bg-canvas-soft rounded" />
-                <div className="h-4 w-24 bg-canvas-soft rounded ml-auto" />
+                <div className="h-4 w-32 bg-surface-muted rounded" />
+                <div className="h-4 w-20 bg-surface-muted rounded" />
+                <div className="h-4 w-24 bg-surface-muted rounded ml-auto" />
               </div>
             ))}
           </div>
@@ -106,7 +106,7 @@ export function RecentOrdersTable({ limit = 5 }: { limit?: number }) {
   }
 
   return (
-    <Card className="border-hairline shadow-none bg-background transition-shadow hover:shadow-md">
+    <Card className="border-border shadow-none bg-background transition-shadow hover:shadow-md">
       <CardHeader className="pb-2 flex flex-row items-center gap-2">
         <ClipboardList className="h-4 w-4 text-primary" />
         <CardTitle className="text-base font-semibold tracking-tight text-foreground">
@@ -115,8 +115,8 @@ export function RecentOrdersTable({ limit = 5 }: { limit?: number }) {
       </CardHeader>
       <CardContent className="px-2">
         {orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-sm text-ink-mute gap-2">
-            <Inbox className="h-6 w-6 text-ink-faint" />
+          <div className="flex flex-col items-center justify-center py-10 text-sm text-muted-foreground gap-2">
+            <Inbox className="h-6 w-6 text-muted-foreground" />
             <span>Belum ada order</span>
           </div>
         ) : (
@@ -140,10 +140,10 @@ export function RecentOrdersTable({ limit = 5 }: { limit?: number }) {
                     <TableCell>
                       <StatusBadge status={order.status} />
                     </TableCell>
-                    <TableCell className="text-ink-mute">
+                    <TableCell className="text-muted-foreground">
                       {order.order_type}
                     </TableCell>
-                    <TableCell className="text-ink-mute tabular-nums whitespace-nowrap">
+                    <TableCell className="text-muted-foreground tabular-nums whitespace-nowrap">
                       {formatScheduledDate(order.order_date)}
                     </TableCell>
                   </TableRow>

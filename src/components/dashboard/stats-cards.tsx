@@ -103,9 +103,9 @@ export function StatsCards() {
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i} className="animate-pulse shadow-none">
             <CardContent className="p-6">
-              <div className="mb-3 h-4 w-24 rounded bg-canvas-soft" />
-              <div className="mb-2 h-8 w-32 rounded bg-canvas-soft" />
-              <div className="h-5 w-20 rounded bg-canvas-soft" />
+              <div className="mb-3 h-4 w-24 rounded bg-surface-muted" />
+              <div className="mb-2 h-8 w-32 rounded bg-surface-muted" />
+              <div className="h-5 w-20 rounded bg-surface-muted" />
             </CardContent>
           </Card>
         ))}
@@ -133,7 +133,7 @@ export function StatsCards() {
                 'group shadow-none transition-shadow hover:shadow-md',
                 isPrimary
                   ? 'border-0 bg-primary text-primary-foreground'
-                  : 'border-hairline bg-canvas-soft'
+                  : 'border-border bg-surface-muted'
               )}
             >
               <CardContent className="p-6">
@@ -142,7 +142,7 @@ export function StatsCards() {
                     className={cn(
                       isPrimary
                         ? 'text-xl font-[540] text-primary-foreground/80'
-                        : 'text-sm font-[460] text-ink-mute'
+                        : 'text-sm font-[460] text-muted-foreground'
                     )}
                   >
                     {kpi.label}
@@ -152,7 +152,7 @@ export function StatsCards() {
                       'h-3.5 w-3.5 transition-all group-hover:translate-x-0.5',
                       isPrimary
                         ? 'text-primary-foreground/30 group-hover:text-primary-foreground/70'
-                        : 'text-ink-faint group-hover:text-ink-mute'
+                        : 'text-muted-foreground group-hover:text-muted-foreground'
                     )}
                   />
                 </div>

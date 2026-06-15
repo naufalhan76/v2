@@ -75,18 +75,18 @@ export function TopTechniciansList({
 
   if (loading) {
     return (
-      <Card className="border-hairline shadow-none bg-background animate-pulse">
+      <Card className="border-border shadow-none bg-background animate-pulse">
         <CardHeader className="pb-2">
-          <div className="h-5 w-48 bg-canvas-soft rounded" />
+          <div className="h-5 w-48 bg-surface-muted rounded" />
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="h-9 w-9 bg-canvas-soft rounded-full" />
+                <div className="h-9 w-9 bg-surface-muted rounded-full" />
                 <div className="flex-1 space-y-1">
-                  <div className="h-3.5 w-28 bg-canvas-soft rounded" />
-                  <div className="h-3 w-20 bg-canvas-soft rounded" />
+                  <div className="h-3.5 w-28 bg-surface-muted rounded" />
+                  <div className="h-3 w-20 bg-surface-muted rounded" />
                 </div>
               </div>
             ))}
@@ -97,7 +97,7 @@ export function TopTechniciansList({
   }
 
   return (
-    <Card className="border-hairline shadow-none bg-background transition-shadow hover:shadow-md">
+    <Card className="border-border shadow-none bg-background transition-shadow hover:shadow-md">
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <Medal className="h-4 w-4 text-status-pending" />
@@ -108,8 +108,8 @@ export function TopTechniciansList({
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-sm text-ink-mute gap-2">
-            <Wrench className="h-6 w-6 text-ink-faint" />
+          <div className="flex flex-col items-center justify-center py-10 text-sm text-muted-foreground gap-2">
+            <Wrench className="h-6 w-6 text-muted-foreground" />
             <span>Belum ada data teknisi</span>
           </div>
         ) : (
@@ -121,17 +121,17 @@ export function TopTechniciansList({
                 <li
                   key={tech.id}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-canvas-soft',
-                    index < 3 && 'bg-canvas-soft'
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-surface-muted',
+                    index < 3 && 'bg-surface-muted'
                   )}
                 >
                   {/* Rank badge */}
-                  <span className="w-5 text-center text-xs font-bold text-ink-mute tabular-nums">
+                  <span className="w-5 text-center text-xs font-bold text-muted-foreground tabular-nums">
                     {index + 1}
                   </span>
 
                   {/* Avatar */}
-                  <Avatar className="h-9 w-9 border border-hairline">
+                  <Avatar className="h-9 w-9 border border-border">
                     <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
                       {getInitials(tech.name)}
                     </AvatarFallback>
@@ -142,7 +142,7 @@ export function TopTechniciansList({
                     <p className="text-sm text-foreground truncate">
                       {tech.name}
                     </p>
-                    <p className="text-sm text-ink-mute">
+                    <p className="text-sm text-muted-foreground">
                       {tech.completed} selesai
                       <span className="mx-1">·</span>
                       {tech.total} total
@@ -168,7 +168,7 @@ export function TopTechniciansList({
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
-                          className="h-7 w-7 inline-flex items-center justify-center rounded-md text-ink-mute hover:text-foreground hover:bg-canvas-soft transition-colors"
+                          className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-surface-muted transition-colors"
                           aria-label={`Menu untuk ${tech.name}`}
                         >
                           <MoreHorizontal className="h-4 w-4" />

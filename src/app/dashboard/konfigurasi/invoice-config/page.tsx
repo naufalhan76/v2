@@ -4,17 +4,15 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, Save, Building2, Banknote, FileText } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getInvoiceConfig, updateInvoiceConfig } from '@/lib/actions/invoice-config'
 import { parseBankAccounts } from '@/lib/bank-accounts'
 import { BankAccountsSection, type BankAccount } from './bank-accounts-section'
+import { CompanyTab } from './_components/company-tab'
+import { InvoiceSettingsTab } from './_components/invoice-settings-tab'
 
 const invoiceConfigSchema = z.object({
   companyName: z.string().min(1, 'Nama perusahaan wajib diisi'),
@@ -38,34 +36,16 @@ export default function InvoiceConfigPage() {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const { toast } = useToast()
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    setValue: _setValue,
-    watch: _watch,
-  } = useForm<InvoiceConfigFormData>({
+  const form = useForm<InvoiceConfigFormData>({
     resolver: zodResolver(invoiceConfigSchema),
     defaultValues: {
-      companyName: '',
-      companyAddress: '',
-      companyPhone: '',
-      companyEmail: '',
-      companyWebsite: '',
-      npwp: '',
-      taxPercentage: '11.00',
-      defaultDueDays: '30',
-      invoicePrefix: 'INV',
-      logoUrl: '',
-      termsConditions: '',
+      companyName: '', companyAddress: '', companyPhone: '', companyEmail: '',
+      companyWebsite: '', npwp: '', taxPercentage: '11.00', defaultDueDays: '30',
+      invoicePrefix: 'INV', logoUrl: '', termsConditions: '',
     },
   })
 
-  useEffect(() => {
-    loadConfig()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  useEffect(() => { loadConfig() }, [])
 
   const loadConfig = async () => {
     try {
@@ -73,8 +53,7 @@ export default function InvoiceConfigPage() {
       const config = await getInvoiceConfig()
       if (config) {
         setBankAccounts(parseBankAccounts(config.bank_accounts))
-
-        reset({
+        form.reset({
           companyName: config.company_name,
           companyAddress: config.company_address || '',
           companyPhone: config.company_phone || '',
@@ -89,72 +68,38 @@ export default function InvoiceConfigPage() {
         })
       }
     } catch (_error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Gagal memuat konfigurasi invoice',
-      })
-    } finally {
-      setIsFetching(false)
-    }
+      toast({ variant: 'destructive', title: 'Error', description: 'Gagal memuat konfigurasi invoice' })
+    } finally { setIsFetching(false) }
   }
 
   const onSubmit = async (data: InvoiceConfigFormData) => {
     try {
       setIsLoading(true)
-
-      // Convert bank accounts to API format
       const bankAccountsData = bankAccounts.map(acc => ({
-        bank: acc.bank,
-        account_number: acc.account_number,
-        account_name: acc.account_name,
+        bank: acc.bank, account_number: acc.account_number, account_name: acc.account_name,
       }))
-
       await updateInvoiceConfig({
-        company_name: data.companyName,
-        company_address: data.companyAddress,
-        company_phone: data.companyPhone,
-        company_email: data.companyEmail,
+        company_name: data.companyName, company_address: data.companyAddress,
+        company_phone: data.companyPhone, company_email: data.companyEmail,
         company_website: data.companyWebsite,
         bank_accounts: bankAccountsData.length > 0 ? bankAccountsData : undefined,
-        npwp: data.npwp,
-        default_tax_percentage: parseFloat(data.taxPercentage),
-        default_due_days: parseInt(data.defaultDueDays),
-        invoice_prefix: data.invoicePrefix,
-        logo_url: data.logoUrl,
-        terms_conditions_template: data.termsConditions,
+        npwp: data.npwp, default_tax_percentage: parseFloat(data.taxPercentage),
+        default_due_days: parseInt(data.defaultDueDays), invoice_prefix: data.invoicePrefix,
+        logo_url: data.logoUrl, terms_conditions_template: data.termsConditions,
       })
-
-      toast({
-        title: 'Berhasil',
-        description: 'Konfigurasi invoice berhasil disimpan',
-      })
+      toast({ title: 'Berhasil', description: 'Konfigurasi invoice berhasil disimpan' })
     } catch (_error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Gagal menyimpan konfigurasi invoice',
-      })
-    } finally {
-      setIsLoading(false)
-    }
+      toast({ variant: 'destructive', title: 'Error', description: 'Gagal menyimpan konfigurasi invoice' })
+    } finally { setIsLoading(false) }
   }
 
   if (isFetching) {
     return (
       <div className="space-y-6">
-        <div className="space-y-2">
-          <div className="h-8 w-64 rounded bg-muted animate-pulse" />
-          <div className="h-4 w-80 rounded bg-muted animate-pulse" />
-        </div>
+        <div className="space-y-2"><div className="h-8 w-64 rounded bg-muted animate-pulse" /><div className="h-4 w-80 rounded bg-muted animate-pulse" /></div>
         <div className="h-10 w-full rounded bg-muted animate-pulse" />
         <div className="rounded-xl border border-border/50 bg-card p-6 space-y-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="space-y-2">
-              <div className="h-4 w-32 rounded bg-muted animate-pulse" />
-              <div className="h-10 w-full rounded bg-muted animate-pulse" />
-            </div>
-          ))}
+          {Array.from({ length: 6 }).map((_, i) => (<div key={i} className="space-y-2"><div className="h-4 w-32 rounded bg-muted animate-pulse" /><div className="h-10 w-full rounded bg-muted animate-pulse" /></div>))}
           <div className="h-10 w-32 rounded bg-muted animate-pulse" />
         </div>
       </div>
@@ -165,198 +110,28 @@ export default function InvoiceConfigPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">Konfigurasi Invoice</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">
-          Kelola informasi perusahaan, bank, dan pengaturan invoice
-        </p>
+        <p className="text-muted-foreground text-sm sm:text-base">Kelola informasi perusahaan, bank, dan pengaturan invoice</p>
       </div>
-
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
         <Tabs defaultValue="company" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3 rounded-xl border border-border/50 bg-muted/50 p-1 h-auto">
             <TabsTrigger value="company" className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg py-2 text-xs sm:text-sm">
-              <Building2 className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Data Perusahaan</span>
-              <span className="sm:hidden">Perusahaan</span>
+              <Building2 className="h-4 w-4 shrink-0" /><span className="hidden sm:inline">Data Perusahaan</span><span className="sm:hidden">Perusahaan</span>
             </TabsTrigger>
             <TabsTrigger value="bank" className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg py-2 text-xs sm:text-sm">
-              <Banknote className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Informasi Bank</span>
-              <span className="sm:hidden">Bank</span>
+              <Banknote className="h-4 w-4 shrink-0" /><span className="hidden sm:inline">Informasi Bank</span><span className="sm:hidden">Bank</span>
             </TabsTrigger>
             <TabsTrigger value="invoice" className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg py-2 text-xs sm:text-sm">
-              <FileText className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">Pengaturan Invoice</span>
-              <span className="sm:hidden">Invoice</span>
+              <FileText className="h-4 w-4 shrink-0" /><span className="hidden sm:inline">Pengaturan Invoice</span><span className="sm:hidden">Invoice</span>
             </TabsTrigger>
           </TabsList>
-
-          {/* Company Information Tab */}
-          <TabsContent value="company">
-            <Card className="rounded-xl border border-border/50 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-foreground">Informasi Perusahaan</CardTitle>
-                <CardDescription>
-                  Informasi ini akan ditampilkan di header invoice
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="companyName" className="text-sm font-medium text-foreground">
-                    Nama Perusahaan <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="companyName"
-                    placeholder="PT. AC Service Indonesia"
-                    className="h-10"
-                    {...register('companyName')}
-                  />
-                  {errors.companyName && (
-                    <p className="text-sm text-destructive">{errors.companyName.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="companyAddress" className="text-sm font-medium text-foreground">Alamat</Label>
-                  <Textarea
-                    id="companyAddress"
-                    placeholder="Jl. Contoh No. 123, Jakarta Selatan"
-                    rows={3}
-                    {...register('companyAddress')}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="companyPhone" className="text-sm font-medium text-foreground">Telepon</Label>
-                    <Input
-                      id="companyPhone"
-                      placeholder="021-12345678"
-                      className="h-10"
-                      {...register('companyPhone')}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="companyEmail" className="text-sm font-medium text-foreground">Email</Label>
-                    <Input
-                      id="companyEmail"
-                      type="email"
-                      placeholder="info@acservice.com"
-                      className="h-10"
-                      {...register('companyEmail')}
-                    />
-                    {errors.companyEmail && (
-                      <p className="text-sm text-destructive">{errors.companyEmail.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="npwp" className="text-sm font-medium text-foreground">NPWP</Label>
-                  <Input
-                    id="npwp"
-                    placeholder="12.345.678.9-012.000"
-                    className="h-10"
-                    {...register('npwp')}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="logoUrl" className="text-sm font-medium text-foreground">URL Logo</Label>
-                  <Input
-                    id="logoUrl"
-                    placeholder="https://example.com/logo.png"
-                    className="h-10"
-                    {...register('logoUrl')}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    URL logo perusahaan yang akan ditampilkan di invoice
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Bank Information Tab */}
-          <TabsContent value="bank">
-            <BankAccountsSection
-              accounts={bankAccounts}
-              onChange={setBankAccounts}
-            />
-          </TabsContent>
-
-          {/* Invoice Settings Tab */}
-          <TabsContent value="invoice">
-            <Card className="rounded-xl border border-border/50 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold text-foreground">Pengaturan Invoice</CardTitle>
-                <CardDescription>
-                  Konfigurasi format dan ketentuan invoice
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="invoicePrefix" className="text-sm font-medium text-foreground">
-                    Prefix Invoice <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="invoicePrefix"
-                    placeholder="INV"
-                    className="h-10"
-                    {...register('invoicePrefix')}
-                  />
-                  {errors.invoicePrefix && (
-                    <p className="text-sm text-destructive">{errors.invoicePrefix.message}</p>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    Format: {register('invoicePrefix').name || 'INV'}/2025/01/0001
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="defaultDueDays" className="text-sm font-medium text-foreground">Jatuh Tempo (hari)</Label>
-                  <Input
-                    id="defaultDueDays"
-                    placeholder="30"
-                    type="number"
-                    className="h-10"
-                    {...register('defaultDueDays')}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Jumlah hari dari tanggal invoice hingga jatuh tempo
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="termsConditions" className="text-sm font-medium text-foreground">Syarat & Ketentuan</Label>
-                  <Textarea
-                    id="termsConditions"
-                    placeholder="Terima kasih atas kepercayaan Anda..."
-                    rows={4}
-                    {...register('termsConditions')}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Teks yang akan ditampilkan di bagian bawah invoice
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          <TabsContent value="company"><CompanyTab form={form as any} /></TabsContent>
+          <TabsContent value="bank"><BankAccountsSection accounts={bankAccounts} onChange={setBankAccounts} /></TabsContent>
+          <TabsContent value="invoice"><InvoiceSettingsTab form={form as any} /></TabsContent>
         </Tabs>
-
         <div className="flex justify-end mt-6">
           <Button type="submit" disabled={isLoading} className="w-full sm:w-auto sm:min-w-[150px]">
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Menyimpan...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Simpan Konfigurasi
-              </>
-            )}
+            {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Menyimpan...</> : <><Save className="mr-2 h-4 w-4" />Simpan Konfigurasi</>}
           </Button>
         </div>
       </form>

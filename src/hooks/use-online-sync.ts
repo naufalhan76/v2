@@ -21,8 +21,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   drainQueue,
   getPendingCount,
-  type DrainResult,
 } from '@/lib/offline/sync-manager'
+import type { DrainResult } from '@/lib/offline/sync-types'
 
 export type UseOnlineSyncState = {
   isOnline: boolean

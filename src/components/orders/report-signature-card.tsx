@@ -39,23 +39,23 @@ export function ReportSignatureCard({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-lg font-[540] text-foreground">
-        <PenLine className="h-4 w-4 text-ink-mute" />
+        <PenLine className="h-4 w-4 text-muted-foreground" />
         Tanda Tangan Customer
       </div>
 
       {!hasSignature ? (
-        <p className="rounded-md border border-dashed border-hairline p-3 text-base text-ink-mute">
+        <p className="rounded-md border border-dashed border-border p-3 text-base text-muted-foreground">
           Belum ada tanda tangan customer.
         </p>
       ) : isLoading ? (
         <Skeleton className="h-32 w-full" />
       ) : !signatureUrl ? (
-        <p className="rounded-md border border-dashed border-hairline p-3 text-base text-destructive">
+        <p className="rounded-md border border-dashed border-border p-3 text-base text-destructive">
           Gagal memuat signature. Coba refresh halaman.
         </p>
       ) : (
-        <div className="space-y-2 rounded-md border border-hairline p-3">
-          <div className="relative h-32 w-full overflow-hidden rounded bg-canvas-soft">
+        <div className="space-y-2 rounded-md border border-border p-3">
+          <div className="relative h-32 w-full overflow-hidden rounded bg-surface-muted">
             <Image
               src={signatureUrl}
               alt={`Tanda tangan ${customerNameSigned ?? 'customer'}`}
@@ -65,8 +65,8 @@ export function ReportSignatureCard({
               unoptimized
             />
           </div>
-          <div className="flex items-start gap-2 text-base text-ink-mute">
-            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-emerald-600" />
+          <div className="flex items-start gap-2 text-base text-muted-foreground">
+            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-status-paid" />
             <div className="space-y-0.5">
               <p>
                 Ditandatangani oleh{' '}

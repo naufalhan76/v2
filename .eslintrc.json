@@ -5,6 +5,32 @@
     "@typescript-eslint/no-explicit-any": "warn",
     "react-hooks/rules-of-hooks": "warn",
     "react-hooks/exhaustive-deps": "warn",
-    "@next/next/no-img-element": "warn"
-  }
+    "@next/next/no-img-element": "warn",
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "JSXAttribute[name.name='className'] Literal[value=/(bg|text|border|ring|from|to|via|fill|stroke)-\\[#[0-9a-fA-F]{3,8}\\]/]",
+        "message": "Arbitrary hex color classes are forbidden. Use semantic tokens (bg-primary, text-foreground, bg-status-pending-bg) instead. See DESIGN.md."
+      },
+      {
+        "selector": "JSXAttribute[name.name='className'] Literal[value=/(dark|hover|focus|active|disabled|group-hover|peer):(bg|text|border|ring|from|to|via)-\\[#[0-9a-fA-F]{3,8}\\]/]",
+        "message": "Arbitrary hex color classes (with variants) are forbidden. Use semantic tokens with the same variant prefix instead. See DESIGN.md."
+      },
+      {
+        "selector": "JSXAttribute[name.name='className'] TemplateElement[value.raw=/(bg|text|border|ring|from|to|via|fill|stroke)-\\[#[0-9a-fA-F]{3,8}\\]/]",
+        "message": "Arbitrary hex color classes are forbidden in template literals. Use semantic tokens. See DESIGN.md."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/app/api/invoices/send-email/email-template.ts",
+        "src/lib/brand-tokens.ts"
+      ],
+      "rules": {
+        "no-restricted-syntax": "off"
+      }
+    }
+  ]
 }

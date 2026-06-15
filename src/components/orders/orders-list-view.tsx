@@ -84,8 +84,8 @@ export function OrdersListView({ orders, isLoading, hasFilters, onRowClick }: Or
   return (
     <div className="space-y-3">
       {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-hairline bg-canvas-soft px-3 py-2">
-          <p className="text-base text-ink-mute">{selectedIds.length} order dipilih</p>
+        <div className="flex items-center justify-between rounded-lg border border-border bg-surface-muted px-3 py-2">
+          <p className="text-base text-muted-foreground">{selectedIds.length} order dipilih</p>
           <Button
             variant="outline"
             size="sm"
@@ -147,7 +147,7 @@ export function OrdersListView({ orders, isLoading, hasFilters, onRowClick }: Or
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-base text-ink-mute">
+        <p className="text-base text-muted-foreground">
           Menampilkan {table.getRowModel().rows.length} dari {orders.length} order
         </p>
         <div className="flex gap-2">

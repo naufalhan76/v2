@@ -3,53 +3,12 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getOrders, getOrderById, cancelOrder } from '@/lib/actions/orders'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { SortableTableHead } from '@/components/ui/sortable-table-head'
-import { useSortableTable } from '@/hooks/use-sortable-table'
-import { CheckCircle, Search, Eye, Check, X, User, MapPin, Phone, Mail, Building } from 'lucide-react'
-import { format } from 'date-fns'
-import { cn, formatPhone } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
-import { StatusBadge } from '@/components/orders/status-badge'
+import { useSortableTable } from '@/hooks/use-sortable-table'
 import { createClient } from '@/lib/supabase-browser'
 import { logger } from '@/lib/logger'
-
-const SERVICE_TYPES = [
-  { value: 'REFILL_FREON', label: 'Refill Freon' },
-  { value: 'CLEANING', label: 'Cleaning' },
-  { value: 'REPAIR', label: 'Repair' },
-  { value: 'INSTALLATION', label: 'Installation' },
-  { value: 'INSPECTION', label: 'Inspection' },
-]
-
+import { PendingOrdersTable } from './_components/pending-orders-table'
+import { OrderDialogs } from './_components/order-dialogs'
 
 export default function AcceptOrderPage() {
   const queryClient = useQueryClient()
@@ -80,7 +39,6 @@ export default function AcceptOrderPage() {
     const searchLower = searchQuery.toLowerCase()
     const orderId = (o.order_id as string)?.toLowerCase() || ''
     const customerName = o.customers?.customer_name?.toLowerCase() || ''
-
     return orderId.includes(searchLower) || customerName.includes(searchLower)
   })
 
@@ -90,40 +48,26 @@ export default function AcceptOrderPage() {
     direction: 'desc'
   })
 
-  const handleOrderAction = async (orderId: string, newStatus: 'ACCEPTED' | 'CANCELLED') => {
+  const handleOrderAction = async (orderId: string, type: 'accept' | 'cancel') => {
     setIsProcessing(true)
     try {
-      if (newStatus === 'CANCELLED') {
-        // Use cancelOrder action which handles AC units
+      const newStatus = type === 'accept' ? 'ACCEPTED' : 'CANCELLED'
+      if (type === 'cancel') {
         const result = await cancelOrder(orderId, 'Order cancelled by admin')
-        
-        if (!result.success) {
-          throw new Error(result.error)
-        }
+        if (!result.success) throw new Error(result.error)
       } else {
-        // ACCEPTED: direct update
         const supabase = createClient()
-        
         const { error } = await supabase
           .from('orders')
-          .update({
-            status: newStatus,
-            updated_at: new Date().toISOString()
-          })
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
           .eq('order_id', orderId)
-        
         if (error) throw error
       }
-      
       toast({
         title: 'Success',
-        description: `Order ${newStatus === 'ACCEPTED' ? 'accepted' : 'cancelled'} successfully`
+        description: `Order ${type === 'accept' ? 'accepted' : 'cancelled'} successfully`
       })
-      
-      // Refresh orders list
       queryClient.invalidateQueries({ queryKey: ['orders'] })
-      
-      // Close dialogs
       setActionOrderId(null)
       setActionType(null)
     } catch (error) {
@@ -146,381 +90,37 @@ export default function AcceptOrderPage() {
         <p className='text-muted-foreground'>Review and accept or reject new incoming orders</p>
       </div>
 
-      {/* Stats Card */}
-      <Card>
-        <CardHeader className='flex flex-row items-center justify-between pb-2'>
-          <div>
-            <CardTitle className='text-sm font-medium'>Pending Orders</CardTitle>
-            <CardDescription>Orders waiting for approval</CardDescription>
-          </div>
-          <CheckCircle className='h-4 w-4 text-muted-foreground' />
-        </CardHeader>
-        <CardContent>
-          <div className='text-2xl font-bold'>{filteredOrders.length}</div>
-        </CardContent>
-      </Card>
+      {/* Table + Stats + Search */}
+      <PendingOrdersTable
+        filteredOrders={filteredOrders}
+        isLoading={isLoading}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        sortConfig={sortConfig}
+        requestSort={requestSort}
+        onDetailClick={setDetailOrderId}
+        onAcceptClick={(orderId) => {
+          setActionOrderId(orderId)
+          setActionType('accept')
+        }}
+        onCancelClick={(orderId) => {
+          setActionOrderId(orderId)
+          setActionType('cancel')
+        }}
+      />
 
-      {/* Search Bar */}
-      <Card>
-        <CardContent className='pt-6'>
-          <div className='relative'>
-            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
-            <Input
-              placeholder='Search by Order ID or Customer Name...'
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className='pl-9'
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Order Detail + Confirmation Dialogs */}
+      <OrderDialogs
+        orderDetail={orderDetail}
+        detailOrderId={detailOrderId}
+        actionOrderId={actionOrderId}
+        actionType={actionType}
+        isProcessing={isProcessing}
+        onDetailClose={() => setDetailOrderId(null)}
+        onActionClose={() => setActionType(null)}
+        onActionClick={handleOrderAction}
+      />
 
-      {/* Orders Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>New Orders ({filteredOrders.length})</CardTitle>
-          <CardDescription>Orders with NEW status pending approval</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className='text-center py-8 text-muted-foreground'>Loading orders...</div>
-          ) : filteredOrders.length === 0 ? (
-            <div className='text-center py-8 text-muted-foreground'>
-              {searchQuery ? 'No orders found matching your search' : 'No new orders at this time'}
-            </div>
-          ) : (
-            <div className='data-table-container'>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <SortableTableHead sortKey="order_id" currentSort={sortConfig} onSort={requestSort}>
-                      Order ID
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="customers.customer_name" currentSort={sortConfig} onSort={requestSort}>
-                      Customer Name
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="order_date" currentSort={sortConfig} onSort={requestSort}>
-                      Order Date
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="req_visit_date" currentSort={sortConfig} onSort={requestSort}>
-                      Req Visit Date
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="order_type" currentSort={sortConfig} onSort={requestSort}>
-                      Order Type
-                    </SortableTableHead>
-                    <SortableTableHead sortKey="status" currentSort={sortConfig} onSort={requestSort}>
-                      Status
-                    </SortableTableHead>
-                    <TableHead className='text-right'>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredOrders.map((order: unknown) => {
-                    const o = order as Record<string, unknown> & { customers?: { customer_name?: string }; order_id: string; order_date?: string; req_visit_date?: string; order_type?: string; status: string }
-                    return (
-                    <TableRow key={o.order_id}>
-                      <TableCell className='font-mono text-sm'>{o.order_id}</TableCell>
-                      <TableCell className='font-medium'>{o.customers?.customer_name || '-'}</TableCell>
-                      <TableCell>
-                        {o.order_date ? format(new Date(o.order_date), 'dd MMM yyyy') : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {o.req_visit_date ? format(new Date(o.req_visit_date), 'dd MMM yyyy') : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant='outline'>
-                          {SERVICE_TYPES.find(t => t.value === o.order_type)?.label || o.order_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={o.status} />
-                      </TableCell>
-                      <TableCell className='text-right'>
-                        <div className='flex justify-end gap-2 w-[200px] ml-auto'>
-                          <Button
-                            variant='ghost'
-                            size='sm'
-                            onClick={() => setDetailOrderId(o.order_id)}
-                          >
-                            <Eye className='w-4 h-4' />
-                          </Button>
-                          <Button
-                            variant='default'
-                            className='group relative overflow-hidden transition-all duration-300 ease-in-out bg-blue-600 hover:bg-blue-700 text-white w-10 hover:w-28 flex items-center justify-start px-2'
-                            onClick={() => {
-                              setActionOrderId(o.order_id)
-                              setActionType('accept')
-                            }}
-                          >
-                            <Check className='w-4 h-4 flex-shrink-0' />
-                            <span className='ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300'>
-                              Accept
-                            </span>
-                          </Button>
-                          <Button
-                            variant='destructive'
-                            className='group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2'
-                            onClick={() => {
-                              setActionOrderId(o.order_id)
-                              setActionType('cancel')
-                            }}
-                          >
-                            <X className='w-4 h-4 flex-shrink-0' />
-                            <span className='ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300'>
-                              Cancel
-                            </span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Order Detail Modal */}
-      <Dialog open={!!detailOrderId} onOpenChange={(open) => !open && setDetailOrderId(null)}>
-        <DialogContent className='max-w-2xl max-h-[80vh] overflow-y-auto'>
-          <DialogHeader>
-            <DialogTitle>Order Detail</DialogTitle>
-            <DialogDescription>Complete information about this order</DialogDescription>
-          </DialogHeader>
-          {orderDetail?.data && (() => {
-            // Group order_items by location
-            const groupedByLocation = (orderDetail.data.order_items || []).reduce((acc: Record<string, { location: unknown; items: unknown[] }>, item: unknown) => {
-              const i = item as Record<string, unknown>
-              const locationId = (i.location_id as string) || 'unknown'
-              if (!acc[locationId]) {
-                acc[locationId] = {
-                  location: i.locations,
-                  items: []
-                }
-              }
-              acc[locationId].items.push(item)
-              return acc
-            }, {})
-
-            const totalEstimated = (orderDetail.data.order_items || []).reduce((sum: number, item: unknown) => {
-              const i = item as Record<string, unknown>
-              return sum + ((i.estimated_price as number) || 0)
-            }, 0)
-
-            return (
-              <div className='space-y-4'>
-                {/* Order Info */}
-                <div className='space-y-2'>
-                  <h3 className='font-semibold text-lg'>Order Information</h3>
-                  <div className='grid grid-cols-2 gap-3 text-sm'>
-                    <div>
-                      <span className='text-muted-foreground'>Order ID:</span>
-                      <p className='font-mono font-semibold'>{orderDetail.data.order_id}</p>
-                    </div>
-                    <div>
-                      <span className='text-muted-foreground'>Status:</span>
-                      <div className='mt-1'>
-                        <StatusBadge status={orderDetail.data.status} />
-                      </div>
-                    </div>
-                    <div>
-                      <span className='text-muted-foreground'>Order Date:</span>
-                      <p className='font-semibold'>
-                        {orderDetail.data.order_date ? format(new Date(orderDetail.data.order_date), 'dd MMM yyyy') : '-'}
-                      </p>
-                    </div>
-                    <div>
-                      <span className='text-muted-foreground'>Order Type:</span>
-                      <div className='mt-1'>
-                        <Badge variant='outline'>
-                          {SERVICE_TYPES.find(t => t.value === orderDetail.data.order_type)?.label || orderDetail.data.order_type}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div>
-                      <span className='text-muted-foreground'>Requested Visit:</span>
-                      <p className='font-semibold'>
-                        {orderDetail.data.req_visit_date ? format(new Date(orderDetail.data.req_visit_date), 'dd MMM yyyy') : '-'}
-                      </p>
-                    </div>
-                  </div>
-                  {orderDetail.data.notes && (
-                    <div className='pt-2'>
-                      <span className='text-muted-foreground text-sm'>Notes:</span>
-                      <p className='text-sm mt-1 p-3 bg-muted rounded-md'>{orderDetail.data.notes}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Customer Info */}
-                <div className='space-y-2'>
-                  <div className='flex items-center gap-2'>
-                    <User className='w-5 h-5 text-muted-foreground' />
-                    <h3 className='font-semibold text-lg'>Customer Information</h3>
-                  </div>
-                  <div className='bg-muted/50 rounded-lg p-4 space-y-2'>
-                    <div>
-                      <span className='text-sm font-semibold text-muted-foreground'>Name: </span>
-                      <span className='font-medium'>{orderDetail.data.customers?.customer_name}</span>
-                    </div>
-                    {orderDetail.data.customers?.primary_contact_person && (
-                      <div>
-                        <span className='text-sm font-semibold text-muted-foreground'>Contact Person: </span>
-                        <span>{orderDetail.data.customers.primary_contact_person}</span>
-                      </div>
-                    )}
-                    <div className='flex gap-4 text-sm'>
-                      {orderDetail.data.customers?.phone_number && (
-                        <div className='flex items-center gap-1'>
-                          <Phone className='w-3 h-3 text-muted-foreground' />
-                          {formatPhone(orderDetail.data.customers.phone_number)}
-                        </div>
-                      )}
-                      {orderDetail.data.customers?.email && (
-                        <div className='flex items-center gap-1'>
-                          <Mail className='w-3 h-3 text-muted-foreground' />
-                          {orderDetail.data.customers.email}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Locations & Services */}
-                <div className='space-y-2'>
-                  <div className='flex items-center gap-2'>
-                    <MapPin className='w-5 h-5 text-muted-foreground' />
-                    <h3 className='font-semibold text-lg'>Locations & Services ({Object.keys(groupedByLocation).length} locations)</h3>
-                  </div>
-                  <div className='space-y-3'>
-                    {Object.entries(groupedByLocation).map(([locationId, data]: [string, unknown]) => {
-                      const d = data as { location: Record<string, unknown>; items: unknown[] }
-                      return (
-                      <div key={locationId} className='border rounded-lg p-4 space-y-3'>
-                        <div className='flex items-start gap-2'>
-                          <Building className='w-4 h-4 text-muted-foreground mt-0.5' />
-                          <div className='flex-1'>
-                            <p className='font-semibold'>{(d.location?.building_name as string) || 'Unknown Location'}</p>
-                            <p className='text-sm text-muted-foreground'>
-                              Floor {String(d.location?.floor ?? '')} - Room {String(d.location?.room_number ?? '')}
-                            </p>
-                          </div>
-                        </div>
-                        <div className='space-y-2 pl-6'>
-                          <p className='text-sm font-semibold text-muted-foreground'>Services:</p>
-                          {d.items.map((item: unknown, idx: number) => {
-                            const it = item as Record<string, unknown> & { ac_units?: Record<string, unknown> }
-                            return (
-                            <div key={idx} className='flex justify-between items-start text-sm p-2 bg-muted/50 rounded'>
-                              <div className='space-y-1'>
-                                <div className='flex items-center gap-2'>
-                                  <Badge variant='outline' className='text-xs'>
-                                    {SERVICE_TYPES.find(t => t.value === it.service_type)?.label || it.service_type as string}
-                                  </Badge>
-                                  <span className='text-muted-foreground'>×{it.quantity as number}</span>
-                                </div>
-                                {it.ac_units && (
-                                  <p className='text-xs text-muted-foreground'>
-                                    AC: {String((it.ac_units as Record<string, unknown>).brand ?? '')} {String((it.ac_units as Record<string, unknown>).model_number ?? '')}
-                                    {!!(it.ac_units as Record<string, unknown>).serial_number && ` (SN: ${String((it.ac_units as Record<string, unknown>).serial_number)})`}
-                                  </p>
-                                )}
-                              </div>
-                              <div className='font-semibold'>
-                                Rp {(it.estimated_price as number)?.toLocaleString('id-ID') || '0'}
-                              </div>
-                            </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                      )
-                    })}
-                  </div>
-                  
-                  <div className='flex justify-between items-center pt-3 border-t font-semibold'>
-                    <span>Total Estimated Price:</span>
-                    <span className='text-lg'>Rp {totalEstimated.toLocaleString('id-ID')}</span>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className='flex gap-2 pt-4 border-t'>
-                  <Button
-                    className='flex-1 bg-green-600 hover:bg-green-700'
-                    onClick={() => {
-                      setDetailOrderId(null)
-                      setActionOrderId(orderDetail.data.order_id)
-                      setActionType('accept')
-                    }}
-                  >
-                    <Check className='w-4 h-4 mr-2' />
-                    Accept Order
-                  </Button>
-                  <Button
-                    variant='destructive'
-                    className='flex-1'
-                    onClick={() => {
-                      setDetailOrderId(null)
-                      setActionOrderId(orderDetail.data.order_id)
-                      setActionType('cancel')
-                    }}
-                  >
-                    <X className='w-4 h-4 mr-2' />
-                    Cancel Order
-                  </Button>
-                </div>
-              </div>
-            )
-          })()}
-        </DialogContent>
-      </Dialog>
-
-      {/* Accept Confirmation Dialog */}
-      <AlertDialog open={actionType === 'accept'} onOpenChange={(open) => !open && setActionType(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Accept Order?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to accept this order? The order status will be changed to ACCEPTED and will be ready for technician assignment.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isProcessing}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => actionOrderId && handleOrderAction(actionOrderId, 'ACCEPTED')}
-              disabled={isProcessing}
-              className='bg-blue-600 hover:bg-blue-700'
-            >
-              {isProcessing ? 'Processing...' : 'Accept Order'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Cancel Confirmation Dialog */}
-      <AlertDialog open={actionType === 'cancel'} onOpenChange={(open) => !open && setActionType(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Order?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to cancel this order? This action will mark the order as CANCELLED and cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isProcessing}>Go Back</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => actionOrderId && handleOrderAction(actionOrderId, 'CANCELLED')}
-              disabled={isProcessing}
-              className='bg-slate-600 hover:bg-slate-700'
-            >
-              {isProcessing ? 'Processing...' : 'Cancel Order'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

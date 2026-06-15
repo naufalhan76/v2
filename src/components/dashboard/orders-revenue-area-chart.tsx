@@ -61,12 +61,12 @@ export function OrdersRevenueAreaChart({ index = 0 }: { index?: number }) {
 
   if (loading) {
     return (
-      <Card className="animate-pulse border-hairline bg-background shadow-none">
+      <Card className="animate-pulse border-border bg-background shadow-none">
         <CardHeader className="pb-2">
-          <div className="h-5 w-56 rounded bg-canvas-soft" />
+          <div className="h-5 w-56 rounded bg-surface-muted" />
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] rounded bg-canvas-soft" />
+          <div className="h-[300px] rounded bg-surface-muted" />
         </CardContent>
       </Card>
     )
@@ -82,7 +82,7 @@ export function OrdersRevenueAreaChart({ index = 0 }: { index?: number }) {
         ease: [0.16, 1, 0.3, 1],
       }}
     >
-      <Card className="border-hairline bg-background shadow-none transition-shadow hover:shadow-md">
+      <Card className="border-border bg-background shadow-none transition-shadow hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
@@ -124,16 +124,16 @@ export function OrdersRevenueAreaChart({ index = 0 }: { index?: number }) {
                     <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--hairline))" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis
                   dataKey="formattedDate"
-                  tick={{ fontSize: 11, fill: 'hsl(var(--ink-mute))' }}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
                   yAxisId="left"
-                  tick={{ fontSize: 11, fill: 'hsl(var(--ink-mute))' }}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                   tickLine={false}
                   axisLine={false}
                   allowDecimals={false}
@@ -141,7 +141,7 @@ export function OrdersRevenueAreaChart({ index = 0 }: { index?: number }) {
                 <YAxis
                   yAxisId="right"
                   orientation="right"
-                  tick={{ fontSize: 11, fill: 'hsl(var(--ink-mute))' }}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v: number) => `Rp${(v / 1_000_000).toFixed(1)}M`}
@@ -149,7 +149,7 @@ export function OrdersRevenueAreaChart({ index = 0 }: { index?: number }) {
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--hairline))',
+                    border: '1px solid hsl(var(--border))',
                     borderRadius: '8px',
                     fontSize: '12px',
                   }}

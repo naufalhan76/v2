@@ -189,7 +189,7 @@ export function BusinessFlowTab() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
-            <CheckCircle2 className="h-4 w-4 text-green-600 mt-1 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-success mt-1 shrink-0" />
             <div className="text-sm">
               <p className="font-medium">DO — Assign teknisi dulu, baru mulai kerja</p>
               <p className="text-muted-foreground">
@@ -199,7 +199,7 @@ export function BusinessFlowTab() {
             </div>
           </div>
           <div className="flex gap-2">
-            <CheckCircle2 className="h-4 w-4 text-green-600 mt-1 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-success mt-1 shrink-0" />
             <div className="text-sm">
               <p className="font-medium">DO — Foto before/after wajib di service report</p>
               <p className="text-muted-foreground">
@@ -209,7 +209,7 @@ export function BusinessFlowTab() {
             </div>
           </div>
           <div className="flex gap-2">
-            <XCircle className="h-4 w-4 text-red-600 mt-1 shrink-0" />
+            <XCircle className="h-4 w-4 text-destructive mt-1 shrink-0" />
             <div className="text-sm">
               <p className="font-medium">DON&apos;T — Hapus user yang punya order history</p>
               <p className="text-muted-foreground">
@@ -219,7 +219,7 @@ export function BusinessFlowTab() {
             </div>
           </div>
           <div className="flex gap-2">
-            <XCircle className="h-4 w-4 text-red-600 mt-1 shrink-0" />
+            <XCircle className="h-4 w-4 text-destructive mt-1 shrink-0" />
             <div className="text-sm">
               <p className="font-medium">DON&apos;T — Edit invoice yang sudah PAID</p>
               <p className="text-muted-foreground">
@@ -229,7 +229,7 @@ export function BusinessFlowTab() {
             </div>
           </div>
           <div className="flex gap-2">
-            <AlertTriangle className="h-4 w-4 text-yellow-600 mt-1 shrink-0" />
+            <AlertTriangle className="h-4 w-4 text-warning mt-1 shrink-0" />
             <div className="text-sm">
               <p className="font-medium">WATCH — Cancel order yang sudah ada proforma</p>
               <p className="text-muted-foreground">
@@ -239,7 +239,7 @@ export function BusinessFlowTab() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Info className="h-4 w-4 text-blue-600 mt-1 shrink-0" />
+            <Info className="h-4 w-4 text-info mt-1 shrink-0" />
             <div className="text-sm">
               <p className="font-medium">INFO — Addon request butuh approval admin</p>
               <p className="text-muted-foreground">

@@ -127,7 +127,7 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas-soft flex flex-col items-center justify-center p-4 sm:p-8">
+    <div className="min-h-screen bg-surface-muted flex flex-col items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-2">
             <Image
@@ -147,7 +147,7 @@ function ResetPasswordForm() {
         </div>
 
         <LoadingOverlay isLoading={isLoading} message="Memperbarui...">
-          <Card className="border-hairline shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="space-y-1 pb-4 text-center">
               <CardDescription className="text-muted-foreground text-sm font-medium">
                 Reset Kata Sandi
@@ -261,7 +261,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-canvas-soft flex items-center justify-center p-4">
+      <div className="min-h-screen bg-surface-muted flex items-center justify-center p-4">
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
           <p className="text-muted-foreground font-medium">Memuat...</p>

@@ -160,7 +160,7 @@ export function SignaturePad({ onChange, onBlobChange, value, disabled = false, 
           size="sm"
           onClick={handleClear}
           disabled={disabled || isEmpty}
-          className="h-9 px-3 text-xs font-medium text-destructive hover:text-destructive hover:bg-red-50 dark:hover:bg-red-950 transition-all duration-200 active:scale-[0.96]"
+          className="h-9 px-3 text-xs font-medium text-destructive hover:text-destructive hover:bg-status-cancelled-bg dark:hover:bg-status-cancelled-bg transition-all duration-200 active:scale-[0.96]"
         >
           <Eraser className="mr-1.5 h-3.5 w-3.5" />
           Hapus
@@ -169,9 +169,9 @@ export function SignaturePad({ onChange, onBlobChange, value, disabled = false, 
 
       <div
         className={cn(
-          'relative rounded-lg border-2 border-dashed border-hairline dark:border-gray-600 bg-background dark:bg-[#252243] overflow-hidden',
-          disabled ? 'opacity-50 pointer-events-none' : 'hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors duration-200',
-          !isEmpty && 'border-solid border-indigo-300 dark:border-indigo-600'
+          'relative rounded-lg border-2 border-dashed border-border dark:border-border bg-background dark:bg-surface overflow-hidden',
+          disabled ? 'opacity-50 pointer-events-none' : 'hover:border-primary dark:hover:border-primary transition-colors duration-200',
+          !isEmpty && 'border-solid border-primary dark:border-primary'
         )}
       >
         <canvas
@@ -184,7 +184,7 @@ export function SignaturePad({ onChange, onBlobChange, value, disabled = false, 
         {/* Placeholder text when empty */}
         {isEmpty && !disabled && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="text-sm text-ink-faint">
+            <p className="text-sm text-muted-foreground">
               Tanda tangan di sini
             </p>
           </div>
@@ -192,7 +192,7 @@ export function SignaturePad({ onChange, onBlobChange, value, disabled = false, 
       </div>
 
       {isEmpty && !disabled && (
-        <p className="text-xs text-ink-mute">
+        <p className="text-xs text-muted-foreground">
           Minta customer untuk menandatangani di area di atas
         </p>
       )}

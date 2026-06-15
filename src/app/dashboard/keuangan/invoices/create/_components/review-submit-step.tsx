@@ -101,7 +101,7 @@ export function ReviewSubmitStep({
           </div>
           <div className="flex justify-between">
             <span>Diskon:</span>
-            <span className="font-semibold text-red-600">
+            <span className="font-semibold text-destructive">
               - {formatCurrency(totals.discountAmount)}
             </span>
           </div>

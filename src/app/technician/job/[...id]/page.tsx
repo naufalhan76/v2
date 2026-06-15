@@ -17,7 +17,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   const id = idSegments.map(decodeURIComponent).join('/')
 
   return (
-    <div className="min-h-full bg-bg-gray-faded dark:bg-[#0f0e1a] pb-20">
+    <div className="min-h-full bg-background dark:bg-background pb-20">
       <Suspense fallback={<JobDetailSkeleton />}>
         {isComplete ? (
           <WizardOrchestrator orderId={id} />

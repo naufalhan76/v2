@@ -83,7 +83,7 @@ export function SwipeToAction({
     <div 
       ref={containerRef}
       className={cn(
-        "relative h-16 w-full rounded-full bg-[#211c59] p-2 overflow-hidden select-none touch-pan-y transition-colors duration-300",
+        "relative h-16 w-full rounded-full bg-primary p-2 overflow-hidden select-none touch-pan-y transition-colors duration-300",
         (disabled || loading) && "opacity-70 cursor-not-allowed"
       )}
     >
@@ -117,7 +117,7 @@ export function SwipeToAction({
         style={{ transform: `translateX(${xPos}px)` }}
       >
         <ChevronRight className={cn(
-          "h-6 w-6 text-[#211c59] transition-transform duration-300",
+          "h-6 w-6 text-primary transition-transform duration-300",
           isDragging && "scale-110"
         )} />
       </div>

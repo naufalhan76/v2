@@ -87,7 +87,7 @@ export function HomeHeader() {
   const hasJobs = (jobs?.length ?? 0) > 0
 
   return (
-    <div className="bg-[#211c59] pt-12 pb-24 px-6 rounded-b-[80px] space-y-3 relative" data-testid="technician-home-header">
+    <div className="bg-primary pt-12 pb-24 px-6 rounded-b-[80px] space-y-3 relative" data-testid="technician-home-header">
       {/* Greeting */}
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
@@ -95,14 +95,14 @@ export function HomeHeader() {
             {greeting || '...'}
             {firstName ? <span>, {firstName}</span> : null}
           </h1>
-          <p className="text-sm text-gray-300 leading-tight capitalize tabular-nums">
+          <p className="text-sm text-muted-foreground leading-tight capitalize tabular-nums">
             {longDate}
           </p>
         </div>
         
         {/* Sync Badge overlay logic */}
         {(syncPendingCount > 0) && (
-          <div className="bg-[#f59e0b] px-3 py-1.5 rounded-full text-white font-bold text-sm flex items-center gap-1.5 shrink-0 mt-0.5">
+          <div className="bg-status-pending px-3 py-1.5 rounded-full text-white font-bold text-sm flex items-center gap-1.5 shrink-0 mt-0.5">
              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
              {syncPendingCount}
           </div>
@@ -153,8 +153,8 @@ function StatChip({
 }) {
   const toneClass =
     tone === 'primary'
-      ? 'bg-[#211c59] text-white'
-      : 'bg-white text-[#211c59] shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] dark:bg-[#252243] dark:text-white dark:shadow-none'
+      ? 'bg-primary text-white'
+      : 'bg-white text-primary shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] dark:bg-surface dark:text-foreground dark:shadow-none'
 
   return (
     <div
