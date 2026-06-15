@@ -1,6 +1,5 @@
 import { getOrders } from '@/lib/actions/orders'
 import { getOrderItemsForInvoice } from '@/lib/actions/invoices'
-import { getServicePricingByType } from '@/lib/actions/service-pricing'
 import { parseBankAccounts } from '@/lib/bank-accounts'
 import { logger } from '@/lib/logger'
 
@@ -86,20 +85,9 @@ export const fetchBaseServiceLineItems = async (order: InvoiceOrder) => {
     }
   }
 
-  const pricing = await getServicePricingByType(order.order_type)
   return {
-    lineItems: pricing
-      ? [
-          {
-            type: 'BASE_SERVICE' as const,
-            description: `${pricing.service_type} Service - ${pricing.description || ''}`,
-            quantity: 1,
-            unitPrice: pricing.base_price,
-            total: pricing.base_price,
-          },
-        ]
-      : [],
+    lineItems: [],
     serviceTypeForHeader: null,
-    baseService: pricing,
+    baseService: null,
   }
 }

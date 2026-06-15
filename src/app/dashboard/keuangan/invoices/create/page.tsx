@@ -7,7 +7,6 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useToast } from '@/hooks/use-toast'
-import { getServicePricingByType } from '@/lib/actions/service-pricing'
 import { getActiveAddons, type Addon } from '@/lib/actions/addons'
 import { createInvoice } from '@/lib/actions/invoices'
 import type { BankAccount } from '@/lib/bank-accounts'
@@ -82,15 +81,6 @@ export default function CreateInvoicePage() {
       const pricing = await fetchBaseServiceLineItems(selectedOrder)
       invoiceActions.setLineItems(pricing.lineItems)
       if (pricing.baseService) invoiceActions.setBaseService(pricing.baseService)
-      if (pricing.serviceTypeForHeader) {
-        getServicePricingByType(pricing.serviceTypeForHeader)
-          .then((firstPricing) => {
-            if (firstPricing) invoiceActions.setBaseService(firstPricing)
-          })
-          .catch(() => {
-            /* header is best-effort; line items already rendered */
-          })
-      }
     } catch (error) {
       logger.error('Error loading service pricing:', error)
     }

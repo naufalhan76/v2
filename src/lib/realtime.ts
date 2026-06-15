@@ -99,19 +99,6 @@ export function subscribeServiceRecords(
   )
 }
 
-export function subscribeServicePricing(
-  queryClient: QueryClient,
-  callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void
-) {
-  return subscribeChannel(
-    'service-pricing-changes',
-    'service_pricing',
-    queryClient,
-    [['service-pricing']],
-    callback
-  )
-}
-
 export function subscribeServiceSla(
   queryClient: QueryClient,
   callback: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void

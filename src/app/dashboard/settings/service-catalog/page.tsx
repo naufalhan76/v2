@@ -41,8 +41,8 @@ export default function ServiceCatalogPage() {
         <CardContent className="pt-4 flex gap-2 items-start">
           <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
           <p className="text-sm text-amber-800 dark:text-amber-200">
-            Halaman ini menggantikan <strong>Service Pricing</strong> dan{' '}
-            <strong>Service Config</strong>. Seluruh data layanan kini terpusat di tabel{' '}
+            Halaman ini menggantikan <strong>Service Config</strong>. Seluruh
+            data layanan kini terpusat di tabel{' '}
             <code className="rounded bg-amber-100 px-1 py-0.5 text-xs dark:bg-amber-900/40">
               service_catalog
             </code>
