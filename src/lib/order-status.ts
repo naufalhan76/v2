@@ -89,23 +89,29 @@ const TRANSITION_RULES: Record<OrderStatus, Partial<Record<TransitionRole, Order
     SUPERADMIN: ['ASSIGNED', 'CANCELLED'],
   },
   ASSIGNED: {
-    ADMIN: ['PENDING', 'CANCELLED'],       // PENDING = reschedule
-    SUPERADMIN: ['PENDING', 'CANCELLED'],
+    // Admin override: revert to PENDING (reschedule), reassign to another tech
+    // (ASSIGNED→ASSIGNED), or cancel.
+    ADMIN: ['PENDING', 'ASSIGNED', 'CANCELLED'],
+    SUPERADMIN: ['PENDING', 'ASSIGNED', 'CANCELLED'],
     TECHNICIAN: ['EN_ROUTE'],
   },
   EN_ROUTE: {
-    ADMIN: ['PENDING', 'CANCELLED'],       // PENDING = reschedule
-    SUPERADMIN: ['PENDING', 'CANCELLED'],
+    // Admin override: pull back to PENDING, reassign mid-trip, or cancel.
+    ADMIN: ['PENDING', 'ASSIGNED', 'CANCELLED'],
+    SUPERADMIN: ['PENDING', 'ASSIGNED', 'CANCELLED'],
     TECHNICIAN: ['IN_PROGRESS'],
   },
   IN_PROGRESS: {
-    ADMIN: ['CANCELLED'],
-    SUPERADMIN: ['CANCELLED'],
+    // Admin override: even after technician started, admin can revert to
+    // PENDING, reassign to a different technician, or cancel outright.
+    ADMIN: ['PENDING', 'ASSIGNED', 'CANCELLED'],
+    SUPERADMIN: ['PENDING', 'ASSIGNED', 'CANCELLED'],
     TECHNICIAN: ['COMPLETED'],
   },
   COMPLETED: {
-    ADMIN: ['INVOICED'],
-    SUPERADMIN: ['INVOICED'],
+    // Admin can still cancel a completed-but-not-invoiced job (e.g. dispute).
+    ADMIN: ['INVOICED', 'CANCELLED'],
+    SUPERADMIN: ['INVOICED', 'CANCELLED'],
     FINANCE: ['INVOICED'],
   },
   INVOICED: {

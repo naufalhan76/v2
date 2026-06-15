@@ -6,6 +6,8 @@
  *   - sendJobAssignedNotification(orderId, technicianId)
  *   - sendJobRescheduledNotification(orderId, technicianId, newDate)
  *   - sendJobReassignedAwayNotification(orderId, technicianId)
+ *   - sendJobCancelledByAdminNotification(orderId, technicianId)
+ *   - sendJobAutoRevertedNotification(orderId, technicianId)
  *
  * All four are fire-and-forget by design — push failures should never break
  * the originating action. Errors are logged via the project logger.
@@ -260,4 +262,44 @@ export async function sendJobReassignedAwayNotification(
     tag: `job-reassigned-away:${orderId}`,
     orderId,
   }).catch((err) => log.error('sendJobReassignedAwayNotification failed', err))
+}
+
+/**
+ * Admin cancelled an order while it was already assigned/in-progress.
+ * Tells the technician to stop work on it.
+ */
+export async function sendJobCancelledByAdminNotification(
+  orderId: string,
+  technicianId: string
+): Promise<void> {
+  const userId = await resolveAuthUserId(technicianId)
+  if (!userId) return
+
+  await sendPushToUser(userId, {
+    title: 'Job dibatalkan oleh admin',
+    body: `Order ${orderId} dibatalkan. Hentikan pekerjaan jika sedang berlangsung.`,
+    url: '/technician',
+    tag: `job-cancelled:${orderId}`,
+    orderId,
+  }).catch((err) => log.error('sendJobCancelledByAdminNotification failed', err))
+}
+
+/**
+ * Auto-revert: scheduled visit date passed without completion, system pulled
+ * the job back to PENDING so admin can reassign.
+ */
+export async function sendJobAutoRevertedNotification(
+  orderId: string,
+  technicianId: string
+): Promise<void> {
+  const userId = await resolveAuthUserId(technicianId)
+  if (!userId) return
+
+  await sendPushToUser(userId, {
+    title: 'Job dikembalikan ke antrian',
+    body: `Order ${orderId} belum selesai pada hari H — otomatis dikembalikan ke antrian admin.`,
+    url: '/technician',
+    tag: `job-auto-reverted:${orderId}`,
+    orderId,
+  }).catch((err) => log.error('sendJobAutoRevertedNotification failed', err))
 }

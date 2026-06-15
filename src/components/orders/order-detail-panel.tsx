@@ -154,16 +154,45 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
                   </>
                 )}
                 {(canonical === 'EN_ROUTE' || canonical === 'IN_PROGRESS') && (
-                  <Button variant="outline" disabled className="h-11 w-full sm:h-9 sm:flex-1">
-                    Sedang dikerjakan teknisi
-                  </Button>
+                  <>
+                    <Button
+                      onClick={() => setAssignOpen(true)}
+                      variant="outline"
+                      className="h-11 w-full sm:h-9 sm:flex-1"
+                    >
+                      Reassign
+                    </Button>
+                    <Button
+                      onClick={() => setRescheduleOpen(true)}
+                      variant="outline"
+                      className="h-11 w-full sm:h-9 sm:w-auto"
+                    >
+                      Tarik ke Antrian
+                    </Button>
+                    <Button
+                      onClick={() => setCancelOpen(true)}
+                      variant="ghost"
+                      className="h-11 w-full sm:h-9 sm:w-auto"
+                    >
+                      Batalkan
+                    </Button>
+                  </>
                 )}
                 {canonical === 'COMPLETED' && (
-                  <Button asChild className="h-11 w-full sm:h-9 sm:flex-1">
-                    <Link href={`/dashboard/keuangan/invoices/create/from-order/${order.order_id}`}>
-                      Buat Invoice
-                    </Link>
-                  </Button>
+                  <>
+                    <Button asChild className="h-11 w-full sm:h-9 sm:flex-1">
+                      <Link href={`/dashboard/keuangan/invoices/create/from-order/${order.order_id}`}>
+                        Buat Invoice
+                      </Link>
+                    </Button>
+                    <Button
+                      onClick={() => setCancelOpen(true)}
+                      variant="ghost"
+                      className="h-11 w-full sm:h-9 sm:w-auto"
+                    >
+                      Batalkan
+                    </Button>
+                  </>
                 )}
                 {canonical === 'INVOICED' && (
                   <Button asChild className="h-11 w-full sm:h-9 sm:flex-1">

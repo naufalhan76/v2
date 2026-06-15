@@ -1,4 +1,16 @@
-# Cron Setup — Daily Reminder Generation
+# Cron Setup
+
+This file documents two scheduled jobs:
+
+1. **Daily Reminder Generation** — `POST /api/admin/reminders/run`
+2. **Auto-Revert Stale Orders** — `POST /api/admin/orders/auto-revert-stale`
+
+Both jobs use the same `CRON_SECRET` for authentication. Each section below
+covers one job.
+
+---
+
+## 1. Daily Reminder Generation
 
 The endpoint `POST /api/admin/reminders/run` generates reminders from AC unit
 service due dates and warranty expiry. It can be invoked manually from the
@@ -219,3 +231,93 @@ day the service is due. A value of `7` means it fires seven days in advance.
 
 If you need reminders at multiple lead times (e.g. same-day and three days
 prior), insert additional rules with the appropriate `days_before_due` values.
+
+
+---
+
+## 2. Auto-Revert Stale Orders
+
+The endpoint `POST /api/admin/orders/auto-revert-stale` finds every order
+whose `scheduled_visit_date` has already passed and whose `status` is still
+`ASSIGNED`, `EN_ROUTE`, or `IN_PROGRESS`, and reverts each one back to
+`PENDING`. This frees the order so an admin can re-assign it to a different
+technician the next morning.
+
+For each reverted order, the action:
+
+1. Sets `status = 'PENDING'`, `assigned_technician_id = NULL`.
+2. Deletes the matching rows from `order_technicians`.
+3. Logs the transition in `order_status_transitions` with note
+   `Auto-reverted: scheduled_visit_date passed without completion`.
+4. Sends a push notification (`sendJobAutoRevertedNotification`) to every
+   technician that was assigned to the order.
+
+The endpoint is idempotent — running it again on the same day produces
+zero additional reverts because the `status NOT IN (...)` clause no longer
+matches.
+
+### Authentication
+
+Same as Section 1: `Authorization: Bearer <CRON_SECRET>` for unattended
+cron, or an authenticated `SUPERADMIN` / `ADMIN` session for manual
+invocation. Re-uses the same `CRON_SECRET` env var.
+
+### Schedule (Supabase pg_cron)
+
+Run at 00:00 WIB (17:00 UTC the previous day; adjust to your DB timezone)
+so a fresh queue greets admins in the morning.
+
+```sql
+SELECT cron.schedule(
+  'auto-revert-stale-orders',
+  '0 17 * * *',  -- 17:00 UTC = 00:00 WIB next day
+  $$
+    SELECT net.http_post(
+      url := 'https://v2.nufnh.my.id/api/admin/orders/auto-revert-stale',
+      headers := ('{"Content-Type": "application/json", "Authorization": "Bearer ' || current_setting('app.cron_secret', true) || '"}')::jsonb
+    );
+  $$
+);
+```
+
+If your Supabase project's session timezone is already `Asia/Jakarta` you
+can use `'0 0 * * *'` instead. Verify with:
+
+```sql
+SHOW timezone;
+```
+
+### Inspecting
+
+```sql
+SELECT * FROM cron.job WHERE jobname = 'auto-revert-stale-orders';
+
+SELECT * FROM cron.job_run_details
+WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'auto-revert-stale-orders')
+ORDER BY start_time DESC LIMIT 10;
+```
+
+To unschedule:
+
+```sql
+SELECT cron.unschedule('auto-revert-stale-orders');
+```
+
+### Manual run (testing)
+
+```bash
+curl -X POST https://v2.nufnh.my.id/api/admin/orders/auto-revert-stale \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+Response shape:
+
+```json
+{
+  "success": true,
+  "data": {
+    "reverted_count": 3,
+    "order_ids": ["REQ/2026-06/000123", "REQ/2026-06/000124", "REQ/2026-06/000125"]
+  }
+}
+```
