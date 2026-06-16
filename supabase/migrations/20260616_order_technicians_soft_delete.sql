@@ -9,6 +9,14 @@ ALTER TABLE public.order_technicians ADD COLUMN IF NOT EXISTS removed_by UUID RE
 CREATE INDEX IF NOT EXISTS idx_order_technicians_active
   ON public.order_technicians(order_id, role) WHERE removed_at IS NULL;
 
+-- 2b. Replace the full unique constraint with a partial one so reassignments
+-- to a previously-assigned technician aren't blocked by the soft-deleted row.
+ALTER TABLE public.order_technicians DROP CONSTRAINT IF EXISTS uq_order_tech_role;
+DROP INDEX IF EXISTS public.uq_order_tech_role;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_order_tech_role_active
+  ON public.order_technicians(order_id, technician_id, role)
+  WHERE removed_at IS NULL;
+
 -- 3. Re-create assign_order_to_technician RPC with soft-delete instead of hard DELETE
 CREATE OR REPLACE FUNCTION public.assign_order_to_technician(
   p_order_ids TEXT[],
@@ -35,9 +43,11 @@ BEGIN
       RAISE EXCEPTION 'Order % not found', v_order_id;
     END IF;
 
-    -- Soft-delete existing active assignments (audit trail)
+    -- Soft-delete existing active assignments (audit trail).
+    -- removed_by tracks the admin performing the reassignment, NOT the new technician.
+    -- auth.uid() is NULL when called by service_role; that's acceptable for audit log gaps.
     UPDATE order_technicians
-    SET removed_at = NOW(), removed_by = p_lead_technician_id::uuid
+    SET removed_at = NOW(), removed_by = auth.uid()
     WHERE order_id = v_order_id AND removed_at IS NULL;
 
     -- Insert lead
@@ -58,10 +68,9 @@ BEGIN
       updated_at = NOW()
     WHERE order_id = v_order_id;
 
-    -- Log transition
     IF v_prev_status <> 'ASSIGNED' THEN
       INSERT INTO order_status_transitions (order_id, from_status, to_status, notes, transition_date)
-      VALUES (v_order_id, v_prev_status, 'ASSIGNED',
+      VALUES (v_order_id, v_prev_status::order_status, 'ASSIGNED'::order_status,
         CASE WHEN v_prev_status = 'PENDING' THEN 'Assigned to technician'
              ELSE 'Reassigned by admin (was ' || v_prev_status || ')' END,
         NOW());

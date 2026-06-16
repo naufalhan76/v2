@@ -48,10 +48,9 @@ BEGIN
       updated_at = NOW()
     WHERE order_id = v_order_id;
 
-    -- Log transition
     IF v_prev_status <> 'ASSIGNED' THEN
       INSERT INTO order_status_transitions (order_id, from_status, to_status, notes, transition_date)
-      VALUES (v_order_id, v_prev_status, 'ASSIGNED', 
+      VALUES (v_order_id, v_prev_status::order_status, 'ASSIGNED'::order_status,
         CASE WHEN v_prev_status = 'PENDING' THEN 'Assigned to technician'
              ELSE 'Reassigned by admin (was ' || v_prev_status || ')' END,
         NOW());
