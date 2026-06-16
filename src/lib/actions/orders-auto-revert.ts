@@ -45,6 +45,7 @@ export async function autoRevertStaleOrders(): Promise<AutoRevertResult> {
       .from('order_technicians')
       .select('order_id, technician_id')
       .in('order_id', orderIds)
+      .is('removed_at', null)
 
     const techsByOrder = new Map<string, string[]>()
     for (const row of assignments ?? []) {

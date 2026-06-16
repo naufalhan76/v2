@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
       .select('order_id')
       .eq('technician_id', technicianId)
       .eq('role', 'lead')
+      .is('removed_at', null)
 
     if (assignError) throw assignError
 

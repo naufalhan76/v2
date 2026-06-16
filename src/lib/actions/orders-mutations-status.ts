@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { auditLog } from '@/lib/audit'
 import { canTransition, toCanonical, type TransitionRole } from '@/lib/order-status'
 import { sendJobCancelledByAdminNotification } from '@/lib/server/push-sender'
 
@@ -133,6 +134,7 @@ export async function cancelOrder(orderId: string, reason?: string) {
         .from('order_technicians')
         .select('technician_id')
         .eq('order_id', orderId)
+        .is('removed_at', null)
       assignedTechnicianIds = (assignments ?? []).map((a) => a.technician_id)
     }
 
@@ -252,6 +254,8 @@ export async function cancelOrder(orderId: string, reason?: string) {
       )
     }
 
+    void auditLog('CANCEL', 'orders', orderId)
+
     return { success: true, data, message: 'Order cancelled successfully' }
   } catch (error: unknown) {
     logger.error('Error cancelling order:', error)
@@ -275,6 +279,8 @@ export async function deleteOrder(orderId: string) {
       .eq('order_id', orderId)
     
     if (error) throw error
+    
+    void auditLog('DELETE', 'orders', orderId)
     
     revalidatePath('/orders')
     revalidatePath('/dashboard')

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { auditLog } from '@/lib/audit'
 import { requireFinanceRole } from '@/lib/rbac'
 import { getInvoiceSource } from '@/lib/invoice-utils'
 import { calculateDiscount, calculateTax, roundToTwo } from '@/lib/utils/money'
@@ -112,6 +113,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
   try { revalidatePath('/dashboard/keuangan/invoices') } catch (error) {
     logger.warn('Skipping revalidatePath because it was called during rendering:', error)
   }
+  void auditLog('CREATE', 'invoices', invoice.invoice_id)
   return { ...invoice, source: getInvoiceSource(invoice) }
 }
 

@@ -23,10 +23,34 @@ export async function assignOrdersToTechnician(data: {
       .select('order_id, technician_id')
       .in('order_id', data.orderIds)
       .eq('role', 'lead')
+      .is('removed_at', null)
 
     const previousLeadByOrder = new Map<string, string>()
     for (const row of prevLeads ?? []) {
       previousLeadByOrder.set(row.order_id, row.technician_id)
+    }
+
+    // Schedule conflict detection: check lead technician capacity for the scheduled date
+    const maxPerDay = parseInt(process.env.MAX_ORDERS_PER_TECH_PER_DAY || '5', 10)
+
+    const { data: existingAssignments } = await supabase
+      .from('order_technicians')
+      .select('order_id, orders!inner(scheduled_visit_date)')
+      .eq('technician_id', data.technicianId)
+      .eq('role', 'lead')
+      .is('removed_at', null)
+      .eq('orders.scheduled_visit_date', data.scheduledDate)
+
+    const currentLeadCount = (existingAssignments ?? [])
+      .filter(a => !data.orderIds.includes(a.order_id))
+      .length
+
+    const newTotal = currentLeadCount + data.orderIds.length
+    if (newTotal > maxPerDay) {
+      return {
+        success: false,
+        error: `Teknisi sudah memiliki ${currentLeadCount} order pada ${data.scheduledDate}. Maksimal ${maxPerDay} order per hari. Tidak bisa menambah ${data.orderIds.length} order lagi.`,
+      }
     }
 
     const { error: rpcError } = await supabase.rpc('assign_order_to_technician', {

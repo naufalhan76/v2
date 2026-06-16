@@ -173,6 +173,7 @@ export async function getTopTechnicians(startDate?: string, endDate?: string, li
           order_date
         )
       `)
+      .is('removed_at', null)
       .gte('orders.order_date', dateStart)
       .lte('orders.order_date', dateEnd)
 

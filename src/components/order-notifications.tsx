@@ -30,12 +30,23 @@ interface OrderNotification {
   read: boolean
 }
 
+interface RescheduledNotification {
+  id: string
+  orderId: string
+  customerName: string
+  oldDate: string
+  newDate: string
+  timestamp: string
+  read: boolean
+}
+
 export function OrderNotifications() {
   const router = useRouter()
   const [notifications, setNotifications] = useState<OrderNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [rescheduledNotifications, setRescheduledNotifications] = useState<RescheduledNotification[]>([])
   const supabaseRef = useRef<Awaited<ReturnType<typeof import('@/lib/supabase-browser').createClient>> | null>(null)
 
   useEffect(() => {
@@ -165,14 +176,54 @@ export function OrderNotifications() {
     localStorage.setItem(storageKey, JSON.stringify(allOrderIds))
     
     setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    setRescheduledNotifications(prev => prev.map(n => ({ ...n, read: true })))
     setUnreadCount(0)
   }
 
-  const rescheduledNotifications: OrderNotification[] = []
+  useEffect(() => {
+    const supabase = supabaseRef.current
+    if (!supabase) return
+
+    const channel = supabase
+      .channel('order-reschedules')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+      }, (payload: { old: Record<string, unknown>; new: Record<string, unknown> }) => {
+        const oldDate = payload.old.scheduled_visit_date as string | undefined
+        const newDate = payload.new.scheduled_visit_date as string | undefined
+        if (oldDate && newDate && oldDate !== newDate) {
+          setRescheduledNotifications(prev => {
+            const notification: RescheduledNotification = {
+              id: `reschedule-${payload.new.order_id}-${Date.now()}`,
+              orderId: payload.new.order_id as string,
+              customerName: (payload.new.customer_name as string) || 'Unknown',
+              oldDate,
+              newDate,
+              timestamp: new Date().toISOString(),
+              read: false,
+            }
+            const updated = [notification, ...prev].slice(0, 20) // FIFO, max 20
+            return updated.filter(n => {
+              const age = Date.now() - new Date(n.timestamp).getTime()
+              return age < 24 * 60 * 60 * 1000 // 24 hours
+            })
+          })
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId])
+
   const cancelledNotifications = notifications.filter(n => n.status === 'CANCELLED')
 
   const unreadRescheduled = rescheduledNotifications.filter(n => !n.read).length
   const unreadCancelled = cancelledNotifications.filter(n => !n.read).length
+  const totalUnreadCount = unreadCancelled + unreadRescheduled
 
   const NotificationItem = ({ notification }: { notification: OrderNotification }) => (
     <div
@@ -215,9 +266,9 @@ export function OrderNotifications() {
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
+          {totalUnreadCount > 0 && (
             <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
             </span>
           )}
         </Button>
@@ -225,7 +276,7 @@ export function OrderNotifications() {
       <PopoverContent className="w-[400px] p-0" align="end">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="font-semibold text-base">Notifikasi Order</h3>
-          {unreadCount > 0 && (
+          {totalUnreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
@@ -266,7 +317,47 @@ export function OrderNotifications() {
                   </div>
                 ) : (
                   rescheduledNotifications.map(notification => (
-                    <NotificationItem key={notification.order_id} notification={notification} />
+                    <div
+                      key={notification.id}
+                      onClick={() => {
+                        setRescheduledNotifications(prev =>
+                          prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+                        )
+                        setOpen(false)
+                        router.push(`/dashboard/orders?view=board&orderId=${notification.orderId}`)
+                      }}
+                      className={cn(
+                        'p-3 rounded-lg cursor-pointer transition-all hover:bg-accent border',
+                        notification.read ? 'bg-muted/30 opacity-70' : 'bg-background'
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-sm truncate">{notification.customerName}</span>
+                            {!notification.read && (
+                              <div className="w-2 h-2 bg-status-pending rounded-full flex-shrink-0" />
+                            )}
+                          </div>
+                          <p className="font-mono text-xs text-muted-foreground mb-1">
+                            {notification.orderId}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(notification.oldDate), 'dd MMM yyyy', { locale: id })}
+                            {' → '}
+                            {format(new Date(notification.newDate), 'dd MMM yyyy', { locale: id })}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <Badge variant="secondary" className="text-xs">
+                            Dijadwal Ulang
+                          </Badge>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {format(new Date(notification.timestamp), 'dd MMM HH:mm', { locale: id })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   ))
                 )}
               </div>

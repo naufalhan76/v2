@@ -62,6 +62,7 @@ export async function handleSubmitReport(
       .eq('order_id', orderId)
       .eq('technician_id', technicianId)
       .eq('role', 'lead')
+      .is('removed_at', null)
       .maybeSingle()
 
     if (assignError) throw assignError

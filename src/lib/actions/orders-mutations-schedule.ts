@@ -14,10 +14,18 @@ export async function createOrder(orderData: {
 }) {
   try {
     const supabase = await createClient()
-    
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return {
+        success: false,
+        error: 'Unauthorized',
+      }
+    }
+
     const { data, error } = await supabase
       .from('orders')
-      .insert({ ...orderData, status: 'PENDING' })
+      .insert({ ...orderData, status: 'PENDING', created_by: user.id })
       .select()
       .single()
     
@@ -56,6 +64,7 @@ export async function rescheduleOrder(params: {
       .select('technician_id')
       .eq('order_id', params.orderId)
       .eq('role', 'lead')
+      .is('removed_at', null)
       .maybeSingle()
     const previousLeadId = prevLeadRow?.technician_id ?? null
 

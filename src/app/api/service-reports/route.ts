@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
       .select('technician_id')
       .eq('order_id', orderId)
       .eq('technician_id', user.id)
+      .is('removed_at', null)
       .maybeSingle()
 
     if (!assignment) {

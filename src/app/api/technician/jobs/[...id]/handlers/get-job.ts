@@ -36,6 +36,7 @@ export async function handleGetJob(
       .select('role')
       .eq('order_id', orderId)
       .eq('technician_id', technicianId)
+      .is('removed_at', null)
       .maybeSingle()
 
     if (assignError) throw assignError

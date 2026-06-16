@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { auditLog } from '@/lib/audit'
 import { sanitizeSearchTerm } from '@/lib/utils'
 
 export async function getCustomers(filters?: {
@@ -153,6 +154,21 @@ export async function createCustomer(customerData: {
     
     logger.debug('Clean data for insert:', cleanData)
     logger.debug('About to insert into customers table...')
+
+    if (cleanData.phone_number) {
+      const { data: existing } = await supabase
+        .from('customers')
+        .select('customer_id, customer_name')
+        .eq('phone_number', cleanData.phone_number)
+        .maybeSingle()
+      
+      if (existing) {
+        return {
+          success: false,
+          error: `Nomor telepon ${cleanData.phone_number} sudah terdaftar atas nama ${existing.customer_name}`,
+        }
+      }
+    }
     
     const { data, error } = await supabase
       .from('customers')

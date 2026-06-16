@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
       .from('order_technicians')
       .select('order_id')
       .eq('technician_id', technicianId)
+      .is('removed_at', null)
 
     if (assignError) throw assignError
     if (!assignments || assignments.length === 0) {

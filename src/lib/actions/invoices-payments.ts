@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { auditLog } from '@/lib/audit'
 import { requireFinanceRole } from '@/lib/rbac'
 import { getInvoiceSource } from '@/lib/invoice-utils'
 import type { Invoice, PaymentRecord } from './invoices-types'
@@ -43,6 +44,7 @@ export async function recordPayment(
 
   revalidatePath('/dashboard/keuangan/invoices')
   revalidatePath(`/dashboard/keuangan/invoices/${invoiceId}`)
+  void auditLog('PAYMENT', 'invoices', invoiceId)
   return { payment_id: result.payment_id, ...payment, recorded_by: user!.id } as PaymentRecord
 }
 
@@ -87,6 +89,8 @@ export async function deleteInvoice(invoiceId: string): Promise<void> {
     await supabase
       .from('orders').update({ status: 'COMPLETED', updated_at: new Date().toISOString() }).eq('order_id', invoice.order_id)
   }
+
+  void auditLog('DELETE', 'invoices', invoiceId)
 
   revalidatePath('/dashboard/keuangan/invoices')
 }
@@ -143,6 +147,8 @@ export async function updateInvoiceStatus(
     await supabase
       .from('orders').update({ status: 'COMPLETED', updated_at: new Date().toISOString() }).eq('order_id', data.order_id)
   }
+
+  void auditLog('STATUS_CHANGE', 'invoices', invoiceId, { status: currentStatus }, { status })
 
   revalidatePath('/dashboard/keuangan/invoices')
   revalidatePath(`/dashboard/keuangan/invoices/${invoiceId}`)

@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { requireSuperAdmin } from '@/lib/auth-guards'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { auditLog } from '@/lib/audit'
 import type { InviteUserInput, CreateUserInput, UpdateUserInput } from './users-queries'
 
 const ACTIVE_EMAIL_ERROR = 'Email sudah terdaftar sebagai pengguna aktif'
@@ -116,6 +117,7 @@ export async function createUser(input: CreateUserInput) {
       return { success: false, error: insertError.message }
     }
     revalidatePath('/dashboard/manajemen/user')
+    void auditLog('CREATE', 'user_management', input.email)
     return { success: true, error: null }
   } catch (error) {
     logger.error('Unexpected error in createUser:', error)
@@ -156,6 +158,7 @@ export async function toggleUserStatus(userId: string, isActive: boolean) {
       if (signOutError) logger.warn('User deactivated but session invalidation failed:', signOutError)
     }
     revalidatePath('/dashboard/manajemen/user')
+    void auditLog('TOGGLE_STATUS', 'user_management', userId, undefined, { is_active: isActive })
     return { success: true, error: null }
   } catch (error) {
     logger.error('Unexpected error in toggleUserStatus:', error)
@@ -176,6 +179,7 @@ export async function deleteUser(userId: string) {
     const { error: dbError } = await supabase.from('user_management').delete().eq('user_id', userId)
     if (dbError) logger.error('Auth user deleted but DB record remains:', dbError)
     revalidatePath('/dashboard/manajemen/user')
+    void auditLog('DELETE', 'user_management', userId)
     return { success: true, error: null }
   } catch (error) {
     logger.error('Unexpected error in deleteUser:', error)
