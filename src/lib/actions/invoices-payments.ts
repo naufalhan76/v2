@@ -23,66 +23,27 @@ export async function recordPayment(
 
   if (payment.amount <= 0) throw new Error('Jumlah pembayaran harus lebih dari 0')
 
-  const { data: invoice, error: fetchError } = await supabase
-    .from('invoices').select('total_amount, paid_amount, status').eq('invoice_id', invoiceId).single()
-  if (fetchError) throw new Error('Invoice tidak ditemukan')
+  const idempotencyKey = crypto.randomUUID()
 
-  if (!invoice.status || invoice.status === 'DRAFT') {
-    throw new Error('Invoice masih dalam status DRAFT. Kirim invoice terlebih dahulu sebelum mencatat pembayaran.')
-  }
-  if (invoice.status === 'CANCELLED') {
-    throw new Error('Tidak bisa mencatat pembayaran untuk invoice yang sudah dibatalkan.')
-  }
+  const { data: result, error: rpcError } = await supabase.rpc('record_payment_v2', {
+    p_invoice_id: invoiceId,
+    p_amount: payment.amount,
+    p_payment_method: payment.payment_method,
+    p_payment_date: payment.payment_date,
+    p_reference_number: payment.reference_number || null,
+    p_notes: payment.notes || null,
+    p_recorded_by: user!.id,
+    p_idempotency_key: idempotencyKey,
+  })
 
-  const remaining = invoice.total_amount - (invoice.paid_amount || 0)
-  if (payment.amount > remaining) {
-    throw new Error(`Jumlah melebihi sisa tagihan (Rp ${remaining.toLocaleString('id-ID')})`)
-  }
-
-  const newPaidAmount = invoice.paid_amount + payment.amount
-
-  let paymentStatus = 'UNPAID'
-  let newStatus = 'SENT'
-  if (newPaidAmount >= invoice.total_amount) {
-    paymentStatus = 'PAID'
-    newStatus = 'PAID'
-  } else if (newPaidAmount > 0) {
-    paymentStatus = 'PARTIAL_PAID'
-    newStatus = 'PARTIAL_PAID'
-  }
-
-  const { data: paymentRecord, error: paymentError } = await supabase
-    .from('payment_records').insert({
-      invoice_id: invoiceId,
-      payment_date: payment.payment_date,
-      payment_method: payment.payment_method,
-      amount: payment.amount,
-      reference_number: payment.reference_number || null,
-      notes: payment.notes || null,
-      recorded_by: user!.id,
-    }).select().single()
-
-  if (paymentError) {
-    logger.error('Error recording payment:', paymentError)
-    throw new Error('Gagal mencatat pembayaran')
-  }
-
-  const { data: updatedInvoice } = await supabase
-    .from('invoices').update({
-      paid_amount: newPaidAmount,
-      payment_status: paymentStatus,
-      status: newStatus,
-      updated_at: new Date().toISOString(),
-    }).eq('invoice_id', invoiceId).select('order_id, invoice_type').single()
-
-  if (paymentStatus === 'PAID' && updatedInvoice?.order_id && updatedInvoice?.invoice_type === 'FINAL') {
-    await supabase
-      .from('orders').update({ status: 'PAID', updated_at: new Date().toISOString() }).eq('order_id', updatedInvoice.order_id)
+  if (rpcError) {
+    logger.error('Error recording payment via RPC:', rpcError)
+    throw new Error(rpcError.message || 'Gagal mencatat pembayaran')
   }
 
   revalidatePath('/dashboard/keuangan/invoices')
   revalidatePath(`/dashboard/keuangan/invoices/${invoiceId}`)
-  return paymentRecord
+  return { payment_id: result.payment_id, ...payment, recorded_by: user!.id } as PaymentRecord
 }
 
 export async function deleteInvoice(invoiceId: string): Promise<void> {

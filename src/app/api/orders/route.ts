@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server'
 import { getOrders } from '@/lib/actions/orders'
 import { GetOrdersQuerySchema } from '@/app/api/schemas'
 import { jsonSuccess, jsonError, handleValidationError, handleApiError } from '@/app/api/utils'
-import { requireAuth } from '@/app/api/middleware/auth'
 import { logRequest, logResponse, measureDuration } from '@/app/api/middleware/logging'
+import { requireApiRole } from '@/lib/api-auth'
 
 /**
  * GET /api/orders
@@ -28,11 +28,9 @@ export async function GET(request: NextRequest) {
   const path = '/api/orders'
 
   try {
-    // Verify authentication
-    const user = await requireAuth(request)
-    if (!user) {
-      return jsonError('Unauthorized: Missing or invalid authentication', 401)
-    }
+    const auth = await requireApiRole(request, ['ADMIN', 'FINANCE', 'SUPERADMIN'])
+    if (!auth.authorized) return auth.response
+    const user = auth.user
 
     logRequest(method, path, user.id, { type: 'list' })
 

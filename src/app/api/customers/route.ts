@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server'
 import { getCustomers, createCustomer } from '@/lib/actions/customers'
 import { GetCustomersQuerySchema, CreateCustomerSchema } from '@/app/api/schemas'
 import { jsonSuccess, jsonError, handleValidationError, handleApiError } from '@/app/api/utils'
-import { requireAuth } from '@/app/api/middleware/auth'
 import { logRequest, logResponse, measureDuration, createAuditLog } from '@/app/api/middleware/logging'
+import { requireApiRole } from '@/lib/api-auth'
 
 /**
  * GET /api/customers
@@ -23,11 +23,10 @@ export async function GET(request: NextRequest) {
   const path = '/api/customers'
 
   try {
-    // Verify authentication
-    const user = await requireAuth(request)
-    if (!user) {
-      return jsonError('Unauthorized: Missing or invalid authentication', 401)
-    }
+    // Verify authentication + role
+    const auth = await requireApiRole(request, ['ADMIN', 'FINANCE', 'SUPERADMIN'])
+    if (!auth.authorized) return auth.response
+    const user = auth.user
 
     logRequest(method, path, user.id, { type: 'list' })
 
@@ -94,11 +93,10 @@ export async function POST(request: NextRequest) {
   const path = '/api/customers'
 
   try {
-    // Verify authentication
-    const user = await requireAuth(request)
-    if (!user) {
-      return jsonError('Unauthorized: Missing or invalid authentication', 401)
-    }
+    // Verify authentication + role
+    const auth = await requireApiRole(request, ['ADMIN', 'FINANCE', 'SUPERADMIN'])
+    if (!auth.authorized) return auth.response
+    const user = auth.user
 
     logRequest(method, path, user.id, { action: 'create' })
 

@@ -69,9 +69,20 @@ export async function uploadPhotoBlob(record: PendingPhotoRecord): Promise<strin
 
   if (error) throw new Error(`Photo upload failed: ${error.message}`)
 
-  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
-  const publicUrl = urlData.publicUrl
+  let url: string
+  if (bucket === 'service-photos') {
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(path, 300)
+    if (signedError || !signedData?.signedUrl) {
+      throw new Error(`Failed to create signed URL: ${signedError?.message ?? 'unknown'}`)
+    }
+    url = signedData.signedUrl
+  } else {
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
+    url = urlData.publicUrl
+  }
 
-  await markPhotoUploaded(record.id, publicUrl)
-  return publicUrl
+  await markPhotoUploaded(record.id, url)
+  return url
 }

@@ -77,6 +77,7 @@ export function OrderNotifications() {
         `)
         .in('status', ['CANCELLED'])
         .gte('updated_at', sevenDaysAgo.toISOString())
+        .is('deleted_at', null)
         .order('updated_at', { ascending: false })
         .limit(100)
 

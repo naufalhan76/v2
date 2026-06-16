@@ -162,6 +162,26 @@ export async function cancelOrder(orderId: string, reason?: string) {
         logger.error('Error updating AC units status:', acUpdateError)
       }
     }
+
+    // BUG-026: Check FINAL invoices before cancelling
+    const { data: finalInvoices } = await supabase
+      .from('invoices')
+      .select('invoice_id, status')
+      .eq('order_id', orderId)
+      .eq('invoice_type', 'FINAL')
+      .neq('status', 'CANCELLED')
+
+    if (finalInvoices?.length) {
+      const hasPaidOrPartial = finalInvoices.some(
+        (inv) => inv.status === 'PAID' || inv.status === 'PARTIAL_PAID'
+      )
+      if (hasPaidOrPartial) {
+        return {
+          success: false,
+          error: 'Tidak bisa cancel order: ada invoice FINAL yang sudah dibayar (full atau partial). Lakukan refund/void invoice terlebih dahulu.',
+        }
+      }
+    }
     
     const { data, error } = await supabase
       .from('orders')
@@ -200,6 +220,23 @@ export async function cancelOrder(orderId: string, reason?: string) {
       }
     } catch (cascadeError) {
       logger.warn('cancelOrder: failed to cascade-cancel PROFORMA invoices:', cascadeError)
+    }
+
+    // Cascade cancel FINAL invoices in DRAFT/SENT status
+    try {
+      const finalToCancelIds = (finalInvoices ?? [])
+        .filter((inv) => inv.status === 'DRAFT' || inv.status === 'SENT')
+        .map((inv) => inv.invoice_id)
+
+      if (finalToCancelIds.length > 0) {
+        await supabase
+          .from('invoices')
+          .update({ status: 'CANCELLED', payment_status: 'CANCELLED', updated_at: new Date().toISOString() })
+          .in('invoice_id', finalToCancelIds)
+        logger.info(`cancelOrder cascaded ${finalToCancelIds.length} FINAL invoices for ${orderId}`)
+      }
+    } catch (cascadeError) {
+      logger.warn('cancelOrder: failed to cascade-cancel FINAL invoices:', cascadeError)
     }
 
     revalidatePath('/orders')

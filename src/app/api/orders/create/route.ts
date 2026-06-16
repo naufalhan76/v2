@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server'
 import { createOrder } from '@/lib/actions/orders'
 import { CreateOrderSchema } from '@/app/api/schemas'
 import { jsonSuccess, jsonError, handleValidationError, handleApiError } from '@/app/api/utils'
-import { requireAuth } from '@/app/api/middleware/auth'
 import { logRequest, logResponse, measureDuration, createAuditLog } from '@/app/api/middleware/logging'
+import { requireApiRole } from '@/lib/api-auth'
 import { normalizeOrderServiceType } from '@/lib/service-types'
 import { createAdminClient } from '@/lib/supabase-admin'
 
@@ -35,11 +35,9 @@ export async function POST(request: NextRequest) {
   const path = '/api/orders'
 
   try {
-    // Verify authentication
-    const user = await requireAuth(request)
-    if (!user) {
-      return jsonError('Unauthorized: Missing or invalid authentication', 401)
-    }
+    const auth = await requireApiRole(request, ['ADMIN', 'FINANCE', 'SUPERADMIN'])
+    if (!auth.authorized) return auth.response
+    const user = auth.user
 
     logRequest(method, path, user.id, { action: 'create' })
 

@@ -29,101 +29,19 @@ export async function assignOrdersToTechnician(data: {
       previousLeadByOrder.set(row.order_id, row.technician_id)
     }
 
-    const { data: prevOrders } = await supabase
-      .from('orders')
-      .select('order_id, status')
-      .in('order_id', data.orderIds)
+    const { error: rpcError } = await supabase.rpc('assign_order_to_technician', {
+      p_order_ids: data.orderIds,
+      p_lead_technician_id: data.technicianId,
+      p_helper_ids: data.helperTechnicianIds || [],
+      p_scheduled_date: data.scheduledDate,
+    })
 
-    const previousStatusByOrder = new Map<string, string>()
-    for (const row of prevOrders ?? []) {
-      previousStatusByOrder.set(row.order_id, row.status)
+    if (rpcError) {
+      logger.error('Assignment RPC error:', rpcError)
+      throw new Error(rpcError.message)
     }
 
-    const { error: orderError } = await supabase
-      .from('orders')
-      .update({
-        status: 'ASSIGNED',
-        assigned_technician_id: data.technicianId,
-        scheduled_visit_date: data.scheduledDate,
-        updated_at: new Date().toISOString(),
-      })
-      .in('order_id', data.orderIds)
-    if (orderError) {
-      logger.error('Order update error:', orderError)
-      throw orderError
-    }
-
-    const transitionRows = data.orderIds
-      .map((orderId) => {
-        const fromStatus = previousStatusByOrder.get(orderId)
-        if (!fromStatus || fromStatus === 'ASSIGNED') return null
-        return {
-          order_id: orderId,
-          from_status: fromStatus,
-          to_status: 'ASSIGNED' as const,
-          notes:
-            fromStatus === 'PENDING'
-              ? 'Assigned to technician'
-              : `Reassigned by admin (was ${fromStatus})`,
-          transition_date: new Date().toISOString(),
-        }
-      })
-      .filter((r): r is NonNullable<typeof r> => r !== null)
-
-    if (transitionRows.length > 0) {
-      const { error: transitionError } = await supabase
-        .from('order_status_transitions')
-        .insert(transitionRows)
-      if (transitionError) {
-        logger.warn('Failed to log assignment transitions:', transitionError)
-      }
-    }
-
-    const { error: deleteAssignError } = await supabase
-      .from('order_technicians')
-      .delete()
-      .in('order_id', data.orderIds)
-    if (deleteAssignError) {
-      logger.error('Failed to clear existing assignments:', deleteAssignError)
-      throw deleteAssignError
-    }
-
-    const technicianAssignments: Array<{
-      order_id: string
-      technician_id: string
-      role: 'lead' | 'helper'
-      assigned_at: string
-    }> = []
-    for (const orderId of data.orderIds) {
-      technicianAssignments.push({
-        order_id: orderId,
-        technician_id: data.technicianId,
-        role: 'lead',
-        assigned_at: new Date().toISOString(),
-      })
-      if (data.helperTechnicianIds && data.helperTechnicianIds.length > 0) {
-        for (const helperId of data.helperTechnicianIds) {
-          technicianAssignments.push({
-            order_id: orderId,
-            technician_id: helperId,
-            role: 'helper',
-            assigned_at: new Date().toISOString(),
-          })
-        }
-      }
-    }
-
-    if (technicianAssignments.length > 0) {
-      const { error: assignError } = await supabase
-        .from('order_technicians')
-        .insert(technicianAssignments)
-      if (assignError) {
-        logger.error('Technician assignment error:', assignError)
-        throw assignError
-      }
-    }
-
-    logger.debug('Orders assigned successfully')
+    logger.debug('Orders assigned successfully via RPC')
     revalidatePath('/dashboard/orders')
     revalidatePath('/dashboard/operasional/assign-order')
     revalidatePath('/dashboard/operasional/monitoring-ongoing')

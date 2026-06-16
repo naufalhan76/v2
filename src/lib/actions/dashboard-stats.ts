@@ -55,7 +55,8 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .gte('order_date', currentStart)
-        .lte('order_date', currentEnd),
+        .lte('order_date', currentEnd)
+        .is('deleted_at', null),
       
       // Pending orders count
       supabase
@@ -63,7 +64,8 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
         .select('*', { count: 'exact', head: true })
         .in('status', ['PENDING', 'ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS'])
         .gte('order_date', currentStart)
-        .lte('order_date', currentEnd),
+        .lte('order_date', currentEnd)
+        .is('deleted_at', null),
       
       // Completed orders count
       supabase
@@ -71,7 +73,8 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
         .select('*', { count: 'exact', head: true })
         .in('status', ['COMPLETED', 'INVOICED', 'PAID'])
         .gte('order_date', currentStart)
-        .lte('order_date', currentEnd),
+        .lte('order_date', currentEnd)
+        .is('deleted_at', null),
       
       // Cancelled orders count
       supabase
@@ -79,7 +82,8 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'CANCELLED')
         .gte('order_date', currentStart)
-        .lte('order_date', currentEnd),
+        .lte('order_date', currentEnd)
+        .is('deleted_at', null),
       
       // Total customers
       supabase
@@ -118,28 +122,32 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .gte('order_date', previousStart)
-        .lte('order_date', previousEnd),
+        .lte('order_date', previousEnd)
+        .is('deleted_at', null),
 
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .in('status', ['PENDING', 'ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS'])
         .gte('order_date', previousStart)
-        .lte('order_date', previousEnd),
+        .lte('order_date', previousEnd)
+        .is('deleted_at', null),
 
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .in('status', ['COMPLETED', 'INVOICED', 'PAID'])
         .gte('order_date', previousStart)
-        .lte('order_date', previousEnd),
+        .lte('order_date', previousEnd)
+        .is('deleted_at', null),
 
       supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'CANCELLED')
         .gte('order_date', previousStart)
-        .lte('order_date', previousEnd),
+        .lte('order_date', previousEnd)
+        .is('deleted_at', null),
 
       supabase
         .from('payment_records')
@@ -275,6 +283,7 @@ export async function getRecentOrders(limit: number = 5) {
         )
       `)
       .order('created_at', { ascending: false })
+      .is('deleted_at', null)
       .limit(limit)
     
     if (error) throw error

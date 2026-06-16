@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server'
 import { getAcUnitById, updateAcUnit, deleteAcUnit } from '@/lib/actions/ac-units'
 import { jsonSuccess, jsonError, handleApiError } from '@/app/api/utils'
-import { requireAuth } from '@/app/api/middleware/auth'
 import { logRequest, logResponse, measureDuration } from '@/app/api/middleware/logging'
+import { requireApiRole } from '@/lib/api-auth'
 
 /**
  * GET /api/ac-units/[id]
@@ -22,11 +22,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params
     const path = `/api/ac-units/${id}`
 
-    // Verify authentication
-    const user = await requireAuth(request)
-    if (!user) {
-      return jsonError('Unauthorized: Missing or invalid authentication', 401)
-    }
+    const auth = await requireApiRole(request, ['ADMIN', 'FINANCE', 'SUPERADMIN'])
+    if (!auth.authorized) return auth.response
+    const user = auth.user
 
     logRequest(method, path, user.id, { acUnitId: id })
 
@@ -78,11 +76,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const path = `/api/ac-units/${id}`
     const body = await request.json()
 
-    // Verify authentication
-    const user = await requireAuth(request)
-    if (!user) {
-      return jsonError('Unauthorized: Missing or invalid authentication', 401)
-    }
+    const auth = await requireApiRole(request, ['ADMIN', 'FINANCE', 'SUPERADMIN'])
+    if (!auth.authorized) return auth.response
+    const user = auth.user
 
     logRequest(method, path, user.id, { acUnitId: id, data: body })
 
@@ -132,11 +128,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { id } = await params
     const path = `/api/ac-units/${id}`
 
-    // Verify authentication
-    const user = await requireAuth(request)
-    if (!user) {
-      return jsonError('Unauthorized: Missing or invalid authentication', 401)
-    }
+    const auth = await requireApiRole(request, ['ADMIN', 'FINANCE', 'SUPERADMIN'])
+    if (!auth.authorized) return auth.response
+    const user = auth.user
 
     logRequest(method, path, user.id, { acUnitId: id })
 

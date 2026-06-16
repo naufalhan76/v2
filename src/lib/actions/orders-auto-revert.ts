@@ -26,6 +26,7 @@ export async function autoRevertStaleOrders(): Promise<AutoRevertResult> {
       .select('order_id, status, assigned_technician_id')
       .in('status', STALE_STATUSES as unknown as string[])
       .lt('scheduled_visit_date', today)
+      .is('deleted_at', null)
 
     if (fetchError) {
       log.error('Failed to query stale orders', fetchError)

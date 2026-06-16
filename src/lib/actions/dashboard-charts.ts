@@ -18,6 +18,7 @@ export async function getChartData(startDate?: string, endDate?: string) {
       .select('order_date, order_id')
       .gte('order_date', dateStart)
       .lte('order_date', dateEnd)
+      .is('deleted_at', null)
       .order('order_date')
     
     if (ordersError) throw ordersError
@@ -127,6 +128,7 @@ export async function getStatusBreakdown(startDate?: string, endDate?: string) {
       .select('status')
       .gte('order_date', dateStart)
       .lte('order_date', dateEnd)
+      .is('deleted_at', null)
 
     if (error) throw error
 
@@ -240,6 +242,7 @@ export async function getStatusByDay(startDate?: string, endDate?: string) {
       .select('order_date, status')
       .gte('order_date', dateStart)
       .lte('order_date', dateEnd)
+      .is('deleted_at', null)
       .order('order_date')
 
     if (error) throw error

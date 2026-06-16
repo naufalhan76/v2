@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server'
 import { getAcUnits, createAcUnit } from '@/lib/actions/ac-units'
 import { jsonSuccess, jsonError, handleApiError, handleValidationError } from '@/app/api/utils'
-import { requireAuth } from '@/app/api/middleware/auth'
 import { logRequest, logResponse, measureDuration } from '@/app/api/middleware/logging'
+import { requireApiRole } from '@/lib/api-auth'
 import { z } from 'zod'
 
 const GetAcUnitsQuerySchema = z.object({
@@ -42,11 +42,9 @@ export async function GET(request: NextRequest) {
   const path = '/api/ac-units'
 
   try {
-    // Verify authentication
-    const user = await requireAuth(request)
-    if (!user) {
-      return jsonError('Unauthorized: Missing or invalid authentication', 401)
-    }
+    const auth = await requireApiRole(request, ['ADMIN', 'FINANCE', 'SUPERADMIN'])
+    if (!auth.authorized) return auth.response
+    const user = auth.user
 
     logRequest(method, path, user.id, { type: 'list' })
 
@@ -116,11 +114,9 @@ export async function POST(request: NextRequest) {
   const path = '/api/ac-units'
 
   try {
-    // Verify authentication
-    const user = await requireAuth(request)
-    if (!user) {
-      return jsonError('Unauthorized: Missing or invalid authentication', 401)
-    }
+    const auth = await requireApiRole(request, ['ADMIN', 'FINANCE', 'SUPERADMIN'])
+    if (!auth.authorized) return auth.response
+    const user = auth.user
 
     const body = await request.json()
 

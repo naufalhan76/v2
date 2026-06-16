@@ -23,7 +23,21 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     const { id } = await params
     logger.debug('Deleting customer ID:', id)
-    
+
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('order_id')
+      .eq('customer_id', id)
+      .is('deleted_at', null)
+      .limit(1)
+
+    if (orders && orders.length > 0) {
+      return NextResponse.json(
+        { success: false, error: 'Customer masih punya order aktif. Tidak bisa dihapus.' },
+        { status: 400 }
+      )
+    }
+
     const { data, error } = await supabase
       .from('customers')
       .delete()

@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
         { count: 'exact' }
       )
       .in('order_id', orderIds)
+      .is('deleted_at', null)
       .order('scheduled_visit_date', { ascending: false })
       .range(from, to)
 
