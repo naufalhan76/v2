@@ -14,6 +14,11 @@
 
 import { z } from 'zod'
 
+// Maximum price caps to prevent injection / overflow on monetary fields
+export const MAX_MATERIAL_PRICE = 1_000_000_000        // Rp 1 miliar per satuan
+export const MAX_MATERIAL_TOTAL = MAX_MATERIAL_PRICE * 1000  // Rp 1 triliun per item (qty × unit_price)
+export const MAX_REPORT_TOTAL = MAX_MATERIAL_PRICE * 100     // Rp 100 miliar total laporan
+
 // ============================================================================
 // GPS — best-effort capture, never blocks a transition
 // ============================================================================
@@ -54,8 +59,8 @@ export const MaterialItemSchema = z.object({
   addon_id: z.string().uuid().optional().nullable(),
   name: z.string().min(1, 'Nama material wajib diisi'),
   qty: z.number().min(1, 'Qty minimal 1'),
-  unit_price: z.number().min(0, 'Harga tidak boleh negatif'),
-  total: z.number().min(0),
+  unit_price: z.number().min(0, 'Harga tidak boleh negatif').max(MAX_MATERIAL_PRICE, 'Harga material melebihi batas wajar (max Rp 1 miliar)'),
+  total: z.number().min(0).max(MAX_MATERIAL_TOTAL, 'Total material melebihi batas wajar'),
   // NEW fields for manual addon request
   category: z.string().optional().nullable(),          // PARTS, FREON, etc.
   unit_of_measure: z.string().optional().nullable(),    // pcs, kg, etc.
@@ -149,7 +154,7 @@ export const TechnicianReportSchema = z.object({
   photos_before: z.array(z.string()).default([]),
   photos_after: z.array(z.string()).default([]),
   materials: z.array(MaterialItemSchema).default([]),
-  actual_total_price: z.number().min(0, 'Harga aktual wajib diisi').optional().default(0),
+  actual_total_price: z.number().min(0, 'Harga aktual wajib diisi').max(MAX_REPORT_TOTAL, 'Total laporan melebihi batas wajar (max Rp 100 miliar)').optional().default(0),
   customer_signature_url: z.string().min(1, 'Signature path wajib diisi'),
   customer_name_signed: z.string().min(1, 'Nama penandatangan wajib diisi'),
   notes: z.string().optional().default(''),

@@ -73,6 +73,12 @@ export async function resendInvite(inviteId: string): Promise<{ success: boolean
 export async function acceptInvite(inviteId: string, authUserId: string): Promise<{ success: boolean; error: string | null }> {
   try {
     const supabaseAdmin = createAdminClient()
+    const supabase = await createClient()
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (!currentUser) return { success: false, error: 'Tidak ada sesi pengguna aktif' }
+    if (currentUser.id !== authUserId) {
+      return { success: false, error: 'Tidak diizinkan: authUserId tidak cocok dengan sesi pengguna' }
+    }
     const { data: invite, error } = await supabaseAdmin.from('user_invites').select('invite_id, email, role, status').eq('invite_id', inviteId).single()
     if (error || !invite) return { success: false, error: error?.message ?? 'Invite tidak ditemukan' }
     if (invite.status !== 'PENDING') return { success: false, error: 'Invite tidak aktif' }

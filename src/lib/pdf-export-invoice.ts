@@ -31,7 +31,7 @@ export function exportInvoiceToPDF({
   const subtotal = invoice.subtotal
   const tax = invoice.tax_amount
   const totalAmount = invoice.total_amount
-  const amountPaid = payments.reduce((sum, p) => sum + p.amount, 0)
+  const amountPaid = invoice.paid_amount ?? 0
   const balanceDue = totalAmount - amountPaid
   const displayStatus = invoice.computed_status ?? invoice.status
   const displayStatusLabel = getInvoiceStatusLabel(displayStatus)

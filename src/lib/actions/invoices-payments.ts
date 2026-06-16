@@ -24,8 +24,15 @@ export async function recordPayment(
   if (payment.amount <= 0) throw new Error('Jumlah pembayaran harus lebih dari 0')
 
   const { data: invoice, error: fetchError } = await supabase
-    .from('invoices').select('total_amount, paid_amount').eq('invoice_id', invoiceId).single()
+    .from('invoices').select('total_amount, paid_amount, status').eq('invoice_id', invoiceId).single()
   if (fetchError) throw new Error('Invoice tidak ditemukan')
+
+  if (!invoice.status || invoice.status === 'DRAFT') {
+    throw new Error('Invoice masih dalam status DRAFT. Kirim invoice terlebih dahulu sebelum mencatat pembayaran.')
+  }
+  if (invoice.status === 'CANCELLED') {
+    throw new Error('Tidak bisa mencatat pembayaran untuk invoice yang sudah dibatalkan.')
+  }
 
   const remaining = invoice.total_amount - (invoice.paid_amount || 0)
   if (payment.amount > remaining) {
@@ -131,8 +138,41 @@ export async function updateInvoiceStatus(
   const { data: { user } } = await supabase.auth.getUser()
   await requireFinanceRole(user)
 
+  const allowedTransitions: Record<string, string[]> = {
+    DRAFT: ['SENT', 'CANCELLED'],
+    SENT: ['PARTIAL_PAID', 'PAID', 'OVERDUE', 'CANCELLED'],
+    PARTIAL_PAID: ['PAID', 'OVERDUE', 'CANCELLED'],
+    PAID: [], // terminal
+    OVERDUE: ['PAID', 'CANCELLED'],
+    CANCELLED: [], // terminal
+  }
+
+  // Fetch current invoice before update
+  const { data: currentInvoice, error: fetchError } = await supabase
+    .from('invoices').select('status, total_amount').eq('invoice_id', invoiceId).single()
+  if (fetchError || !currentInvoice) {
+    logger.error('Error fetching current invoice:', fetchError)
+    throw new Error('Invoice tidak ditemukan')
+  }
+
+  const currentStatus = currentInvoice.status
+  const allowed = allowedTransitions[currentStatus] || []
+  if (!allowed.includes(status)) {
+    throw new Error(`Transisi status dari ${currentStatus} ke ${status} tidak diizinkan`)
+  }
+
+  // Build update payload based on status
+  const updatePayload: Record<string, unknown> = { status, updated_at: new Date().toISOString() }
+
+  if (status === 'PAID') {
+    updatePayload.payment_status = 'PAID'
+    updatePayload.paid_amount = currentInvoice.total_amount
+  } else if (status === 'CANCELLED') {
+    updatePayload.payment_status = 'CANCELLED'
+  }
+
   const { data, error } = await supabase
-    .from('invoices').update({ status, updated_at: new Date().toISOString() }).eq('invoice_id', invoiceId).select('*').single()
+    .from('invoices').update(updatePayload).eq('invoice_id', invoiceId).select('*').single()
   if (error) {
     logger.error('Error updating invoice status:', error)
     throw new Error('Gagal mengupdate status invoice')

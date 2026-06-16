@@ -1,6 +1,6 @@
 export type DiscountType = 'PERCENTAGE' | 'FIXED'
 
-function roundToTwo(value: number): number {
+export function roundToTwo(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100
 }
 

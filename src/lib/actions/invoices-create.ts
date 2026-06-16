@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
 import { requireFinanceRole } from '@/lib/rbac'
 import { getInvoiceSource } from '@/lib/invoice-utils'
-import { calculateDiscount, calculateTax } from '@/lib/utils/money'
+import { calculateDiscount, calculateTax, roundToTwo } from '@/lib/utils/money'
 import { CreateBlankInvoiceSchema, type CreateBlankInvoiceInput } from '@/app/api/schemas'
 import { generateInvoiceNumber } from './invoices-queries'
 import { assertCustomerIsVisibleOrThrow, assertCustomerExistsForBlankInvoiceOrThrow } from './invoices-revision'
@@ -34,16 +34,19 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
   await requireFinanceRole(user)
 
   const invoiceNumber = await generateInvoiceNumber()
-  const baseServiceTotal = input.base_service_price
-  const addonsSubtotal = input.items
-    .filter((item) => item.item_type === 'ADDON')
-    .reduce((sum, item) => sum + item.quantity * item.unit_price, 0)
-  const subtotal = baseServiceTotal + addonsSubtotal
-  const discountAmount = input.discount_amount || 0
+  const baseServiceTotal = roundToTwo(input.base_service_price)
+  const addonsSubtotal = roundToTwo(
+    input.items
+      .filter((item) => item.item_type === 'ADDON')
+      .reduce((sum, item) => sum + item.quantity * item.unit_price, 0)
+  )
+  const subtotal = roundToTwo(baseServiceTotal + addonsSubtotal)
+  const discountAmount = roundToTwo(input.discount_amount || 0)
   const discountPercentage = input.discount_percentage || 0
   const taxPercentage = input.tax_percentage || 11
-  const taxAmount = ((subtotal - discountAmount) * taxPercentage) / 100
-  const totalAmount = subtotal - discountAmount + taxAmount
+  const taxableBase = Math.max(0, roundToTwo(subtotal - discountAmount))
+  const taxAmount = roundToTwo((taxableBase * taxPercentage) / 100)
+  const totalAmount = roundToTwo(taxableBase + taxAmount)
 
   const { data: config } = await supabase
     .from('invoice_configuration').select('terms_conditions_template, default_due_days').eq('is_active', true).single()
