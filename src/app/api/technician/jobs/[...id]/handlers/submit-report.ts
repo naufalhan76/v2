@@ -120,7 +120,6 @@ export async function handleSubmitReport(
       p_order_id: orderId,
       p_technician_id: technicianId,
       p_payload: rpcPayload,
-      p_work_duration_minutes: rpcPayload.work_duration_minutes ?? null,
     })
 
     if (rpcError) {

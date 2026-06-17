@@ -24,12 +24,12 @@ export async function GET(request: NextRequest) {
       ? dateParam
       : new Date().toISOString().slice(0, 10)
 
-    // Find orders assigned to this technician for today
+    // Find orders assigned to this technician for today (lead OR helper)
     const { data: assignments, error: assignError } = await supabase
       .from('order_technicians')
-      .select('order_id')
+      .select('order_id, role')
       .eq('technician_id', technicianId)
-      .eq('role', 'lead')
+      .in('role', ['lead', 'helper'])
       .is('removed_at', null)
 
     if (assignError) throw assignError
