@@ -191,6 +191,8 @@ export function OrderNotifications() {
         schema: 'public',
         table: 'orders',
       }, (payload: { old: Record<string, unknown>; new: Record<string, unknown> }) => {
+        if (!userId) return
+        
         const oldDate = payload.old.scheduled_visit_date as string | undefined
         const newDate = payload.new.scheduled_visit_date as string | undefined
         if (oldDate && newDate && oldDate !== newDate) {
@@ -217,7 +219,8 @@ export function OrderNotifications() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [userId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Create channel once on mount, don't recreate on userId change
 
   const cancelledNotifications = notifications.filter(n => n.status === 'CANCELLED')
 
