@@ -124,7 +124,7 @@ BEGIN
           ) VALUES (
             p_order_id,
             v_addon_id,
-            COALESCE((v_material->>'qty')::int, 1),
+            COALESCE((v_material->>'qty')::numeric, 1.0),
             COALESCE((v_material->>'unit_price')::numeric, 0),
             COALESCE((v_material->>'total')::numeric, 0)
           )

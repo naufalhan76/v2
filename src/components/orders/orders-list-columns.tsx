@@ -98,7 +98,7 @@ export function createOrdersListColumns(
             <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="More actions"><MoreHorizontal className="h-4 w-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRowClick(row.original.order_id) }}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRowClick(row.original.order_id) }} className="text-foreground">
               Lihat Detail
             </DropdownMenuItem>
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setBulkCancelOrderId(row.original.order_id) }} className="text-destructive">

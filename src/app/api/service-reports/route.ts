@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceReport } from '@/lib/service-report'
 import { createClient } from '@/lib/supabase-server'
+import { getServicePhotoUrl } from '@/lib/storage-url'
 
 export async function GET(req: NextRequest) {
   const orderId = req.nextUrl.searchParams.get('orderId')
@@ -47,5 +48,19 @@ export async function GET(req: NextRequest) {
   }
 
   const report = await getServiceReport(orderId)
+
+  if (report) {
+    const [beforeUrls, afterUrls] = await Promise.all([
+      Promise.all(report.photos_before.map((p) => getServicePhotoUrl(p))).then(
+        (urls) => urls.filter((u): u is string => u !== null),
+      ),
+      Promise.all(report.photos_after.map((p) => getServicePhotoUrl(p))).then(
+        (urls) => urls.filter((u): u is string => u !== null),
+      ),
+    ])
+    report.photos_before = beforeUrls
+    report.photos_after = afterUrls
+  }
+
   return NextResponse.json({ success: true, data: report })
 }

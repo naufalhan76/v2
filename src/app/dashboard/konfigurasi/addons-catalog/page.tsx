@@ -16,17 +16,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { getAddons, createAddon, updateAddon, deleteAddon, getLowStockAddons, type Addon } from '@/lib/actions/addons'
+import { getAddons, createAddon, updateAddon, deleteAddon, type Addon } from '@/lib/actions/addons'
 import { getAddonRequests, getPendingAddonRequestCount, approveAddonRequest, rejectAddonRequest, type AddonRequest } from '@/lib/actions/addon-requests'
 import { AddonsTable } from './_components/addons-table'
 import { AddonFormModal, type AddonFormData } from './_components/addon-form-modal'
 import { AddonRequestCard } from './_components/addon-request-panel'
 import { AddonFilters } from './_components/addon-filters'
-import { LowStockAlert } from './_components/low-stock-alert'
 
 export default function AddonsCatalogPage() {
   const [addons, setAddons] = useState<Addon[]>([])
-  const [lowStockAddons, setLowStockAddons] = useState<Addon[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -40,7 +38,7 @@ export default function AddonsCatalogPage() {
   const [pendingCount, setPendingCount] = useState(0)
   const { toast } = useToast()
 
-  useEffect(() => { loadAddons(); loadLowStockAddons() }, [categoryFilter, searchQuery])
+  useEffect(() => { loadAddons() }, [categoryFilter, searchQuery])
   useEffect(() => { loadRequests() }, [])
 
   const loadAddons = async () => {
@@ -50,10 +48,6 @@ export default function AddonsCatalogPage() {
       setAddons(result.data)
     } catch { toast({ variant: 'destructive', title: 'Error', description: 'Gagal memuat data add-ons' }) }
     finally { setIsFetching(false) }
-  }
-
-  const loadLowStockAddons = async () => {
-    try { setLowStockAddons(await getLowStockAddons()) } catch { /* silent */ }
   }
 
   const loadRequests = async () => {
@@ -74,7 +68,7 @@ export default function AddonsCatalogPage() {
       const input = { category: data.category, item_name: data.itemName, item_code: data.itemCode || null, description: data.description || null, unit_of_measure: data.unitOfMeasure, unit_price: parseFloat(data.unitPrice), stock_quantity: data.stockQuantity ? parseFloat(data.stockQuantity) : 0, minimum_stock: data.minimumStock ? parseFloat(data.minimumStock) : 0 }
       if (editingAddon) { await updateAddon(editingAddon.addon_id, input); toast({ title: 'Berhasil', description: 'Add-on berhasil diupdate' }) }
       else { await createAddon(input); toast({ title: 'Berhasil', description: 'Add-on berhasil ditambahkan' }) }
-      setIsDialogOpen(false); setEditingAddon(null); loadAddons(); loadLowStockAddons()
+      setIsDialogOpen(false); setEditingAddon(null); loadAddons()
     } catch (error: unknown) { toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Gagal menyimpan add-on' }) }
     finally { setIsLoading(false) }
   }
@@ -85,7 +79,7 @@ export default function AddonsCatalogPage() {
       setIsLoading(true)
       await deleteAddon(deletingAddon.addon_id)
       toast({ title: 'Berhasil', description: 'Add-on berhasil dihapus' })
-      setIsDeleteDialogOpen(false); setDeletingAddon(null); loadAddons(); loadLowStockAddons()
+      setIsDeleteDialogOpen(false); setDeletingAddon(null); loadAddons()
     } catch (error: unknown) { toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Gagal menghapus add-on' }) }
     finally { setIsLoading(false) }
   }
@@ -110,9 +104,7 @@ export default function AddonsCatalogPage() {
         </Dialog>
       </div>
 
-      <LowStockAlert addons={lowStockAddons} />
-
-      <AddonRequestCard requests={requests} isLoadingRequests={isLoadingRequests} pendingCount={pendingCount} onApprove={handleApproveRequest} onReject={handleRejectRequest} onRequestsLoaded={() => { loadRequests(); loadAddons(); loadLowStockAddons() }} />
+      <AddonRequestCard requests={requests} isLoadingRequests={isLoadingRequests} pendingCount={pendingCount} onApprove={handleApproveRequest} onReject={handleRejectRequest} onRequestsLoaded={() => { loadRequests(); loadAddons() }} />
 
       <Card className="rounded-xl border border-border/50 shadow-sm">
         <CardContent className="pt-6">

@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PhotoUploadOffline } from '@/components/technician/photo-upload-offline'
 import { MaterialInput, type MaterialItem } from '@/components/technician/material-input'
+import { BarcodeScanner } from '@/components/technician/barcode-scanner'
 import { type AcUnitReportItem } from '@/app/api/schemas/technician'
 import { cn } from '@/lib/utils'
 
@@ -124,7 +125,14 @@ export function AcUnitCard({ field, index, orderId, initialUnits, formValues, se
                 </div>
                 <div className="space-y-1.5">
                   <Label>Nomor Seri</Label>
-                  <Input placeholder="Serial number..." className={cn("h-11", hasData('serial_number') && "bg-muted dark:bg-surface text-muted-foreground dark:text-muted-foreground cursor-not-allowed")} readOnly={hasData('serial_number')} {...register(`units.${index}.serial_number`)} />
+                  <div className="flex gap-2">
+                    <Input placeholder="Serial number..." className={cn("h-11 flex-1", hasData('serial_number') && "bg-muted dark:bg-surface text-muted-foreground dark:text-muted-foreground cursor-not-allowed")} readOnly={hasData('serial_number')} {...register(`units.${index}.serial_number`)} />
+                    {!hasData('serial_number') && (
+                      <BarcodeScanner
+                        onScan={(val) => setValue(`units.${index}.serial_number`, val, { shouldValidate: true })}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="space-y-6 pt-2">

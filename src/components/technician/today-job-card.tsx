@@ -55,7 +55,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
   const customerName = job.customers?.customer_name ?? 'Customer'
   const phoneRaw = job.customers?.phone_number || ''
   
-  const totalAmount = job.order_items?.reduce((acc, item) => acc + ((item as any).total_price || 0), 0) ?? 0
+  const totalAmount = job.order_items?.reduce((acc, item) => acc + ((item as { total_price?: number }).total_price || 0), 0) ?? 0
 
   // Fetch technician profile to get name
   const { data: profile } = useQuery({
@@ -114,10 +114,11 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
       queryClient.invalidateQueries({ queryKey: ['technician', 'job', job.order_id] })
       toast({ title: 'Status diperbarui' })
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
+      const message = err instanceof Error ? err.message : 'Terjadi kesalahan saat memperbarui status.'
       toast({ 
         title: 'Gagal update status', 
-        description: err.message || 'Terjadi kesalahan saat memperbarui status.',
+        description: message,
         variant: 'destructive' 
       })
     }
@@ -273,9 +274,9 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
             <Button
               className={cn(
                 "w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-colors",
-                isActive
-                  ? "bg-primary text-white hover:bg-primary-hover"
-                  : "border-2 border-border text-primary hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-surface"
+                  isActive
+                    ? "bg-primary text-white hover:bg-primary-hover"
+                    : "border-2 border-border text-foreground hover:bg-muted dark:border-border dark:hover:bg-surface"
               )}
               asChild
             >

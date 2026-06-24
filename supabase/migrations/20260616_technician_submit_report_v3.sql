@@ -46,7 +46,7 @@ BEGIN
 
       IF v_catalog_price IS NOT NULL THEN
         v_material := jsonb_set(v_material, '{unit_price}', to_jsonb(v_catalog_price));
-        v_material := jsonb_set(v_material, '{total}', to_jsonb(v_catalog_price * COALESCE((v_material->>'qty')::int, 1)));
+        v_material := jsonb_set(v_material, '{total}', to_jsonb(v_catalog_price * COALESCE((v_material->>'qty')::numeric, 1.0)));
       END IF;
     END IF;
 
@@ -188,7 +188,7 @@ BEGIN
 
     IF v_addon_id IS NOT NULL AND COALESCE((v_material->>'is_manual')::boolean, false) = false THEN
       UPDATE addon_catalog
-      SET stock_quantity = stock_quantity - COALESCE((v_material->>'qty')::int, 1),
+      SET stock_quantity = stock_quantity - COALESCE((v_material->>'qty')::numeric, 1.0),
           updated_at = NOW()
       WHERE addon_id = v_addon_id;
     END IF;

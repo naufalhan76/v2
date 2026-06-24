@@ -86,8 +86,9 @@ export function MaterialRowManual({
             <label className="text-xs text-muted-foreground mb-0.5 block">Qty *</label>
             <Input
               type="number"
-              inputMode="numeric"
-              min={1}
+              inputMode="decimal"
+              min="0.1"
+              step="0.1"
               value={item.qty}
               onChange={(e) => onUpdate(index, 'qty', e.target.value)}
               disabled={disabled}
