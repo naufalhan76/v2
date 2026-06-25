@@ -134,30 +134,6 @@ export async function toggleAddonStatus(
   return updateAddon(addonId, { is_active: isActive })
 }
 
-/**
- * Update stock quantity
- * @deprecated Stock tracking removed. Throws on call.
- */
-export async function updateStock(
-  _addonId: string,
-  _quantity: number,
-  _operation: 'add' | 'subtract' | 'set'
-): Promise<Addon> {
-  // DEPRECATED stub — removed in task 4c
-  throw new Error('Stock tracking removed')
-}
-
-/**
- * Bulk update stock (for inventory adjustments)
- * @deprecated Stock tracking removed. Throws on call.
- */
-export async function bulkUpdateStock(
-  _updates: Array<{ addon_id: string; quantity: number }>
-): Promise<void> {
-  // DEPRECATED stub — removed in task 4c
-  throw new Error('Stock tracking removed')
-}
-
 export async function bulkUpdateAddons(csvText: string) {
   const supabase = await createClient()
   const lines = csvText.split('\n').filter(l => l.trim().length > 0)

@@ -27,8 +27,6 @@ const addonSchema = z.object({
   description: z.string().optional(),
   unitOfMeasure: z.string().min(1, 'Satuan wajib diisi'),
   unitPrice: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Format harga tidak valid'),
-  stockQuantity: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Format stok tidak valid').optional(),
-  minimumStock: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Format stok minimum tidak valid').optional(),
 })
 
 export type AddonFormData = z.infer<typeof addonSchema>
@@ -92,8 +90,6 @@ export function AddonFormModal({
           description: editingAddon.description || '',
           unitOfMeasure: editingAddon.unit_of_measure,
           unitPrice: editingAddon.unit_price.toString(),
-          stockQuantity: editingAddon.stock_quantity.toString(),
-          minimumStock: editingAddon.minimum_stock.toString(),
         })
       } else {
         reset({
@@ -103,8 +99,6 @@ export function AddonFormModal({
           description: '',
           unitOfMeasure: 'pcs',
           unitPrice: '',
-          stockQuantity: '0',
-          minimumStock: '0',
         })
       }
     }
@@ -211,40 +205,6 @@ export function AddonFormModal({
               />
               {errors.unitPrice && (
                 <p className="text-sm text-destructive">{errors.unitPrice.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="stockQuantity" className="text-sm font-medium text-foreground">Stok</Label>
-              <Input
-                id="stockQuantity"
-                placeholder="0"
-                type="number"
-                className="h-10"
-                {...register('stockQuantity')}
-              />
-              {errors.stockQuantity && (
-                <p className="text-sm text-destructive">
-                  {errors.stockQuantity.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="minimumStock" className="text-sm font-medium text-foreground">Stok Minimum</Label>
-              <Input
-                id="minimumStock"
-                placeholder="0"
-                type="number"
-                className="h-10"
-                {...register('minimumStock')}
-              />
-              {errors.minimumStock && (
-                <p className="text-sm text-destructive">
-                  {errors.minimumStock.message}
-                </p>
               )}
             </div>
           </div>

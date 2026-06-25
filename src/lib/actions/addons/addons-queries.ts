@@ -170,11 +170,4 @@ export async function getActiveAddons(): Promise<Addon[]> {
   return data || []
 }
 
-/**
- * Get low stock add-ons (stock below minimum)
- * @deprecated Stub — stock tracking removed. Returns empty array.
- */
-export async function getLowStockAddons(): Promise<Addon[]> {
-  // DEPRECATED stub — removed in task 4c
-  return []
-}
+

@@ -10,7 +10,6 @@ export {
   getAddonById,
   getAddonsByCategory,
   getActiveAddons,
-  getLowStockAddons,
 } from './addons-queries'
 
 export {
@@ -19,7 +18,5 @@ export {
   updateAddon,
   deleteAddon,
   toggleAddonStatus,
-  updateStock,
-  bulkUpdateStock,
   bulkUpdateAddons,
 } from './addons-mutations'
