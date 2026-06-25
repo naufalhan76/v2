@@ -49,8 +49,6 @@ export interface ApproveAddonRequestInput {
   request_id: string
   item_code?: string | null
   final_unit_price: number
-  initial_stock?: number
-  minimum_stock?: number
 }
 
 export async function getAddonRequests(status?: AddonRequestStatus) {
@@ -155,8 +153,6 @@ export async function approveAddonRequest(input: ApproveAddonRequestInput) {
       p_request_id: input.request_id,
       p_item_code: input.item_code ?? '',
       p_final_unit_price: input.final_unit_price,
-      p_initial_stock: input.initial_stock ?? 0,
-      p_minimum_stock: input.minimum_stock ?? 0,
     })
 
     if (error) throw error

@@ -90,8 +90,8 @@ export default function AddonsCatalogPage() {
     finally { setIsLoading(false) }
   }
 
-  const handleApproveRequest = async (requestId: string, itemCode: string | null, finalPrice: number, initialStock: number, minStock: number) =>
-    approveAddonRequest({ request_id: requestId, item_code: itemCode, final_unit_price: finalPrice, initial_stock: initialStock, minimum_stock: minStock })
+  const handleApproveRequest = async (requestId: string, itemCode: string | null, finalPrice: number) =>
+    approveAddonRequest({ request_id: requestId, item_code: itemCode, final_unit_price: finalPrice })
 
   const handleRejectRequest = async (requestId: string, notes?: string) => rejectAddonRequest(requestId, notes)
 

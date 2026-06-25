@@ -26,7 +26,7 @@ interface AddonRequestCardProps {
   requests: AddonRequest[]
   isLoadingRequests: boolean
   pendingCount: number
-  onApprove: (requestId: string, itemCode: string | null, finalPrice: number, initialStock: number, minStock: number) => Promise<{ success: boolean; error?: string }>
+  onApprove: (requestId: string, itemCode: string | null, finalPrice: number) => Promise<{ success: boolean; error?: string }>
   onReject: (requestId: string, notes?: string) => Promise<{ success: boolean; error?: string }>
   onRequestsLoaded: () => void
 }
@@ -52,11 +52,11 @@ export function AddonRequestCard({
     setIsApproveOpen(true)
   }
 
-  const handleApprove = async (itemCode: string | null, finalPrice: number, initialStock: number, minStock: number) => {
+  const handleApprove = async (itemCode: string | null, finalPrice: number) => {
     if (!approvingRequest) return { success: false }
     setIsApproving(true)
     try {
-      return await onApprove(approvingRequest.request_id, itemCode, finalPrice, initialStock, minStock)
+      return await onApprove(approvingRequest.request_id, itemCode, finalPrice)
     } finally {
       setIsApproving(false)
     }

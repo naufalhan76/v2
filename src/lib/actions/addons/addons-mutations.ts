@@ -136,72 +136,26 @@ export async function toggleAddonStatus(
 
 /**
  * Update stock quantity
+ * @deprecated Stock tracking removed. Throws on call.
  */
 export async function updateStock(
-  addonId: string,
-  quantity: number,
-  operation: 'add' | 'subtract' | 'set'
+  _addonId: string,
+  _quantity: number,
+  _operation: 'add' | 'subtract' | 'set'
 ): Promise<Addon> {
-  const supabase = await createClient()
-
-  // Get current stock
-  const { data: currentAddon, error: fetchError } = await supabase
-    .from('addon_catalog')
-    .select('stock_quantity')
-    .eq('addon_id', addonId)
-    .single()
-
-  if (fetchError) {
-    logger.error('Error fetching current stock:', fetchError)
-    throw new Error('Gagal memuat stok saat ini')
-  }
-
-  let newQuantity = 0
-
-  switch (operation) {
-    case 'add':
-      newQuantity = currentAddon.stock_quantity + quantity
-      break
-    case 'subtract':
-      newQuantity = Math.max(0, currentAddon.stock_quantity - quantity)
-      break
-    case 'set':
-      newQuantity = quantity
-      break
-  }
-
-  return updateAddon(addonId, { stock_quantity: newQuantity })
+  // DEPRECATED stub — removed in task 4c
+  throw new Error('Stock tracking removed')
 }
 
 /**
  * Bulk update stock (for inventory adjustments)
+ * @deprecated Stock tracking removed. Throws on call.
  */
 export async function bulkUpdateStock(
-  updates: Array<{ addon_id: string; quantity: number }>
+  _updates: Array<{ addon_id: string; quantity: number }>
 ): Promise<void> {
-  const supabase = await createClient()
-
-  // Update each add-on
-  const updatePromises = updates.map(({ addon_id, quantity }) =>
-    supabase
-      .from('addon_catalog')
-      .update({
-        stock_quantity: quantity,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('addon_id', addon_id)
-  )
-
-  const results = await Promise.all(updatePromises)
-
-  // Check for errors
-  const errors = results.filter((result) => result.error)
-  if (errors.length > 0) {
-    logger.error('Errors in bulk update:', errors)
-    throw new Error('Gagal mengupdate beberapa stok')
-  }
-
-  revalidatePath('/dashboard/konfigurasi/addons-catalog')
+  // DEPRECATED stub — removed in task 4c
+  throw new Error('Stock tracking removed')
 }
 
 export async function bulkUpdateAddons(csvText: string) {

@@ -21,7 +21,7 @@ interface ApproveRequestDialogProps {
   onOpenChange: (open: boolean) => void
   request: AddonRequest | null
   isApproving: boolean
-  onApprove: (itemCode: string | null, finalPrice: number, initialStock: number, minStock: number) => Promise<{ success: boolean; error?: string }>
+  onApprove: (itemCode: string | null, finalPrice: number) => Promise<{ success: boolean; error?: string }>
   onApproved: () => void
 }
 
@@ -35,19 +35,12 @@ export function ApproveRequestDialog({
 }: ApproveRequestDialogProps) {
   const [itemCode, setItemCode] = useState('')
   const [finalPrice, setFinalPrice] = useState('')
-  const [initialStock, setInitialStock] = useState('0')
-  const [minStock, setMinStock] = useState('0')
 
   const handleApprove = async () => {
     if (!request) return
     const price = parseFloat(finalPrice)
     if (isNaN(price) || price < 0) return
-    const result = await onApprove(
-      itemCode || null,
-      price,
-      parseInt(initialStock) || 0,
-      parseInt(minStock) || 0,
-    )
+    const result = await onApprove(itemCode || null, price)
     if (result.success) {
       onOpenChange(false)
       onApproved()
@@ -56,12 +49,9 @@ export function ApproveRequestDialog({
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      // Reset form on close
       if (request) {
         setItemCode(request.item_name || '')
         setFinalPrice(request.proposed_unit_price?.toString() || '0')
-        setInitialStock('0')
-        setMinStock('0')
       }
     }
     onOpenChange(newOpen)
@@ -88,16 +78,6 @@ export function ApproveRequestDialog({
             <div className="space-y-2">
               <Label htmlFor="approveFinalPrice" className="text-sm font-medium text-foreground">Harga Final <span className="text-destructive">*</span></Label>
               <Input id="approveFinalPrice" placeholder="50000" type="number" value={finalPrice} onChange={(e) => setFinalPrice(e.target.value)} className="h-10" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="approveInitialStock" className="text-sm font-medium text-foreground">Stok Awal</Label>
-                <Input id="approveInitialStock" placeholder="0" type="number" value={initialStock} onChange={(e) => setInitialStock(e.target.value)} className="h-10" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="approveMinStock" className="text-sm font-medium text-foreground">Stok Minimum</Label>
-                <Input id="approveMinStock" placeholder="0" type="number" value={minStock} onChange={(e) => setMinStock(e.target.value)} className="h-10" />
-              </div>
             </div>
           </div>
         )}

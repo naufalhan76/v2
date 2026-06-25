@@ -172,28 +172,9 @@ export async function getActiveAddons(): Promise<Addon[]> {
 
 /**
  * Get low stock add-ons (stock below minimum)
+ * @deprecated Stub — stock tracking removed. Returns empty array.
  */
 export async function getLowStockAddons(): Promise<Addon[]> {
-  const supabase = await createClient()
-
-  // Fetch all active addons and filter in JavaScript
-  // because Supabase doesn't support column-to-column comparison
-  const { data, error } = await supabase
-    .from('addon_catalog')
-    .select('*')
-    .eq('is_active', true)
-    .order('category', { ascending: true })
-    .order('item_name', { ascending: true })
-
-  if (error) {
-    logger.error('Error fetching low stock add-ons:', error)
-    throw new Error('Gagal memuat data add-ons dengan stok rendah')
-  }
-
-  // Filter where stock_quantity < minimum_stock
-  const lowStockItems = (data || []).filter(
-    (addon) => addon.stock_quantity < addon.minimum_stock
-  )
-
-  return lowStockItems
+  // DEPRECATED stub — removed in task 4c
+  return []
 }
