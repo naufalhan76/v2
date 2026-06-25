@@ -89,11 +89,40 @@ export async function getServiceReport(
 
   return {
     ...data,
-    photos_before: (data.photos_before as string[] | null) ?? [],
-    photos_after: (data.photos_after as string[] | null) ?? [],
+    photos_before: await reSignPhotos(
+      supabase,
+      (data.photos_before as string[] | null) ?? []
+    ),
+    photos_after: await reSignPhotos(
+      supabase,
+      (data.photos_after as string[] | null) ?? []
+    ),
     materials: (data.materials as ServiceReportMaterial[] | null) ?? [],
     technicians: technician,
   } as unknown as ServiceReport
+}
+
+async function reSignPhotos(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  paths: string[]
+): Promise<string[]> {
+  if (paths.length === 0) return []
+
+  return Promise.all(
+    paths.map(async (value) => {
+      if (value.startsWith('http://') || value.startsWith('https://')) {
+        return value
+      }
+      const { data, error } = await supabase.storage
+        .from('service-photos')
+        .createSignedUrl(value, 3600)
+      if (error || !data?.signedUrl) {
+        logger.error('Error creating signed photo URL:', error)
+        return value
+      }
+      return data.signedUrl
+    })
+  )
 }
 
 /**
