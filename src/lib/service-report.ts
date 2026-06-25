@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase-server'
+import { createAdminClient } from '@/lib/supabase-admin'
 import { logger } from '@/lib/logger'
 
 export interface ServiceReportMaterial {
@@ -159,7 +160,10 @@ export async function getSignedSignatureUrl(
     return path
   }
 
-  const { data, error } = await supabase.storage
+  // Use admin client (service role key) to bypass RLS on the signatures bucket.
+  // The SELECT on service_reports is already gated by the caller's session.
+  const admin = createAdminClient()
+  const { data, error } = await admin.storage
     .from('signatures')
     .createSignedUrl(path, expiresInSeconds)
 
