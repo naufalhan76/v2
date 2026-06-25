@@ -12,6 +12,7 @@ export interface UseBarcodeScannerReturn {
   isScanning: boolean
   startScanning: () => Promise<void>
   stopScanning: () => void
+  videoRef: React.RefObject<HTMLVideoElement | null>
 }
 
 export function useBarcodeScanner({
@@ -114,5 +115,5 @@ export function useBarcodeScanner({
     }
   }, [stopStream])
 
-  return { isSupported, isScanning, startScanning, stopScanning: stopStream }
+  return { isSupported, isScanning, startScanning, stopScanning: stopStream, videoRef }
 }
