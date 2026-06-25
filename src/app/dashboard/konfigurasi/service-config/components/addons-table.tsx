@@ -10,13 +10,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Loader2, Package, Pencil, Trash2 } from 'lucide-react'
+import { Loader2, Package, Pencil, Trash2, AlertTriangle } from 'lucide-react'
 import type { Addon } from '@/lib/actions/addons'
 
 const CATEGORIES = [
-  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg' },
+  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg0' },
   { value: 'FREON', label: 'Freon', color: 'bg-status-invoiced' },
-  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg' },
+  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg0' },
   { value: 'TRANSPORTATION', label: 'Transportation', color: 'bg-primary' },
   { value: 'OTHER', label: 'Lainnya', color: 'bg-muted-foreground' },
 ]
@@ -42,6 +42,10 @@ function getCategoryColor(category: string) {
 
 function getCategoryLabel(category: string) {
   return CATEGORIES.find((c) => c.value === category)?.label || category
+}
+
+function isLowStock(addon: Addon) {
+  return addon.stock_quantity < addon.minimum_stock
 }
 
 export function AddonsTable({ addons, isFetching, onEdit, onDelete }: AddonsTableProps) {
@@ -75,6 +79,7 @@ export function AddonsTable({ addons, isFetching, onEdit, onDelete }: AddonsTabl
             <TableHead>Nama Item</TableHead>
             <TableHead>Harga</TableHead>
             <TableHead>Satuan</TableHead>
+            <TableHead>Stok</TableHead>
             <TableHead className="text-right">Aksi</TableHead>
           </TableRow>
         </TableHeader>
@@ -94,6 +99,22 @@ export function AddonsTable({ addons, isFetching, onEdit, onDelete }: AddonsTabl
               </TableCell>
               <TableCell>{formatCurrency(addon.unit_price)}</TableCell>
               <TableCell>{addon.unit_of_measure}</TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={
+                      isLowStock(addon)
+                        ? 'text-warning font-semibold'
+                        : ''
+                    }
+                  >
+                    {addon.stock_quantity}
+                  </span>
+                  {isLowStock(addon) && (
+                    <AlertTriangle className="h-4 w-4 text-warning" />
+                  )}
+                </div>
+              </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
                   <Button

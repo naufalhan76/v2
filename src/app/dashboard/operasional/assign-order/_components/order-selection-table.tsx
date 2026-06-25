@@ -12,9 +12,9 @@ import { StatusBadge } from '@/components/orders/status-badge'
 import { ServiceTypeBadge } from '@/components/orders/service-type-badge'
 
 const SERVICE_TYPES = [
-  { value: 'REFILL_FREON', label: 'Refill Freon', dot: 'bg-status-assigned-bg' },
+  { value: 'REFILL_FREON', label: 'Refill Freon', dot: 'bg-status-assigned-bg0' },
   { value: 'CLEANING', label: 'Cleaning', dot: 'bg-status-completed-bg0' },
-  { value: 'REPAIR', label: 'Repair', dot: 'bg-status-pending-bg' },
+  { value: 'REPAIR', label: 'Repair', dot: 'bg-status-pending-bg0' },
   { value: 'INSTALLATION', label: 'Installation', dot: 'bg-primary' },
   { value: 'INSPECTION', label: 'Inspection', dot: 'bg-status-invoiced' },
 ]
@@ -82,7 +82,7 @@ export function OrderSelectionTable({
           onClick={() => onFilterStatusChange('ACCEPTED')}
         >
           <CardContent className='p-4 text-center'>
-            <div className='w-3 h-3 rounded-full mx-auto mb-2 bg-status-assigned-bg' />
+            <div className='w-3 h-3 rounded-full mx-auto mb-2 bg-status-assigned-bg0' />
             <div className='text-2xl font-bold'>{acceptedCount}</div>
             <div className='text-xs text-muted-foreground mt-1'>Accepted</div>
           </CardContent>
@@ -92,7 +92,7 @@ export function OrderSelectionTable({
           onClick={() => onFilterStatusChange('RESCHEDULE')}
         >
           <CardContent className='p-4 text-center'>
-            <div className='w-3 h-3 rounded-full mx-auto mb-2 bg-status-pending-bg' />
+            <div className='w-3 h-3 rounded-full mx-auto mb-2 bg-status-pending-bg0' />
             <div className='text-2xl font-bold'>{rescheduleCount}</div>
             <div className='text-xs text-muted-foreground mt-1'>Reschedule</div>
           </CardContent>

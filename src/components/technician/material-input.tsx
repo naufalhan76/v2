@@ -23,7 +23,7 @@ export function mergeCatalogAddonSelection(
   index: number,
   addon: AddonOption
 ): MaterialItem[] {
-  const currentQty = Math.max(materials[index]?.qty || 0.1, 0.1)
+  const currentQty = Math.max(materials[index]?.qty || 1, 1)
   const existingIndex = materials.findIndex(
     (item, itemIndex) => itemIndex !== index && !item.is_manual && item.addon_id === addon.addon_id,
   )
@@ -31,7 +31,7 @@ export function mergeCatalogAddonSelection(
     const updated = materials.filter((_, itemIndex) => itemIndex !== index)
     const targetIndex = existingIndex > index ? existingIndex - 1 : existingIndex
     const existing = updated[targetIndex]
-    const qty = Math.max(existing.qty || 0.1, 0.1) + currentQty
+    const qty = Math.max(existing.qty || 1, 1) + currentQty
     updated[targetIndex] = { ...existing, addon_id: addon.addon_id, name: addon.item_name, qty, unit_price: addon.unit_price, total: qty * addon.unit_price, category: addon.category, unit_of_measure: addon.unit_of_measure, description: null, is_manual: false }
     return updated
   }
@@ -72,7 +72,7 @@ export function MaterialInput({ value, onChange, disabled = false }: MaterialInp
       const updated = [...value]
       const row = { ...updated[index] }
       if (field === 'name') row.name = String(fieldValue)
-      else if (field === 'qty') row.qty = Math.round(Math.max(0.1, Number(fieldValue) || 0.1) * 10) / 10
+      else if (field === 'qty') row.qty = Math.max(1, Number(fieldValue) || 1)
       else if (field === 'unit_price') row.unit_price = Math.max(0, Number(fieldValue) || 0)
       else if (field === 'category') row.category = String(fieldValue)
       else if (field === 'unit_of_measure') row.unit_of_measure = String(fieldValue)

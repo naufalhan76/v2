@@ -34,9 +34,9 @@ const addonSchema = z.object({
 export type AddonFormData = z.infer<typeof addonSchema>
 
 export const CATEGORIES = [
-  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg' },
+  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg0' },
   { value: 'FREON', label: 'Freon', color: 'bg-status-invoiced' },
-  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg' },
+  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg0' },
   { value: 'TRANSPORTATION', label: 'Transportation', color: 'bg-primary' },
   { value: 'OTHER', label: 'Lainnya', color: 'bg-muted-foreground' },
 ]
@@ -116,31 +116,43 @@ export function AddonFormModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] rounded-xl border border-border/50 shadow-sm">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-xl border border-border/50 shadow-sm">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-foreground">
             {editingAddon ? 'Edit Add-on' : 'Tambah Add-on'}
           </DialogTitle>
           <DialogDescription>
-            Isi detail item untuk katalog add-ons
+            Tambah atau edit item dalam katalog add-ons
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="category" className="text-sm font-medium text-foreground">
-              Kategori <span className="text-destructive">*</span>
-            </Label>
-            <SearchableSelect
-              options={CATEGORIES.map(cat => ({ id: cat.value, label: cat.label }))}
-              value={selectedCategory}
-              onValueChange={(value) => setValue('category', value)}
-              placeholder="Pilih kategori"
-              searchPlaceholder="Cari kategori..."
-            />
-            {errors.category && (
-              <p className="text-sm text-destructive">{errors.category.message}</p>
-            )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="category" className="text-sm font-medium text-foreground">
+                Kategori <span className="text-destructive">*</span>
+              </Label>
+              <SearchableSelect
+                options={CATEGORIES.map(cat => ({ id: cat.value, label: cat.label }))}
+                value={selectedCategory}
+                onValueChange={(value) => setValue('category', value)}
+                placeholder="Pilih kategori"
+                searchPlaceholder="Cari kategori..."
+              />
+              {errors.category && (
+                <p className="text-sm text-destructive">{errors.category.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="itemCode" className="text-sm font-medium text-foreground">Kode Item</Label>
+              <Input
+                id="itemCode"
+                placeholder="CAP-10UF"
+                className="h-10"
+                {...register('itemCode')}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -156,16 +168,6 @@ export function AddonFormModal({
             {errors.itemName && (
               <p className="text-sm text-destructive">{errors.itemName.message}</p>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="itemCode" className="text-sm font-medium text-foreground">Kode Item</Label>
-            <Input
-              id="itemCode"
-              placeholder="CAP-10UF"
-              className="h-10"
-              {...register('itemCode')}
-            />
           </div>
 
           <div className="space-y-2">
@@ -185,13 +187,15 @@ export function AddonFormModal({
               </Label>
               <SearchableSelect
                 options={UNIT_OF_MEASURES.map(unit => ({ id: unit, label: unit }))}
-                value={watch('unitOfMeasure')}
+                value={watch('unitOfMeasure') || ''}
                 onValueChange={(value) => setValue('unitOfMeasure', value)}
                 placeholder="Pilih satuan"
                 searchPlaceholder="Cari satuan..."
               />
               {errors.unitOfMeasure && (
-                <p className="text-sm text-destructive">{errors.unitOfMeasure.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.unitOfMeasure.message}
+                </p>
               )}
             </div>
 
@@ -207,6 +211,40 @@ export function AddonFormModal({
               />
               {errors.unitPrice && (
                 <p className="text-sm text-destructive">{errors.unitPrice.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="stockQuantity" className="text-sm font-medium text-foreground">Stok</Label>
+              <Input
+                id="stockQuantity"
+                placeholder="0"
+                type="number"
+                className="h-10"
+                {...register('stockQuantity')}
+              />
+              {errors.stockQuantity && (
+                <p className="text-sm text-destructive">
+                  {errors.stockQuantity.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="minimumStock" className="text-sm font-medium text-foreground">Stok Minimum</Label>
+              <Input
+                id="minimumStock"
+                placeholder="0"
+                type="number"
+                className="h-10"
+                {...register('minimumStock')}
+              />
+              {errors.minimumStock && (
+                <p className="text-sm text-destructive">
+                  {errors.minimumStock.message}
+                </p>
               )}
             </div>
           </div>

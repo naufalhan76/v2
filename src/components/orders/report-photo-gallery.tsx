@@ -42,7 +42,7 @@ export function ReportPhotoGallery({ title, photos, className }: ReportPhotoGall
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {photos.map((url, idx) => (
             <button
-              key={idx}
+              key={url + idx}
               type="button"
               onClick={() => setActiveIndex(idx)}
               className="relative aspect-square overflow-hidden rounded-md border border-border bg-surface-muted transition hover:brightness-95"

@@ -85,7 +85,7 @@ export function InvoicePreview({
               <Button variant="outline" onClick={onStay}>
                 Tetap di form
               </Button>
-              <Button onClick={() => onViewDetail(createdInvoice.invoice_id)} className="text-foreground">
+              <Button onClick={() => onViewDetail(createdInvoice.invoice_id)}>
                 Lihat Detail Invoice
               </Button>
             </DialogFooter>

@@ -6,9 +6,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Search } from 'lucide-react'
 
 const CATEGORIES = [
-  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg' },
+  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg0' },
   { value: 'FREON', label: 'Freon', color: 'bg-status-invoiced' },
-  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg' },
+  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg0' },
   { value: 'TRANSPORTATION', label: 'Transportation', color: 'bg-primary' },
   { value: 'OTHER', label: 'Lainnya', color: 'bg-muted-foreground' },
 ]

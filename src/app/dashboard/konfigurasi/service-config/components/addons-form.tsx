@@ -35,9 +35,9 @@ const addonSchema = z.object({
 type AddonFormData = z.infer<typeof addonSchema>
 
 const CATEGORIES = [
-  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg' },
+  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg0' },
   { value: 'FREON', label: 'Freon', color: 'bg-status-invoiced' },
-  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg' },
+  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg0' },
   { value: 'TRANSPORTATION', label: 'Transportation', color: 'bg-primary' },
   { value: 'OTHER', label: 'Lainnya', color: 'bg-muted-foreground' },
 ]
@@ -208,6 +208,23 @@ export function AddonsForm({ open, onOpenChange, editingAddon, initialData, onSa
               <Input placeholder="50000" className="h-10" {...form.register('unitPrice')} />
               {form.formState.errors.unitPrice && (
                 <p className="text-sm text-destructive">{form.formState.errors.unitPrice.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Stok</Label>
+              <Input placeholder="0" type="number" className="h-10" {...form.register('stockQuantity')} />
+              {form.formState.errors.stockQuantity && (
+                <p className="text-sm text-destructive">{form.formState.errors.stockQuantity.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">Stok Minimum</Label>
+              <Input placeholder="0" type="number" className="h-10" {...form.register('minimumStock')} />
+              {form.formState.errors.minimumStock && (
+                <p className="text-sm text-destructive">{form.formState.errors.minimumStock.message}</p>
               )}
             </div>
           </div>

@@ -82,7 +82,6 @@ export function OrdersTab({ customerId, onOpenOrder }: OrdersTabProps) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-foreground"
                         onClick={(e) => {
                           e.stopPropagation()
                           onOpenOrder(order.order_id)

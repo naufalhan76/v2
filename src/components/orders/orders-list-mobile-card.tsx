@@ -63,7 +63,7 @@ export function OrdersListMobileCard({ row, onRowClick, onCancel }: OrdersListMo
               <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRowClick(order.order_id) }} className="text-foreground">Lihat Detail</DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRowClick(order.order_id) }}>Lihat Detail</DropdownMenuItem>
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCancel(order.order_id) }} className="text-destructive">Batalkan</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

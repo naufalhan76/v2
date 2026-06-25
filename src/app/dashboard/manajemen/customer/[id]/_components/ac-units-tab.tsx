@@ -150,20 +150,22 @@ export function AcUnitsTab({ customerId }: { customerId: string }) {
     return map
   }, [acUnits])
 
-  const masterDataReady = { unitTypes, capacityRanges, brands: masterBrands }
+  const masterDataReady = masterData ? { unitTypes, capacityRanges, brands: masterBrands } : undefined
 
   return (
     <Card>
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
         <CardTitle>AC Units ({acUnits.length})</CardTitle>
-        <AcUnitFormSheet
-          customerId={customerId} locations={locations} masterData={masterDataReady}
-          isOpen={isFormOpen} onOpenChange={setIsFormOpen}
-          editingAcUnit={editingAcUnit} form={form} onFormChange={setForm}
-          isSubmitting={isSubmitting} onSubmit={handleSubmit}
-          onOpenCreate={openCreate} deleteId={deleteId} onDeleteIdChange={setDeleteId}
-          invalidate={invalidate}
-        />
+        {masterDataReady && (
+          <AcUnitFormSheet
+            customerId={customerId} locations={locations} masterData={masterDataReady}
+            isOpen={isFormOpen} onOpenChange={setIsFormOpen}
+            editingAcUnit={editingAcUnit} form={form} onFormChange={setForm}
+            isSubmitting={isSubmitting} onSubmit={handleSubmit}
+            onOpenCreate={openCreate} deleteId={deleteId} onDeleteIdChange={setDeleteId}
+            invalidate={invalidate}
+          />
+        )}
       </CardHeader>
       <CardContent>
         {locations.length === 0 ? (
@@ -213,24 +215,8 @@ export function AcUnitsTab({ customerId }: { customerId: string }) {
                           <div><p className="text-muted-foreground">Service Berikutnya</p><p>{formatDateOnly(unit.next_service_due_date)}</p></div>
                         </div>
                         <div className="flex justify-end gap-2 pt-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            aria-label="Edit AC"
-                            className="min-h-[44px] min-w-[44px]"
-                            onClick={() => openEdit(unit)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            aria-label="Delete AC"
-                            className="min-h-[44px] min-w-[44px]"
-                            onClick={() => setDeleteId(unit.ac_unit_id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => openEdit(unit)}><Pencil className="h-3.5 w-3.5 mr-1.5" /> Ubah</Button>
+                          <Button variant="destructive" size="sm" onClick={() => setDeleteId(unit.ac_unit_id)}><Trash2 className="h-3.5 w-3.5 mr-1.5" /> Hapus</Button>
                         </div>
                       </div>
                     ))}
