@@ -138,11 +138,16 @@ export async function drainReports(
       }
     }
 
-    if (jobBefore.length > 0) patchedPayload.photos_before = jobBefore
-    if (jobAfter.length > 0) patchedPayload.photos_after = jobAfter
     if (signatureUrl) patchedPayload.customer_signature_url = signatureUrl
 
-    // Per-AC photos
+    // Per-AC photos — also flattened into top-level arrays.
+    // ponytail: the app only takes per-AC photos (acUnitIdx >= 0), but the
+    // RPC stores photos_before/photos_after as TEXT[] on service_reports and
+    // the dashboard reads those columns. Without flattening, those columns
+    // stay empty. Upgrade path: make dashboard read ac_units JSONB directly.
+    const allBefore: string[] = [...jobBefore]
+    const allAfter: string[] = [...jobAfter]
+
     if (patchedPayload.ac_units && patchedPayload.ac_units.length > 0) {
       patchedPayload.ac_units = patchedPayload.ac_units.map((unit, idx) => {
         const acBefore: string[] = []
@@ -155,6 +160,8 @@ export async function drainReports(
           if (pr.kind === 'before') acBefore.push(url)
           else if (pr.kind === 'after') acAfter.push(url)
         }
+        allBefore.push(...acBefore)
+        allAfter.push(...acAfter)
         return {
           ...unit,
           ...(acBefore.length > 0 ? { photos_before: acBefore } : {}),
@@ -162,6 +169,9 @@ export async function drainReports(
         }
       })
     }
+
+    patchedPayload.photos_before = allBefore
+    patchedPayload.photos_after = allAfter
 
     let res: Response | null = null
     let classify: ClassifyResult = { action: 'retry', message: null }
