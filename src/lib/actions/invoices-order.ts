@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase-server'
+import { createAdminClient } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
 import { requireFinanceRole } from '@/lib/rbac'
@@ -184,7 +185,9 @@ export async function finalizeInvoiceFromOrder(orderId: string): Promise<CreateI
     .maybeSingle()
 
   if (existingInvoice?.invoice_type === 'PROFORMA') {
-    const { error: itemsError } = await supabase
+    const admin = createAdminClient()
+
+    const { error: itemsError } = await admin
       .from('invoice_items')
       .delete()
       .eq('invoice_id', existingInvoice.invoice_id)
@@ -193,7 +196,7 @@ export async function finalizeInvoiceFromOrder(orderId: string): Promise<CreateI
       throw new Error('Gagal menghapus item proforma invoice')
     }
 
-    const { error: invoiceError } = await supabase
+    const { error: invoiceError } = await admin
       .from('invoices')
       .delete()
       .eq('invoice_id', existingInvoice.invoice_id)
