@@ -10,6 +10,7 @@ import { WizardPhaseC } from './wizard-phase-c'
 import { useToast } from '@/hooks/use-toast'
 import { buildJobSummary, extractAcUnits } from './wizard/wizard-data'
 import { loadWizardContext } from './wizard/wizard-context'
+import { getWizardPhase, setWizardPhase, clearWizardPhase, isTimerActive } from '@/lib/offline/timer'
 import type { JobContext, Phase, WizardOrchestratorProps } from './wizard/wizard-types'
 
 export function WizardOrchestrator({ orderId, snapshot }: WizardOrchestratorProps) {
@@ -59,6 +60,44 @@ export function WizardOrchestrator({ orderId, snapshot }: WizardOrchestratorProp
     }
   }, [orderId, snapshot])
 
+  // Phase resume from persisted localStorage (Task 2)
+  useEffect(() => {
+    if (loadingContext) return
+
+    const persistedPhase = getWizardPhase(orderId)
+    if (!persistedPhase) return
+
+    if (persistedPhase === 'B') {
+      if (isTimerActive(orderId)) {
+        setPhase('B')
+      } else {
+        clearWizardPhase(orderId)
+      }
+      return
+    }
+
+    if (persistedPhase === 'C') {
+      const draftKey = `msn-tech-wizard-draft-${orderId}`
+      try {
+        const rawDraft = localStorage.getItem(draftKey)
+        if (rawDraft) {
+          const draft = JSON.parse(rawDraft)
+          setPhaseADraft(draft)
+          setPhase('C')
+          return
+        }
+      } catch {
+        // corrupt draft — fall through to fallback
+      }
+      // No draft — fallback
+      if (isTimerActive(orderId)) {
+        setPhase('B')
+      } else {
+        clearWizardPhase(orderId)
+      }
+    }
+  }, [loadingContext, orderId])
+
   if (loadingContext) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background dark:bg-background">
@@ -99,6 +138,7 @@ export function WizardOrchestrator({ orderId, snapshot }: WizardOrchestratorProp
           acUnits={acUnits as AcUnitData[]}
           onComplete={(draft: PhaseADraft) => {
             setPhaseADraft(draft)
+            setWizardPhase(orderId, 'B')
             setPhase('B')
           }}
         />
@@ -109,12 +149,16 @@ export function WizardOrchestrator({ orderId, snapshot }: WizardOrchestratorProp
         <WizardPhaseB
           orderId={orderId}
           jobSummary={jobSummary}
-          onComplete={() => setPhase('C')}
+          onComplete={() => {
+            setWizardPhase(orderId, 'C')
+            setPhase('C')
+          }}
         />
       )
 
     case 'C': {
       if (!phaseADraft) {
+        setWizardPhase(orderId, 'A')
         setPhase('A')
         return null
       }
@@ -124,6 +168,7 @@ export function WizardOrchestrator({ orderId, snapshot }: WizardOrchestratorProp
           phaseADraft={phaseADraft}
           technicianId={technicianId}
           onComplete={() => {
+            clearWizardPhase(orderId)
             toast({
               title: 'Tersimpan',
               description: 'Laporan akan disinkronkan saat online',
