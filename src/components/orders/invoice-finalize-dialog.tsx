@@ -83,7 +83,7 @@ export function InvoiceFinalizeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm max-w-[calc(100vw-2rem)] p-4 sm:p-5">
+      <DialogContent className="sm:max-w-lg max-w-[calc(100vw-2rem)] p-5 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0" />
