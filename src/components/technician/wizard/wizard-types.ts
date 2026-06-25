@@ -29,6 +29,12 @@ export type JobContext = {
     quantity?: number | null
     description?: string | null
     estimated_price?: number | null
+    unit_type_id?: string | null
+    capacity_id?: string | null
+    brand_id?: string | null
+    unit_type_name?: string | null
+    capacity_label?: string | null
+    brand?: string | null
     locations?: {
       location_id?: string | null
       full_address?: string | null

@@ -17,7 +17,10 @@ export function extractAcUnits(jobContext: JobContext): AcUnitReportItem[] {
     }
 
     const qty = item.quantity || 1
-    for (let i = 0; i < qty; i++) units.push(emptyAcUnit())
+    const hasAdminIdentity = Boolean(item.unit_type_id || item.capacity_id)
+    for (let i = 0; i < qty; i++) {
+      units.push(hasAdminIdentity ? acUnitFromOrderItem(item) : emptyAcUnit())
+    }
   })
 
   return units
@@ -32,17 +35,40 @@ function acUnitFromExistingItem(item: NonNullable<JobContext['order_items']>[num
 
   return {
     ac_unit_id: item.ac_unit_id,
-    brand: acUnitData?.brand || '',
-    brand_id: selectString(acUnitData?.brand_id),
-    ac_type: acUnitData?.ac_type || '',
-    unit_type_id: selectString(acUnitData?.unit_type_id),
-    capacity_id: selectString(acUnitData?.capacity_id),
-    capacity_label: selectString(capLabel),
+    brand: item.brand || acUnitData?.brand || '',
+    brand_id: selectString(acUnitData?.brand_id) || selectString(item.brand_id),
+    ac_type: item.unit_type_name || acUnitData?.ac_type || '',
+    unit_type_id: selectString(item.unit_type_id) || selectString(acUnitData?.unit_type_id),
+    capacity_id: selectString(item.capacity_id) || selectString(acUnitData?.capacity_id),
+    capacity_label: item.capacity_label || (capLabel ? selectString(capLabel) : ''),
     model_number: acUnitData?.model_number || '',
     serial_number: acUnitData?.serial_number || '',
     room_location: acUnitData?.room_location || '',
     floor_level: acUnitData?.floor_level || '',
     position_detail: acUnitData?.position_detail || '',
+    skipped: false,
+    skip_reason: '',
+    photos_before: [],
+    photos_after: [],
+    notes: '',
+    materials_used: [],
+  }
+}
+
+function acUnitFromOrderItem(item: NonNullable<JobContext['order_items']>[number]): AcUnitReportItem {
+  return {
+    ac_unit_id: '',
+    brand: item.brand || '',
+    brand_id: selectString(item.brand_id),
+    ac_type: item.unit_type_name || '',
+    unit_type_id: selectString(item.unit_type_id),
+    capacity_id: selectString(item.capacity_id),
+    capacity_label: selectString(item.capacity_label),
+    model_number: '',
+    serial_number: '',
+    room_location: '',
+    floor_level: '',
+    position_detail: '',
     skipped: false,
     skip_reason: '',
     photos_before: [],
@@ -89,6 +115,12 @@ export function snapshotToJobContext(snapshot: LocalJobSnapshot): JobContext {
       ac_unit_id: item.acUnitId,
       service_type: item.serviceType,
       quantity: 1,
+      unit_type_id: item.unitTypeId ?? null,
+      capacity_id: item.capacityId ?? null,
+      brand_id: item.brandId ?? null,
+      unit_type_name: item.unitTypeName ?? null,
+      capacity_label: item.capacityLabel ?? null,
+      brand: item.brandName ?? null,
       locations: { full_address: snapshot.customer.address },
       ac_units: item.acUnit ? snapshotAcUnit(item) : null,
     })),

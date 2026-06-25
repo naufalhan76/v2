@@ -14,6 +14,12 @@ type ApiJob = {
     order_item_id?: string | null
     ac_unit_id?: string | null
     service_type?: string | null
+    unit_type_id?: string | null
+    capacity_id?: string | null
+    brand_id?: string | null
+    unit_types?: { name?: string | null } | Array<{ name?: string | null }> | null
+    capacity_ranges?: { capacity_label?: string | null } | Array<{ capacity_label?: string | null }> | null
+    ac_brands?: { name?: string | null } | Array<{ name?: string | null }> | null
     locations?: {
       full_address?: string | null
       city?: string | null
@@ -74,6 +80,12 @@ export function jobToSnapshot(job: ApiJob): LocalJobSnapshot | null {
         id: item.order_item_id ?? `${job.order_id}:${idx}`,
         serviceType: item.service_type ?? null,
         acUnitId: item.ac_unit_id ?? null,
+        unitTypeId: item.unit_type_id ?? null,
+        capacityId: item.capacity_id ?? null,
+        brandId: item.brand_id ?? null,
+        unitTypeName: Array.isArray(item.unit_types) ? item.unit_types[0]?.name ?? null : item.unit_types?.name ?? null,
+        capacityLabel: Array.isArray(item.capacity_ranges) ? item.capacity_ranges[0]?.capacity_label ?? null : item.capacity_ranges?.capacity_label ?? null,
+        brandName: Array.isArray(item.ac_brands) ? item.ac_brands[0]?.name ?? null : item.ac_brands?.name ?? null,
         acUnit: acUnit
           ? {
               id: acUnit.ac_unit_id ?? item.ac_unit_id ?? null,

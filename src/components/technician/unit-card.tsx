@@ -20,10 +20,6 @@ function valueOf(value: string | null | undefined): string {
   return value ?? ''
 }
 
-function hasCompleteExistingIdentity(unit: AcUnitReportItem): boolean {
-  return !!(unit.ac_unit_id && unit.brand_id && unit.unit_type_id && unit.capacity_id && unit.room_location)
-}
-
 function identityFromUnit(unit: AcUnitReportItem): AcIdentity {
   return {
     ac_unit_id: valueOf(unit.ac_unit_id),
@@ -49,9 +45,11 @@ interface UnitCardProps {
 
 export function UnitCard({ index, orderId, unit, initialUnit, dimensions, onUpdate }: UnitCardProps) {
   const isExisting = !!unit.ac_unit_id
-  const isCompleteExisting = hasCompleteExistingIdentity(initialUnit)
-  const showFullForm = !isExisting
-  const showMissingFields = isExisting && !isCompleteExisting
+  const hasAdminIdentity = !!(initialUnit.unit_type_id && initialUnit.capacity_id)
+  const isCompleteExisting = isExisting && !!(initialUnit.brand_id && initialUnit.unit_type_id && initialUnit.capacity_id && initialUnit.room_location)
+  const showFullForm = !hasAdminIdentity
+  const showReadOnlyAndMissingFields = hasAdminIdentity && !isCompleteExisting
+  const showReadOnlyOnly = isCompleteExisting
 
   const filteredCapacities = useMemo(
     () => dimensions.capacity_ranges.filter((capacity) => capacity.unit_type_id === valueOf(unit.unit_type_id)),
@@ -61,7 +59,7 @@ export function UnitCard({ index, orderId, unit, initialUnit, dimensions, onUpda
   return (
     <section
       data-testid={`phase-a-unit-card-${index}`}
-      className="rounded-2xl border border-border bg-white p-6 shadow-sm dark:bg-surface-muted"
+      className="rounded-2xl border border-border bg-surface p-6 shadow-sm dark:bg-surface-muted"
     >
       <div className="mb-5 flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-primary dark:bg-surface dark:text-brand-200">
@@ -84,14 +82,10 @@ export function UnitCard({ index, orderId, unit, initialUnit, dimensions, onUpda
           max={3}
         />
 
-        {isCompleteExisting && <ReadOnlyIdentity unit={unit} />}
+        {showReadOnlyOnly && <ReadOnlyIdentity unit={unit} />}
 
-        {showMissingFields && (
+        {showReadOnlyAndMissingFields && (
           <div className="space-y-4">
-            <div className="rounded-xl border border-status-pending/30 dark:border-status-pending bg-status-pending-bg dark:bg-status-pending-bg p-3 text-sm text-status-pending dark:text-status-pending">
-              <p className="font-bold">Data AC eksisting belum lengkap</p>
-              <p>Lengkapi field yang masih kosong sebelum lanjut.</p>
-            </div>
             <ReadOnlyIdentity unit={unit} onlyPresent />
             <IdentityFields
               unit={unit}
@@ -121,7 +115,7 @@ export function UnitCard({ index, orderId, unit, initialUnit, dimensions, onUpda
 function ReadOnlyIdentity({ unit, onlyPresent = false }: { unit: AcUnitReportItem; onlyPresent?: boolean }) {
   const items = [
     ['Merk', valueOf(unit.brand)],
-    ['Jenis / Model', valueOf(unit.ac_type || unit.model_number)],
+    ['Tipe AC', valueOf(unit.ac_type)],
     ['Kapasitas', valueOf(unit.capacity_label)],
     ['Lokasi Ruangan', valueOf(unit.room_location)],
   ].filter(([, value]) => !onlyPresent || value)

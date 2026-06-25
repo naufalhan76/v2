@@ -84,6 +84,12 @@ export type LocalJobSnapshot = {
     id: string
     serviceType: string | null
     acUnitId: string | null
+    unitTypeId: string | null
+    capacityId: string | null
+    brandId: string | null
+    unitTypeName: string | null
+    capacityLabel: string | null
+    brandName: string | null
     acUnit: {
       id: string | null; brand: string | null; brandId: string | null
       modelNumber: string | null; serialNumber: string | null
