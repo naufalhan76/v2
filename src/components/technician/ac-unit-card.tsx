@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PhotoUploadOffline } from '@/components/technician/photo-upload-offline'
+import { BarcodeScanner } from '@/components/technician/barcode-scanner'
 import { MaterialInput, type MaterialItem } from '@/components/technician/material-input'
 import { type AcUnitReportItem } from '@/app/api/schemas/technician'
 import { cn } from '@/lib/utils'
@@ -120,11 +121,17 @@ export function AcUnitCard({ field, index, orderId, initialUnits, formValues, se
                 </div>
                 <div className="space-y-1.5">
                   <Label>Nomor Model</Label>
-                  <Input placeholder="Model number..." className={cn("h-11", hasData('model_number') && "bg-muted dark:bg-surface text-muted-foreground dark:text-muted-foreground cursor-not-allowed")} readOnly={hasData('model_number')} {...register(`units.${index}.model_number`)} />
+                  <div className="flex gap-2">
+                    <Input placeholder="Model number..." className={cn("h-11 flex-1", hasData('model_number') && "bg-muted dark:bg-surface text-muted-foreground dark:text-muted-foreground cursor-not-allowed")} readOnly={hasData('model_number')} {...register(`units.${index}.model_number`)} />
+                    <BarcodeScanner onDetected={(value) => setValue(`units.${index}.model_number`, value)} />
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Nomor Seri</Label>
-                  <Input placeholder="Serial number..." className={cn("h-11", hasData('serial_number') && "bg-muted dark:bg-surface text-muted-foreground dark:text-muted-foreground cursor-not-allowed")} readOnly={hasData('serial_number')} {...register(`units.${index}.serial_number`)} />
+                  <div className="flex gap-2">
+                    <Input placeholder="Serial number..." className={cn("h-11 flex-1", hasData('serial_number') && "bg-muted dark:bg-surface text-muted-foreground dark:text-muted-foreground cursor-not-allowed")} readOnly={hasData('serial_number')} {...register(`units.${index}.serial_number`)} />
+                    <BarcodeScanner onDetected={(value) => setValue(`units.${index}.serial_number`, value)} />
+                  </div>
                 </div>
               </div>
               <div className="space-y-6 pt-2">

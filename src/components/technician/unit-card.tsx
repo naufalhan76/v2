@@ -6,6 +6,7 @@ import { Snowflake } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { PhotoUploadOffline } from '@/components/technician/photo-upload-offline'
+import { BarcodeScanner } from '@/components/technician/barcode-scanner'
 import type { AcUnitReportItem } from '@/app/api/schemas/technician'
 import type { AcIdentity } from './wizard-types'
 
@@ -248,6 +249,33 @@ function IdentityFields({ unit, initialUnit, dimensions, filteredCapacities, onU
           />
         </div>
       )}
+
+      {/* model_number + serial_number with barcode scanner (ponytail: scanner additive, form works without it) */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-bold text-foreground dark:text-foreground">Nomor Model</Label>
+        <div className="flex gap-2">
+          <Input
+            value={valueOf(unit.model_number)}
+            onChange={(event) => onUpdate({ model_number: event.target.value })}
+            placeholder="Model number..."
+            className="h-11 flex-1 rounded-xl border-border-strong dark:border-border focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
+          />
+          <BarcodeScanner onDetected={(value) => onUpdate({ model_number: value })} />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-sm font-bold text-foreground dark:text-foreground">Nomor Seri</Label>
+        <div className="flex gap-2">
+          <Input
+            value={valueOf(unit.serial_number)}
+            onChange={(event) => onUpdate({ serial_number: event.target.value })}
+            placeholder="Serial number..."
+            className="h-11 flex-1 rounded-xl border-border-strong dark:border-border focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
+          />
+          <BarcodeScanner onDetected={(value) => onUpdate({ serial_number: value })} />
+        </div>
+      </div>
     </div>
   )
 }
