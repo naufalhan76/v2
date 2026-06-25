@@ -40,7 +40,7 @@ ALTER TABLE public.unit_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.capacity_ranges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.service_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.service_catalog ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.service_pricing ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.service_pricing ENABLE ROW LEVEL SECURITY; -- dropped in 11_drop_service_pricing
 ALTER TABLE public.addon_catalog ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
@@ -100,7 +100,7 @@ DECLARE
 BEGIN
   FOREACH t IN ARRAY ARRAY[
     'ac_brands', 'unit_types', 'capacity_ranges',
-    'service_types', 'service_catalog', 'service_pricing', 'addon_catalog'
+    'service_types', 'service_catalog', 'addon_catalog'
   ]
   LOOP
     EXECUTE format('CREATE POLICY "%I_read_all" ON public.%I FOR SELECT TO authenticated USING (true)', t, t);

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     const validation = GetCustomersQuerySchema.safeParse(queryInput)
     if (!validation.success) {
-      logResponse(    logRequest(method, path, user.id), 400, getDuration(), validation.error.message)
+      logResponse(logRequest(method, path, user.id), 400, getDuration(), validation.error.message)
       return handleValidationError(validation.error)
     }
 

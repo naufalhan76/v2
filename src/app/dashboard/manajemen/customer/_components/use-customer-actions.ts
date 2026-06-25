@@ -39,9 +39,18 @@ export function useCustomerActions(page: number, searchTerm: string) {
       return false
     }
     setIsCreating(true)
+    // Map snake_case form fields to camelCase API schema
+    const apiPayload = {
+      customerName: data.customer_name,
+      primaryContactPerson: data.primary_contact_person,
+      phoneNumber: data.phone_number,
+      email: data.email,
+      billingAddress: data.billing_address,
+      notes: data.notes,
+    }
     fetch('/api/customers', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(apiPayload)
     }).then(res => res.json()).then(result => {
       if (result.success) { invalidate(); setFormData(emptyForm); toast({ title: "Berhasil", description: "Customer berhasil ditambahkan" }) }
       else toast({ title: "Gagal", description: result.error || "Gagal menambahkan customer", variant: "destructive" })
