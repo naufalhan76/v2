@@ -1,6 +1,9 @@
 import { computeWorkDurationMinutes } from './time'
 
 export const TIMER_STORAGE_KEY = 'msn-tech-active-timer'
+export const WIZARD_PHASE_KEY = 'msn-tech-wizard-phase'
+
+import type { Phase } from '@/components/technician/wizard/wizard-types'
 
 export type ActiveTimer = {
   orderId: string
@@ -72,7 +75,6 @@ export function stopTimer(orderId: string): CompletedTimer | null {
     durationMinutes: computeWorkDurationMinutes(activeTimer.work_started_at, workCompletedAt),
   }
 
-  localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(completedTimer))
   localStorage.removeItem(TIMER_STORAGE_KEY)
 
   return completedTimer
@@ -106,4 +108,37 @@ export function clearTimer(orderId: string): void {
   if (isTimerActive(orderId)) {
     localStorage.removeItem(TIMER_STORAGE_KEY)
   }
+}
+
+/** Reads the persisted wizard phase for an order, or null when invalid/absent. */
+export function getWizardPhase(orderId: string): Phase | null {
+  const rawPhase = localStorage.getItem(`${WIZARD_PHASE_KEY}-${orderId}`)
+
+  if (!rawPhase) {
+    return null
+  }
+
+  try {
+    const parsedPhase = JSON.parse(rawPhase)
+
+    if (parsedPhase === 'A' || parsedPhase === 'B' || parsedPhase === 'C') {
+      return parsedPhase as Phase
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
+
+/** Persists the current wizard phase for an order. Only stores 'A', 'B', or 'C'. */
+export function setWizardPhase(orderId: string, phase: Phase): void {
+  if (phase === 'A' || phase === 'B' || phase === 'C') {
+    localStorage.setItem(`${WIZARD_PHASE_KEY}-${orderId}`, JSON.stringify(phase))
+  }
+}
+
+/** Removes the persisted wizard phase for an order. */
+export function clearWizardPhase(orderId: string): void {
+  localStorage.removeItem(`${WIZARD_PHASE_KEY}-${orderId}`)
 }
