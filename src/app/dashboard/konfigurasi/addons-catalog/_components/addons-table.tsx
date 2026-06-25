@@ -14,11 +14,11 @@ import { Pencil, Trash2, Package, AlertTriangle, Plus } from 'lucide-react'
 import type { Addon } from '@/lib/actions/addons'
 
 const CATEGORIES = [
-  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg0' },
-  { value: 'FREON', label: 'Freon', color: 'bg-status-invoiced' },
-  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg0' },
-  { value: 'TRANSPORTATION', label: 'Transportation', color: 'bg-primary' },
-  { value: 'OTHER', label: 'Lainnya', color: 'bg-muted-foreground' },
+  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg0 text-status-assigned' },
+  { value: 'FREON', label: 'Freon', color: 'bg-status-invoiced text-foreground' },
+  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg0 text-status-pending' },
+  { value: 'TRANSPORTATION', label: 'Transportation', color: 'bg-primary text-primary-foreground' },
+  { value: 'OTHER', label: 'Lainnya', color: 'bg-muted-foreground text-background' },
 ]
 
 export function getCategoryColor(category: string) {
@@ -93,7 +93,7 @@ export function AddonsTable({
           {addons.map((addon) => (
             <TableRow key={addon.addon_id} className="border-0 hover:bg-muted/50">
               <TableCell className="hidden sm:table-cell">
-                <Badge className={getCategoryColor(addon.category)}>
+                <Badge className={`${getCategoryColor(addon.category)} whitespace-nowrap`}>
                   {getCategoryLabel(addon.category)}
                 </Badge>
               </TableCell>
@@ -103,7 +103,7 @@ export function AddonsTable({
               <TableCell className="font-medium">
                 <div>{addon.item_name}</div>
                 <div className="flex flex-wrap gap-1.5 mt-1 sm:hidden">
-                  <Badge className={getCategoryColor(addon.category)}>
+                  <Badge className={`${getCategoryColor(addon.category)} whitespace-nowrap`}>
                     {getCategoryLabel(addon.category)}
                   </Badge>
                   {addon.item_code && (
