@@ -2,6 +2,8 @@
 
 import * as React from 'react'
 import { useOnlineSync } from '@/hooks/use-online-sync'
+import { deleteStuckPhotos, getStuckPhotoCount } from '@/lib/offline/db-photos'
+import { useToast } from '@/hooks/use-toast'
 import {
   CloudOff,
   RefreshCw,
@@ -29,6 +31,9 @@ export type SyncStatusProps = {
 export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
   const { isOnline, syncing, pending, lastResult, lastError, syncNow, errors, needsAttention } = useOnlineSync()
   const [showSuccess, setShowSuccess] = React.useState(false)
+  const [stuckPhotoCount, setStuckPhotoCount] = React.useState<number>(0)
+  const [purging, setPurging] = React.useState(false)
+  const { toast } = useToast()
 
   const pendingCount = pending.reports + pending.transitions + pending.photos
   const hasPending = pendingCount > 0
@@ -43,6 +48,38 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
       return () => clearTimeout(t)
     }
   }, [isOnline, syncing, pendingCount, lastResult])
+
+  React.useEffect(() => {
+    if (pending.photos > 0) {
+      getStuckPhotoCount().then(setStuckPhotoCount).catch(() => setStuckPhotoCount(0))
+    } else {
+      setStuckPhotoCount(0)
+    }
+  }, [pending.photos])
+
+  async function handlePurgeStuckPhotos() {
+    if (!window.confirm(`Hapus ${stuckPhotoCount} foto yang gagal sync? Foto yang masih dirujuk laporan tidak akan dihapus.`)) return
+
+    setPurging(true)
+    try {
+      const deleted = await deleteStuckPhotos()
+      toast({
+        title: 'Foto Dihapus',
+        description: `${deleted} foto gagal sync berhasil dihapus`,
+      })
+      await syncNow({ bypassBackoff: true })
+      const remaining = await getStuckPhotoCount()
+      setStuckPhotoCount(remaining)
+    } catch (err) {
+      toast({
+        title: 'Gagal',
+        description: err instanceof Error ? err.message : 'Gagal menghapus foto',
+        variant: 'destructive',
+      })
+    } finally {
+      setPurging(false)
+    }
+  }
 
   const isCompact = variant === 'compact'
   const baseClass = cn(
@@ -172,6 +209,23 @@ export function SyncStatus({ className, variant = 'full' }: SyncStatusProps) {
                   </p>
                 ))}
               </div>
+            )}
+            {stuckPhotoCount > 0 && (
+              <>
+                <div className="border-t pt-1.5 mt-1">
+                  <button
+                    type="button"
+                    disabled={purging}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void handlePurgeStuckPhotos()
+                    }}
+                    className="w-full text-left text-xs font-medium text-destructive hover:text-destructive/80 disabled:opacity-50 transition-colors"
+                  >
+                    {purging ? 'Menghapus...' : `Hapus ${stuckPhotoCount} Foto Gagal Sync`}
+                  </button>
+                </div>
+              </>
             )}
             <p className="text-[10px] text-muted-foreground pt-1 border-t">
               Klik untuk sinkronkan sekarang
