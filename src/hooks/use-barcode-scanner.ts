@@ -65,8 +65,13 @@ export function useBarcodeScanner({
   const startScanning = useCallback(async () => {
     if (!isSupported || isScanning) return
     try {
+      // Verify secure context first — getUserMedia only works on HTTPS or localhost
+      if (!window.isSecureContext) {
+        toast({ title: "Kamera hanya tersedia di koneksi aman (HTTPS)", variant: "destructive" })
+        return
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
+        video: { facingMode: { ideal: "environment" } },
       })
       streamRef.current = stream
       const video = document.createElement("video")
@@ -77,8 +82,17 @@ export function useBarcodeScanner({
       detectorRef.current = new BarcodeDetector({ formats: [] })
       setIsScanning(true)
       rafRef.current = requestAnimationFrame(scanLoop)
-    } catch {
-      toast({ title: "Kamera tidak tersedia", variant: "destructive" })
+    } catch (err: unknown) {
+      const error = err as Error
+      if (error.name === 'NotAllowedError') {
+        toast({ title: "Akses kamera ditolak", description: "Izinkan kamera di pengaturan browser lalu coba lagi", variant: "destructive" })
+      } else if (error.name === 'NotFoundError') {
+        toast({ title: "Kamera tidak ditemukan", description: "Perangkat tidak memiliki kamera belakang", variant: "destructive" })
+      } else if (error.name === 'NotReadableError') {
+        toast({ title: "Kamera sedang digunakan", description: "Tutup aplikasi lain yang menggunakan kamera", variant: "destructive" })
+      } else {
+        toast({ title: "Kamera tidak tersedia", description: error.message || "Coba lagi", variant: "destructive" })
+      }
       stopStream()
     }
   }, [isSupported, isScanning, scanLoop, stopStream])
