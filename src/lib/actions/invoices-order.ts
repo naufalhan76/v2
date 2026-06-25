@@ -144,9 +144,34 @@ export async function createInvoiceFromOrder(orderId: string): Promise<CreateInv
     quantity: oi.quantity, unit_price: oi.estimatedPrice, service_type: oi.serviceType,
   }))
 
-  const materialItems: CreateInvoiceInput['items'] = report.materials.map((m) => ({
-    item_type: 'ADDON', description: m.name, quantity: m.qty, unit_price: m.unit_price, addon_id: m.addon_id ?? undefined,
-  }))
+  // Filter: catalog materials (addon_id set) always included.
+  // Manual materials (is_manual, addon_id null) only included if their
+  // addon_request was APPROVED. PENDING/REJECTED are skipped.
+  const manualNames = report.materials
+    .filter((m) => m.is_manual && !m.addon_id)
+    .map((m) => m.name)
+
+  let approvedManualNames = new Set<string>()
+  if (manualNames.length > 0) {
+    const { data: approvedReqs } = await supabase
+      .from('addon_requests')
+      .select('item_name')
+      .in('item_name', manualNames)
+      .eq('status', 'APPROVED')
+    if (approvedReqs) {
+      approvedManualNames = new Set(approvedReqs.map((r) => r.item_name))
+    }
+  }
+
+  const materialItems: CreateInvoiceInput['items'] = report.materials
+    .filter((m) => {
+      if (m.addon_id) return true
+      if (m.is_manual) return approvedManualNames.has(m.name)
+      return true
+    })
+    .map((m) => ({
+      item_type: 'ADDON', description: m.name, quantity: m.qty, unit_price: m.unit_price, addon_id: m.addon_id ?? undefined,
+    }))
 
   const items = [...baseServiceItems, ...materialItems]
   if (items.length === 0) throw new Error('Order tidak memiliki item yang bisa di-invoice')

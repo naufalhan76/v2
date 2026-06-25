@@ -8,6 +8,7 @@ export interface ServiceReportMaterial {
   qty: number
   unit_price: number
   total: number
+  is_manual?: boolean
 }
 
 export interface ServiceReport {
