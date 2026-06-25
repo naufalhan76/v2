@@ -79,7 +79,13 @@ export function useBarcodeScanner({
       video.srcObject = stream
       await video.play()
       videoRef.current = video
-      detectorRef.current = new BarcodeDetector({ formats: [] })
+      // BarcodeDetector with empty formats array fails on some browsers.
+      // Omit formats entirely to detect all supported types.
+      try {
+        detectorRef.current = new BarcodeDetector({ formats: [] })
+      } catch {
+        detectorRef.current = new BarcodeDetector()
+      }
       setIsScanning(true)
       rafRef.current = requestAnimationFrame(scanLoop)
     } catch (err: unknown) {
