@@ -168,3 +168,40 @@ export async function createInvoiceFromOrder(orderId: string): Promise<CreateInv
 
   return { invoice_id: invoice.invoice_id, invoice_number: invoice.invoice_number, total_amount: invoice.total_amount, source: 'SERVICE_REPORT' }
 }
+
+export async function finalizeInvoiceFromOrder(orderId: string): Promise<CreateInvoiceFromOrderResult> {
+  // Security: only finance role can finalize
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  await requireFinanceRole(user)
+
+  const { data: existingInvoice } = await supabase
+    .from('invoices')
+    .select('invoice_id, invoice_type')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (existingInvoice?.invoice_type === 'PROFORMA') {
+    const { error: itemsError } = await supabase
+      .from('invoice_items')
+      .delete()
+      .eq('invoice_id', existingInvoice.invoice_id)
+    if (itemsError) {
+      logger.error('Error deleting proforma invoice items:', itemsError)
+      throw new Error('Gagal menghapus item proforma invoice')
+    }
+
+    const { error: invoiceError } = await supabase
+      .from('invoices')
+      .delete()
+      .eq('invoice_id', existingInvoice.invoice_id)
+    if (invoiceError) {
+      logger.error('Error deleting proforma invoice:', invoiceError)
+      throw new Error('Gagal menghapus proforma invoice')
+    }
+  }
+
+  return createInvoiceFromOrder(orderId)
+}

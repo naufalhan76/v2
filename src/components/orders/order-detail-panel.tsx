@@ -23,6 +23,7 @@ import { OrderHistoryTab } from '@/components/orders/order-history-tab'
 import { AssignModal } from '@/components/orders/assign-modal'
 import { RescheduleModal } from '@/components/orders/reschedule-modal'
 import { CancelModal } from '@/components/orders/cancel-modal'
+import { InvoiceFinalizeDialog } from '@/components/orders/invoice-finalize-dialog'
 import { getOrderById } from '@/lib/actions/orders'
 import { toCanonical } from '@/lib/order-status'
 
@@ -36,6 +37,7 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
   const [assignOpen, setAssignOpen] = useState(false)
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [invoiceFinalizeOpen, setInvoiceFinalizeOpen] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['order', orderId],
@@ -180,10 +182,11 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
                 )}
                 {canonical === 'COMPLETED' && (
                   <>
-                    <Button asChild className="h-11 w-full sm:h-9 sm:flex-1">
-                      <Link href={`/dashboard/keuangan/invoices/create/from-order/${order.order_id}`}>
-                        Buat Invoice
-                      </Link>
+                    <Button
+                      onClick={() => setInvoiceFinalizeOpen(true)}
+                      className="h-11 w-full sm:h-9 sm:flex-1"
+                    >
+                      Buat Invoice
                     </Button>
                     <Button
                       onClick={() => setCancelOpen(true)}
@@ -228,6 +231,11 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
         defaultDate={order?.scheduled_visit_date}
       />
       <CancelModal open={cancelOpen} onOpenChange={setCancelOpen} orderId={orderId} />
+      <InvoiceFinalizeDialog
+        orderId={orderId}
+        open={invoiceFinalizeOpen}
+        onOpenChange={setInvoiceFinalizeOpen}
+      />
     </>
   )
 }
