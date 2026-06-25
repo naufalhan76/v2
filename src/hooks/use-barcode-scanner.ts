@@ -79,13 +79,18 @@ export function useBarcodeScanner({
       video.srcObject = stream
       await video.play()
       videoRef.current = video
-      // BarcodeDetector with empty formats array fails on some browsers.
-      // Omit formats entirely to detect all supported types.
+      // Empty formats array is a spec edge: some browsers reject it,
+      // others accept it. Try-catch is invisible to bundler so we guard
+      // via a runtime flag that webpack/turbopack cannot DCE.
+      let formatsOk = true
       try {
-        detectorRef.current = new BarcodeDetector({ formats: [] })
+        new BarcodeDetector({ formats: [] })
       } catch {
-        detectorRef.current = new BarcodeDetector()
+        formatsOk = false
       }
+      detectorRef.current = formatsOk
+        ? new BarcodeDetector({ formats: [] })
+        : new BarcodeDetector()
       setIsScanning(true)
       rafRef.current = requestAnimationFrame(scanLoop)
     } catch (err: unknown) {
