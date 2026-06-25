@@ -35,7 +35,7 @@ export const CATEGORIES = [
   { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg text-status-assigned' },
   { value: 'FREON', label: 'Freon', color: 'bg-status-invoiced text-foreground' },
   { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg text-status-pending' },
-  { value: 'TRANSPORTATION', label: 'Transportation', color: 'bg-muted-foreground text-background' },
+  { value: 'TRANSPORTATION', label: 'Transportation', color: 'bg-primary text-primary-foreground' },
   { value: 'OTHER', label: 'Lainnya', color: 'bg-muted-foreground text-background' },
 ]
 
