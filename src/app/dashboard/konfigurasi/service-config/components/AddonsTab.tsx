@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Plus, AlertTriangle, UploadCloud, Download } from 'lucide-react'
+import { Plus, UploadCloud, Download } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   getAddons,
-  getLowStockAddons,
   bulkUpdateAddons,
   type Addon,
 } from '@/lib/actions/addons'
@@ -33,13 +32,10 @@ type AddonFormData = {
   description?: string
   unitOfMeasure: string
   unitPrice: string
-  stockQuantity?: string
-  minimumStock?: string
 }
 
 export function AddonsTab() {
   const [addons, setAddons] = useState<Addon[]>([])
-  const [lowStockAddons, setLowStockAddons] = useState<Addon[]>([])
   const [isFetching, setIsFetching] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isBulkUpdateDialogOpen, setIsBulkUpdateDialogOpen] = useState(false)
@@ -52,7 +48,6 @@ export function AddonsTab() {
 
   useEffect(() => {
     loadAddons()
-    loadLowStockAddons()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryFilter, searchQuery])
 
@@ -72,16 +67,8 @@ export function AddonsTab() {
     }
   }
 
-  const loadLowStockAddons = async () => {
-    try {
-      const data = await getLowStockAddons()
-      setLowStockAddons(data)
-    } catch (_error) { /* silent */ }
-  }
-
   const handleSave = () => {
     loadAddons()
-    loadLowStockAddons()
   }
 
   const handleOpenDialog = (addon?: Addon) => {
@@ -99,8 +86,6 @@ export function AddonsTab() {
         description: editingAddon.description || '',
         unitOfMeasure: editingAddon.unit_of_measure,
         unitPrice: editingAddon.unit_price.toString(),
-        stockQuantity: editingAddon.stock_quantity.toString(),
-        minimumStock: editingAddon.minimum_stock.toString(),
       }
     }
     return {
@@ -110,8 +95,6 @@ export function AddonsTab() {
       description: '',
       unitOfMeasure: 'pcs',
       unitPrice: '',
-      stockQuantity: '0',
-      minimumStock: '0',
     }
   }
 
@@ -124,7 +107,6 @@ export function AddonsTab() {
       setIsDeleteDialogOpen(false)
       setDeletingAddon(null)
       loadAddons()
-      loadLowStockAddons()
     } catch (error: unknown) {
       toast({
         variant: 'destructive',
@@ -140,15 +122,14 @@ export function AddonsTab() {
       toast({ title: 'Update Berhasil', description: res.message })
       setIsBulkUpdateDialogOpen(false)
       loadAddons()
-      loadLowStockAddons()
     } else {
       toast({ variant: 'destructive', title: 'Update Gagal', description: res.error })
     }
   }
 
   const downloadTemplate = () => {
-    const headers = ['addon_id','item_code','item_name','category','unit_price','unit_of_measure','stock_quantity','minimum_stock','description','is_active']
-    const rows = addons.map(a => [a.addon_id, a.item_code||'', a.item_name, a.category, a.unit_price, a.unit_of_measure, a.stock_quantity, a.minimum_stock, a.description||'', a.is_active?'TRUE':'FALSE'])
+    const headers = ['addon_id','item_code','item_name','category','unit_price','unit_of_measure','description','is_active']
+    const rows = addons.map(a => [a.addon_id, a.item_code||'', a.item_name, a.category, a.unit_price, a.unit_of_measure, a.description||'', a.is_active?'TRUE':'FALSE'])
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
@@ -180,32 +161,6 @@ export function AddonsTab() {
         initialData={getInitialData()}
         onSave={handleSave}
       />
-
-      {lowStockAddons.length > 0 && (
-        <Card className="rounded-xl border border-border/50 shadow-sm bg-status-pending-bg dark:bg-status-pending-bg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-warning dark:text-warning">
-              <AlertTriangle className="h-5 w-5" /> Stok Rendah
-            </CardTitle>
-            <CardDescription>{lowStockAddons.length} item memiliki stok di bawah minimum</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {lowStockAddons.slice(0, 3).map((addon) => (
-                <div key={addon.addon_id} className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{addon.item_name}</span>
-                  <span className="text-muted-foreground">
-                    Stok: {addon.stock_quantity} / Min: {addon.minimum_stock}
-                  </span>
-                </div>
-              ))}
-              {lowStockAddons.length > 3 && (
-                <p className="text-sm text-muted-foreground">+{lowStockAddons.length - 3} item lainnya</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <AddonsFilters
         searchQuery={searchQuery}
@@ -254,8 +209,8 @@ export function AddonsTab() {
         open={isBulkUpdateDialogOpen}
         onOpenChange={setIsBulkUpdateDialogOpen}
         title="Bulk Update Add-ons (CSV)"
-        description={<span>Update data add-ons yang sudah ada. Format: <code>addon_id, item_code, item_name, category, unit_price, unit_of_measure, stock_quantity, minimum_stock, description, is_active</code></span>}
-        placeholder={"addon_id,item_code,item_name,category,unit_price,unit_of_measure,stock_quantity,minimum_stock,description,is_active\n123e4567,CAP-001,Capacitor 10uF,PARTS,50000,pcs,10,5,Electrolytic capacitor,TRUE"}
+        description={<span>Update data add-ons yang sudah ada. Format: <code>addon_id, item_code, item_name, category, unit_price, unit_of_measure, description, is_active</code></span>}
+        placeholder={"addon_id,item_code,item_name,category,unit_price,unit_of_measure,description,is_active\n123e4567,CAP-001,Capacitor 10uF,PARTS,50000,pcs,Electrolytic capacitor,TRUE"}
         onImport={handleBulkUpdate}
         isLoading={false}
       />

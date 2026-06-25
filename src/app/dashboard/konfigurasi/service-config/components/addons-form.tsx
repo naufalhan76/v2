@@ -28,8 +28,6 @@ const addonSchema = z.object({
   description: z.string().optional(),
   unitOfMeasure: z.string().min(1, 'Satuan wajib diisi'),
   unitPrice: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Format harga tidak valid'),
-  stockQuantity: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Format stok tidak valid').optional(),
-  minimumStock: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Format stok minimum tidak valid').optional(),
 })
 
 type AddonFormData = z.infer<typeof addonSchema>
@@ -50,11 +48,9 @@ interface AddonsFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   editingAddon: Addon | null
-  initialData: Omit<AddonFormData, 'itemCode' | 'description' | 'stockQuantity' | 'minimumStock'> & {
+  initialData: Omit<AddonFormData, 'itemCode' | 'description'> & {
     itemCode?: string
     description?: string
-    stockQuantity?: string
-    minimumStock?: string
   } | null
   onSave: () => void
 }
@@ -72,8 +68,6 @@ export function AddonsForm({ open, onOpenChange, editingAddon, initialData, onSa
       description: '',
       unitOfMeasure: 'pcs',
       unitPrice: '',
-      stockQuantity: '0',
-      minimumStock: '0',
     },
   })
 
@@ -88,8 +82,6 @@ export function AddonsForm({ open, onOpenChange, editingAddon, initialData, onSa
         description: '',
         unitOfMeasure: 'pcs',
         unitPrice: '',
-        stockQuantity: '0',
-        minimumStock: '0',
       })
     }
   }, [open, initialData, form])
@@ -108,8 +100,6 @@ export function AddonsForm({ open, onOpenChange, editingAddon, initialData, onSa
         description: data.description || null,
         unit_of_measure: data.unitOfMeasure,
         unit_price: parseFloat(data.unitPrice),
-        stock_quantity: data.stockQuantity ? parseFloat(data.stockQuantity) : 0,
-        minimum_stock: data.minimumStock ? parseFloat(data.minimumStock) : 0,
       }
 
       if (editingAddon) {
@@ -208,23 +198,6 @@ export function AddonsForm({ open, onOpenChange, editingAddon, initialData, onSa
               <Input placeholder="50000" className="h-10" {...form.register('unitPrice')} />
               {form.formState.errors.unitPrice && (
                 <p className="text-sm text-destructive">{form.formState.errors.unitPrice.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-foreground">Stok</Label>
-              <Input placeholder="0" type="number" className="h-10" {...form.register('stockQuantity')} />
-              {form.formState.errors.stockQuantity && (
-                <p className="text-sm text-destructive">{form.formState.errors.stockQuantity.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-foreground">Stok Minimum</Label>
-              <Input placeholder="0" type="number" className="h-10" {...form.register('minimumStock')} />
-              {form.formState.errors.minimumStock && (
-                <p className="text-sm text-destructive">{form.formState.errors.minimumStock.message}</p>
               )}
             </div>
           </div>
