@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { LoadingOverlay } from '@/components/ui/loading-state'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/skeleton'
-import { Plus, Pencil, Trash2, MapPin, Building2, Users } from 'lucide-react'
+import { Plus, Pencil, Trash2, MapPin, Building2, Users, ChevronRight } from 'lucide-react'
 import { formatPhone } from '@/lib/utils'
 import type { SortConfig } from '@/hooks/use-sortable-table'
 
@@ -185,7 +185,7 @@ export function CustomerTable({
               <TableRow key={c.customer_id as string}
                 className={`cursor-pointer hover:bg-muted/50 ${deletingId === c.customer_id ? "opacity-50" : ""}`}
                 onClick={() => router.push(`/dashboard/manajemen/customer/${c.customer_id as string}`)}>
-                <TableCell className="font-medium"><span className="hover:underline">{c.customer_name as string}</span></TableCell>
+                <TableCell className="font-medium"><span className="text-primary font-semibold underline hover:no-underline cursor-pointer inline-flex items-center gap-1">{c.customer_name as string}<ChevronRight className="w-3.5 h-3.5" /></span></TableCell>
                 <TableCell className="hidden md:table-cell">{c.primary_contact_person as string}</TableCell>
                 <TableCell data-testid="phone-cell">{formatPhone(c.phone_number as string | number | null | undefined)}</TableCell>
                 <TableCell className="hidden lg:table-cell">{c.email as string}</TableCell>
