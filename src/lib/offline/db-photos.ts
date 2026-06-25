@@ -3,6 +3,7 @@
  */
 
 import { getDb } from './db-core'
+import { getAllReports } from './db-reports'
 import type { PendingPhotoRecord, PhotoKind } from './db-schema'
 
 export async function putPhoto(record: PendingPhotoRecord): Promise<void> {
@@ -53,6 +54,47 @@ export async function deletePhotosForOrder(orderId: string): Promise<void> {
     cursor = await cursor.continue()
   }
   await tx.done
+}
+
+export async function getAllPhotos(): Promise<PendingPhotoRecord[]> {
+  const db = await getDb()
+  const all = await db.getAll('pendingPhotos')
+  return all.sort((a, b) => a.createdAt - b.createdAt)
+}
+
+export async function getStuckPhotoCount(): Promise<number> {
+  const [photos, reports] = await Promise.all([getAllPhotos(), getAllReports()])
+  const referencedIds = new Set<string>()
+  for (const report of reports) {
+    for (const photoId of report.photoIds) {
+      referencedIds.add(photoId)
+    }
+  }
+  return photos.filter(
+    (photo) => photo.uploadedPath === null && !referencedIds.has(photo.id)
+  ).length
+}
+
+export async function deleteStuckPhotos(): Promise<number> {
+  const [photos, reports] = await Promise.all([getAllPhotos(), getAllReports()])
+  const referencedIds = new Set<string>()
+  for (const report of reports) {
+    for (const photoId of report.photoIds) {
+      referencedIds.add(photoId)
+    }
+  }
+  const stuck = photos.filter(
+    (photo) => photo.uploadedPath === null && !referencedIds.has(photo.id)
+  )
+  if (stuck.length === 0) return 0
+
+  const db = await getDb()
+  const tx = db.transaction('pendingPhotos', 'readwrite')
+  for (const photo of stuck) {
+    await tx.store.delete(photo.id)
+  }
+  await tx.done
+  return stuck.length
 }
 
 export type { PendingPhotoRecord, PhotoKind }
