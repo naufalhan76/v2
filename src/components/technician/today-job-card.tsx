@@ -275,7 +275,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
                 "w-full flex items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-colors",
                 isActive
                   ? "bg-primary text-white hover:bg-primary-hover"
-                  : "border-2 border-border text-primary hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-surface"
+                  : "border-2 border-border bg-background text-primary hover:bg-muted dark:border-border dark:text-foreground dark:hover:bg-surface"
               )}
               asChild
             >
