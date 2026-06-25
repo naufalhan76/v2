@@ -137,19 +137,12 @@ export function InvoiceFinalizeDialog({
           </div>
         )}
 
-        <DialogFooter className="flex-col gap-2 sm:flex-row pt-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="h-9 w-full sm:w-auto text-sm"
-          >
-            Batal
-          </Button>
+        <DialogFooter className="flex-col gap-2 pt-2">
           {data?.invoiceId && (
             <Button
               variant="outline"
               asChild
-              className="h-9 w-full sm:flex-1 text-sm"
+              className="h-10 w-full text-sm"
             >
               <Link href={`/dashboard/keuangan/invoices/${data.invoiceId}`}>
                 Buka PROFORMA
@@ -159,9 +152,9 @@ export function InvoiceFinalizeDialog({
           <Button
             disabled={!showFinalize || finalize.isPending}
             onClick={() => finalize.mutate()}
-            className="h-9 w-full sm:flex-1 text-sm bg-yellow-500 text-white hover:bg-yellow-600"
+            className="h-10 w-full text-sm bg-yellow-500 text-white hover:bg-yellow-600"
           >
-            {finalize.isPending && <Loader2 className="mr-2 h-3.5 w-3.5" />}
+            {finalize.isPending && <Loader2 className="mr-2 h-4 w-4" />}
             Finalisasi (Ganti PROFORMA)
           </Button>
         </DialogFooter>
