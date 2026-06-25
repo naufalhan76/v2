@@ -186,20 +186,16 @@ export async function finalizeInvoiceFromOrder(orderId: string): Promise<CreateI
 
   if (existingInvoice?.invoice_type === 'PROFORMA') {
     const admin = createAdminClient()
+    const invoiceId = existingInvoice.invoice_id
 
-    const { error: itemsError } = await admin
-      .from('invoice_items')
-      .delete()
-      .eq('invoice_id', existingInvoice.invoice_id)
-    if (itemsError) {
-      logger.error('Error deleting proforma invoice items:', itemsError)
-      throw new Error('Gagal menghapus item proforma invoice')
-    }
+    await admin.from('invoice_communications').delete().eq('invoice_id', invoiceId)
+    await admin.from('payment_records').delete().eq('invoice_id', invoiceId)
+    await admin.from('invoice_items').delete().eq('invoice_id', invoiceId)
 
     const { error: invoiceError } = await admin
       .from('invoices')
       .delete()
-      .eq('invoice_id', existingInvoice.invoice_id)
+      .eq('invoice_id', invoiceId)
     if (invoiceError) {
       logger.error('Error deleting proforma invoice:', invoiceError)
       throw new Error('Gagal menghapus proforma invoice')
