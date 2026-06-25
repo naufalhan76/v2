@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react'
 import type { OrderStatus } from '@/lib/order-status'
 import { captureGps } from '@/lib/utils/geolocation'
 import type { GpsResult } from '@/lib/utils/geolocation'
+import { isTimerActive, getElapsedSeconds } from '@/lib/offline/timer'
 import { jobToSnapshot, lockJobSnapshot, saveJobSnapshot } from '@/lib/offline/snapshot'
 import { CustomerInfoCard } from './customer-info-card'
 import { ServiceInfoCard } from './service-info-card'
@@ -61,7 +62,7 @@ async function transitionJob(orderId: string, payload: TransitionPayload) {
 export function JobDetailContent({ orderId }: JobDetailContentProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const [workTimer, setWorkTimer] = useState<number>(0)
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(() => getElapsedSeconds(orderId))
 
 
   const { data: job, isLoading, isError, error } = useQuery({
@@ -96,17 +97,16 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
     })
   }, [job])
 
-  // Work timer for IN_PROGRESS state
+  // Persistent timer — reads from localStorage every second
   useEffect(() => {
-    if (job?.canonical_status === 'IN_PROGRESS') {
-      const interval = setInterval(() => {
-        setWorkTimer((prev) => prev + 1)
-      }, 1000)
-      return () => clearInterval(interval)
-    } else {
-      setWorkTimer(0)
-    }
-  }, [job?.canonical_status])
+    if (!isTimerActive(orderId)) return
+
+    const interval = setInterval(() => {
+      setElapsedSeconds(getElapsedSeconds(orderId))
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [orderId])
 
   if (isLoading) return <JobDetailSkeleton />
 
@@ -137,13 +137,6 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
     hour: '2-digit',
     minute: '2-digit',
   })
-
-  function formatTimer(seconds: number) {
-    const h = Math.floor(seconds / 3600)
-    const m = Math.floor((seconds % 3600) / 60)
-    const s = seconds % 60
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-  }
 
   return (
     <div className="space-y-4">
@@ -178,8 +171,8 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
         </div>
       )}
 
-      {/* Work timer (IN_PROGRESS only) */}
-      {canonicalStatus === 'IN_PROGRESS' && (
+      {/* Work timer (active timer for this order only) */}
+      {isTimerActive(orderId) && (
         <div className="rounded-lg border border-brand-200 bg-brand-50 dark:border-primary dark:bg-surface p-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Timer className="h-4 w-4 text-primary" aria-hidden="true" />
@@ -188,7 +181,9 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
             </span>
           </div>
           <p className="text-2xl font-mono font-bold text-foreground tabular-nums tracking-tight">
-            {formatTimer(workTimer)}
+            {String(Math.floor(elapsedSeconds / 3600)).padStart(2, '0')}:
+            {String(Math.floor((elapsedSeconds % 3600) / 60)).padStart(2, '0')}:
+            {String(elapsedSeconds % 60).padStart(2, '0')}
           </p>
         </div>
       )}
