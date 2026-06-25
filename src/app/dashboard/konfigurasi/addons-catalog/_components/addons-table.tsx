@@ -14,9 +14,9 @@ import { Pencil, Trash2, Package, Plus } from 'lucide-react'
 import type { Addon } from '@/lib/actions/addons'
 
 const CATEGORIES = [
-  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg0 text-status-assigned' },
+  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg text-status-assigned' },
   { value: 'FREON', label: 'Freon', color: 'bg-status-invoiced text-foreground' },
-  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg0 text-status-pending' },
+  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg text-status-pending' },
   { value: 'TRANSPORTATION', label: 'Transportation', color: 'bg-primary text-primary-foreground' },
   { value: 'OTHER', label: 'Lainnya', color: 'bg-muted-foreground text-background' },
 ]
