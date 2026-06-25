@@ -25,11 +25,13 @@ export interface OrderInvoiceStatusResponse {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string | string[] }> },
 ) {
   const getDuration = measureDuration()
   const method = 'GET'
-  const { id: orderId } = await params
+  const resolvedParams = await params
+  const rawId = Array.isArray(resolvedParams.id) ? resolvedParams.id : [resolvedParams.id]
+  const orderId = rawId.map(decodeURIComponent).join('/')
   const path = `/api/orders/${orderId}/invoice-status`
 
   try {

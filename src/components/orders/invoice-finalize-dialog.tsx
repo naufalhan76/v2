@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { formatRupiah } from '@/lib/utils'
 import { finalizeInvoiceFromOrder } from '@/lib/actions/invoices-order'
-import type { OrderInvoiceStatusResponse } from '@/app/api/orders/[...id]/invoice-status/route'
+import type { OrderInvoiceStatusResponse } from '@/app/api/orders/[id]/invoice-status/route'
 
 interface InvoiceFinalizeDialogProps {
   orderId: string | null
@@ -25,7 +25,7 @@ interface InvoiceFinalizeDialogProps {
 }
 
 async function fetchInvoiceStatus(orderId: string): Promise<OrderInvoiceStatusResponse> {
-  const res = await fetch(`/api/orders/${orderId}/invoice-status`)
+  const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/invoice-status`)
   const json = await res.json()
   if (!json.success) throw new Error(json.error || 'Gagal memuat status invoice')
   return json.data as OrderInvoiceStatusResponse
