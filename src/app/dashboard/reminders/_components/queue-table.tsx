@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { BellRing, Loader2, Mail, MessageCircle, Send, Sparkles, X } from 'lucide-react'
@@ -14,7 +15,6 @@ import {
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table'
-
 import type { ReminderRow, ReminderStatus } from '@/types/reminders'
 import {
   AlertDialog,
@@ -34,6 +34,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+
+import { ReminderDetailDrawer } from './reminder-detail-drawer'
 
 const STATUS_LABELS: Record<ReminderStatus, string> = {
   PENDING: 'Menunggu', SENT: 'Terkirim', FAILED: 'Gagal', CANCELLED: 'Dibatalkan', DISMISSED: 'Diabaikan',
@@ -71,7 +73,7 @@ function RowActions({ row, sendMutation, dismissMutation, onSend, onDismiss }: {
   const isSending = sendMutation.isPending && sendMutation.variables === row.reminder_id
   const isDismissing = dismissMutation.isPending && dismissMutation.variables === row.reminder_id
   return (
-    <div className="flex justify-end gap-1 sm:gap-2">
+    <div className="flex justify-end gap-1 sm:gap-2" onClick={(e) => e.stopPropagation()}>
       {row.status === 'PENDING' && (
         <Button size="sm" variant="default" onClick={() => onSend(row.reminder_id)} disabled={isSending} className="min-h-[44px] sm:min-h-9">
           {isSending ? <Loader2 className="h-3 w-3 animate-spin sm:mr-2" /> : <Send className="h-3 w-3 sm:mr-2" />}
@@ -114,7 +116,7 @@ function createColumns(
     { id: 'select', header: ({ table }) => (
       <Checkbox checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')} onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)} aria-label="Pilih semua" />
     ), cell: ({ row }) => (
-      <Checkbox checked={row.getIsSelected()} onCheckedChange={(v) => row.toggleSelected(!!v)} aria-label="Pilih baris" disabled={row.original.status !== 'PENDING'} />
+      <div onClick={(e) => e.stopPropagation()}><Checkbox checked={row.getIsSelected()} onCheckedChange={(v) => row.toggleSelected(!!v)} aria-label="Pilih baris" disabled={row.original.status !== 'PENDING'} /></div>
     ), enableSorting: false },
     { id: 'customer', header: 'Customer', cell: ({ row }) => { const c = row.original.customers; return (
       <div className="text-sm"><div className="font-medium">{c?.customer_name ?? '-'}</div>{c?.primary_contact_person && <div className="text-xs text-muted-foreground">{c.primary_contact_person}</div>}</div>
@@ -132,6 +134,8 @@ function createColumns(
 }
 
 export function QueueTable({ data, sorting, onSortingChange, rowSelection, onRowSelectionChange, sendMutation, dismissMutation, onSend, onDismiss, isLoading, isFetching, filteredReminders, hasFilters, clearFilters, onGenerate, isGenerating }: QueueTableProps) {
+  const [selectedReminder, setSelectedReminder] = useState<ReminderRow | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const table = useReactTable({ data, columns: createColumns(sendMutation, dismissMutation, onSend, onDismiss), state: { sorting, rowSelection }, onSortingChange, onRowSelectionChange, getRowId: (row) => row.reminder_id, enableRowSelection: (row) => row.original.status === 'PENDING', getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: 20 } } })
 
   return (
@@ -146,7 +150,7 @@ export function QueueTable({ data, sorting, onSortingChange, rowSelection, onRow
             <div className="data-table-container overflow-x-auto">
               <Table>
                 <TableHeader>{table.getHeaderGroups().map((hg) => (<TableRow key={hg.id}>{hg.headers.map((h) => { const meta = h.column.columnDef.meta as { className?: string } | undefined; return (<TableHead key={h.id} className={meta?.className}>{h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}</TableHead>) })}</TableRow>))}</TableHeader>
-                <TableBody>{table.getRowModel().rows.map((row) => (<TableRow key={row.id}>{row.getVisibleCells().map((cell) => { const meta = cell.column.columnDef.meta as { className?: string } | undefined; return (<TableCell key={cell.id} className={meta?.className}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>) })}</TableRow>))}</TableBody>
+                <TableBody>{table.getRowModel().rows.map((row) => (<TableRow key={row.id} className="cursor-pointer" onClick={() => { setSelectedReminder(row.original); setDrawerOpen(true) }}>{row.getVisibleCells().map((cell) => { const meta = cell.column.columnDef.meta as { className?: string } | undefined; return (<TableCell key={cell.id} className={meta?.className}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>) })}</TableRow>))}</TableBody>
               </Table>
             </div>
           )}
@@ -161,6 +165,7 @@ export function QueueTable({ data, sorting, onSortingChange, rowSelection, onRow
           </div>
         </div>
       )}
+      <ReminderDetailDrawer reminder={selectedReminder} open={drawerOpen} onOpenChange={setDrawerOpen} />
     </>
   )
 }

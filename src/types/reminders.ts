@@ -47,6 +47,7 @@ export interface ReminderRow {
   message: string
   status: ReminderStatus
   sent_at: string | null
+  sent_by: string | null
   external_id: string | null
   error_message: string | null
   notes: string | null
@@ -64,6 +65,11 @@ export interface ReminderRow {
     brand?: string | null
     model_number?: string | null
     ac_brands?: { name: string } | null
+  } | null
+  reminder_rules?: {
+    rule_id: string
+    name: string
+    days_before_due: number
   } | null
 }
 

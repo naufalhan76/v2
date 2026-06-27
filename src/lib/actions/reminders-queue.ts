@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { auditLog } from '@/lib/audit'
 import { formatReminderMessage, type CustomerReminder, type ReminderRule, type ReminderChannel, type ReminderTemplateContext } from '@/lib/reminder-utils'
 import { READ_ROLES, WRITE_ROLES, requireRoles, toErrorMessage } from './reminders-types'
 import type {
@@ -51,7 +52,9 @@ export async function markReminderSent(reminderId: string, externalId?: string):
     const auth = await requireRoles(WRITE_ROLES); if (!auth.ok) return { success: false, error: auth.error }
     const supabase = await createClient()
     const { data, error } = await supabase.from('customer_reminders').update({ status: 'SENT', sent_at: new Date().toISOString(), sent_by: auth.userId, external_id: externalId ?? null, error_message: null, updated_at: new Date().toISOString() }).eq('reminder_id', reminderId).eq('status', 'PENDING').select('*').single()
-    if (error) throw error; revalidatePath('/dashboard/reminders'); return { success: true, data: data as CustomerReminder }
+    if (error) throw error
+    await auditLog('reminder.sent', 'customer_reminders', reminderId, { status: 'PENDING' }, { status: 'SENT', sent_by: auth.userId })
+    revalidatePath('/dashboard/reminders'); return { success: true, data: data as CustomerReminder }
   } catch (err) { logger.error('markReminderSent failed:', err); return { success: false, error: toErrorMessage(err, 'Failed to mark reminder as sent') } }
 }
 
@@ -60,7 +63,9 @@ export async function markReminderFailed(reminderId: string, errorText: string):
     const auth = await requireRoles(WRITE_ROLES); if (!auth.ok) return { success: false, error: auth.error }
     const supabase = await createClient()
     const { data, error } = await supabase.from('customer_reminders').update({ status: 'FAILED', error_message: errorText.slice(0, 1000), updated_at: new Date().toISOString() }).eq('reminder_id', reminderId).select('*').single()
-    if (error) throw error; revalidatePath('/dashboard/reminders'); return { success: true, data: data as CustomerReminder }
+    if (error) throw error
+    await auditLog('reminder.failed', 'customer_reminders', reminderId, { status: 'PENDING' }, { status: 'FAILED', error_message: errorText.slice(0, 1000) })
+    revalidatePath('/dashboard/reminders'); return { success: true, data: data as CustomerReminder }
   } catch (err) { logger.error('markReminderFailed failed:', err); return { success: false, error: toErrorMessage(err, 'Failed to mark reminder as failed') } }
 }
 
@@ -69,7 +74,9 @@ export async function markReminderDismissed(reminderId: string): Promise<ActionR
     const auth = await requireRoles(WRITE_ROLES); if (!auth.ok) return { success: false, error: auth.error }
     const supabase = await createClient()
     const { data, error } = await supabase.from('customer_reminders').update({ status: 'DISMISSED', updated_at: new Date().toISOString() }).eq('reminder_id', reminderId).select('*').single()
-    if (error) throw error; revalidatePath('/dashboard/reminders'); return { success: true, data: data as CustomerReminder }
+    if (error) throw error
+    await auditLog('reminder.dismissed', 'customer_reminders', reminderId, { status: 'PENDING' }, { status: 'DISMISSED' })
+    revalidatePath('/dashboard/reminders'); return { success: true, data: data as CustomerReminder }
   } catch (err) { logger.error('markReminderDismissed failed:', err); return { success: false, error: toErrorMessage(err, 'Failed to dismiss reminder') } }
 }
 
@@ -94,6 +101,23 @@ export async function generateRemindersFromAcUnits(options?: { asSystem?: boolea
     if (existingErr) throw existingErr
     const existingKey = new Set<string>()
     for (const row of existingData ?? []) { const r = row as { ac_unit_id: string; rule_id: string; due_date: string }; existingKey.add(`${r.ac_unit_id}|${r.rule_id}|${r.due_date}`) }
+    // Best-effort: link service_report_id via order_items -> service_reports (next_service_recommendation_date = next_service_due_date)
+    const reportByKey = new Map<string, string>()
+    try {
+      const { data: oiRows } = await supabase
+        .from('order_items')
+        .select('ac_unit_id, orders!inner ( service_reports ( report_id, next_service_recommendation_date ) )')
+        .in('ac_unit_id', acUnitIds)
+      for (const oi of (oiRows ?? []) as Array<{ ac_unit_id: string | null; orders: { service_reports: { report_id: string; next_service_recommendation_date: string | null } | Array<{ report_id: string; next_service_recommendation_date: string | null }> | null } | Array<{ service_reports: { report_id: string; next_service_recommendation_date: string | null } | Array<{ report_id: string; next_service_recommendation_date: string | null }> | null }> | null }>) {
+        if (!oi.ac_unit_id) continue
+        const ord = Array.isArray(oi.orders) ? oi.orders[0] : oi.orders
+        if (!ord) continue
+        const srs = Array.isArray(ord.service_reports) ? ord.service_reports : ord.service_reports ? [ord.service_reports] : []
+        for (const sr of srs) {
+          if (sr?.next_service_recommendation_date) reportByKey.set(`${oi.ac_unit_id}|${sr.next_service_recommendation_date}`, sr.report_id)
+        }
+      }
+    } catch (err) { logger.warn('service_report_id lookup (best-effort):', err) }
     const inserts: Array<Record<string, unknown>> = []; let skipped = 0
     for (const unit of units) {
       const dueIso = unit.next_service_due_date; if (!dueIso) continue
@@ -105,12 +129,13 @@ export async function generateRemindersFromAcUnits(options?: { asSystem?: boolea
         const dedupKey = `${unit.ac_unit_id}|${rule.rule_id}|${dueIso}`
         if (existingKey.has(dedupKey)) { skipped++; continue }
         const recipient = pickRecipient(rule.channel, customer); if (!recipient) { skipped++; continue }
-        inserts.push({ customer_id: customer?.customer_id ?? null, ac_unit_id: unit.ac_unit_id, rule_id: rule.rule_id, due_date: dueIso, channel: rule.channel, recipient, message: formatReminderMessage(rule.message_template, ctx), status: 'PENDING' })
+        inserts.push({ customer_id: customer?.customer_id ?? null, ac_unit_id: unit.ac_unit_id, rule_id: rule.rule_id, due_date: dueIso, channel: rule.channel, recipient, message: formatReminderMessage(rule.message_template, ctx), status: 'PENDING', service_report_id: reportByKey.get(`${unit.ac_unit_id}|${dueIso}`) ?? null })
         existingKey.add(dedupKey)
       }
     }
     let created = 0
     if (inserts.length > 0) { const { error: insertErr, count } = await supabase.from('customer_reminders').insert(inserts, { count: 'exact' }); if (insertErr) throw insertErr; created = count ?? inserts.length }
+    await auditLog('reminder.generate', 'customer_reminders', undefined, undefined, { created, skipped, rulesScanned: rules.length })
     revalidatePath('/dashboard/reminders'); return { success: true, data: { created, skipped, rulesScanned: rules.length } }
   } catch (err) { logger.error('generateRemindersFromAcUnits failed:', err); return { success: false, error: toErrorMessage(err, 'Failed to generate reminders') } }
 }
@@ -133,7 +158,9 @@ export async function createManualReminder(acUnitId: string, ruleId?: string): P
     const locationLabel = [unit.locations?.full_address, unit.locations?.city].filter(Boolean).join(', ') || null
     const ctx: ReminderTemplateContext = { customer_name: customer.customer_name ?? null, ac_brand: unit.brand, ac_model: unit.model_number, location: locationLabel, due_date: formatDueDate(dueIso) }
     const { data: insertData, error: insertErr } = await supabase.from('customer_reminders').insert({ customer_id: customer.customer_id, ac_unit_id: unit.ac_unit_id, rule_id: rule.rule_id, due_date: dueIso, channel: rule.channel, recipient, message: formatReminderMessage(rule.message_template, ctx), status: 'PENDING' }).select('reminder_id').single()
-    if (insertErr) throw insertErr; revalidatePath('/dashboard/reminders'); return { success: true, data: { reminder_id: (insertData as { reminder_id: string }).reminder_id } }
+    if (insertErr) throw insertErr
+    await auditLog('reminder.manual_create', 'customer_reminders', (insertData as { reminder_id: string }).reminder_id, undefined, { ac_unit_id: unit.ac_unit_id, rule_id: rule.rule_id, channel: rule.channel })
+    revalidatePath('/dashboard/reminders'); return { success: true, data: { reminder_id: (insertData as { reminder_id: string }).reminder_id } }
   } catch (err) { logger.error('createManualReminder failed:', err); return { success: false, error: toErrorMessage(err, 'Failed to create reminder') } }
 }
 

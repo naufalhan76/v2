@@ -19,6 +19,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { StatusBadge } from '@/components/orders/status-badge'
 import type { ServicedAcUnitRow } from '@/lib/actions/reminders'
 
+import { MonitoringDetailDrawer } from './monitoring-detail-drawer'
+
 function daysFromToday(dueIso: string | null): number | null {
   if (!dueIso) return null
   const due = new Date(`${dueIso}T00:00:00`)
@@ -47,9 +49,10 @@ interface ServiceRecordRowProps {
   isSending: boolean
   onUpdateDate: (newDate: string | null) => void
   isUpdatingDate: boolean
+  onRowClick: () => void
 }
 
-function ServiceRecordRow({ unit: u, onSendReminder, isSending, onUpdateDate, isUpdatingDate }: ServiceRecordRowProps) {
+function ServiceRecordRow({ unit: u, onSendReminder, isSending, onUpdateDate, isUpdatingDate, onRowClick }: ServiceRecordRowProps) {
   const [datePickerOpen, setDatePickerOpen] = useState(false)
   const [pickedDate, setPickedDate] = useState<Date | undefined>(
     u.next_service_due_date ? new Date(`${u.next_service_due_date}T00:00:00`) : undefined
@@ -65,7 +68,7 @@ function ServiceRecordRow({ unit: u, onSendReminder, isSending, onUpdateDate, is
   }
 
   return (
-    <TableRow>
+    <TableRow className="cursor-pointer" onClick={onRowClick}>
       <TableCell>
         <div className="font-medium text-sm">{u.customer_name ?? '—'}</div>
         <div className="text-xs text-muted-foreground">{u.customer_phone ?? '—'}</div>
@@ -113,9 +116,11 @@ function ServiceRecordRow({ unit: u, onSendReminder, isSending, onUpdateDate, is
         {u.latest_order_status ? <StatusBadge status={u.latest_order_status} size="sm" /> : <span className="text-muted-foreground text-sm">—</span>}
       </TableCell>
       <TableCell>
-        <Button size="sm" variant="outline" onClick={onSendReminder} disabled={isSending} title="Buat reminder manual">
-          Buat Reminder
-        </Button>
+        <span onClick={(e) => e.stopPropagation()}>
+          <Button size="sm" variant="outline" onClick={onSendReminder} disabled={isSending} title="Buat reminder manual">
+            Buat Reminder
+          </Button>
+        </span>
       </TableCell>
     </TableRow>
   )
@@ -138,8 +143,11 @@ export function MonitoringTable({
   onCreateReminder, sendingId, onUpdateDate, updatingDateId,
 }: MonitoringTableProps) {
   const paginated = units.slice(page * pageSize, (page + 1) * pageSize)
+  const [selectedUnit, setSelectedUnit] = useState<ServicedAcUnitRow | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   return (
+    <>
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
@@ -159,6 +167,7 @@ export function MonitoringTable({
             <ServiceRecordRow
               key={u.ac_unit_id}
               unit={u}
+              onRowClick={() => { setSelectedUnit(u); setDrawerOpen(true) }}
               onSendReminder={() => onCreateReminder(u.ac_unit_id)}
               isSending={sendingId === u.ac_unit_id}
               onUpdateDate={(newDate) => onUpdateDate(u.ac_unit_id, newDate)}
@@ -168,5 +177,7 @@ export function MonitoringTable({
         </TableBody>
       </Table>
     </div>
+    <MonitoringDetailDrawer unit={selectedUnit} open={drawerOpen} onOpenChange={setDrawerOpen} onUpdateDate={onUpdateDate} isUpdatingDate={!!updatingDateId} />
+    </>
   )
 }

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase-server'
 import { getUser, getUserRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { auditLog } from '@/lib/audit'
 
 const WRITE_ROLES = ['SUPERADMIN', 'ADMIN'] as const
 
@@ -25,6 +26,12 @@ export async function updateAcUnitNextServiceDate(
     if (!role) return { success: false, error: 'Forbidden: insufficient role' }
 
     const supabase = await createClient()
+    const { data: current } = await supabase
+      .from('ac_units')
+      .select('next_service_due_date')
+      .eq('ac_unit_id', acUnitId)
+      .single()
+
     const { error } = await supabase
       .from('ac_units')
       .update({
@@ -34,6 +41,8 @@ export async function updateAcUnitNextServiceDate(
       .eq('ac_unit_id', acUnitId)
 
     if (error) throw error
+
+    await auditLog('ac_unit.update_next_service_date', 'ac_units', acUnitId, { next_service_due_date: current?.next_service_due_date ?? null }, { next_service_due_date: newDate ?? null })
 
     revalidatePath('/dashboard/reminders')
     return { success: true }
