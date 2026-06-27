@@ -110,7 +110,23 @@ skills-lock.json
 /tests/
 src/**/*.test.ts
 src/**/*.test.tsx
-
-# Stray / backup files
-...
-*.save
+!src/app/api/schemas/locations.test.ts
+!src/app/api/schemas/customers.test.ts
+!src/app/api/schemas/invoices.test.ts
+!src/app/api/customers/
+!src/app/api/customers/[id]/
+!src/app/api/customers/[id]/route.test.ts
+!src/app/api/customers/\[id\]/
+!src/app/api/customers/\[id\]/route.test.ts
+!src/app/dashboard/konfigurasi/invoice-config/page.test.ts
+!src/lib/actions/create-order.test.ts
+!src/lib/actions/locations.test.ts
+!src/lib/actions/customers.test.ts
+!src/lib/actions/invoices-create.test.ts
+!src/lib/actions/invoice-config.test.ts
+!src/app/dashboard/keuangan/invoices/[id]/_components/revision-utils.test.ts
+!src/app/dashboard/keuangan/invoices/\[id\]/
+!src/app/dashboard/keuangan/invoices/\[id\]/_components/
+!src/app/dashboard/keuangan/invoices/\[id\]/_components/revision-utils.test.ts
+!src/lib/geo/nominatim.test.ts
+!src/lib/geo/nominatim.test.ts
