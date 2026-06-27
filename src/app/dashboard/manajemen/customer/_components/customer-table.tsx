@@ -10,7 +10,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { Button } from '@/components/ui/button'
-import { LoadingOverlay } from '@/components/ui/loading-state'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/skeleton'
 import { Plus, Pencil, Trash2, MapPin, Building2, Users, ChevronRight } from 'lucide-react'
@@ -94,37 +93,6 @@ function TablePagination({ totalPages, currentPage, onPageChange }: { totalPages
   )
 }
 
-/* ---- Action buttons (internal) ---- */
-function ActionButtons({ customer, onEdit, onDelete, isDeleting, isUpdating, deletingId, editingId }: {
-  customer: Record<string, unknown>
-  onEdit: (c: Record<string, unknown>) => void
-  onDelete: (id: string) => void
-  isDeleting: boolean; isUpdating: boolean; deletingId: string | null; editingId: string | null
-}) {
-  return (
-    <TableCell className="text-right w-[100px] sm:w-[180px]" onClick={(e) => e.stopPropagation()}>
-      <div className="flex justify-end gap-1 sm:gap-2">
-        <LoadingOverlay isLoading={isUpdating && editingId === customer.customer_id}>
-          <Button variant="outline" size="icon" aria-label="Edit"
-            className="h-10 w-10 sm:h-9 sm:w-auto sm:px-2 sm:group sm:relative sm:overflow-hidden sm:transition-all sm:duration-300 sm:ease-in-out sm:hover:w-24 sm:flex sm:items-center sm:justify-start"
-            onClick={() => onEdit(customer)} disabled={isDeleting}>
-            <Pencil className="h-4 w-4 flex-shrink-0" />
-            <span className="hidden sm:inline ml-2 whitespace-nowrap opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">Ubah</span>
-          </Button>
-        </LoadingOverlay>
-        <LoadingOverlay isLoading={isDeleting && deletingId === customer.customer_id}>
-          <Button variant="destructive" size="icon" aria-label="Hapus"
-            className="h-10 w-10 sm:h-9 sm:w-auto sm:px-2 sm:group sm:relative sm:overflow-hidden sm:transition-all sm:duration-300 sm:ease-in-out sm:hover:w-28 sm:flex sm:items-center sm:justify-start"
-            onClick={() => onDelete(customer.customer_id as string)} disabled={isUpdating}>
-            <Trash2 className="h-4 w-4 flex-shrink-0" />
-            <span className="hidden sm:inline ml-2 whitespace-nowrap opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300">Hapus</span>
-          </Button>
-        </LoadingOverlay>
-      </div>
-    </TableCell>
-  )
-}
-
 /* ---- Public ---- */
 interface CustomerTableProps {
   customers: Record<string, unknown>[]
@@ -161,49 +129,137 @@ export function CustomerTable({
 
   if (customers.length === 0) {
     return (
-      <div className="data-table-container overflow-x-auto">
-        <Table><TableHeader><TableHeaderRow sortConfig={sortConfig} requestSort={requestSort} /></TableHeader>
-        <TableBody>
-          <TableRow><TableCell colSpan={8} className="p-0">
-            <EmptyState icon={Users} title="Belum ada pelanggan" description="Tambahkan pelanggan pertama untuk mulai membuat order."
-              action={{ label: 'Tambah Pelanggan', icon: Plus, onClick: onAddClick }} />
-          </TableCell></TableRow>
-        </TableBody></Table>
-      </div>
+      <EmptyState icon={Users} title="Belum ada pelanggan" description="Tambahkan pelanggan pertama untuk mulai membuat order."
+        action={{ label: 'Tambah Pelanggan', icon: Plus, onClick: onAddClick }} />
     )
   }
 
   return (
-    <div className="data-table-container overflow-x-auto">
-      <Table>
-        <TableHeader><TableHeaderRow sortConfig={sortConfig} requestSort={requestSort} /></TableHeader>
-        <TableBody>
-          {customers.map((c) => {
-            const locations = (c.locations as Record<string, unknown>[]) || []
-            const locationsCount = locations.length
-            return (
-              <TableRow key={c.customer_id as string}
-                className={`cursor-pointer hover:bg-muted/50 ${deletingId === c.customer_id ? "opacity-50" : ""}`}
-                onClick={() => router.push(`/dashboard/manajemen/customer/${c.customer_id as string}`)}>
-                <TableCell className="font-medium"><span className="text-primary font-semibold underline hover:no-underline cursor-pointer inline-flex items-center gap-1">{c.customer_name as string}<ChevronRight className="w-3.5 h-3.5" /></span></TableCell>
-                <TableCell className="hidden md:table-cell">{c.primary_contact_person as string}</TableCell>
-                <TableCell data-testid="phone-cell">{formatPhone(c.phone_number as string | number | null | undefined)}</TableCell>
-                <TableCell className="hidden lg:table-cell">{c.email as string}</TableCell>
-                <TableCell className="hidden xl:table-cell">{c.billing_address as string}</TableCell>
-                <TableCell className="hidden lg:table-cell">
+    <>
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {customers.map((c) => {
+          const locations = (c.locations as Record<string, unknown>[]) || []
+          const locationsCount = locations.length
+          const isInteracting = isUpdating && editingId === c.customer_id || isDeleting && deletingId === c.customer_id
+          
+          return (
+            <div
+              key={c.customer_id as string}
+              className={`rounded-lg border p-3 space-y-2 cursor-pointer hover:bg-muted/50 ${deletingId === c.customer_id ? "opacity-50" : ""}`}
+              onClick={() => router.push(`/dashboard/manajemen/customer/${c.customer_id as string}`)}
+            >
+              <div className="space-y-1">
+                <h3 className="font-semibold text-primary underline hover:no-underline flex items-center gap-1">
+                  {c.customer_name as string}
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </h3>
+                {!!c.primary_contact_person && (
+                  <p className="text-sm text-muted-foreground">
+                    {c.primary_contact_person as string}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground" data-testid="phone-cell">
+                  {formatPhone(c.phone_number as string | number | null | undefined)}
+                </p>
+                {!!c.email && (
+                  <p className="text-sm text-muted-foreground break-all">
+                    {c.email as string}
+                  </p>
+                )}
+                <div className="pt-1" onClick={(e) => e.stopPropagation()}>
                   {locationsCount === 0
                     ? <Badge variant="secondary" className="gap-1"><MapPin className="w-3 h-3" />0 lokasi</Badge>
                     : <LocationPopover locations={locations} />}
-                </TableCell>
-                <TableCell className="hidden xl:table-cell max-w-xs truncate">{(c.notes as string) || '-'}</TableCell>
-                <ActionButtons customer={c} onEdit={onEdit} onDelete={onDelete}
-                  isDeleting={isDeleting} isUpdating={isUpdating} deletingId={deletingId} editingId={editingId} />
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10"
+                  onClick={() => onEdit(c)}
+                  disabled={isInteracting}
+                >
+                  <Pencil className="h-4 w-4 mr-1.5" />
+                  Ubah
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="h-10"
+                  onClick={() => onDelete(c.customer_id as string)}
+                  disabled={isInteracting}
+                >
+                  <Trash2 className="h-4 w-4 mr-1.5" />
+                  Hapus
+                </Button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block data-table-container overflow-x-auto">
+        <Table>
+          <TableHeader><TableHeaderRow sortConfig={sortConfig} requestSort={requestSort} /></TableHeader>
+          <TableBody>
+            {customers.map((c) => {
+              const locations = (c.locations as Record<string, unknown>[]) || []
+              const locationsCount = locations.length
+              const isInteracting = isUpdating && editingId === c.customer_id || isDeleting && deletingId === c.customer_id
+              
+              return (
+                <TableRow key={c.customer_id as string}
+                  className={`cursor-pointer hover:bg-muted/50 ${deletingId === c.customer_id ? "opacity-50" : ""}`}
+                  onClick={() => router.push(`/dashboard/manajemen/customer/${c.customer_id as string}`)}>
+                  <TableCell className="font-medium"><span className="text-primary font-semibold underline hover:no-underline inline-flex items-center gap-1">{c.customer_name as string}<ChevronRight className="w-3.5 h-3.5" /></span></TableCell>
+                  <TableCell className="hidden md:table-cell">{c.primary_contact_person as string}</TableCell>
+                  <TableCell data-testid="phone-cell">{formatPhone(c.phone_number as string | number | null | undefined)}</TableCell>
+                  <TableCell className="hidden lg:table-cell">{c.email as string}</TableCell>
+                  <TableCell className="hidden xl:table-cell">{c.billing_address as string}</TableCell>
+                  <TableCell className="hidden lg:table-cell" onClick={(e) => e.stopPropagation()}>
+                    {locationsCount === 0
+                      ? <Badge variant="secondary" className="gap-1"><MapPin className="w-3 h-3" />0 lokasi</Badge>
+                      : <LocationPopover locations={locations} />}
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell max-w-xs truncate">{(c.notes as string) || '-'}</TableCell>
+                  <TableCell className="text-right w-[180px]" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="outline"
+                        aria-label="Edit"
+                        className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
+                        onClick={() => onEdit(c)}
+                        disabled={isInteracting}
+                      >
+                        <Pencil className="h-4 w-4 flex-shrink-0" />
+                        <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          Ubah
+                        </span>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        aria-label="Hapus"
+                        className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
+                        onClick={() => onDelete(c.customer_id as string)}
+                        disabled={isInteracting}
+                      >
+                        <Trash2 className="h-4 w-4 flex-shrink-0" />
+                        <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          Hapus
+                        </span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </div>
       <TablePagination totalPages={totalPages} currentPage={currentPage} onPageChange={onPageChange} />
-    </div>
+    </>
   )
 }

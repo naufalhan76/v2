@@ -10,11 +10,13 @@ export interface CustomerFormData {
   email: string
   billing_address: string
   notes: string
+  lat: number | null
+  lng: number | null
 }
 
 const emptyForm: CustomerFormData = {
   customer_name: '', primary_contact_person: '', phone_number: '',
-  email: '', billing_address: '', notes: ''
+  email: '', billing_address: '', notes: '', lat: null, lng: null
 }
 
 export function useCustomerActions(page: number, searchTerm: string) {
@@ -47,6 +49,8 @@ export function useCustomerActions(page: number, searchTerm: string) {
       email: data.email,
       billingAddress: data.billing_address,
       notes: data.notes,
+      lat: data.lat,
+      lng: data.lng,
     }
     fetch('/api/customers', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -61,7 +65,7 @@ export function useCustomerActions(page: number, searchTerm: string) {
     return true
   }
 
-  const handleEdit = (customer: Record<string, unknown>) => {
+    const handleEdit = (customer: Record<string, unknown>) => {
     setEditingId(customer.customer_id as string)
     setFormData({
       customer_name: customer.customer_name as string,
@@ -69,7 +73,9 @@ export function useCustomerActions(page: number, searchTerm: string) {
       phone_number: customer.phone_number as string,
       email: customer.email as string,
       billing_address: customer.billing_address as string,
-      notes: (customer.notes as string) || ''
+      notes: (customer.notes as string) || '',
+      lat: (customer.lat as number) ?? null,
+      lng: (customer.lng as number) ?? null,
     })
   }
 
