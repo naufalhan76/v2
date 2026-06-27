@@ -1,6 +1,7 @@
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import { CalendarIcon, Search, X } from 'lucide-react'
+import { CalendarIcon, Search, X, Clock, AlertCircle, XOctagon, Hourglass } from 'lucide-react'
+import { useState } from 'react'
 
 import type { ReminderStatus } from '@/types/reminders'
 import { Button } from '@/components/ui/button'
@@ -53,8 +54,56 @@ export function QueueFilters({
   hasFilters,
   onClearFilters,
 }: QueueFiltersProps) {
+  const [activePreset, setActivePreset] = useState<string | null>(null)
+
+  function applyPreset(preset: string) {
+    setActivePreset(preset === activePreset ? null : preset)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000)
+
+    if (preset === activePreset) {
+      onClearFilters()
+      return
+    }
+
+    if (preset === 'today') {
+      onDateFromChange(today); onDateToChange(today); onStatusChange('all')
+    } else if (preset === 'overdue') {
+      onDateToChange(yesterday); onDateFromChange(undefined); onStatusChange('PENDING')
+    } else if (preset === 'failed') {
+      onStatusChange('FAILED'); onDateFromChange(undefined); onDateToChange(undefined)
+    } else if (preset === 'pending') {
+      onStatusChange('PENDING'); onDateFromChange(undefined); onDateToChange(undefined)
+    }
+  }
+
+  const presets = [
+    { id: 'today', label: 'Hari Ini', icon: Clock },
+    { id: 'overdue', label: 'Overdue', icon: AlertCircle },
+    { id: 'failed', label: 'Gagal', icon: XOctagon },
+    { id: 'pending', label: 'Menunggu', icon: Hourglass },
+  ] as const
+
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
+        {presets.map((p) => {
+          const Icon = p.icon
+          return (
+            <Button
+              key={p.id}
+              size="sm"
+              variant={activePreset === p.id ? 'default' : 'outline'}
+              onClick={() => applyPreset(p.id)}
+              className="gap-1.5"
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {p.label}
+            </Button>
+          )
+        })}
+      </div>
       <div className="relative w-full sm:flex-1 sm:min-w-[240px] sm:max-w-sm">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input

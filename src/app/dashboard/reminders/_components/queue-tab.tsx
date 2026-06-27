@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type SortingState, type RowSelectionState } from '@tanstack/react-table'
 import { isToday, parseISO } from 'date-fns'
@@ -53,6 +53,9 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined)
   const [sorting, setSorting] = useState<SortingState>([])
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [page, setPage] = useState(0)
+
+  useEffect(() => { setRowSelection({}) }, [statusFilter, search, dateFrom, dateTo, page])
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['customer-reminders'],
@@ -126,9 +129,9 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
         <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background px-4 py-3 sm:static sm:rounded-lg sm:border sm:bg-muted/40 sm:px-3 sm:py-2">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">{selectedIds.length} reminder dipilih</p>
-            <Button size="sm" onClick={() => bulkSendMutation.mutate(selectedIds)} disabled={bulkSendMutation.isPending} className="min-h-[44px] sm:min-h-9">
+            <Button size="sm" onClick={() => bulkSendMutation.mutate(selectedIds)} disabled={bulkSendMutation.isPending || selectedIds.length === 0} className="min-h-[44px] sm:min-h-9">
               {bulkSendMutation.isPending ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Send className="mr-2 h-3 w-3" />}
-              Kirim Terpilih
+              Tandai Terkirim Terpilih ({selectedIds.length})
             </Button>
           </div>
         </div>

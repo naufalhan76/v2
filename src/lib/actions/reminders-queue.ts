@@ -81,6 +81,31 @@ export async function markReminderDismissed(reminderId: string): Promise<ActionR
 }
 
 // =============================================================================
+// Bulk
+// =============================================================================
+
+export async function markRemindersSent(reminderIds: string[]): Promise<ActionResult<{ updated: string[]; skipped: string[] }>> {
+  try {
+    const auth = await requireRoles(WRITE_ROLES); if (!auth.ok) return { success: false, error: auth.error }
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('customer_reminders')
+      .update({ status: 'SENT', sent_at: new Date().toISOString(), sent_by: auth.userId, external_id: null, error_message: null, updated_at: new Date().toISOString() })
+      .in('reminder_id', reminderIds)
+      .eq('status', 'PENDING')
+      .select('reminder_id')
+    if (error) throw error
+    const updated = (data ?? []).map((r) => (r as { reminder_id: string }).reminder_id)
+    const skipped = reminderIds.filter((id) => !updated.includes(id))
+    for (const id of updated) {
+      await auditLog('reminder.bulk_sent', 'customer_reminders', id, undefined, { status: 'SENT' })
+    }
+    revalidatePath('/dashboard/reminders')
+    return { success: true, data: { updated, skipped } }
+  } catch (err) { logger.error('markRemindersSent failed:', err); return { success: false, error: toErrorMessage(err, 'Failed to bulk mark reminders sent') } }
+}
+
+// =============================================================================
 // Generation
 // =============================================================================
 

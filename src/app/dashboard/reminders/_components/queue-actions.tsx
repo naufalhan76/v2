@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
-import { markReminderSent, markReminderDismissed } from '@/lib/actions/reminders'
+import { markReminderSent, markRemindersSent, markReminderDismissed } from '@/lib/actions/reminders'
 
 interface UseReminderQueueMutationsOptions {
   onBulkComplete?: () => void
@@ -63,25 +63,21 @@ export function useReminderQueueMutations(options?: UseReminderQueueMutationsOpt
 
   const bulkSendMutation = useMutation({
     mutationFn: async (reminderIds: string[]) => {
-      const results = await Promise.allSettled(
-        reminderIds.map((id) => markReminderSent(id))
-      )
-      const ok = results.filter(
-        (r) => r.status === 'fulfilled' && r.value?.success
-      ).length
-      const failed = reminderIds.length - ok
-      return { ok, failed }
+      const result = await markRemindersSent(reminderIds)
+      if (!result?.success) throw new Error(result?.error || 'Gagal menandai terkirim')
+      const data = (result as { success: true; data: { updated: string[]; skipped: string[] } }).data
+      return { updated: data.updated, skipped: data.skipped }
     },
-    onSuccess: ({ ok, failed }) => {
+    onSuccess: ({ updated, skipped }) => {
       queryClient.invalidateQueries({ queryKey: ['customer-reminders'] })
       options?.onBulkComplete?.()
       toast({
-        title: `${ok} reminder ditandai terkirim`,
+        title: `${updated.length} ditandai terkirim`,
         description:
-          failed > 0
-            ? `${failed} gagal. Implementasi pengiriman aktual akan ditambahkan kemudian.`
-            : 'Implementasi pengiriman WhatsApp/Email aktual akan ditambahkan kemudian.',
-        variant: failed > 0 ? 'destructive' : 'default',
+          skipped.length > 0
+            ? `${skipped.length} sudah terkirim (skip). Pengiriman WhatsApp/Email belum diimplementasikan.`
+            : 'Pengiriman WhatsApp/Email belum diimplementasikan. Status dicatat manual.',
+        variant: skipped.length > 0 ? 'destructive' : 'default',
       })
     },
     onError: (error: Error) => {
