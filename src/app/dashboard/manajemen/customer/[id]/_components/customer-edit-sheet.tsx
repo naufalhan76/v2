@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { AddressPicker } from '@/components/address/address-picker'
 import type { CustomerFormState } from '../_hooks/use-customer-detail'
 
 interface CustomerEditSheetProps {
@@ -52,6 +53,12 @@ export function CustomerEditSheet({
           <div className="space-y-2">
             <Label htmlFor="billing_address">Alamat Billing *</Label>
             <Textarea id="billing_address" value={form.billing_address} onChange={(e) => onFormChange({ ...form, billing_address: e.target.value })} required rows={3} />
+          </div>
+          <div className="pt-2">
+            <AddressPicker
+              value={{ lat: form.lat ?? null, lng: form.lng ?? null }}
+              onChange={(v) => onFormChange({ ...form, lat: v.lat, lng: v.lng })}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="notes">Catatan</Label>

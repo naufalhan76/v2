@@ -4,6 +4,8 @@ import { Pencil, User, Phone, Mail, Building2, MapPin, FileText } from 'lucide-r
 import { formatPhone } from '@/lib/utils'
 import type { Customer } from '@/types/customers'
 
+import { AddressPickerReadOnly } from '@/components/address/address-picker-readonly'
+
 interface CustomerInfoCardProps {
   customer: Customer
   onEdit: () => void
@@ -56,12 +58,13 @@ export function CustomerInfoCard({ customer, onEdit }: CustomerInfoCardProps) {
         {customer.billing_address && (
           <div className="mt-4 pt-4 border-t">
             <div className="flex items-start gap-2 text-sm">
-              <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
-              <div>
+              <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
                   Alamat Billing
                 </p>
                 <p>{customer.billing_address}</p>
+                <AddressPickerReadOnly lat={customer.lat ?? null} lng={customer.lng ?? null} />
               </div>
             </div>
           </div>

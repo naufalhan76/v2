@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { AddressPicker } from '@/components/address/address-picker'
 
 export interface CustomerFormData {
   customer_name: string
@@ -19,6 +20,8 @@ export interface CustomerFormData {
   email: string
   billing_address: string
   notes: string
+  lat: number | null
+  lng: number | null
 }
 
 interface CustomerFormModalProps {
@@ -38,6 +41,8 @@ const emptyForm: CustomerFormData = {
   email: '',
   billing_address: '',
   notes: '',
+  lat: null,
+  lng: null,
 }
 
 export function CustomerFormModal({
@@ -126,6 +131,18 @@ export function CustomerFormModal({
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateField('billing_address', e.target.value)}
               required
               rows={3}
+            />
+          </div>
+          <div className="pt-2">
+            <AddressPicker
+              value={{ lat: activeData.lat ?? null, lng: activeData.lng ?? null }}
+              onChange={(v) => {
+                onFormDataChange({
+                  ...activeData,
+                  lat: v.lat,
+                  lng: v.lng
+                })
+              }}
             />
           </div>
           <div>
