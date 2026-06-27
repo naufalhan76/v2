@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+const lat = z.number().min(-90).max(90).nullable().optional()
+const lng = z.number().min(-180).max(180).nullable().optional()
+
 export const GetCustomersQuerySchema = z.object({
   search: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
@@ -17,6 +20,8 @@ export const CreateCustomerSchema = z.object({
   phoneNumber: z.string().min(1),
   billingAddress: z.string().optional(),
   notes: z.string().optional(),
+  lat,
+  lng,
 })
 
 export const UpdateCustomerSchema = CreateCustomerSchema.extend({

@@ -3,6 +3,8 @@ import { z } from 'zod'
 const MAX_INVOICE_ITEMS = 100
 const MAX_INVOICE_ITEM_QUANTITY = 10000
 const MAX_INVOICE_ITEM_PRICE = 1_000_000_000
+const customer_lat = z.number().min(-90).max(90).nullable().optional()
+const customer_lng = z.number().min(-180).max(180).nullable().optional()
 
 const InvoiceItemQuantitySchema = z.coerce
   .number()
@@ -49,6 +51,8 @@ export const CreateBlankInvoiceSchema = z.object({
   customer_email: z.string().trim().email('Format email tidak valid').optional()
     .or(z.literal('').transform(() => undefined)),
   customer_address: z.string().trim().max(2000).optional(),
+  customer_lat,
+  customer_lng,
 
   // Dates. due_date is required (per task spec). invoice_date defaults to today.
   invoice_date: z.string().optional(), // YYYY-MM-DD; server defaults to today
@@ -82,6 +86,8 @@ export const ReviseInvoiceHeaderSchema = z.object({
   customer_email_override: z.string().trim().email('Format email tidak valid').nullable().optional()
     .or(z.literal('').transform(() => null)),
   customer_address_override: z.string().trim().max(2000).nullable().optional(),
+  customer_lat_override: customer_lat,
+  customer_lng_override: customer_lng,
   due_date: z.string().min(1, 'Tanggal jatuh tempo wajib diisi').optional(),
   notes: z.string().max(5000).nullable().optional(),
   terms_conditions: z.string().max(10000).nullable().optional(),
