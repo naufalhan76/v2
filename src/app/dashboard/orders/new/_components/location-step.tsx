@@ -12,17 +12,21 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
-import { createLocation as createLocationAction } from '@/lib/actions/orders'
+import { createLocation as createLocationAction } from '@/lib/actions/create-order-mutations'
 import type { CustomerSearchResult } from '@/types/orders'
 
 type LocationLite = NonNullable<CustomerSearchResult['locations']>[number]
 export type { LocationLite }
+
+import { AddressPicker } from '@/components/address/address-picker'
 
 const newLocationSchema = z.object({
   full_address: z.string().min(3, 'Alamat minimal 3 karakter'),
   house_number: z.string().optional(),
   city: z.string().optional(),
   landmarks: z.string().optional(),
+  lat: z.number().nullable().optional(),
+  lng: z.number().nullable().optional(),
 })
 type NewLocationInput = z.infer<typeof newLocationSchema>
 
@@ -148,15 +152,32 @@ function NewLocationForm({ customerId, onCreated, onCancel }: { customerId: stri
   const [submitting, setSubmitting] = useState(false)
   const form = useForm<NewLocationInput>({
     resolver: zodResolver(newLocationSchema),
-    defaultValues: { full_address: '', house_number: '', city: '', landmarks: '' },
+    defaultValues: { full_address: '', house_number: '', city: '', landmarks: '', lat: null, lng: null },
   })
 
   const onSubmit = async (values: NewLocationInput) => {
     setSubmitting(true)
     try {
-      const res = await createLocationAction({ customer_id: customerId, full_address: values.full_address, house_number: values.house_number || undefined, city: values.city || undefined, landmarks: values.landmarks || undefined })
+      const res = await createLocationAction({ 
+        customer_id: customerId, 
+        full_address: values.full_address, 
+        house_number: values.house_number || undefined, 
+        city: values.city || undefined, 
+        landmarks: values.landmarks || undefined,
+        lat: values.lat ?? null,
+        lng: values.lng ?? null,
+      })
       if (!res.success || !res.data) { toast({ title: 'Gagal membuat lokasi', description: res.error || 'Terjadi kesalahan', variant: 'destructive' }); return }
-      const newLoc: LocationLite = { location_id: res.data.location_id, full_address: values.full_address, house_number: values.house_number || '', city: values.city || '', landmarks: values.landmarks || null, ac_units: [] }
+      const newLoc: LocationLite = { 
+        location_id: res.data.location_id, 
+        full_address: values.full_address, 
+        house_number: values.house_number || '', 
+        city: values.city || '', 
+        landmarks: values.landmarks || null, 
+        lat: values.lat ?? null,
+        lng: values.lng ?? null,
+        ac_units: [] 
+      }
       toast({ title: 'Lokasi baru tersimpan' }); onCreated(newLoc)
     } finally { setSubmitting(false) }
   }
@@ -169,6 +190,16 @@ function NewLocationForm({ customerId, onCreated, onCancel }: { customerId: stri
         <div><Label>Kota</Label><Input {...form.register('city')} placeholder="Jakarta" /></div>
       </div>
       <div><Label>Patokan</Label><Input {...form.register('landmarks')} placeholder="Dekat indomaret" /></div>
+      <div>
+        <Label>Titik Lokasi Peta (Opsional)</Label>
+        <AddressPicker
+          value={{ lat: form.watch('lat') ?? null, lng: form.watch('lng') ?? null }}
+          onChange={(newVal) => {
+            form.setValue('lat', newVal.lat, { shouldDirty: true });
+            form.setValue('lng', newVal.lng, { shouldDirty: true });
+          }}
+        />
+      </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>Batal</Button>
         <Button type="submit" disabled={submitting}>{submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Simpan Lokasi</Button>
