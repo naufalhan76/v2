@@ -19,7 +19,7 @@ export default function ManajemenUserPage() {
     isDeleting,
     isInviteDialogOpen, setIsInviteDialogOpen, isInviteSubmitting,
     inviteFormData, setInviteFormData,
-    handleInviteSubmit, handleResendInvite,
+    handleInviteSubmit, handleResendInvite, handleCancelInvite, handleDeleteInvite,
     resetForm, resetInviteForm,
   } = useUserPage()
 
@@ -76,6 +76,8 @@ export default function ManajemenUserPage() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onResendInvite={handleResendInvite}
+            onCancelInvite={handleCancelInvite}
+            onDeleteInvite={handleDeleteInvite}
           />
         </CardContent>
       </Card>

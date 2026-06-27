@@ -23,6 +23,8 @@ interface UsersTableProps {
   onEdit: (user: UserType) => void
   onDelete: (userId: string) => void
   onResendInvite: (inviteId: string) => void
+  onCancelInvite: (inviteId: string) => void
+  onDeleteInvite: (inviteId: string) => void
 }
 
 export function UsersTable({
@@ -35,6 +37,8 @@ export function UsersTable({
   onEdit,
   onDelete,
   onResendInvite,
+  onCancelInvite,
+  onDeleteInvite,
 }: UsersTableProps) {
   const filteredUsers = users.filter(user =>
     user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,9 +123,17 @@ export function UsersTable({
                   <TableCell className="text-right w-[180px]">
                     <div className="flex justify-end gap-2">
                       {user.row_type === 'invite' ? (
-                        <Button variant="outline" size="sm" onClick={() => user.invite_id && onResendInvite(user.invite_id)}>
-                          Kirim Ulang
-                        </Button>
+                        <>
+                          <Button variant="outline" size="sm" onClick={() => user.invite_id && onResendInvite(user.invite_id)}>
+                            Kirim Ulang
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => user.invite_id && onCancelInvite(user.invite_id)}>
+                            Batalkan
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => user.invite_id && onDeleteInvite(user.invite_id)}>
+                            Hapus
+                          </Button>
+                        </>
                       ) : (
                         <>
                           <Button
@@ -212,9 +224,17 @@ export function UsersTable({
                   </div>
                   <div className="flex gap-2">
                     {user.row_type === 'invite' ? (
-                      <Button variant="outline" size="sm" onClick={() => user.invite_id && onResendInvite(user.invite_id)}>
-                        Kirim Ulang
-                      </Button>
+                      <>
+                        <Button variant="outline" size="sm" onClick={() => user.invite_id && onResendInvite(user.invite_id)}>
+                          Kirim Ulang
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => user.invite_id && onCancelInvite(user.invite_id)}>
+                          Batalkan
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => user.invite_id && onDeleteInvite(user.invite_id)}>
+                          Hapus
+                        </Button>
+                      </>
                     ) : (
                       <>
                         <Button

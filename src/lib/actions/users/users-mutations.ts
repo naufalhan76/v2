@@ -147,6 +147,44 @@ export async function acceptInviteByEmail(authUserId: string, email: string): Pr
   }
 }
 
+/** Cancel a pending invite (soft — keeps row as CANCELLED for audit) */
+export async function cancelInvite(inviteId: string) {
+  try {
+    await requireSuperAdmin()
+    const supabase = await createClient()
+    const now = new Date().toISOString()
+    const { error } = await supabase
+      .from('user_invites')
+      .update({ status: 'CANCELLED', updated_at: now })
+      .eq('invite_id', inviteId)
+      .eq('status', 'PENDING')
+    if (error) return { success: false, error: error.message }
+    revalidatePath('/dashboard/manajemen/user')
+    return { success: true, error: null }
+  } catch (error) {
+    logger.error('Unexpected error in cancelInvite:', error)
+    return { success: false, error: 'Failed to cancel invite' }
+  }
+}
+
+/** Delete an invite row (hard delete) */
+export async function deleteInvite(inviteId: string) {
+  try {
+    await requireSuperAdmin()
+    const supabase = await createClient()
+    const { error } = await supabase
+      .from('user_invites')
+      .delete()
+      .eq('invite_id', inviteId)
+    if (error) return { success: false, error: error.message }
+    revalidatePath('/dashboard/manajemen/user')
+    return { success: true, error: null }
+  } catch (error) {
+    logger.error('Unexpected error in deleteInvite:', error)
+    return { success: false, error: 'Failed to delete invite' }
+  }
+}
+
 /** Create a new user (auth + user_management) */
 export async function createUser(input: CreateUserInput) {
   try {

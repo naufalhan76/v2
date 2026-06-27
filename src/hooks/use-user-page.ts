@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { useSortableTable } from '@/hooks/use-sortable-table'
 import { getUsers, type User as UserType } from '@/lib/actions/users'
-import { toggleUserStatus, deleteUser, resendInvite, inviteUser, updateUser, createUser } from '@/lib/actions/users/users-mutations'
+import { toggleUserStatus, deleteUser, resendInvite, inviteUser, updateUser, createUser, cancelInvite, deleteInvite } from '@/lib/actions/users/users-mutations'
 import type { UserRole } from '@/lib/auth-roles'
 
 export interface UserFormData {
@@ -90,6 +90,27 @@ export function useUserPage() {
       loadUsers()
     } else {
       toast({ title: 'Error', description: result.error || 'Gagal mengirim ulang undangan', variant: 'destructive' })
+    }
+  }
+
+  const handleCancelInvite = async (inviteId: string) => {
+    const result = await cancelInvite(inviteId)
+    if (result.success) {
+      toast({ title: 'Berhasil', description: 'Undangan berhasil dibatalkan' })
+      loadUsers()
+    } else {
+      toast({ title: 'Error', description: result.error || 'Gagal membatalkan undangan', variant: 'destructive' })
+    }
+  }
+
+  const handleDeleteInvite = async (inviteId: string) => {
+    if (!confirm('Hapus undangan ini? Tindakan ini tidak dapat dibatalkan.')) return
+    const result = await deleteInvite(inviteId)
+    if (result.success) {
+      toast({ title: 'Berhasil', description: 'Undangan berhasil dihapus' })
+      loadUsers()
+    } else {
+      toast({ title: 'Error', description: result.error || 'Gagal menghapus undangan', variant: 'destructive' })
     }
   }
 
@@ -181,7 +202,7 @@ export function useUserPage() {
     isDeleting,
     isInviteDialogOpen, setIsInviteDialogOpen, isInviteSubmitting,
     inviteFormData, setInviteFormData,
-    handleInviteSubmit, handleResendInvite,
+    handleInviteSubmit, handleResendInvite, handleCancelInvite, handleDeleteInvite,
     resetForm, resetInviteForm,
   }
 }

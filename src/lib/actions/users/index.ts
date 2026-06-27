@@ -14,6 +14,8 @@ export {
   resendInvite,
   acceptInvite,
   acceptInviteByEmail,
+  cancelInvite,
+  deleteInvite,
   createUser,
   updateUser,
   toggleUserStatus,
