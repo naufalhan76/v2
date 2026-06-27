@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import { Pencil, MessageSquare } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -113,8 +113,8 @@ function ServiceRecordRow({ unit: u, onSendReminder, isSending, onUpdateDate, is
         {u.latest_order_status ? <StatusBadge status={u.latest_order_status} size="sm" /> : <span className="text-muted-foreground text-sm">—</span>}
       </TableCell>
       <TableCell>
-        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onSendReminder} disabled={isSending} title="Kirim reminder manual">
-          <MessageSquare className="h-4 w-4" />
+        <Button size="sm" variant="outline" onClick={onSendReminder} disabled={isSending} title="Buat reminder manual">
+          Buat Reminder
         </Button>
       </TableCell>
     </TableRow>
@@ -145,11 +145,11 @@ export function MonitoringTable({
         <TableHeader>
           <TableRow>
             <TableHead>Customer</TableHead>
-            <TableHead>AC Unit</TableHead>
-            <TableHead className="hidden lg:table-cell">Last Service</TableHead>
-            <TableHead>Next Service Due</TableHead>
-            <TableHead className="hidden md:table-cell">Service Type</TableHead>
-            <TableHead className="hidden lg:table-cell">Reminder History</TableHead>
+            <TableHead>AC</TableHead>
+            <TableHead className="hidden lg:table-cell">Service Terakhir</TableHead>
+            <TableHead>Jadwal Berikutnya</TableHead>
+            <TableHead className="hidden md:table-cell">Jenis Service</TableHead>
+            <TableHead className="hidden lg:table-cell">Riwayat Reminder</TableHead>
             <TableHead className="hidden md:table-cell">Status</TableHead>
             <TableHead className="w-[48px]"></TableHead>
           </TableRow>

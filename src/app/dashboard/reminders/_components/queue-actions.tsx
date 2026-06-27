@@ -26,7 +26,7 @@ export function useReminderQueueMutations(options?: UseReminderQueueMutationsOpt
       toast({
         title: 'Reminder ditandai terkirim',
         description:
-          'Implementasi pengiriman WhatsApp/Email aktual akan ditambahkan kemudian.',
+          'Pengiriman WhatsApp/Email belum diimplementasikan. Status dicatat manual.',
       })
     },
     onError: (error: Error) => {

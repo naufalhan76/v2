@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Bell, Mail, MessageCircle, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Bell, Mail, MessageCircle, Pencil, Plus, Power } from 'lucide-react'
 import type { ReminderRule } from '@/lib/reminder-utils'
 
 interface RulesTableProps {
@@ -132,11 +132,11 @@ export function RulesTable({
                   <Button
                     variant="ghost"
                     size="sm"
-                    aria-label="Hapus"
+                    aria-label="Nonaktifkan"
                     onClick={() => onDelete(rule)}
                     className="min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9"
                   >
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                    <Power className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
               </TableCell>

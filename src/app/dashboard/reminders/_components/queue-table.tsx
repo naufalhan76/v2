@@ -16,6 +16,17 @@ import {
 } from '@tanstack/react-table'
 
 import type { ReminderRow, ReminderStatus } from '@/types/reminders'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -64,14 +75,30 @@ function RowActions({ row, sendMutation, dismissMutation, onSend, onDismiss }: {
       {row.status === 'PENDING' && (
         <Button size="sm" variant="default" onClick={() => onSend(row.reminder_id)} disabled={isSending} className="min-h-[44px] sm:min-h-9">
           {isSending ? <Loader2 className="h-3 w-3 animate-spin sm:mr-2" /> : <Send className="h-3 w-3 sm:mr-2" />}
-          <span className="hidden sm:inline">Kirim</span>
+          <span className="hidden sm:inline">Tandai Terkirim</span>
         </Button>
       )}
       {(row.status === 'PENDING' || row.status === 'FAILED') && (
-        <Button size="sm" variant="ghost" onClick={() => onDismiss(row.reminder_id)} disabled={isDismissing} className="min-h-[44px] sm:min-h-9">
-          {isDismissing ? <Loader2 className="h-3 w-3 animate-spin sm:mr-2" /> : <X className="h-3 w-3 sm:mr-2" />}
-          <span className="hidden sm:inline">Abaikan</span>
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="sm" variant="ghost" disabled={isDismissing} className="min-h-[44px] sm:min-h-9">
+              {isDismissing ? <Loader2 className="h-3 w-3 animate-spin sm:mr-2" /> : <X className="h-3 w-3 sm:mr-2" />}
+              <span className="hidden sm:inline">Abaikan</span>
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Abaikan Reminder</AlertDialogTitle>
+              <AlertDialogDescription>
+                Reminder ini akan ditandai diabaikan dan tidak akan dikirim. Data reminder tetap tersimpan di riwayat. Lanjutkan?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => onDismiss(row.reminder_id)}>Ya, Abaikan</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   )

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { Plus } from 'lucide-react'
 import { RulesTable } from './_components/rules-table'
 import { RuleFormModal } from './_components/rule-form-modal'
@@ -24,6 +26,7 @@ export default function ReminderRulesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [editingRule, setEditingRule] = useState<ReminderRule | null>(null)
   const [deletingRule, setDeletingRule] = useState<ReminderRule | null>(null)
+  const [showInactive, setShowInactive] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -127,8 +130,12 @@ export default function ReminderRulesPage() {
           <p className="text-sm text-muted-foreground">{rules.length} rule terdaftar</p>
         </div>
         <div className="px-6 pb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Checkbox id="show-inactive" checked={showInactive} onCheckedChange={(v) => setShowInactive(!!v)} />
+            <Label htmlFor="show-inactive" className="text-sm cursor-pointer">Tampilkan rule nonaktif</Label>
+          </div>
           <RulesTable
-            rules={rules}
+            rules={rules.filter(r => showInactive || r.is_active)}
             isFetching={isFetching}
             onEdit={(rule) => handleOpenDialog(rule)}
             onDelete={(rule) => {
