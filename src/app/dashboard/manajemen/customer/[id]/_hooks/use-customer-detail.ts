@@ -13,6 +13,8 @@ export interface CustomerFormState {
   email: string
   billing_address: string
   notes: string
+  lat: number | null
+  lng: number | null
 }
 
 export interface UseCustomerDetailReturn {
@@ -41,6 +43,8 @@ const initialCustomerForm = (): CustomerFormState => ({
   email: '',
   billing_address: '',
   notes: '',
+  lat: null,
+  lng: null,
 })
 
 export function useCustomerDetail(customerId: string): UseCustomerDetailReturn {
@@ -62,6 +66,8 @@ export function useCustomerDetail(customerId: string): UseCustomerDetailReturn {
       email: customer.email ?? '',
       billing_address: customer.billing_address ?? '',
       notes: customer.notes ?? '',
+      lat: customer.lat ?? null,
+      lng: customer.lng ?? null,
     })
     setIsEditCustomerOpen(true)
   }

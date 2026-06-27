@@ -26,12 +26,15 @@ import {
 import { Plus } from 'lucide-react'
 import { deleteLocation } from '@/lib/actions/locations'
 import type { Location } from '@/types/customers'
+import { AddressPicker } from '@/components/address/address-picker'
 
 interface LocationFormValues {
   full_address: string
   house_number: string
   city: string
   landmarks: string
+  lat: number | null
+  lng: number | null
 }
 
 interface LocationFormSheetProps {
@@ -138,12 +141,20 @@ export function LocationFormSheet({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="loc_landmarks">Patokan</Label>
-              <Input
+              <Label htmlFor="loc_landmarks">Patokan / Catatan (Opsional)</Label>
+              <Textarea
                 id="loc_landmarks"
                 value={form.landmarks}
                 onChange={(e) => onFormChange({ ...form, landmarks: e.target.value })}
-                placeholder="contoh: dekat masjid, sebelah toko ABC"
+                placeholder="Misal: Pagar hitam, depan masjid"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Pin Lokasi Map</Label>
+              <AddressPicker
+                value={{ lat: form.lat ?? null, lng: form.lng ?? null }}
+                onChange={(v) => onFormChange({ ...form, lat: v.lat, lng: v.lng })}
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">

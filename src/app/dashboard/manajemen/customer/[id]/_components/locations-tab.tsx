@@ -20,6 +20,7 @@ import { logger } from '@/lib/logger'
 import { getLocations, updateLocation, deleteLocation } from '@/lib/actions/locations'
 import { createLocation } from '@/lib/actions/orders'
 import { LocationFormSheet } from './location-form-sheet'
+import { AddressPickerReadOnly } from '@/components/address/address-picker-readonly'
 import type { Location } from '@/types/customers'
 
 interface LocationsTabProps {
@@ -31,6 +32,8 @@ interface LocationFormValues {
   house_number: string
   city: string
   landmarks: string
+  lat: number | null
+  lng: number | null
 }
 
 const initialForm = (): LocationFormValues => ({
@@ -38,6 +41,8 @@ const initialForm = (): LocationFormValues => ({
   house_number: '1',
   city: '',
   landmarks: '',
+  lat: null,
+  lng: null,
 })
 
 export function LocationsTab({ customerId }: LocationsTabProps) {
@@ -71,6 +76,8 @@ export function LocationsTab({ customerId }: LocationsTabProps) {
       house_number: loc.house_number ?? '1',
       city: loc.city ?? '',
       landmarks: loc.landmarks ?? '',
+      lat: loc.lat ?? null,
+      lng: loc.lng ?? null,
     })
     setIsFormOpen(true)
   }
@@ -166,11 +173,7 @@ export function LocationsTab({ customerId }: LocationsTabProps) {
                       <p className="text-xs text-muted-foreground mt-1">
                         No. {loc.house_number} · {loc.city}
                       </p>
-                      {loc.landmarks && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Patokan: {loc.landmarks}
-                        </p>
-                      )}
+                      <AddressPickerReadOnly lat={loc.lat ?? null} lng={loc.lng ?? null} />
                     </div>
                   </div>
                   <div className="flex justify-end gap-2 pt-1">
@@ -211,9 +214,14 @@ export function LocationsTab({ customerId }: LocationsTabProps) {
                 <TableBody>
                   {locations.map((loc) => (
                     <TableRow key={loc.location_id}>
-                      <TableCell className="font-medium">{loc.full_address}</TableCell>
-                      <TableCell>{loc.house_number}</TableCell>
-                      <TableCell>{loc.city}</TableCell>
+                      <TableCell className="font-medium align-top">
+                        <div className="flex flex-col">
+                          <span>{loc.full_address}</span>
+                          <AddressPickerReadOnly lat={loc.lat ?? null} lng={loc.lng ?? null} />
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-top">{loc.house_number}</TableCell>
+                      <TableCell className="align-top">{loc.city}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {loc.landmarks || '-'}
                       </TableCell>
