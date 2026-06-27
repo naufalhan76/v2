@@ -28,7 +28,8 @@ function endOfDay(d: Date) {
   return x
 }
 
-function StatCard({ title, value, icon, isLoading }: { title: string; value: number; icon: React.ReactNode; isLoading: boolean }) {
+function StatCard({ title, value, icon, isLoading, tone }: { title: string; value: number; icon: React.ReactNode; isLoading: boolean; tone?: 'default' | 'warning' | 'danger' }) {
+  const accent = tone === 'danger' ? 'text-destructive dark:text-destructive' : tone === 'warning' ? 'text-warning dark:text-warning' : ''
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -36,7 +37,7 @@ function StatCard({ title, value, icon, isLoading }: { title: string; value: num
         {icon}
       </CardHeader>
       <CardContent>
-        {isLoading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{value}</div>}
+        {isLoading ? <Skeleton className="h-8 w-16" /> : <div className={`text-2xl font-bold ${accent}`}>{value}</div>}
       </CardContent>
     </Card>
   )
@@ -132,9 +133,9 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-        <StatCard title="Menunggu" value={stats.pending} icon={<BellRing className="h-4 w-4 text-muted-foreground" />} isLoading={isLoading} />
+        <StatCard title="Menunggu" value={stats.pending} icon={<BellRing className="h-4 w-4 text-muted-foreground" />} isLoading={isLoading} tone="warning" />
         <StatCard title="Terkirim Hari Ini" value={stats.sentToday} icon={<CheckCircle2 className="h-4 w-4 text-muted-foreground" />} isLoading={isLoading} />
-        <StatCard title="Gagal" value={stats.failed} icon={<XCircle className="h-4 w-4 text-muted-foreground" />} isLoading={isLoading} />
+        <StatCard title="Gagal" value={stats.failed} icon={<XCircle className="h-4 w-4 text-muted-foreground" />} isLoading={isLoading} tone="danger" />
       </div>
 
       <Card>

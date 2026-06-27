@@ -181,9 +181,9 @@ export function MonitoringTab() {
             </div>
           ) : filtered.length === 0 ? (
             hasFilters ? (
-              <EmptyState icon={Snowflake} title="Tidak ada AC yang cocok" description="Coba ubah filter pencarian atau reset filter." action={{ label: 'Reset Filter', onClick: clearFilters, icon: Snowflake }} />
+              <EmptyState icon={Snowflake} title="Tidak ada AC yang cocok" description="Tidak ada AC yang cocok dengan filter ini." action={{ label: 'Reset Filter', onClick: clearFilters, icon: Snowflake }} />
             ) : (
-              <EmptyState icon={Snowflake} title="Belum ada AC yang pernah di-service" description="AC akan muncul di sini setelah teknisi menyelesaikan service report dan mengisi tanggal service berikutnya." />
+              <EmptyState icon={Snowflake} title="Belum ada AC untuk dimonitor." description="AC akan muncul di sini setelah teknisi menyelesaikan service report dan mengisi tanggal service berikutnya." />
             )
           ) : (
             <MonitoringTable

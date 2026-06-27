@@ -85,8 +85,30 @@ export function QueueFilters({
     { id: 'pending', label: 'Menunggu', icon: Hourglass },
   ] as const
 
+  const activeChips: { key: string; label: string; onClear: () => void }[] = []
+  if (statusFilter !== 'all') {
+    const lbl = STATUS_OPTIONS.find(o => o.value === statusFilter)?.label ?? statusFilter
+    activeChips.push({ key: 'status', label: `Status: ${lbl}`, onClear: () => onStatusChange('all') })
+  }
+  if (dateFrom) activeChips.push({ key: 'from', label: `Dari: ${format(dateFrom, 'd MMM', { locale: localeId })}`, onClear: () => onDateFromChange(undefined) })
+  if (dateTo) activeChips.push({ key: 'to', label: `Sampai: ${format(dateTo, 'd MMM', { locale: localeId })}`, onClear: () => onDateToChange(undefined) })
+  if (search.trim()) activeChips.push({ key: 'q', label: `Cari: "${search.trim()}"`, onClear: () => onSearchChange('') })
+
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      {activeChips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 w-full text-xs">
+          <span className="text-muted-foreground">Sedang melihat:</span>
+          {activeChips.map((c) => (
+            <span key={c.key} className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5">
+              {c.label}
+              <button type="button" onClick={c.onClear} className="text-muted-foreground hover:text-foreground" aria-label={`Hapus ${c.label}`}>
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
       <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
         {presets.map((p) => {
           const Icon = p.icon

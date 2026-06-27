@@ -109,6 +109,7 @@ function RemindersPageInner() {
             <Sparkles className="mr-2 h-4 w-4" />
           )}
           Generate Reminder
+          <span className="block text-xs font-normal opacity-80">Belum mengirim ke pelanggan. Reminder akan masuk ke Antrian.</span>
         </Button>
       </div>
 
@@ -118,8 +119,14 @@ function RemindersPageInner() {
         className="space-y-4 sm:space-y-6"
       >
         <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto">
-          <TabsTrigger value="antrian">Antrian Reminder</TabsTrigger>
-          <TabsTrigger value="monitoring">Monitoring AC</TabsTrigger>
+          <TabsTrigger value="antrian" className="flex flex-col gap-0.5 py-2">
+            <span>Antrian Reminder</span>
+            <span className="text-[10px] font-normal text-muted-foreground">Reminder yang perlu dikirim ke customer.</span>
+          </TabsTrigger>
+          <TabsTrigger value="monitoring" className="flex flex-col gap-0.5 py-2">
+            <span>Monitoring AC</span>
+            <span className="text-[10px] font-normal text-muted-foreground">Jadwal service semua AC dan riwayat pengingat.</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="antrian" className="mt-0">

@@ -30,12 +30,30 @@ export function MonitoringFilters({
   dateFrom, onDateFromChange, dateTo, onDateToChange,
   hasFilters, onClearFilters,
 }: MonitoringFiltersProps) {
+  const STATUS_LABELS: Record<ServicedAcStatusFilter, string> = { all: 'Semua', overdue: 'Overdue', due_soon: 'Jatuh Tempo', upcoming: 'Mendatang', no_date: 'Tanpa Jadwal' }
+  const chips: { key: string; label: string; onClear: () => void }[] = []
+  if (statusFilter !== 'all') chips.push({ key: 'status', label: `Status: ${STATUS_LABELS[statusFilter]}`, onClear: () => onStatusChange('all') })
+  if (dateFrom) chips.push({ key: 'from', label: `Dari: ${format(dateFrom, 'd MMM', { locale: localeId })}`, onClear: () => onDateFromChange(undefined) })
+  if (dateTo) chips.push({ key: 'to', label: `Sampai: ${format(dateTo, 'd MMM', { locale: localeId })}`, onClear: () => onDateToChange(undefined) })
+  if (search.trim()) chips.push({ key: 'search', label: `Cari: "${search.trim()}"`, onClear: () => onSearchChange('') })
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Filter</CardTitle>
       </CardHeader>
       <CardContent>
+        {chips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 text-xs mb-2">
+            <span className="text-muted-foreground">Sedang melihat:</span>
+            {chips.map((c) => (
+              <span key={c.key} className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5">
+                {c.label}
+                <button type="button" onClick={c.onClear} className="text-muted-foreground hover:text-foreground" aria-label={`Hapus ${c.label}`}><X className="h-3 w-3" /></button>
+              </span>
+            ))}
+          </div>
+        )}
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <div className="relative w-full sm:flex-1 sm:min-w-[240px] sm:max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

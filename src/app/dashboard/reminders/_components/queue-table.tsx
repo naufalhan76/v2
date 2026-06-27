@@ -145,7 +145,7 @@ export function QueueTable({ data, sorting, onSortingChange, rowSelection, onRow
           {isLoading ? (
             <div className="space-y-2 p-4">{Array.from({ length: 6 }).map((_, i) => (<Skeleton key={i} className="h-12 w-full" />))}</div>
           ) : filteredReminders.length === 0 ? (
-            <EmptyState icon={BellRing} title={hasFilters ? 'Tidak ada reminder yang cocok' : 'Belum ada reminder'} description={hasFilters ? 'Coba ubah filter pencarian atau reset filter.' : 'Klik "Generate Reminder" untuk membuat reminder dari jadwal service AC.'} action={hasFilters ? { label: 'Reset Filter', onClick: clearFilters, icon: X } : { label: isGenerating ? 'Memproses...' : 'Generate Reminder', onClick: onGenerate, icon: Sparkles }} />
+            <EmptyState icon={BellRing} title={hasFilters ? 'Tidak ada reminder yang cocok' : 'Belum ada reminder'} description={hasFilters ? 'Tidak ada reminder yang cocok dengan filter ini.' : 'Tidak ada reminder yang perlu dikirim saat ini. Semua customer sudah di-follow-up.'} action={hasFilters ? { label: 'Reset Filter', onClick: clearFilters, icon: X } : { label: isGenerating ? 'Memproses...' : 'Generate Reminder', onClick: onGenerate, icon: Sparkles }} />
           ) : (
             <div className="data-table-container overflow-x-auto">
               <Table>
