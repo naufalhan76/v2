@@ -9,6 +9,8 @@ export interface CustomerOption {
   phone_number?: string | null
   email?: string | null
   billing_address?: string | null
+  lat?: number | null
+  lng?: number | null
 }
 
 export interface InvoiceTotals {
@@ -22,6 +24,8 @@ export interface InvoiceTotals {
 export interface CustomerSelectorProps {
   customers: CustomerOption[]
   watchedCustomerId: string | undefined
+  watchedCustomerLat?: number | null
+  watchedCustomerLng?: number | null
   errors: FieldErrors<CreateBlankInvoiceInput>
   register: UseFormRegister<CreateBlankInvoiceInput>
   setValue: UseFormSetValue<CreateBlankInvoiceInput>

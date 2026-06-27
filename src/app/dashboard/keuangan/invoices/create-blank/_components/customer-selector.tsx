@@ -5,11 +5,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { AddressPicker } from '@/components/address/address-picker'
 import type { CustomerSelectorProps } from './types'
 
 export function CustomerSelector({
   customers,
   watchedCustomerId,
+  watchedCustomerLat,
+  watchedCustomerLng,
   errors,
   register,
   setValue,
@@ -89,6 +92,23 @@ export function CustomerSelector({
             placeholder="Alamat penagihan"
             {...register('customer_address')}
           />
+        </div>
+
+        <div className="space-y-2 md:col-span-2 pt-2">
+          <Label>Titik Lokasi Peta (Opsional)</Label>
+          <AddressPicker
+            value={{
+              lat: watchedCustomerLat ?? null,
+              lng: watchedCustomerLng ?? null,
+            }}
+            onChange={(coords) => {
+              setValue('customer_lat', coords.lat, { shouldDirty: true })
+              setValue('customer_lng', coords.lng, { shouldDirty: true })
+            }}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Pin lokasi akan digunakan untuk navigasi teknisi. Opsional.
+          </p>
         </div>
       </div>
     </div>

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, DollarSign, Trash2, Pencil, AlertCircle, FileText } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { AddressPickerReadOnly } from '@/components/address/address-picker-readonly'
 import { TableSkeleton } from '@/components/ui/skeleton'
 import { RecordPaymentModal } from '@/components/invoices/record-payment-modal'
 import { InvoiceStatusBadge } from '@/components/invoices/invoice-status-badge'
@@ -86,6 +87,10 @@ export default function InvoiceDetailPage() {
   const customerDisplayPhone = isBlankInvoice ? invoice.customer_phone_override ?? invoice.customers?.phone_number ?? '' : invoice.customers?.phone_number ?? invoice.customer_phone_override ?? ''
   const customerDisplayEmail = isBlankInvoice ? invoice.customer_email_override ?? invoice.customers?.email ?? '' : invoice.customers?.email ?? invoice.customer_email_override ?? ''
   const customerDisplayAddress = isBlankInvoice ? invoice.customer_address_override ?? invoice.customers?.billing_address ?? '' : invoice.customers?.billing_address ?? invoice.customer_address_override ?? ''
+  
+  const customerLat = isBlankInvoice ? (invoice.customer_lat_override ?? invoice.customers?.lat ?? null) : (invoice.customers?.lat ?? invoice.customer_lat_override ?? null)
+  const customerLng = isBlankInvoice ? (invoice.customer_lng_override ?? invoice.customers?.lng ?? null) : (invoice.customers?.lng ?? invoice.customer_lng_override ?? null)
+
   const displayOrderId = invoice.order_id ?? '—'
   const displayStatus = invoice.computed_status ?? invoice.status
   const revisionHelpMessage = invoice.status === 'PAID' ? 'Invoice telah dibayar — tidak dapat direvisi' : invoice.status === 'OVERDUE' ? 'Invoice melewati jatuh tempo — tidak dapat direvisi' : invoice.status === 'CANCELLED' ? 'Invoice dibatalkan — tidak dapat direvisi' : ''
@@ -123,7 +128,16 @@ export default function InvoiceDetailPage() {
               ) : (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div><Label className="text-muted-foreground">Customer</Label><p className="font-semibold">{customerDisplayName}</p><p className="text-sm text-muted-foreground">{customerDisplayPhone ? formatPhone(customerDisplayPhone) : '—'}</p><p className="mt-1 text-sm text-muted-foreground break-all">{customerDisplayEmail || '—'}</p><p className="text-sm text-muted-foreground">{customerDisplayAddress || '—'}</p></div>
+                    <div>
+                      <Label className="text-muted-foreground">Customer</Label>
+                      <p className="font-semibold">{customerDisplayName}</p>
+                      <p className="text-sm text-muted-foreground">{customerDisplayPhone ? formatPhone(customerDisplayPhone) : '—'}</p>
+                      <p className="mt-1 text-sm text-muted-foreground break-all">{customerDisplayEmail || '—'}</p>
+                      <div className="mt-1">
+                        <p className="text-sm text-muted-foreground">{customerDisplayAddress || '—'}</p>
+                        <AddressPickerReadOnly lat={customerLat} lng={customerLng} />
+                      </div>
+                    </div>
                     <div><Label className="text-muted-foreground">Order ID</Label><p className="font-mono font-semibold break-all">{displayOrderId}</p></div>
                   </div>
                   <Separator />

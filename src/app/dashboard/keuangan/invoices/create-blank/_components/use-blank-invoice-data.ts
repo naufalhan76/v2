@@ -19,6 +19,8 @@ export function useBlankInvoiceData() {
             customer_id: c.customer_id as string, customer_name: c.customer_name as string,
             phone_number: (c.phone_number as string | null) ?? null,
             email: (c.email as string | null) ?? null, billing_address: (c.billing_address as string | null) ?? null,
+            lat: (c.lat as number | null) ?? null,
+            lng: (c.lng as number | null) ?? null,
           })))
         }
       } catch (error) { logger.error('Error loading customers:', error) }

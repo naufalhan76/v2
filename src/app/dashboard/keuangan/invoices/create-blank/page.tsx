@@ -62,16 +62,24 @@ export default function CreateBlankInvoicePage() {
   const watchedDiscountPercentage = watch('discount_percentage')
   const watchedTaxPercentage = watch('tax_percentage')
   const watchedCustomerId = watch('customer_id')
+  const watchedCustomerLat = watch('customer_lat')
+  const watchedCustomerLng = watch('customer_lng')
   const watchedPaymentAccountId = watch('payment_account_id')
 
   useEffect(() => {
-    if (!watchedCustomerId) return
+    if (!watchedCustomerId) {
+      // If cleared, retain manual override behavior (don't force null/clear unless desired,
+      // but usually clearing the dropdown shouldn't nuke manual edits)
+      return
+    }
     const found = customers.find((c) => c.customer_id === watchedCustomerId)
     if (!found) return
-    setValue('customer_name', found.customer_name || '')
-    setValue('customer_phone', found.phone_number || '')
-    setValue('customer_email', found.email || '')
-    setValue('customer_address', found.billing_address || '')
+    setValue('customer_name', found.customer_name || '', { shouldValidate: true })
+    setValue('customer_phone', found.phone_number || '', { shouldValidate: true })
+    setValue('customer_email', found.email || '', { shouldValidate: true })
+    setValue('customer_address', found.billing_address || '', { shouldValidate: true })
+    setValue('customer_lat', found.lat ?? null, { shouldDirty: true, shouldValidate: true })
+    setValue('customer_lng', found.lng ?? null, { shouldDirty: true, shouldValidate: true })
   }, [watchedCustomerId, customers, setValue])
 
   useEffect(() => {
@@ -142,7 +150,15 @@ export default function CreateBlankInvoicePage() {
           <Card>
             <CardHeader><CardTitle>Pelanggan</CardTitle><CardDescription>Pilih pelanggan terdaftar atau isi data pelanggan secara manual</CardDescription></CardHeader>
             <CardContent>
-              <CustomerSelector customers={customers} watchedCustomerId={watchedCustomerId} errors={errors} register={register} setValue={setValue} />
+              <CustomerSelector
+                customers={customers}
+                watchedCustomerId={watchedCustomerId}
+                watchedCustomerLat={watchedCustomerLat}
+                watchedCustomerLng={watchedCustomerLng}
+                errors={errors}
+                register={register}
+                setValue={setValue}
+              />
             </CardContent>
           </Card>
 

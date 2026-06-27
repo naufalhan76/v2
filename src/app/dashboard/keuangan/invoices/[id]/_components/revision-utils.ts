@@ -15,6 +15,8 @@ export type RevisionDraft = {
   customer_phone: string
   customer_email: string
   customer_address: string
+  customer_lat?: number | null
+  customer_lng?: number | null
   due_date: string
   notes: string
   terms_conditions: string
@@ -30,6 +32,8 @@ export function buildRevisionDraft(invoice: Invoice, items: InvoiceItem[]): Revi
     customer_phone: invoice.customer_phone_override ?? invoice.customers?.phone_number ?? '',
     customer_email: invoice.customer_email_override ?? invoice.customers?.email ?? '',
     customer_address: invoice.customer_address_override ?? invoice.customers?.billing_address ?? '',
+    customer_lat: invoice.customer_lat_override ?? invoice.customers?.lat ?? null,
+    customer_lng: invoice.customer_lng_override ?? invoice.customers?.lng ?? null,
     due_date: invoice.due_date ? invoice.due_date.slice(0, 10) : '',
     notes: invoice.notes ?? '',
     terms_conditions: invoice.terms_conditions ?? '',
@@ -74,6 +78,8 @@ export function buildRevisionPayload(
     headerUpdates.customer_phone_override = draft.customer_phone.trim() || null
     headerUpdates.customer_email_override = draft.customer_email.trim() || null
     headerUpdates.customer_address_override = draft.customer_address.trim() || null
+    headerUpdates.customer_lat_override = draft.customer_lat ?? null
+    headerUpdates.customer_lng_override = draft.customer_lng ?? null
   }
   if (draft.payment_account_id) {
     const selected = bankAccounts.find((acc) => acc.id === draft.payment_account_id)

@@ -1,7 +1,8 @@
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { AddressPicker } from '@/components/address/address-picker'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { BankAccount } from '@/lib/bank-accounts'
 import type { RevisionDraft } from '../_hooks/use-invoice-detail'
@@ -60,15 +61,41 @@ export function InvoiceRevisionForm({
             placeholder="customer@example.com"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-2">
           <Label htmlFor="rev-customer-address">Alamat</Label>
-          <Input
+          <Textarea
             id="rev-customer-address"
+            rows={2}
             value={revisionDraft.customer_address}
             onChange={(e) => onUpdateField('customer_address', e.target.value)}
             disabled={isLinkedCustomer}
             placeholder="Alamat penagihan"
           />
+        </div>
+
+        <div className="space-y-2 md:col-span-2 pt-2">
+          <Label>Titik Lokasi Peta (Opsional)</Label>
+          {isLinkedCustomer ? (
+            <div className="rounded-md border bg-muted/50 p-4 text-sm text-muted-foreground flex items-center justify-center">
+              Peta dinonaktifkan. Customer terhubung — kelola lokasi di halaman customer.
+            </div>
+          ) : (
+            <AddressPicker
+              value={{
+                lat: revisionDraft.customer_lat ?? null,
+                lng: revisionDraft.customer_lng ?? null,
+              }}
+              onChange={(coords) => {
+                onUpdateField('customer_lat', coords.lat)
+                onUpdateField('customer_lng', coords.lng)
+              }}
+            />
+          )}
+          <p className="text-xs text-muted-foreground mt-1">
+            {isLinkedCustomer 
+              ? '' 
+              : 'Pin lokasi akan digunakan untuk navigasi teknisi. Opsional.'}
+          </p>
         </div>
       </div>
 
