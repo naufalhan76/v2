@@ -98,19 +98,23 @@ function RemindersPageInner() {
             Kelola pengingat service rutin untuk pelanggan berdasarkan jadwal AC.
           </p>
         </div>
-        <Button
-          onClick={() => generateMutation.mutate()}
-          disabled={generateMutation.isPending}
-          className="w-full sm:w-auto"
-        >
-          {generateMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Sparkles className="mr-2 h-4 w-4" />
-          )}
-          Generate Reminder
-          <span className="block text-xs font-normal opacity-80">Belum mengirim ke pelanggan. Reminder akan masuk ke Antrian.</span>
-        </Button>
+        <div className="flex flex-col sm:items-end gap-1.5">
+          <Button
+            onClick={() => generateMutation.mutate()}
+            disabled={generateMutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            {generateMutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4" />
+            )}
+            Generate Reminder
+          </Button>
+          <p className="text-xs text-muted-foreground sm:text-right">
+            Belum mengirim ke pelanggan. Reminder akan masuk ke Antrian.
+          </p>
+        </div>
       </div>
 
       <Tabs
