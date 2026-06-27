@@ -192,13 +192,30 @@ export async function createUser(input: CreateUserInput) {
     const supabaseAdmin = createAdminClient()
     const { data: existingUser } = await supabaseAdmin.from('user_management').select('email').eq('email', input.email).single()
     if (existingUser) return { success: false, error: 'Email sudah terdaftar' }
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({ email: input.email, password: input.password, email_confirm: true, user_metadata: { full_name: input.full_name, role: input.role } })
-    if (authError) { logger.error('Error creating auth user:', authError); return { success: false, error: authError.message } }
-    if (!authData.user) return { success: false, error: 'Failed to create user' }
-    const { error: insertError } = await supabaseAdmin.from('user_management').insert({ auth_user_id: authData.user.id, email: input.email, full_name: input.full_name, role: input.role, is_active: true })
+    const authParams = { email: input.email, password: input.password, email_confirm: true, user_metadata: { full_name: input.full_name, role: input.role } }
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser(authParams)
+    let authUserId = authData?.user?.id
+    if (authError) {
+      if (!authError.message.includes('already been registered')) {
+        logger.error('Error creating auth user:', authError)
+        return { success: false, error: authError.message }
+      }
+      // ponytail: orphaned auth user from failed invite — listUsers to find by email, delete, retry. O(n) but fine for small user base.
+      const { data: users } = await supabaseAdmin.auth.admin.listUsers()
+      const orphan = users?.users?.find(u => u.email === input.email)
+      if (!orphan) return { success: false, error: authError.message }
+      const { error: delErr } = await supabaseAdmin.auth.admin.deleteUser(orphan.id)
+      if (delErr) return { success: false, error: delErr.message }
+      logger.info(`Cleaned orphaned auth user for ${input.email}, retrying createUser`)
+      const { data: retry, error: retryErr } = await supabaseAdmin.auth.admin.createUser(authParams)
+      if (retryErr) return { success: false, error: retryErr.message }
+      authUserId = retry?.user?.id
+    }
+    if (!authUserId) return { success: false, error: 'Failed to create user' }
+    const { error: insertError } = await supabaseAdmin.from('user_management').insert({ auth_user_id: authUserId, email: input.email, full_name: input.full_name, role: input.role, is_active: true })
     if (insertError) {
       logger.error('Error inserting user_management record, rolling back auth user:', insertError)
-      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(authUserId)
       if (deleteError) logger.error('CRITICAL: Failed to delete orphaned auth user:', deleteError)
       return { success: false, error: insertError.message }
     }
