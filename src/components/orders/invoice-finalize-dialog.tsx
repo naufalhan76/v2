@@ -86,7 +86,7 @@ export function InvoiceFinalizeDialog({
       <DialogContent className="sm:max-w-lg max-w-[calc(100vw-2rem)] p-5 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
-            <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0" />
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
             Proforma Invoice Tersedia
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -132,7 +132,7 @@ export function InvoiceFinalizeDialog({
         )}
 
         {!isLoading && !isError && data && !showFinalize && (
-          <div className="rounded-md border border-yellow-500/30 bg-yellow-500/10 p-2.5 text-xs text-yellow-700 dark:text-yellow-400">
+          <div className="rounded-md border border-warning/30 bg-warning/10 p-2.5 text-xs text-warning dark:text-warning">
             Tidak ada material dari laporan teknisi yang perlu difinalisasi.
           </div>
         )}
@@ -152,7 +152,7 @@ export function InvoiceFinalizeDialog({
           <Button
             disabled={!showFinalize || finalize.isPending}
             onClick={() => finalize.mutate()}
-            className="h-10 w-full text-sm bg-yellow-500 text-white hover:bg-yellow-600"
+            className="h-10 w-full text-sm bg-warning text-white hover:bg-warning/90"
           >
             {finalize.isPending && <Loader2 className="mr-2 h-4 w-4" />}
             Finalisasi (Ganti PROFORMA)
