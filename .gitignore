@@ -129,4 +129,4 @@ src/**/*.test.tsx
 !src/app/dashboard/keuangan/invoices/\[id\]/_components/
 !src/app/dashboard/keuangan/invoices/\[id\]/_components/revision-utils.test.ts
 !src/lib/geo/nominatim.test.ts
-!src/lib/geo/nominatim.test.ts
+!src/components/address/address-picker-inner.test.tsx
