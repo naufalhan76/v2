@@ -72,6 +72,16 @@ Optional checkbox in Create Order form (`/dashboard/orders/new`). When checked, 
 
 `src/lib/logger.ts` — scoped logger. `debug`/`info` stripped in production via `next.config.js`. Use `warn`/`error` for anything that must appear in prod.
 
+## Address pinpoint maps
+
+This application uses Leaflet for customer address pinpointing.
+
+Environment variables:
+- `NEXT_PUBLIC_NOMINATIM_BASE_URL`: Base URL for OpenStreetMap Nominatim geocoding service. Default: `https://nominatim.openstreetmap.org`.
+- `NEXT_PUBLIC_OSM_TILE_URL`: URL for OpenStreetMap tiles. Default: `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`.
+
+If using a custom tile/geocoding provider (e.g., Mapbox, Maptiler), ensure these variables are updated accordingly in your `.env`.
+
 ## Key Conventions
 
 - Path alias `@/*` maps to `src/*`

@@ -108,6 +108,10 @@ Edit `.env.local` with your Supabase credentials:
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server only)
+- `NEXT_PUBLIC_NOMINATIM_BASE_URL` — Nominatim URL (default: `https://nominatim.openstreetmap.org`)
+- `NEXT_PUBLIC_OSM_TILE_URL` — OSM Tile URL (default: `https://tile.openstreetmap.org/{z}/{x}/{y}.png`)
+
+Note: For production, consider using LocationIQ or custom tiles via `NEXT_PUBLIC_NOMINATIM_BASE_URL` and `NEXT_PUBLIC_OSM_TILE_URL` env swap.
 
 ### 2. Database Setup
 
