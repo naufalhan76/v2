@@ -123,15 +123,14 @@ function RemindersPageInner() {
         className="space-y-4 sm:space-y-6"
       >
         <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto">
-          <TabsTrigger value="antrian" className="flex flex-col gap-0.5 py-2">
-            <span>Antrian Reminder</span>
-            <span className="text-[10px] font-normal text-muted-foreground">Reminder yang perlu dikirim ke customer.</span>
-          </TabsTrigger>
-          <TabsTrigger value="monitoring" className="flex flex-col gap-0.5 py-2">
-            <span>Monitoring AC</span>
-            <span className="text-[10px] font-normal text-muted-foreground">Jadwal service semua AC dan riwayat pengingat.</span>
-          </TabsTrigger>
+          <TabsTrigger value="antrian">Antrian Reminder</TabsTrigger>
+          <TabsTrigger value="monitoring">Monitoring AC</TabsTrigger>
         </TabsList>
+        <p className="text-xs text-muted-foreground px-1">
+          {initialTab === 'antrian'
+            ? 'Reminder yang perlu dikirim ke customer.'
+            : 'Jadwal service semua AC dan riwayat pengingat.'}
+        </p>
 
         <TabsContent value="antrian" className="mt-0">
           <QueueTab
