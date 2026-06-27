@@ -138,6 +138,8 @@ export async function createCustomer(customerData: {
   email: string
   billing_address: string
   notes?: string
+  lat?: number | null
+  lng?: number | null
 }) {
   logger.debug('Creating customer with data:', customerData)
   
@@ -149,7 +151,9 @@ export async function createCustomer(customerData: {
     // Clean the data - remove empty strings for optional fields
     const cleanData = {
       ...customerData,
-      notes: customerData.notes || null
+      notes: customerData.notes || null,
+      lat: customerData.lat ?? null,
+      lng: customerData.lng ?? null,
     }
     
     logger.debug('Clean data for insert:', cleanData)
@@ -210,6 +214,8 @@ export async function updateCustomer(customerId: string, customerData: Partial<{
   email: string
   billing_address: string
   notes: string
+  lat: number | null
+  lng: number | null
 }>) {
   try {
     const supabase = await createClient()

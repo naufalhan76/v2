@@ -16,6 +16,8 @@ export interface Invoice {
   customer_phone_override?: string | null
   customer_email_override?: string | null
   customer_address_override?: string | null
+  customer_lat_override?: number | null
+  customer_lng_override?: number | null
   invoice_date: string
   due_date: string
   service_type: string | null
@@ -45,6 +47,8 @@ export interface Invoice {
     phone_number: string
     email: string
     billing_address?: string | null
+    lat?: number | null
+    lng?: number | null
   }
   orders?: {
     order_id: string
@@ -157,6 +161,8 @@ interface InvoiceRevisionHeaderFieldValueMap {
   customer_phone_override: string | null
   customer_email_override: string | null
   customer_address_override: string | null
+  customer_lat_override: number | null
+  customer_lng_override: number | null
   due_date: string | null
   notes: string | null
   terms_conditions: string | null
@@ -176,6 +182,8 @@ const ALLOWED_REVISION_FIELDS = [
   'customer_phone_override',
   'customer_email_override',
   'customer_address_override',
+  'customer_lat_override',
+  'customer_lng_override',
   'due_date',
   'notes',
   'terms_conditions',

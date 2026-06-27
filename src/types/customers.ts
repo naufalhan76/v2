@@ -7,6 +7,8 @@ export interface Customer {
   phone_number: string
   email: string
   billing_address: string
+  lat?: number | null
+  lng?: number | null
   notes?: string | null
   locations?: Array<{
     location_id: string
@@ -14,6 +16,8 @@ export interface Customer {
     house_number?: string | null
     city?: string | null
     landmarks?: string | null
+    lat?: number | null
+    lng?: number | null
     ac_units?: Array<{ ac_unit_id: string }>
   }>
 }
@@ -25,6 +29,8 @@ export interface Location {
   house_number: string
   city: string
   landmarks?: string | null
+  lat?: number | null
+  lng?: number | null
 }
 
 export interface AcUnit {

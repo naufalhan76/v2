@@ -162,6 +162,8 @@ async function createBlankInvoiceOrThrow(input: CreateBlankInvoiceInput): Promis
     customer_phone_override: hasLinkedCustomer ? null : parsedInput.customer_phone || null,
     customer_email_override: hasLinkedCustomer ? null : parsedInput.customer_email || null,
     customer_address_override: hasLinkedCustomer ? null : parsedInput.customer_address || null,
+    customer_lat_override: parsedInput.customer_lat ?? null,
+    customer_lng_override: parsedInput.customer_lng ?? null,
     invoice_date: invoiceDate, due_date: dueDate,
     service_type: null, service_name: null, base_service_quantity: 0,
     base_service_price: null, base_service_total: null,

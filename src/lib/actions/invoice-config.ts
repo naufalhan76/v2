@@ -14,6 +14,8 @@ export interface InvoiceConfig {
   company_phone: string | null
   company_email: string | null
   company_website: string | null
+  company_lat: number | null
+  company_lng: number | null
   npwp: string | null
   tax_id: string | null
   bank_accounts: string | null // JSON string
@@ -34,6 +36,8 @@ export interface UpdateInvoiceConfigInput {
   company_phone?: string
   company_email?: string
   company_website?: string
+  companyLat?: number | null
+  companyLng?: number | null
   npwp?: string
   tax_id?: string
   bank_accounts?: Array<Pick<BankAccount, 'bank' | 'account_number' | 'account_name'>> // Will be stringified
@@ -93,6 +97,8 @@ export async function updateInvoiceConfig(
     company_phone: input.company_phone || null,
     company_email: input.company_email || null,
     company_website: input.company_website || null,
+    company_lat: input.companyLat ?? null,
+    company_lng: input.companyLng ?? null,
     npwp: input.npwp || null,
     tax_id: input.tax_id || null,
     bank_accounts: input.bank_accounts ? JSON.stringify(input.bank_accounts) : null,

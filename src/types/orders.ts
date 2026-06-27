@@ -160,6 +160,8 @@ export type CustomerSearchResult = {
     house_number: string; // Support alphanumeric
     city: string;
     landmarks: string | null;
+    lat?: number | null;
+    lng?: number | null;
     ac_units?: Array<{
       ac_unit_id: string;
       brand: string;

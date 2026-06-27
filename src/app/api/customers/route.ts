@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       return handleValidationError(validation.error)
     }
 
-    const { customerName, primaryContactPerson, email, phoneNumber, billingAddress, notes } = validation.data
+    const { customerName, primaryContactPerson, email, phoneNumber, billingAddress, notes, lat, lng } = validation.data
 
     // Create customer using server action
     const result = await createCustomer({
@@ -121,6 +121,8 @@ export async function POST(request: NextRequest) {
       phone_number: phoneNumber,
       billing_address: billingAddress || '',
       notes,
+      lat: lat ?? null,
+      lng: lng ?? null,
     })
 
     const duration = getDuration()

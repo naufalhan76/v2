@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
 import { logger } from '@/lib/logger'
 import { getUserFromRequest } from '@/app/api/middleware/auth'
+import { UpdateCustomerSchema } from '@/app/api/schemas'
+import { handleValidationError } from '@/app/api/utils'
+
+function normalizeUpdateCustomerInput(body: Record<string, unknown>, customerId: string) {
+  return {
+    ...body,
+    customerId,
+    customerName: body.customerName ?? body.customer_name,
+    primaryContactPerson: body.primaryContactPerson ?? body.primary_contact_person,
+    phoneNumber: body.phoneNumber ?? body.phone_number,
+    billingAddress: body.billingAddress ?? body.billing_address,
+  }
+}
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -81,16 +94,25 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params
     const body = await request.json()
     logger.debug('Updating customer ID:', id, 'with data:', body)
+
+    const validation = UpdateCustomerSchema.safeParse(normalizeUpdateCustomerInput(body, id))
+    if (!validation.success) {
+      return handleValidationError(validation.error)
+    }
+
+    const validated = validation.data
     
     const { data, error } = await supabase
       .from('customers')
       .update({
-        customer_name: body.customer_name,
-        primary_contact_person: body.primary_contact_person,
-        phone_number: body.phone_number,
-        email: body.email,
-        billing_address: body.billing_address,
-        notes: body.notes || null
+        customer_name: validated.customerName,
+        primary_contact_person: validated.primaryContactPerson,
+        phone_number: validated.phoneNumber,
+        email: validated.email,
+        billing_address: validated.billingAddress,
+        notes: validated.notes || null,
+        lat: validated.lat ?? null,
+        lng: validated.lng ?? null,
       })
       .eq('customer_id', id)
       .select()

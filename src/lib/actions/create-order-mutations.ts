@@ -16,6 +16,8 @@ export async function createCustomer(data: {
   email?: string;
   primary_contact_person?: string;
   billing_address?: string;
+  lat?: number | null;
+  lng?: number | null;
 }): Promise<{
   success: boolean;
   data?: { customer_id: string };
@@ -46,7 +48,9 @@ export async function createCustomer(data: {
         phone_number: data.phone_number,
         email: data.email || null,
         primary_contact_person: data.primary_contact_person || data.customer_name,
-        billing_address: data.billing_address || 'TBD' // Fallback if no address provided
+        billing_address: data.billing_address || 'TBD', // Fallback if no address provided
+        lat: data.lat ?? null,
+        lng: data.lng ?? null,
       })
       .select('customer_id')
       .single()
@@ -211,6 +215,8 @@ export async function createLocation(data: {
   house_number?: string; // Support alphanumeric (e.g., "12A", "5B")
   city?: string;
   landmarks?: string;
+  lat?: number | null;
+  lng?: number | null;
 }): Promise<{
   success: boolean;
   data?: { location_id: string };
@@ -226,7 +232,9 @@ export async function createLocation(data: {
         full_address: data.full_address,
         house_number: data.house_number || '1',
         city: data.city || '',
-        landmarks: data.landmarks
+        landmarks: data.landmarks,
+        lat: data.lat ?? null,
+        lng: data.lng ?? null,
       })
       .select('location_id')
       .single()

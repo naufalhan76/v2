@@ -113,6 +113,8 @@ export async function updateLocation(locationId: string, locationData: Partial<{
   house_number: string // Support alphanumeric
   city: string
   landmarks: string
+  lat: number | null
+  lng: number | null
 }>) {
   try {
     const supabase = await createClient()
