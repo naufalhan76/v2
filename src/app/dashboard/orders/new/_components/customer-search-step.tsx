@@ -19,6 +19,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { useToast } from '@/hooks/use-toast'
+import { AddressPicker } from '@/components/address/address-picker'
 import type { CustomerSearchResult } from '@/types/orders'
 
 type CustomerSuggestion = {
@@ -49,6 +50,8 @@ const newCustomerSchema = z.object({
     .regex(/^[0-9+]+$/, 'Hanya angka dan +'),
   email: z.string().email('Email tidak valid').optional().or(z.literal('')),
   billing_address: z.string().optional(),
+  lat: z.number().min(-90).max(90).nullable().optional(),
+  lng: z.number().min(-180).max(180).nullable().optional(),
 })
 
 export type NewCustomerInput = z.infer<typeof newCustomerSchema>
@@ -180,6 +183,8 @@ function NewCustomerForm({
       phone_number: '',
       email: '',
       billing_address: '',
+      lat: null,
+      lng: null,
     },
   })
 
@@ -227,6 +232,19 @@ function NewCustomerForm({
             {...form.register('billing_address')}
             placeholder="Alamat untuk penagihan / invoice"
           />
+        </div>
+        <div className="md:col-span-2 pt-2">
+          <Label>Titik Lokasi Peta (Opsional)</Label>
+          <AddressPicker
+            value={{ lat: form.watch('lat') ?? null, lng: form.watch('lng') ?? null }}
+            onChange={(coords) => {
+              form.setValue('lat', coords.lat, { shouldDirty: true })
+              form.setValue('lng', coords.lng, { shouldDirty: true })
+            }}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Pin lokasi akan digunakan untuk navigasi teknisi. Opsional.
+          </p>
         </div>
       </div>
       <div className="flex justify-end gap-2">

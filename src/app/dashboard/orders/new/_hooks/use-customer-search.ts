@@ -91,6 +91,8 @@ export function useCustomerSearch() {
       email?: string
       primary_contact_person?: string
       billing_address?: string
+      lat?: number | null
+      lng?: number | null
     }) {
       setSearchingCustomers(true)
       try {
@@ -100,6 +102,8 @@ export function useCustomerSearch() {
           email: values.email || undefined,
           primary_contact_person: values.primary_contact_person || values.customer_name,
           billing_address: values.billing_address || undefined,
+          lat: values.lat ?? null,
+          lng: values.lng ?? null,
         })
         if (!res.success || !res.data) {
           toast({
