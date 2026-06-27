@@ -13,6 +13,7 @@ export {
   inviteUser,
   resendInvite,
   acceptInvite,
+  acceptInviteByEmail,
   createUser,
   updateUser,
   toggleUserStatus,

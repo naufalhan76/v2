@@ -63,7 +63,7 @@ export async function getUsers() {
     }
 
     const inviteRows: User[] = (invites ?? []).map((invite) => ({
-      user_id: invite.invite_id,
+      user_id: '-', // ponytail: MSN ID only exists after acceptInvite creates user_management row
       invite_id: invite.invite_id,
       full_name: '-',
       email: invite.email,

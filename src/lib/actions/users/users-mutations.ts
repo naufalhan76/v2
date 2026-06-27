@@ -29,7 +29,7 @@ export async function inviteUser(input: InviteUserInput): Promise<{ success: boo
     const { data: activeUser } = await supabaseAdmin.from('user_management').select('email').eq('email', email).eq('is_active', true).maybeSingle()
     if (activeUser) return { success: false, error: ACTIVE_EMAIL_ERROR }
     const { data: pendingInvite } = await supabaseAdmin.from('user_invites').select('invite_id').eq('email', email).eq('status', 'PENDING').maybeSingle()
-    const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, { data: { role: input.role } })
+    const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, { data: { role: input.role }, redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/confirm` })
     if (inviteError) return { success: false, error: inviteError.message }
     const now = new Date().toISOString()
     if (pendingInvite?.invite_id) {
@@ -58,7 +58,7 @@ export async function resendInvite(inviteId: string): Promise<{ success: boolean
     if (invite.status !== 'PENDING') return { success: false, error: 'Invite tidak aktif' }
     const { data: activeUser } = await supabaseAdmin.from('user_management').select('email').eq('email', normalizeEmail(invite.email)).eq('is_active', true).maybeSingle()
     if (activeUser) return { success: false, error: ACTIVE_EMAIL_ERROR }
-    const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(invite.email, { data: { role: invite.role } })
+    const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(invite.email, { data: { role: invite.role }, redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/confirm` })
     if (inviteError) return { success: false, error: inviteError.message }
     const now = new Date().toISOString()
     const { error: updateError } = await supabaseAdmin.from('user_invites').update({ last_sent_at: now, updated_at: now }).eq('invite_id', inviteId)
@@ -95,6 +95,54 @@ export async function acceptInvite(inviteId: string, authUserId: string): Promis
     return { success: true, error: null }
   } catch (error) {
     logger.error('Unexpected error in acceptInvite:', error)
+    return { success: false, error: 'Failed to accept invite' }
+  }
+}
+
+export async function acceptInviteByEmail(authUserId: string, email: string): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const supabaseAdmin = createAdminClient()
+    const supabase = await createClient()
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (!currentUser) return { success: false, error: 'Tidak ada sesi pengguna aktif' }
+    if (currentUser.id !== authUserId) {
+      return { success: false, error: 'Tidak diizinkan: authUserId tidak cocok dengan sesi pengguna' }
+    }
+    const normalizedEmail = normalizeEmail(email)
+    const { data: invite, error } = await supabaseAdmin
+      .from('user_invites')
+      .select('invite_id, email, role, status')
+      .eq('email', normalizedEmail)
+      .eq('status', 'PENDING')
+      .maybeSingle()
+    if (error) return { success: false, error: error.message }
+    if (!invite) {
+      // No pending invite — check if user_management already exists (idempotent)
+      const { data: existing } = await supabaseAdmin
+        .from('user_management')
+        .select('auth_user_id')
+        .eq('auth_user_id', authUserId)
+        .maybeSingle()
+      if (existing) return { success: true, error: null }
+      return { success: false, error: 'Tidak ada invite yang menunggu untuk email ini' }
+    }
+    const now = new Date().toISOString()
+    const { error: upsertError } = await supabaseAdmin
+      .from('user_management')
+      .upsert(
+        { auth_user_id: authUserId, email: normalizedEmail, full_name: normalizedEmail.split('@')[0], role: invite.role, is_active: true, updated_at: now },
+        { onConflict: 'auth_user_id' }
+      )
+    if (upsertError) return { success: false, error: upsertError.message }
+    const { error: updateError } = await supabaseAdmin
+      .from('user_invites')
+      .update({ status: 'ACCEPTED', accepted_at: now, updated_at: now })
+      .eq('invite_id', invite.invite_id)
+    if (updateError) return { success: false, error: updateError.message }
+    revalidatePath('/dashboard/manajemen/user')
+    return { success: true, error: null }
+  } catch (error) {
+    logger.error('Unexpected error in acceptInviteByEmail:', error)
     return { success: false, error: 'Failed to accept invite' }
   }
 }

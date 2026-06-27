@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { CheckCircle, Loader2, XCircle } from 'lucide-react'
+import { acceptInviteByEmail } from '@/lib/actions/users'
 
 function ConfirmPageContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
@@ -30,7 +31,7 @@ function ConfirmPageContent() {
 
         const { error } = await supabase.auth.verifyOtp({
           token_hash,
-          type: type as 'email',
+          type: type as 'signup' | 'signin' | 'sms' | 'phone' | 'email' | 'invite' | 'recovery' | 'email_change' | 'phone_change',
         })
 
         if (error) {
@@ -39,14 +40,32 @@ function ConfirmPageContent() {
           return
         }
 
+        const { data: { user } } = await supabase.auth.getUser()
+        let activationSuccess = false
+        let activationError = ''
+        if (user) {
+          const result = await acceptInviteByEmail(user.id, user.email ?? '')
+          activationSuccess = result.success
+          if (!result.success) {
+            activationError = result.error ?? 'Unknown error'
+            console.warn('acceptInviteByEmail failed:', activationError)
+          }
+        }
+
         setStatus('success')
-        setMessage('Your email has been successfully confirmed!')
-        
+        setMessage(
+          activationSuccess
+            ? 'Email berhasil dikonfirmasi! Akun Anda telah diaktifkan. Anda dapat masuk sekarang.'
+            : 'Email berhasil dikonfirmasi, namun aktivasi akun gagal. Hubungi admin.'
+        )
+
         toast({
           title: "Email confirmed",
-          description: "Your account has been verified. You can now log in.",
+          description: activationSuccess
+            ? "Email confirmed. Account activated."
+            : "Email confirmed, but account activation failed. Contact admin.",
         })
-        
+
         // Redirect to login after 3 seconds
         setTimeout(() => {
           router.push('/login')
