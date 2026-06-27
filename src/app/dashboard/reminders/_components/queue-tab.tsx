@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type SortingState, type RowSelectionState } from '@tanstack/react-table'
 import { isToday, parseISO } from 'date-fns'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { BellRing, CheckCircle2, Loader2, Send, XCircle } from 'lucide-react'
 
 import { getCustomerReminders } from '@/lib/actions/reminders'
@@ -47,15 +48,39 @@ interface QueueTabProps {
 }
 
 export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
-  const [statusFilter, setStatusFilter] = useState<'all' | ReminderRow['status']>('all')
-  const [search, setSearch] = useState('')
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined)
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const searchParam = searchParams.get('q') ?? ''
+  const [statusFilter, setStatusFilter] = useState<'all' | ReminderRow['status']>(() => {
+    const v = searchParams.get('status')
+    return (v === 'PENDING' || v === 'SENT' || v === 'FAILED' || v === 'DISMISSED' || v === 'CANCELLED') ? v : 'all'
+  })
+  const [search, setSearch] = useState(searchParam)
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(() => {
+    const v = searchParams.get('date_from'); return v ? new Date(`${v}T00:00:00`) : undefined
+  })
+  const [dateTo, setDateTo] = useState<Date | undefined>(() => {
+    const v = searchParams.get('date_to'); return v ? new Date(`${v}T00:00:00`) : undefined
+  })
   const [sorting, setSorting] = useState<SortingState>([])
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [page, setPage] = useState(0)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => { setRowSelection({}) }, [statusFilter, search, dateFrom, dateTo, page])
+
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (statusFilter !== 'all') params.set('status', statusFilter)
+    if (search) params.set('q', search)
+    if (dateFrom) params.set('date_from', dateFrom.toISOString().slice(0, 10))
+    if (dateTo) params.set('date_to', dateTo.toISOString().slice(0, 10))
+    const qs = params.toString()
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(() => {
+      router.replace(qs ? `?${qs}` : '?', { scroll: false })
+    }, 300)
+  }, [statusFilter, search, dateFrom, dateTo, router])
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['customer-reminders'],

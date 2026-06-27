@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { AlertTriangle, CalendarClock, CheckCircle2, Snowflake } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -31,14 +32,39 @@ function daysFromToday(dueIso: string | null): number | null {
 export function MonitoringTab() {
   const { toast } = useToast()
   const queryClient = useQueryClient()
-  const [statusFilter, setStatusFilter] = useState<ServicedAcStatusFilter>('all')
-  const [search, setSearch] = useState('')
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined)
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const [statusFilter, setStatusFilter] = useState<ServicedAcStatusFilter>(() => {
+    const v = searchParams.get('status') as ServicedAcStatusFilter | null
+    return (v === 'overdue' || v === 'due_soon' || v === 'upcoming' || v === 'no_date' || v === 'all') ? v : 'all'
+  })
+  const [search, setSearch] = useState(searchParams.get('search') ?? '')
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(() => {
+    const v = searchParams.get('date_from'); return v ? new Date(`${v}T00:00:00`) : undefined
+  })
+  const [dateTo, setDateTo] = useState<Date | undefined>(() => {
+    const v = searchParams.get('date_to'); return v ? new Date(`${v}T00:00:00`) : undefined
+  })
   const [page, setPage] = useState(0)
   const [sendingId, setSendingId] = useState<string | null>(null)
   const [updatingDateId, setUpdatingDateId] = useState<string | null>(null)
   const PAGE_SIZE = 20
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (statusFilter !== 'all') params.set('status', statusFilter)
+    if (search) params.set('search', search)
+    if (dateFrom) params.set('date_from', dateFrom.toISOString().slice(0, 10))
+    if (dateTo) params.set('date_to', dateTo.toISOString().slice(0, 10))
+    const existingTab = searchParams.get('tab')
+    if (existingTab) params.set('tab', existingTab)
+    const qs = params.toString()
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(() => {
+      router.replace(qs ? `?${qs}` : '?', { scroll: false })
+    }, 300)
+  }, [statusFilter, search, dateFrom, dateTo, router, searchParams])
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['serviced-ac-units'],
