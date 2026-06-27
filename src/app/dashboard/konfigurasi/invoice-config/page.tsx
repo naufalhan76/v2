@@ -20,6 +20,8 @@ const invoiceConfigSchema = z.object({
   companyPhone: z.string().optional(),
   companyEmail: z.string().email('Email tidak valid').optional().or(z.literal('')),
   companyWebsite: z.string().optional(),
+  companyLat: z.number().min(-90).max(90).nullable().optional(),
+  companyLng: z.number().min(-180).max(180).nullable().optional(),
   npwp: z.string().optional(),
   taxPercentage: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Format tidak valid').default('11.00'),
   defaultDueDays: z.string().regex(/^\d+$/, 'Harus berupa angka').default('30'),
@@ -41,7 +43,7 @@ export default function InvoiceConfigPage() {
     defaultValues: {
       companyName: '', companyAddress: '', companyPhone: '', companyEmail: '',
       companyWebsite: '', npwp: '', taxPercentage: '11.00', defaultDueDays: '30',
-      invoicePrefix: 'INV', logoUrl: '', termsConditions: '',
+      invoicePrefix: 'INV', logoUrl: '', termsConditions: '', companyLat: null, companyLng: null,
     },
   })
 
@@ -59,6 +61,8 @@ export default function InvoiceConfigPage() {
           companyPhone: config.company_phone || '',
           companyEmail: config.company_email || '',
           companyWebsite: config.company_website || '',
+          companyLat: config.company_lat ?? null,
+          companyLng: config.company_lng ?? null,
           npwp: config.npwp || '',
           taxPercentage: config.default_tax_percentage?.toString() || '11.00',
           defaultDueDays: config.default_due_days?.toString() || '30',
@@ -81,7 +85,8 @@ export default function InvoiceConfigPage() {
       await updateInvoiceConfig({
         company_name: data.companyName, company_address: data.companyAddress,
         company_phone: data.companyPhone, company_email: data.companyEmail,
-        company_website: data.companyWebsite,
+        company_website: data.companyWebsite, companyLat: data.companyLat ?? null,
+        companyLng: data.companyLng ?? null,
         bank_accounts: bankAccountsData.length > 0 ? bankAccountsData : undefined,
         npwp: data.npwp, default_tax_percentage: parseFloat(data.taxPercentage),
         default_due_days: parseInt(data.defaultDueDays), invoice_prefix: data.invoicePrefix,

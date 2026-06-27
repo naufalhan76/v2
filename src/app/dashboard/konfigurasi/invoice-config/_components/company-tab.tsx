@@ -5,13 +5,20 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import type { FieldValues, UseFormReturn } from 'react-hook-form'
+import { AddressPicker } from '@/components/address/address-picker'
+import { AddressPickerReadOnly } from '@/components/address/address-picker-readonly'
 
 interface CompanyTabProps {
   form: UseFormReturn<FieldValues>
 }
 
 export function CompanyTab({ form }: CompanyTabProps) {
-  const { register, formState } = form
+  const { register, formState, watch, setValue } = form
+  
+  const companyAddress = watch('companyAddress')
+  const companyLat = watch('companyLat')
+  const companyLng = watch('companyLng')
+  
   return (
     <Card className="rounded-xl border border-border/50 shadow-sm">
       <CardHeader>
@@ -28,6 +35,24 @@ export function CompanyTab({ form }: CompanyTabProps) {
           <Label htmlFor="companyAddress" className="text-sm font-medium text-foreground">Alamat</Label>
           <Textarea id="companyAddress" placeholder="Jl. Contoh No. 123, Jakarta Selatan" rows={3} {...register('companyAddress')} />
         </div>
+        
+        <div className="space-y-2 rounded-lg border p-4 bg-muted/20">
+          <Label className="text-sm font-medium text-foreground">Lokasi Peta (Opsional)</Label>
+          <p className="text-xs text-muted-foreground mb-3">Tandai lokasi perusahaan di peta. Lokasi ini tidak akan mengubah teks alamat di atas.</p>
+          <AddressPicker 
+            value={{ lat: companyLat ?? null, lng: companyLng ?? null }}
+            onChange={(loc) => {
+              setValue('companyLat', loc.lat, { shouldDirty: true })
+              setValue('companyLng', loc.lng, { shouldDirty: true })
+            }}
+            suggestionsQuery={companyAddress}
+          />
+          <div className="mt-4 border-t pt-4">
+            <p className="text-sm font-medium mb-2">Pratinjau Pinpoint Tersimpan</p>
+            <AddressPickerReadOnly lat={companyLat ?? null} lng={companyLng ?? null} />
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="companyPhone" className="text-sm font-medium text-foreground">Telepon</Label>
