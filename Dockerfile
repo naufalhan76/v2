@@ -67,6 +67,9 @@ COPY --from=builder /app/public ./public
 # .next/standalone includes node_modules/server.js for the standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# ponytail: Next.js standalone tracing misses @clerk/nextjs (edge runtime deps).
+# Upgrade path: add @clerk/nextjs to experimental.outputFileTracingIncludes in next.config.js
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@clerk ./node_modules/@clerk
 
 USER nextjs
 
