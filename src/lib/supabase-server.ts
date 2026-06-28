@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { logger } from '@/lib/logger'
 
 export async function createClient() {
   const cookieStore = await cookies()
@@ -26,4 +27,33 @@ export async function createClient() {
       },
     }
   )
+}
+
+// ponytail: kept here since auth.ts (duplicate) was deleted during Clerk migration
+export async function getUser() {
+  const client = await createClient()
+  const {
+    data: { user },
+  } = await client.auth.getUser()
+  return user
+}
+
+// ponytail: kept here since auth.ts (duplicate) was deleted during Clerk migration
+export async function getUserRole() {
+  const user = await getUser()
+  if (!user) return null
+
+  const client = await createClient()
+  const { data, error } = await client
+    .from('user_management')
+    .select('role')
+    .eq('auth_user_id', user.id)
+    .single()
+
+  if (error) {
+    logger.error('Error fetching user role:', error)
+    return null
+  }
+
+  return data?.role
 }

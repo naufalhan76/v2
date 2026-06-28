@@ -142,7 +142,7 @@ export function AccountFlowTab() {
             1. Buka <code>https://v2.nufnh.my.id/login</code>
           </p>
           <p>
-            2. Input email + password → <code>supabase.auth.signInWithPassword</code>
+            2. Input email + password di halaman <code>/sign-in</code> (Clerk)
           </p>
           <p>
             3. JWT disimpan di <strong>HTTP-only cookie</strong> (aman dari

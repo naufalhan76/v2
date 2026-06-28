@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useSortableTable } from '@/hooks/use-sortable-table'
 import { getUsers, type User as UserType } from '@/lib/actions/users'
 import { toggleUserStatus, deleteUser, resendInvite, inviteUser, updateUser, createUser, cancelInvite, deleteInvite } from '@/lib/actions/users/users-mutations'
-import type { UserRole } from '@/lib/auth-roles'
+import type { UserRole } from '@/lib/rbac'
 
 export interface UserFormData {
   full_name: string

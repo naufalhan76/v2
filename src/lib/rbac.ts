@@ -1,8 +1,90 @@
 import type { User } from '@supabase/supabase-js'
-import { createClient } from './supabase-server'
-import { getUserRole } from './auth'
+import { createClient, getUserRole } from './supabase-server'
 
 export type UserRole = 'SUPERADMIN' | 'ADMIN' | 'TECHNICIAN' | 'FINANCE'
+
+// ponytail: types below absorbed from deleted auth-roles.ts during Clerk migration
+export type AuthRoute = '/' | '/login' | '/dashboard' | '/technician' | '/dashboard/manajemen/user'
+
+export type RouteAccess = {
+  allowUnauthenticated: boolean
+  allowedRoles: readonly UserRole[]
+  unauthenticatedRedirect?: AuthRoute
+  authenticatedRedirects?: Partial<Record<UserRole, AuthRoute>>
+}
+
+export type UserProfile = {
+  auth_user_id: string
+  email: string | null
+  full_name?: string | null
+  role: UserRole
+  is_active: boolean
+}
+
+export const ALL_ROLES = ['SUPERADMIN', 'ADMIN', 'FINANCE', 'TECHNICIAN'] as const satisfies readonly UserRole[]
+export const ADMIN_ROLES = ['SUPERADMIN', 'ADMIN'] as const satisfies readonly UserRole[]
+export const FINANCE_ROLES = ['SUPERADMIN', 'ADMIN', 'FINANCE'] as const satisfies readonly UserRole[]
+
+export const ROUTE_ROLE_MATRIX = {
+  '/': {
+    allowUnauthenticated: false,
+    allowedRoles: ALL_ROLES,
+    unauthenticatedRedirect: '/login',
+    authenticatedRedirects: {
+      SUPERADMIN: '/dashboard',
+      ADMIN: '/dashboard',
+      FINANCE: '/dashboard',
+      TECHNICIAN: '/technician',
+    },
+  },
+  '/login': {
+    allowUnauthenticated: true,
+    allowedRoles: [],
+    authenticatedRedirects: {
+      SUPERADMIN: '/dashboard',
+      ADMIN: '/dashboard',
+      FINANCE: '/dashboard',
+      TECHNICIAN: '/technician',
+    },
+  },
+  '/dashboard': {
+    allowUnauthenticated: false,
+    allowedRoles: FINANCE_ROLES,
+    unauthenticatedRedirect: '/login',
+    authenticatedRedirects: {
+      TECHNICIAN: '/technician',
+    },
+  },
+  '/technician': {
+    allowUnauthenticated: false,
+    allowedRoles: ['TECHNICIAN'] as const satisfies readonly UserRole[],
+    unauthenticatedRedirect: '/login',
+    authenticatedRedirects: {
+      SUPERADMIN: '/dashboard',
+      ADMIN: '/dashboard',
+      FINANCE: '/dashboard',
+    },
+  },
+  '/dashboard/manajemen/user': {
+    allowUnauthenticated: false,
+    allowedRoles: ['SUPERADMIN'] as const satisfies readonly UserRole[],
+    unauthenticatedRedirect: '/login',
+    authenticatedRedirects: {
+      ADMIN: '/dashboard',
+      FINANCE: '/dashboard',
+      TECHNICIAN: '/technician',
+    },
+  },
+} as const satisfies Record<AuthRoute, RouteAccess>
+
+export function isUserRole(role: unknown): role is UserRole {
+  return typeof role === 'string' && (ALL_ROLES as readonly string[]).includes(role)
+}
+
+export function isRoleAllowed(role: UserRole | null | undefined, route: AuthRoute): boolean {
+  if (!role || !isUserRole(role)) return false
+  return (ROUTE_ROLE_MATRIX[route]?.allowedRoles as readonly UserRole[] | undefined)?.includes(role) ?? false
+}
 
 type AccessUser = {
   role?: UserRole | null

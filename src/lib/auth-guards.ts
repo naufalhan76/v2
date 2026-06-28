@@ -1,13 +1,9 @@
 import 'server-only'
 
-/**
- * Server-only module for verifying user roles and profiles.
- * This MUST NOT be imported into client components to prevent leaking 
- * service-role privileges or breaking the edge/server boundary.
- */
-
+import { auth } from '@clerk/nextjs/server'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase-server'
-import type { UserProfile, UserRole } from '@/lib/auth-roles'
+import type { UserProfile, UserRole } from '@/lib/rbac'
 
 export class AuthError extends Error {
   constructor(message: string) {
@@ -16,33 +12,26 @@ export class AuthError extends Error {
   }
 }
 
-/**
- * Gets the current user profile safely using RLS or explicit matching.
- * Returns null if user is not logged in or inactive.
- */
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
+  const { userId } = await auth()
+  if (!userId) return null
+
   const client = await createClient()
-  const {
-    data: { user },
-  } = await client.auth.getUser()
-
-  if (!user) return null
-
   const { data, error } = await client
     .from('user_management')
     .select('auth_user_id,email,full_name,role,is_active')
-    .eq('auth_user_id', user.id)
+    .eq('auth_user_id', userId)
     .maybeSingle()
 
-  if (error || !data || data.is_active !== true) return null
+  if (error || !data) return null
+
+  if (data.is_active !== true) {
+    redirect('/sign-out')
+  }
 
   return data as UserProfile
 }
 
-/**
- * Enforces that an active user profile exists.
- * Throws AuthError if unauthorized, otherwise returns the profile.
- */
 export async function requireUserProfile(): Promise<UserProfile> {
   const profile = await getCurrentUserProfile()
 
@@ -53,10 +42,6 @@ export async function requireUserProfile(): Promise<UserProfile> {
   return profile
 }
 
-/**
- * Enforces that the user has an exact role match.
- * Use requireAnyRole for hierarchy checks instead.
- */
 export async function requireRole(role: UserRole): Promise<UserProfile> {
   const profile = await requireUserProfile()
 
@@ -67,9 +52,6 @@ export async function requireRole(role: UserRole): Promise<UserProfile> {
   return profile
 }
 
-/**
- * Enforces that the user has at least one of the specified roles.
- */
 export async function requireAnyRole(roles: readonly UserRole[]): Promise<UserProfile> {
   const profile = await requireUserProfile()
 
@@ -80,12 +62,10 @@ export async function requireAnyRole(roles: readonly UserRole[]): Promise<UserPr
   return profile
 }
 
-/** Helper: Require SUPERADMIN access */
 export function requireSuperAdmin(): Promise<UserProfile> {
   return requireAnyRole(['SUPERADMIN'])
 }
 
-/** Helper: Require any finance-capable role (SUPERADMIN, ADMIN, FINANCE) */
 export function requireFinanceAccess(): Promise<UserProfile> {
   return requireAnyRole(['SUPERADMIN', 'ADMIN', 'FINANCE'])
 }

@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SearchableSelect } from '@/components/ui/searchable-select'
-import type { UserRole } from '@/lib/auth-roles'
+import type { UserRole } from '@/lib/rbac'
 import type { User } from '@/lib/actions/users'
 
 export interface UserFormData {

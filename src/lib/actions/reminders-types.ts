@@ -19,7 +19,6 @@ export type {
   ReminderTemplateContext,
 } from '@/types/reminders'
 
-export { getUser, getUserRole } from '@/lib/auth'
 
 // =============================================================================
 // Auth helpers (runtime exports — not types)
@@ -31,7 +30,7 @@ export const READ_ROLES = ['SUPERADMIN', 'ADMIN', 'FINANCE'] as const
 export async function requireRoles(
   allowed: readonly string[]
 ): Promise<{ ok: true; userId: string } | { ok: false; error: string }> {
-  const { getUser, getUserRole } = await import('@/lib/auth')
+  const { getUser, getUserRole } = await import('@/lib/supabase-server')
   const user = await getUser()
   if (!user) return { ok: false, error: 'Not authenticated' }
 

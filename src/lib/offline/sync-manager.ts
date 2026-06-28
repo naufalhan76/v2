@@ -27,7 +27,6 @@ import {
   getDb,
   type PendingReportStatus,
 } from './db'
-import { refreshSession } from '@/lib/offline/auth-refresh'
 import { offlineLogger } from './logger'
 import { drainTransitions } from './sync-transitions'
 import { drainReports } from './sync-reports'
@@ -65,13 +64,14 @@ export async function drainQueue(options: DrainQueueOptions = {}): Promise<Local
     // ------------------------------------------------------------------
     // 1. Auth check
     // ------------------------------------------------------------------
-    const auth = await refreshSession()
-    offlineLogger.info('drain auth', { ok: auth.ok, reason: auth.ok ? null : auth.reason })
-    if (!auth.ok) {
+    const clerkToken = await (window as unknown as Record<string, { session?: { getToken(): Promise<string | null> } }>).Clerk?.session?.getToken() ?? null
+    const authOk = !!clerkToken
+    offlineLogger.info('drain auth', { ok: authOk, reason: authOk ? null : 'no-session' })
+    if (!authOk) {
       result.errors.push({
         kind: 'transition',
         key: 'AUTH',
-        message: `AUTH_REQUIRED: ${auth.message}`,
+        message: 'AUTH_REQUIRED: No active Clerk session',
       })
       return result
     }
