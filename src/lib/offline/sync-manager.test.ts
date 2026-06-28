@@ -72,18 +72,12 @@ vi.mock('@/lib/offline/logger', () => ({
   offlineLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
-vi.mock('@/lib/supabase-browser', () => ({
-  createClient: () => ({
-    storage: {
-      from: (bucket: string) => {
-        storageState.bucketCalls.push(bucket)
-        return {
-          upload: storageState.upload,
-          getPublicUrl: (path: string) => ({ data: { publicUrl: `https://storage.test/${bucket}/${path}` } }),
-        }
-      },
-    },
+vi.mock('@clerk/nextjs', () => ({
+  useUser: () => ({
+    user: { id: 'test-user-id', primaryEmailAddress: { emailAddress: 'test@test.com' }, fullName: 'Test User' },
+    isLoaded: true,
   }),
+  useAuth: () => ({ signOut: vi.fn(), userId: 'test-user-id' }),
 }))
 
 import { drainQueue, enqueuePhoto, enqueueReport, type DrainResult } from './sync-manager'

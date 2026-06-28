@@ -1,54 +1,41 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient as supabaseCreateClient } from '@supabase/supabase-js'
+import { auth } from '@clerk/nextjs/server'
 import { logger } from '@/lib/logger'
 
+// ponytail: admin client with service role key — RLS removed, all access via server code
 export async function createClient() {
-  const cookieStore = await cookies()
-
-  return createServerClient(
+  return supabaseCreateClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
-      },
-    }
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } },
   )
 }
 
-// ponytail: kept here since auth.ts (duplicate) was deleted during Clerk migration
 export async function getUser() {
+  const { userId } = await auth()
+  if (!userId) return null
+
   const client = await createClient()
-  const {
-    data: { user },
-  } = await client.auth.getUser()
-  return user
+  const { data, error } = await client
+    .from('user_management')
+    .select('auth_user_id,email,full_name,role,is_active')
+    .eq('auth_user_id', userId)
+    .maybeSingle()
+
+  if (error || !data) return null
+  return { id: userId, email: data.email }
 }
 
-// ponytail: kept here since auth.ts (duplicate) was deleted during Clerk migration
 export async function getUserRole() {
-  const user = await getUser()
-  if (!user) return null
+  const { userId } = await auth()
+  if (!userId) return null
 
   const client = await createClient()
   const { data, error } = await client
     .from('user_management')
     .select('role')
-    .eq('auth_user_id', user.id)
-    .single()
+    .eq('auth_user_id', userId)
+    .maybeSingle()
 
   if (error) {
     logger.error('Error fetching user role:', error)
