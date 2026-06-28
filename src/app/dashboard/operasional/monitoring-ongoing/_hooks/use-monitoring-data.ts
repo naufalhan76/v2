@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { getOrders, getOrderById, addHelperTechnician, removeHelperTechnician, updateOrderStatus } from '@/lib/actions/orders'
+import { rescheduleOrder } from '@/lib/actions/orders-mutations-schedule'
 import { getTechnicians } from '@/lib/actions/technicians'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
@@ -12,12 +13,6 @@ interface UseMonitoringDataParams {
   dateTo: Date
   detailOrderId: string | null
   onDetailClose: () => void
-}
-
-const refreshNotifications = () => {
-  if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).refreshNotifications) {
-    setTimeout(() => ((window as unknown as Record<string, unknown>).refreshNotifications as () => void)(), 500)
-  }
 }
 
 export function useMonitoringData({ dateFrom, dateTo, detailOrderId, onDetailClose }: UseMonitoringDataParams) {
@@ -141,7 +136,7 @@ export function useMonitoringData({ dateFrom, dateTo, detailOrderId, onDetailClo
         onDetailClose()
         hasHandledRedirect.current = false
         queryClient.invalidateQueries({ queryKey: ['orders'] })
-        refreshNotifications()
+        queryClient.invalidateQueries({ queryKey: ['notifications'] })
       } else toast({ title: 'Error', description: result.error || 'Failed to cancel order', variant: 'destructive' })
     } catch (error) {
       toast({ title: 'Error', description: error instanceof Error ? error.message : 'An error occurred', variant: 'destructive' })
@@ -152,23 +147,24 @@ export function useMonitoringData({ dateFrom, dateTo, detailOrderId, onDetailClo
     if (!detailOrderId || !rescheduleDate) return
     setIsProcessing(true)
     try {
-      const supabase = await import('@/lib/supabase-browser').then(m => m.createClient())
       const formattedDate = format(rescheduleDate, 'yyyy-MM-dd')
-      const { error: deleteTechError } = await supabase.from('order_technicians').delete().eq('order_id', detailOrderId)
-      if (deleteTechError) logger.error('Error deleting technicians:', deleteTechError)
-      const { error } = await supabase.from('orders').update({
-        scheduled_visit_date: formattedDate, req_visit_date: formattedDate,
-        assigned_technician_id: null, status: 'PENDING', updated_at: new Date().toISOString()
-      }).eq('order_id', detailOrderId)
-      if (error) throw error
-      toast({ title: 'Success', description: `Order rescheduled to ${format(rescheduleDate, 'dd MMM yyyy')}. Technician assignments have been reset.` })
-      setRescheduleModalOpen(false)
-      onDetailClose()
-      setRescheduleDate(null)
-      hasHandledRedirect.current = false
-      queryClient.invalidateQueries({ queryKey: ['orders'] })
-      queryClient.invalidateQueries({ queryKey: ['order', detailOrderId] })
-      refreshNotifications()
+      const result = await rescheduleOrder({
+        orderId: detailOrderId,
+        reason: 'Rescheduled from monitoring ongoing',
+        newScheduledDate: formattedDate,
+      })
+      if (result.success) {
+        toast({ title: 'Success', description: `Order rescheduled to ${format(rescheduleDate, 'dd MMM yyyy')}. Technician assignments have been reset.` })
+        setRescheduleModalOpen(false)
+        onDetailClose()
+        setRescheduleDate(null)
+        hasHandledRedirect.current = false
+        queryClient.invalidateQueries({ queryKey: ['orders'] })
+        queryClient.invalidateQueries({ queryKey: ['order', detailOrderId] })
+        queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      } else {
+        throw new Error(result.error)
+      }
     } catch (error) {
       toast({ title: 'Error', description: error instanceof Error ? error.message : 'An error occurred', variant: 'destructive' })
     } finally { setIsProcessing(false) }

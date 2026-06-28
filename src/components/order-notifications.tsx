@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -15,10 +15,16 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
+import { useUser } from '@clerk/nextjs'
+import { useQuery } from '@tanstack/react-query'
 import { logger } from '@/lib/logger'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import {
+  getCancelledNotifications,
+  getOrdersUpdatedRecently,
+  type CancelledNotificationRow,
+  type OrdersWithDateChangesRow,
+} from '@/lib/actions/notifications'
 
-// Max entries kept in localStorage to prevent unbounded growth
 const MAX_READ_NOTIFICATIONS = 100
 
 interface OrderNotification {
@@ -42,190 +48,140 @@ interface RescheduledNotification {
 
 export function OrderNotifications() {
   const router = useRouter()
+  const { user } = useUser()
+  const userId = user?.id ?? null
+
   const [notifications, setNotifications] = useState<OrderNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
-  const [userId, setUserId] = useState<string | null>(null)
   const [rescheduledNotifications, setRescheduledNotifications] = useState<RescheduledNotification[]>([])
-  const supabaseRef = useRef<Awaited<ReturnType<typeof import('@/lib/supabase-browser').createClient>> | null>(null)
+
+  const sevenDaysAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const oneDayAgoIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+  const { data: cancelledOrders } = useQuery<CancelledNotificationRow[]>({
+    queryKey: ['notifications', 'cancelled'],
+    queryFn: () => getCancelledNotifications(sevenDaysAgoIso),
+    enabled: !!userId,
+    refetchInterval: 10_000,
+    staleTime: 5_000,
+  })
+
+  const { data: recentOrders } = useQuery<OrdersWithDateChangesRow[]>({
+    queryKey: ['notifications', 'reschedules'],
+    queryFn: () => getOrdersUpdatedRecently(oneDayAgoIso),
+    enabled: !!userId,
+    refetchInterval: 5000,
+    staleTime: 2000,
+  })
+
+  const prevDatesRef = useRef<Map<string, string>>(new Map())
 
   useEffect(() => {
-    const init = async () => {
-      const { createClient } = await import('@/lib/supabase-browser')
-      supabaseRef.current = createClient()
-      try {
-        const { data: { user } } = await supabaseRef.current.auth.getUser()
-        if (user) {
-          setUserId(user.id)
-        }
-      } catch (error) {
-        logger.error('Error getting user ID:', error)
+    if (!userId || !recentOrders) return
+
+    const now = new Date().toISOString()
+    const prev = prevDatesRef.current
+    const newRescheduleNotifications: RescheduledNotification[] = []
+
+    for (const order of recentOrders) {
+      const key = order.order_id
+      const prevDate = prev.get(key)
+      const newDate = order.scheduled_visit_date
+
+      if (prevDate && newDate && prevDate !== newDate) {
+        newRescheduleNotifications.push({
+          id: `reschedule-${key}-${Date.now()}`,
+          orderId: key,
+          customerName: order.customer_name ?? 'Unknown',
+          oldDate: prevDate,
+          newDate,
+          timestamp: now,
+          read: false,
+        })
       }
+
+      if (newDate) prev.set(key, newDate)
     }
-    init()
-  }, [])
 
-  const fetchNotifications = useCallback(async () => {
-    if (!userId) return
-    const supabase = supabaseRef.current
-    if (!supabase) return
-
-    try {
-      // Get notifications from last 7 days untuk catch more notifications
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      
-      // Fetch orders that were cancelled or rescheduled
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select(`
-          order_id,
-          status,
-          updated_at,
-          scheduled_visit_date,
-          customers (
-            customer_name
-          )
-        `)
-        .in('status', ['CANCELLED'])
-        .gte('updated_at', sevenDaysAgo.toISOString())
-        .is('deleted_at', null)
-        .order('updated_at', { ascending: false })
-        .limit(100)
-
-      if (error) throw error
-
-      // Get read notifications from localStorage with user-specific key
-      const storageKey = `readNotifications_${userId}`
-      const readNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]')
-
-      const formattedNotifications: OrderNotification[] = (orders || []).map((rawOrder: unknown) => {
-        const order = rawOrder as {
-          order_id: string
-          status: 'CANCELLED'
-          updated_at: string
-          scheduled_visit_date?: string
-          customers?: { customer_name?: string } | null
-        }
-        return {
-          order_id: order.order_id,
-          customer_name: order.customers?.customer_name || 'Unknown Customer',
-          status: order.status,
-          updated_at: order.updated_at,
-          scheduled_visit_date: order.scheduled_visit_date,
-          read: readNotifications.includes(order.order_id)
-        }
+    if (newRescheduleNotifications.length > 0) {
+      setRescheduledNotifications((existing) => {
+        const merged = [...newRescheduleNotifications, ...existing].slice(0, 20)
+        return merged.filter((n) => {
+          const age = Date.now() - new Date(n.timestamp).getTime()
+          return age < 24 * 60 * 60 * 1000
+        })
       })
-
-      setNotifications(formattedNotifications)
-      setUnreadCount(formattedNotifications.filter(n => !n.read).length)
-    } catch (error) {
-      logger.error('Error fetching notifications:', error)
     }
+  }, [recentOrders, userId])
+
+  useEffect(() => {
+    if (!userId || !cancelledOrders) return
+
+    const storageKey = `readNotifications_${userId}`
+    const readNotifications: string[] = JSON.parse(localStorage.getItem(storageKey) || '[]')
+
+    const formatted: OrderNotification[] = cancelledOrders.map((raw) => ({
+      order_id: raw.order_id,
+      customer_name: raw.customer_name,
+      status: 'CANCELLED',
+      updated_at: raw.updated_at,
+      scheduled_visit_date: raw.scheduled_visit_date ?? undefined,
+      read: readNotifications.includes(raw.order_id),
+    }))
+
+    setNotifications(formatted)
+    setUnreadCount(formatted.filter((n) => !n.read).length)
+  }, [cancelledOrders, userId])
+
+  useEffect(() => {
+    const handler = () => {
+      if (!userId) return
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+      setUnreadCount(0)
+    }
+    window.addEventListener('markAllRead', handler)
+    return () => window.removeEventListener('markAllRead', handler)
   }, [userId])
 
-  useEffect(() => {
-    fetchNotifications()
-
-    // Poll for new notifications every 10 seconds (lebih cepat)
-    const interval = setInterval(fetchNotifications, 10000)
-
-    return () => clearInterval(interval)
-  }, [fetchNotifications])
-
-  // Expose refresh function via window untuk dipanggil dari komponen lain
-  useEffect(() => {
-    (window as unknown as { refreshNotifications: typeof fetchNotifications }).refreshNotifications = fetchNotifications
-    return () => {
-      delete (window as unknown as { refreshNotifications?: typeof fetchNotifications }).refreshNotifications
-    }
-  }, [fetchNotifications])
-
   const handleNotificationClick = (orderId: string) => {
-    // Mark as read
     markAsRead(orderId)
-    
-    // Close popover
     setOpen(false)
-    
-    // Navigate to orders page with order detail highlighted
     router.push(`/dashboard/orders?view=board&orderId=${orderId}`)
   }
 
   const markAsRead = (orderId: string) => {
     if (!userId) return
-    
-    setNotifications(prev => 
-      prev.map(n => n.order_id === orderId ? { ...n, read: true } : n)
+
+    setNotifications((prev) =>
+      prev.map((n) => (n.order_id === orderId ? { ...n, read: true } : n))
     )
-    
+
     const storageKey = `readNotifications_${userId}`
     const readNotifications: string[] = JSON.parse(localStorage.getItem(storageKey) || '[]')
     if (!readNotifications.includes(orderId)) {
       const pruned = [...readNotifications, orderId].slice(-MAX_READ_NOTIFICATIONS)
       localStorage.setItem(storageKey, JSON.stringify(pruned))
     }
-    
-    setUnreadCount(prev => Math.max(0, prev - 1))
+
+    setUnreadCount((prev) => Math.max(0, prev - 1))
   }
 
   const markAllAsRead = () => {
     if (!userId) return
-    
-    const allOrderIds = notifications.map(n => n.order_id).slice(-MAX_READ_NOTIFICATIONS)
+
+    const allOrderIds = notifications.map((n) => n.order_id).slice(-MAX_READ_NOTIFICATIONS)
     const storageKey = `readNotifications_${userId}`
     localStorage.setItem(storageKey, JSON.stringify(allOrderIds))
-    
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-    setRescheduledNotifications(prev => prev.map(n => ({ ...n, read: true })))
+
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    setRescheduledNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
     setUnreadCount(0)
   }
 
-  useEffect(() => {
-    const supabase = supabaseRef.current
-    if (!supabase) return
-
-    const channel = supabase
-      .channel('order-reschedules')
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'orders',
-      }, (payload: { old: Record<string, unknown>; new: Record<string, unknown> }) => {
-        if (!userId) return
-        
-        const oldDate = payload.old.scheduled_visit_date as string | undefined
-        const newDate = payload.new.scheduled_visit_date as string | undefined
-        if (oldDate && newDate && oldDate !== newDate) {
-          setRescheduledNotifications(prev => {
-            const notification: RescheduledNotification = {
-              id: `reschedule-${payload.new.order_id}-${Date.now()}`,
-              orderId: payload.new.order_id as string,
-              customerName: (payload.new.customer_name as string) || 'Unknown',
-              oldDate,
-              newDate,
-              timestamp: new Date().toISOString(),
-              read: false,
-            }
-            const updated = [notification, ...prev].slice(0, 20) // FIFO, max 20
-            return updated.filter(n => {
-              const age = Date.now() - new Date(n.timestamp).getTime()
-              return age < 24 * 60 * 60 * 1000 // 24 hours
-            })
-          })
-        }
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Create channel once on mount, don't recreate on userId change
-
-  const cancelledNotifications = notifications.filter(n => n.status === 'CANCELLED')
-
-  const unreadRescheduled = rescheduledNotifications.filter(n => !n.read).length
-  const unreadCancelled = cancelledNotifications.filter(n => !n.read).length
+  const cancelledNotifications = notifications.filter((n) => n.status === 'CANCELLED')
+  const unreadRescheduled = rescheduledNotifications.filter((n) => !n.read).length
+  const unreadCancelled = cancelledNotifications.filter((n) => !n.read).length
   const totalUnreadCount = unreadCancelled + unreadRescheduled
 
   const NotificationItem = ({ notification }: { notification: OrderNotification }) => (
@@ -247,7 +203,6 @@ export function OrderNotifications() {
           <p className="font-mono text-xs text-muted-foreground mb-1">
             {notification.order_id}
           </p>
-
         </div>
         <div className="text-right flex-shrink-0">
           <Badge
@@ -291,7 +246,7 @@ export function OrderNotifications() {
           )}
         </div>
 
-          <Tabs defaultValue="rescheduled" className="w-full">
+        <Tabs defaultValue="rescheduled" className="w-full">
           <TabsList className="w-full grid grid-cols-2 rounded-none border-b">
             <TabsTrigger value="rescheduled" className="flex items-center justify-center gap-1.5">
               Dijadwal Ulang
@@ -319,12 +274,12 @@ export function OrderNotifications() {
                     Tidak ada order yang dijadwal ulang
                   </div>
                 ) : (
-                  rescheduledNotifications.map(notification => (
+                  rescheduledNotifications.map((notification) => (
                     <div
                       key={notification.id}
                       onClick={() => {
-                        setRescheduledNotifications(prev =>
-                          prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+                        setRescheduledNotifications((prev) =>
+                          prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
                         )
                         setOpen(false)
                         router.push(`/dashboard/orders?view=board&orderId=${notification.orderId}`)
@@ -375,7 +330,7 @@ export function OrderNotifications() {
                     Tidak ada order yang dibatalkan
                   </div>
                 ) : (
-                  cancelledNotifications.map(notification => (
+                  cancelledNotifications.map((notification) => (
                     <NotificationItem key={notification.order_id} notification={notification} />
                   ))
                 )}

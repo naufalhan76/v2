@@ -1,5 +1,6 @@
 'use server'
 
+import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
@@ -31,8 +32,8 @@ function getBlankInvoiceErrorMessage(error: unknown): string {
 
 export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  await requireFinanceRole(user)
+  const { userId } = await auth()
+  await requireFinanceRole(userId)
 
   const invoiceNumber = await generateInvoiceNumber()
   const baseServiceTotal = roundToTwo(input.base_service_price)
@@ -57,7 +58,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     input.due_date || new Date(invoiceDate.setDate(invoiceDate.getDate() + (config?.default_due_days || 30)))
   )
 
-  await assertCustomerIsVisibleOrThrow(supabase, user!.id, input.customer_id)
+  await assertCustomerIsVisibleOrThrow(supabase, userId!, input.customer_id)
 
   const { data: order, error: orderError } = await supabase
     .from('orders').select('order_id, customer_id, status').eq('order_id', input.order_id).maybeSingle()
@@ -81,7 +82,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     payment_bank_name: input.payment_bank_name || null,
     payment_account_number: input.payment_account_number || null,
     payment_account_name: input.payment_account_name || null,
-    created_by: user!.id,
+    created_by: userId!,
   }).select().single()
 
   if (invoiceError) {
@@ -129,8 +130,8 @@ export async function createBlankInvoice(input: CreateBlankInvoiceInput): Promis
 
 async function createBlankInvoiceOrThrow(input: CreateBlankInvoiceInput): Promise<Invoice> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  await requireFinanceRole(user)
+  const { userId } = await auth()
+  await requireFinanceRole(userId)
 
   const parsedInput = CreateBlankInvoiceSchema.parse(input)
   const linkedCustomerId = parsedInput.customer_id?.trim() || null
@@ -178,7 +179,7 @@ async function createBlankInvoiceOrThrow(input: CreateBlankInvoiceInput): Promis
     payment_bank_name: parsedInput.payment_bank_name || null,
     payment_account_number: parsedInput.payment_account_number || null,
     payment_account_name: parsedInput.payment_account_name || null,
-    created_by: user!.id,
+    created_by: userId!,
   }
 
   const { data: invoice, error: invoiceError } = await supabase.from('invoices').insert(insertPayload).select().single()

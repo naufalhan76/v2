@@ -1,3 +1,4 @@
+import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase-server'
 import { logger } from '@/lib/logger'
 
@@ -10,10 +11,10 @@ export async function auditLog(
 ): Promise<void> {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { userId } = await auth()
     
     await supabase.from('audit_logs').insert({
-      user_id: user?.id || null,
+      user_id: userId || null,
       action,
       table_name: tableName,
       record_id: recordId || null,

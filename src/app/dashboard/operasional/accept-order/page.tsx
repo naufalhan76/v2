@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getOrders, getOrderById, cancelOrder } from '@/lib/actions/orders'
+import { acceptOrder } from '@/lib/actions/orders-mutations-status'
 import { useToast } from '@/hooks/use-toast'
 import { useSortableTable } from '@/hooks/use-sortable-table'
-import { createClient } from '@/lib/supabase-browser'
 import { logger } from '@/lib/logger'
 import { PendingOrdersTable } from './_components/pending-orders-table'
 import { OrderDialogs } from './_components/order-dialogs'
@@ -51,17 +51,12 @@ export default function AcceptOrderPage() {
   const handleOrderAction = async (orderId: string, type: 'accept' | 'cancel') => {
     setIsProcessing(true)
     try {
-      const newStatus = type === 'accept' ? 'ACCEPTED' : 'CANCELLED'
       if (type === 'cancel') {
         const result = await cancelOrder(orderId, 'Order cancelled by admin')
         if (!result.success) throw new Error(result.error)
       } else {
-        const supabase = createClient()
-        const { error } = await supabase
-          .from('orders')
-          .update({ status: newStatus, updated_at: new Date().toISOString() })
-          .eq('order_id', orderId)
-        if (error) throw error
+        const result = await acceptOrder(orderId)
+        if (!result.success) throw new Error(result.error)
       }
       toast({
         title: 'Success',

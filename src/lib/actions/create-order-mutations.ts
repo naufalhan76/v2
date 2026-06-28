@@ -1,5 +1,6 @@
 'use server'
 
+import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { normalizeOrderServiceType, type OrderServiceType } from '@/lib/service-types'
@@ -85,8 +86,8 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
     const supabase = await createClient()
     
     // Get current user for created_by
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    const { userId } = await auth()
+    if (!userId) throw new Error('Unauthorized')
     
     // Determine order status based on technician assignment
     const orderStatus = input.assigned_technician_id ? 'ASSIGNED' : 'PENDING'
@@ -120,7 +121,7 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
         status: orderStatus, // ASSIGNED if technician assigned, ACCEPTED otherwise
         assigned_technician_id: input.assigned_technician_id,
         notes: input.notes,
-        created_by: user.id
+        created_by: userId
       })
       .select('order_id')
       .single()

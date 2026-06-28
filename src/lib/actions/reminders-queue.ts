@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
 import { auditLog } from '@/lib/audit'
+import { sendWhatsApp } from '@/lib/whatsapp'
+import { sendReminderEmail } from '@/lib/email-reminder'
 import { formatReminderMessage, type CustomerReminder, type ReminderRule, type ReminderChannel, type ReminderTemplateContext } from '@/lib/reminder-utils'
 import { READ_ROLES, WRITE_ROLES, requireRoles, toErrorMessage } from './reminders-types'
 import type {
@@ -27,6 +29,18 @@ function pickRecipient(channel: ReminderChannel, customer: { customer_name: stri
   if (!customer) return null; return channel === 'WHATSAPP' ? (customer.phone_number || null) : (customer.email || null)
 }
 
+async function dispatchReminder(channel: string, recipient: string, message: string): Promise<{ ok: true; externalId: string | null } | { ok: false; error: string }> {
+  if (channel === 'WHATSAPP') {
+    const r = await sendWhatsApp(recipient, message)
+    return r.ok ? { ok: true, externalId: r.messageId } : { ok: false, error: r.error }
+  }
+  if (channel === 'EMAIL') {
+    const r = await sendReminderEmail(recipient, 'Reminder Servis AC', message)
+    return r.ok ? { ok: true, externalId: r.messageId } : { ok: false, error: r.error }
+  }
+  return { ok: false, error: `Channel tidak dikenal: ${channel}` }
+}
+
 // =============================================================================
 // Customer reminders (queue management)
 // =============================================================================
@@ -47,15 +61,26 @@ export async function getCustomerReminders(filters?: CustomerReminderFilters): P
   } catch (err) { logger.error('getCustomerReminders failed:', err); return { success: false, error: toErrorMessage(err, 'Failed to fetch customer reminders') } }
 }
 
-export async function markReminderSent(reminderId: string, externalId?: string): Promise<ActionResult<CustomerReminder>> {
+export async function markReminderSent(reminderId: string): Promise<ActionResult<CustomerReminder>> {
   try {
     const auth = await requireRoles(WRITE_ROLES); if (!auth.ok) return { success: false, error: auth.error }
     const supabase = await createClient()
-    const { data, error } = await supabase.from('customer_reminders').update({ status: 'SENT', sent_at: new Date().toISOString(), sent_by: auth.userId, external_id: externalId ?? null, error_message: null, updated_at: new Date().toISOString() }).eq('reminder_id', reminderId).eq('status', 'PENDING').select('*').single()
+    const { data: row, error: fetchErr } = await supabase.from('customer_reminders').select('reminder_id, channel, recipient, message, status').eq('reminder_id', reminderId).single()
+    if (fetchErr) throw fetchErr
+    const r = row as { reminder_id: string; channel: string; recipient: string; message: string; status: string }
+    if (r.status !== 'PENDING') return { success: false, error: 'Reminder tidak dalam status PENDING' }
+    const result = await dispatchReminder(r.channel, r.recipient, r.message)
+    if (!result.ok) {
+      await supabase.from('customer_reminders').update({ status: 'FAILED', error_message: result.error.slice(0, 1000), updated_at: new Date().toISOString() }).eq('reminder_id', reminderId)
+      await auditLog('reminder.send_failed', 'customer_reminders', reminderId, { status: 'PENDING' }, { status: 'FAILED', error_message: result.error.slice(0, 1000) })
+      revalidatePath('/dashboard/reminders')
+      return { success: false, error: `Gagal mengirim via ${r.channel === 'WHATSAPP' ? 'WhatsApp' : 'Email'}: ${result.error}` }
+    }
+    const { data, error } = await supabase.from('customer_reminders').update({ status: 'SENT', sent_at: new Date().toISOString(), sent_by: auth.userId, external_id: result.externalId, error_message: null, updated_at: new Date().toISOString() }).eq('reminder_id', reminderId).eq('status', 'PENDING').select('*').single()
     if (error) throw error
-    await auditLog('reminder.sent', 'customer_reminders', reminderId, { status: 'PENDING' }, { status: 'SENT', sent_by: auth.userId })
+    await auditLog('reminder.sent', 'customer_reminders', reminderId, { status: 'PENDING' }, { status: 'SENT', sent_by: auth.userId, external_id: result.externalId })
     revalidatePath('/dashboard/reminders'); return { success: true, data: data as CustomerReminder }
-  } catch (err) { logger.error('markReminderSent failed:', err); return { success: false, error: toErrorMessage(err, 'Failed to mark reminder as sent') } }
+  } catch (err) { logger.error('markReminderSent failed:', err); return { success: false, error: toErrorMessage(err, 'Failed to send reminder') } }
 }
 
 export async function markReminderFailed(reminderId: string, errorText: string): Promise<ActionResult<CustomerReminder>> {
@@ -84,25 +109,29 @@ export async function markReminderDismissed(reminderId: string): Promise<ActionR
 // Bulk
 // =============================================================================
 
-export async function markRemindersSent(reminderIds: string[]): Promise<ActionResult<{ updated: string[]; skipped: string[] }>> {
+export async function markRemindersSent(reminderIds: string[]): Promise<ActionResult<{ updated: string[]; skipped: string[]; failed: string[] }>> {
   try {
     const auth = await requireRoles(WRITE_ROLES); if (!auth.ok) return { success: false, error: auth.error }
     const supabase = await createClient()
-    const { data, error } = await supabase
-      .from('customer_reminders')
-      .update({ status: 'SENT', sent_at: new Date().toISOString(), sent_by: auth.userId, external_id: null, error_message: null, updated_at: new Date().toISOString() })
-      .in('reminder_id', reminderIds)
-      .eq('status', 'PENDING')
-      .select('reminder_id')
-    if (error) throw error
-    const updated = (data ?? []).map((r) => (r as { reminder_id: string }).reminder_id)
-    const skipped = reminderIds.filter((id) => !updated.includes(id))
-    for (const id of updated) {
-      await auditLog('reminder.bulk_sent', 'customer_reminders', id, undefined, { status: 'SENT' })
+    const { data: rows, error: fetchErr } = await supabase.from('customer_reminders').select('reminder_id, channel, recipient, message').in('reminder_id', reminderIds).eq('status', 'PENDING')
+    if (fetchErr) throw fetchErr
+    const sent: string[] = [], failed: string[] = []
+    for (const r of (rows ?? []) as Array<{ reminder_id: string; channel: string; recipient: string; message: string }>) {
+      const result = await dispatchReminder(r.channel, r.recipient, r.message)
+      if (result.ok) {
+        await supabase.from('customer_reminders').update({ status: 'SENT', sent_at: new Date().toISOString(), sent_by: auth.userId, external_id: result.externalId, error_message: null, updated_at: new Date().toISOString() }).eq('reminder_id', r.reminder_id).eq('status', 'PENDING')
+        await auditLog('reminder.bulk_sent', 'customer_reminders', r.reminder_id, undefined, { status: 'SENT', external_id: result.externalId })
+        sent.push(r.reminder_id)
+      } else {
+        await supabase.from('customer_reminders').update({ status: 'FAILED', error_message: result.error.slice(0, 1000), updated_at: new Date().toISOString() }).eq('reminder_id', r.reminder_id)
+        await auditLog('reminder.send_failed', 'customer_reminders', r.reminder_id, undefined, { status: 'FAILED', error_message: result.error.slice(0, 1000) })
+        failed.push(r.reminder_id)
+      }
     }
+    const skipped = reminderIds.filter((id) => !sent.includes(id) && !failed.includes(id))
     revalidatePath('/dashboard/reminders')
-    return { success: true, data: { updated, skipped } }
-  } catch (err) { logger.error('markRemindersSent failed:', err); return { success: false, error: toErrorMessage(err, 'Failed to bulk mark reminders sent') } }
+    return { success: true, data: { updated: sent, skipped, failed } }
+  } catch (err) { logger.error('markRemindersSent failed:', err); return { success: false, error: toErrorMessage(err, 'Failed to send reminders') } }
 }
 
 // =============================================================================

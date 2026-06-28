@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@clerk/nextjs'
 import {
   LayoutDashboard,
   ClipboardList,
@@ -27,6 +28,7 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter()
+  const { signOut } = useAuth()
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -98,9 +100,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           label: 'Logout',
           icon: LogOut,
           action: async () => {
-            const { createClient } = await import('@/lib/supabase-browser')
-            const supabase = createClient()
-            await supabase.auth.signOut()
+            await signOut()
             window.location.href = '/login'
           },
         },

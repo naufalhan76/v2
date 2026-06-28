@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase-browser'
+import { getMyTechnicianId } from '@/lib/actions/technician-profile'
 import { getJobSnapshot } from '@/lib/offline/snapshot'
 import type { LocalJobSnapshot } from '@/lib/offline/snapshot'
 import { snapshotToJobContext } from './wizard-data'
@@ -37,17 +37,8 @@ export async function loadWizardContext({
 }
 
 async function loadTechnicianId(setTechnicianId: (technicianId: string) => void) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-
-  const { data: techData } = await supabase
-    .from('technicians')
-    .select('technician_id')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  setTechnicianId(techData ? techData.technician_id : user.id)
+  const techId = await getMyTechnicianId()
+  if (techId) setTechnicianId(techId)
 }
 
 async function fetchServerContext(

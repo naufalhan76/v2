@@ -10,7 +10,6 @@ import {
   type PhotoKind,
 } from './db'
 import { newIdempotencyKey } from './idempotency'
-import { createClient } from '@/lib/supabase-browser'
 
 export type EnqueuePhotoInput = {
   orderId: string
@@ -51,7 +50,7 @@ export async function enqueuePhoto(
 }
 
 /**
- * Upload a single photo blob to Supabase Storage.
+ * Upload a single photo blob to Supabase Storage via signed upload URL.
  * Idempotent: if record.uploadedPath is already set, returns it immediately.
  * Throws on upload error.
  */
@@ -62,21 +61,28 @@ export async function uploadPhotoBlob(record: PendingPhotoRecord): Promise<strin
   const ext = record.mimeType.split('/')[1] || 'jpg'
   const path = `${record.orderId}/${record.id}.${ext}`
 
-  const supabase = createClient()
-  const { error } = await supabase.storage
-    .from(bucket)
-    .upload(path, record.blob, { contentType: record.mimeType, upsert: true })
+  const signRes = await fetch('/api/photos/signed-upload-url', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bucket, path }),
+  })
+  if (!signRes.ok) {
+    const body = await signRes.json().catch(() => ({}))
+    throw new Error(`Failed to get signed upload URL: ${body.error || signRes.statusText}`)
+  }
+  const { signedUrl } = await signRes.json()
 
-  if (error) throw new Error(`Photo upload failed: ${error.message}`)
-
-  let url: string
-  if (bucket === 'service-photos') {
-    url = path
-  } else {
-    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
-    url = urlData.publicUrl
+  const uploadRes = await fetch(signedUrl, {
+    method: 'PUT',
+    body: record.blob,
+    headers: { 'Content-Type': record.mimeType },
+  })
+  if (!uploadRes.ok) {
+    throw new Error(`Photo upload failed: ${uploadRes.statusText}`)
   }
 
-  await markPhotoUploaded(record.id, url)
-  return url
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`
+  await markPhotoUploaded(record.id, publicUrl)
+  return publicUrl
 }

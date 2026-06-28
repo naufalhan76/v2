@@ -1,5 +1,6 @@
 'use server'
 
+import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase-server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
@@ -148,8 +149,8 @@ export async function updateInvoice(
   updates: InvoiceRevisionHeaderUpdates
 ): Promise<Invoice> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  await requireFinanceRole(user)
+  const { userId } = await auth()
+  await requireFinanceRole(userId)
 
   const { data: currentInvoice, error: fetchError } = await supabase
     .from('invoices')
@@ -160,7 +161,7 @@ export async function updateInvoice(
   if (!canReviseInvoice(currentInvoice.status)) throw new Error('Invoice hanya dapat direvisi saat berstatus DRAFT atau SENT')
 
   const safeUpdates = pickAllowedRevisionUpdates(updates)
-  await assertCustomerIsVisibleOrThrow(supabase, user!.id, (safeUpdates.customer_id as string | null | undefined) ?? null)
+  await assertCustomerIsVisibleOrThrow(supabase, userId!, (safeUpdates.customer_id as string | null | undefined) ?? null)
 
   const shouldRecomputeTotals =
     'discount_amount' in safeUpdates || 'discount_percentage' in safeUpdates || 'tax_percentage' in safeUpdates
@@ -200,8 +201,8 @@ export async function reviseInvoiceItems(
   items: ReviseInvoiceItemInput[]
 ): Promise<Invoice> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  await requireFinanceRole(user)
+  const { userId } = await auth()
+  await requireFinanceRole(userId)
 
   const { data: currentInvoice, error: fetchError } = await supabase
     .from('invoices')
@@ -279,9 +280,8 @@ export async function reviseInvoice(
   headerUpdates: InvoiceRevisionHeaderUpdates,
   items: ReviseInvoiceItemInput[]
 ): Promise<Invoice> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  await requireFinanceRole(user)
+  const { userId } = await auth()
+  await requireFinanceRole(userId)
   await updateInvoice(invoiceId, headerUpdates)
   return reviseInvoiceItems(invoiceId, items)
 }

@@ -5,8 +5,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronRight, Lightbulb, Moon, Sun, User } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { useUser, useAuth } from '@clerk/nextjs'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
+import { getMyUserProfile } from '@/lib/actions/my-profile'
 
 export function DarkModeToggle() {
   const { theme, setTheme } = useTheme()
@@ -20,39 +22,38 @@ export function DarkModeToggle() {
 }
 
 export function ProfileSection() {
-  const [user, setUser] = useState<{ email: string; full_name: string; role: string; avatar_url?: string } | null>(null)
+  const [dbProfile, setDbProfile] = useState<{ full_name: string; role: string; photo_url?: string | null } | null>(null)
   const [isOpen, setIsOpen] = useState(false)
 
+  const { user } = useUser()
+  const { signOut } = useAuth()
+
   useEffect(() => {
-    const fetchUser = async () => {
-      const { createClient } = await import('@/lib/supabase-browser')
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        const { data: userData } = await supabase
-          .from('user_management')
-          .select('full_name, email, role, photo_url')
-          .eq('auth_user_id', session.user.id)
-          .single()
-        setUser({
-          email: session.user.email ?? '',
-          full_name: userData?.full_name || session.user.email || '',
-          role: userData?.role || 'USER',
-          avatar_url: userData?.photo_url || session.user.user_metadata?.avatar_url,
-        })
-      }
-    }
-    fetchUser()
-  }, [])
+    if (!user) return
+    getMyUserProfile()
+      .then((data) => {
+        if (data) {
+          setDbProfile({
+            full_name: data.full_name,
+            role: data.role,
+            photo_url: data.photo_url,
+          })
+        }
+      })
+      .catch(() => {})
+  }, [user])
 
   const handleLogout = async () => {
-    const { createClient } = await import('@/lib/supabase-browser')
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    await signOut()
     window.location.href = '/login'
   }
 
   if (!user) return null
+
+  const email = user.primaryEmailAddress?.emailAddress ?? ''
+  const fullName = dbProfile?.full_name || user.fullName || email
+  const role = dbProfile?.role || 'USER'
+  const avatarUrl = dbProfile?.photo_url || user.imageUrl || null
 
   return (
     <div className="bg-surface-muted p-4 space-y-3">
@@ -68,11 +69,11 @@ export function ProfileSection() {
       <div className="relative">
         <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-3 w-full rounded-lg p-2 hover:bg-background transition-colors duration-150">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium text-sm">
-            {user.avatar_url ? <Image src={user.avatar_url} alt="Profile" className="w-8 h-8 rounded-full object-cover" width={32} height={32} /> : user.full_name?.charAt(0)?.toUpperCase() || 'U'}
+            {avatarUrl ? <Image src={avatarUrl} alt="Profile" className="w-8 h-8 rounded-full object-cover" width={32} height={32} /> : fullName?.charAt(0)?.toUpperCase() || 'U'}
           </div>
           <div className="flex-1 text-left">
-            <div className="text-sm font-medium truncate">{user.full_name}</div>
-            <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+            <div className="text-sm font-medium truncate">{fullName}</div>
+            <div className="text-xs text-muted-foreground truncate">{email}</div>
           </div>
           <ChevronRight className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-90')} />
         </button>

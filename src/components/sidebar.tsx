@@ -5,33 +5,28 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, useReducedMotion } from 'framer-motion'
+import { useUser } from '@clerk/nextjs'
 import { ChevronLeft, ChevronRight, User } from 'lucide-react'
 import { SidebarNavItems } from './sidebar/nav-items'
 import { ProfileSection } from './sidebar/sidebar-profile'
+import { getMyUserProfile } from '@/lib/actions/my-profile'
 
 export function Sidebar({ onCollapse }: { onCollapse?: (collapsed: boolean) => void }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [expandedItems, setExpandedItems] = useState<string[]>([])
   const [userRole, setUserRole] = useState<string | null>(null)
+  const { user } = useUser()
   const pathname = usePathname()
   const prefersReducedMotion = useReducedMotion()
 
   useEffect(() => {
-    const fetchUserRole = async () => {
-      const { createClient } = await import('@/lib/supabase-browser')
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        const { data: userData } = await supabase
-          .from('user_management')
-          .select('role')
-          .eq('auth_user_id', session.user.id)
-          .single()
-        setUserRole(userData?.role || null)
-      }
-    }
-    fetchUserRole()
-  }, [])
+    if (!user) return
+    getMyUserProfile()
+      .then((data) => {
+        if (data) setUserRole(data.role)
+      })
+      .catch(() => {})
+  }, [user])
 
   const handleToggle = () => {
     const newState = !isCollapsed

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuth } from '@clerk/nextjs/server'
 import { Resend } from 'resend'
 import { createClient } from '@/lib/supabase-server'
 import { logInvoiceCommunication } from '@/lib/actions/invoice-communications'
@@ -24,8 +25,8 @@ export async function POST(request: NextRequest) {
     const resend = new Resend(process.env.RESEND_API_KEY)
     const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    const { userId } = getAuth(request)
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

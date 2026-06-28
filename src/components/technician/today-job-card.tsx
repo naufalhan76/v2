@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast'
 import type { OrderStatus } from '@/lib/order-status'
 import { SwipeToAction } from './swipe-to-action'
 import { captureGps } from '@/lib/utils/geolocation'
-import { createClient } from '@/lib/supabase-browser'
+import { getMyTechnicianProfile } from '@/lib/actions/technician-profile'
 
 export interface TodayJob {
   order_id: string
@@ -60,20 +60,7 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
   // Fetch technician profile to get name
   const { data: profile } = useQuery({
     queryKey: ['technician', 'profile'],
-    queryFn: async () => {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-      const { data, error } = await supabase
-        .from('technicians')
-        .select('technician_name')
-        .eq('auth_user_id', user.id)
-        .single()
-      if (error) throw error
-      return data
-    },
+    queryFn: () => getMyTechnicianProfile(),
     staleTime: 5 * 60_000,
   })
 

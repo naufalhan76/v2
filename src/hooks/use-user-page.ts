@@ -4,19 +4,17 @@ import { useEffect, useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { useSortableTable } from '@/hooks/use-sortable-table'
 import { getUsers, type User as UserType } from '@/lib/actions/users'
-import { toggleUserStatus, deleteUser, resendInvite, inviteUser, updateUser, createUser, cancelInvite, deleteInvite } from '@/lib/actions/users/users-mutations'
-import type { UserRole } from '@/lib/rbac'
+import { toggleUserStatus, deleteUser, inviteUser, updateUser, createUser } from '@/lib/actions/users/users-mutations'
 
 export interface UserFormData {
   full_name: string
   email: string
-  password: string
   role: string
 }
 
 export interface InviteFormData {
   email: string
-  role: UserRole
+  role: string
 }
 
 export function useUserPage() {
@@ -32,10 +30,10 @@ export function useUserPage() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
   const [isInviteSubmitting, setIsInviteSubmitting] = useState(false)
   const [formData, setFormData] = useState<UserFormData>({
-    full_name: '', email: '', password: '', role: 'ADMIN',
+    full_name: '', email: '', role: 'ADMIN',
   })
   const [inviteFormData, setInviteFormData] = useState<InviteFormData>({
-    email: '', role: 'ADMIN' as UserRole,
+    email: '', role: 'ADMIN',
   })
 
   const { toast } = useToast()
@@ -60,12 +58,12 @@ export function useUserPage() {
   useEffect(() => { loadUsers() }, [])
 
   const resetForm = () => {
-    setFormData({ full_name: '', email: '', password: '', role: 'ADMIN' })
+    setFormData({ full_name: '', email: '', role: 'ADMIN' })
     setEditingUser(null)
   }
 
   const resetInviteForm = () => {
-    setInviteFormData({ email: '', role: 'ADMIN' as UserRole })
+    setInviteFormData({ email: '', role: 'ADMIN' })
   }
 
   const handleInviteSubmit = async (e: React.FormEvent) => {
@@ -73,7 +71,7 @@ export function useUserPage() {
     setIsInviteSubmitting(true)
     const result = await inviteUser(inviteFormData)
     if (result.success) {
-      toast({ title: 'Berhasil', description: 'Undangan user berhasil dikirim' })
+      toast({ title: 'Berhasil', description: 'Undangan user berhasil dikirim (email set-password telah terkirim)' })
       setIsInviteDialogOpen(false)
       resetInviteForm()
       loadUsers()
@@ -81,37 +79,6 @@ export function useUserPage() {
       toast({ title: 'Error', description: result.error || 'Gagal mengirim undangan', variant: 'destructive' })
     }
     setIsInviteSubmitting(false)
-  }
-
-  const handleResendInvite = async (inviteId: string) => {
-    const result = await resendInvite(inviteId)
-    if (result.success) {
-      toast({ title: 'Berhasil', description: 'Undangan berhasil dikirim ulang' })
-      loadUsers()
-    } else {
-      toast({ title: 'Error', description: result.error || 'Gagal mengirim ulang undangan', variant: 'destructive' })
-    }
-  }
-
-  const handleCancelInvite = async (inviteId: string) => {
-    const result = await cancelInvite(inviteId)
-    if (result.success) {
-      toast({ title: 'Berhasil', description: 'Undangan berhasil dibatalkan' })
-      loadUsers()
-    } else {
-      toast({ title: 'Error', description: result.error || 'Gagal membatalkan undangan', variant: 'destructive' })
-    }
-  }
-
-  const handleDeleteInvite = async (inviteId: string) => {
-    if (!confirm('Hapus undangan ini? Tindakan ini tidak dapat dibatalkan.')) return
-    const result = await deleteInvite(inviteId)
-    if (result.success) {
-      toast({ title: 'Berhasil', description: 'Undangan berhasil dihapus' })
-      loadUsers()
-    } else {
-      toast({ title: 'Error', description: result.error || 'Gagal menghapus undangan', variant: 'destructive' })
-    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -133,14 +100,9 @@ export function useUserPage() {
         toast({ title: 'Error', description: result.error || 'Gagal mengupdate user', variant: 'destructive' })
       }
     } else {
-      if (!formData.password) {
-        toast({ title: 'Error', description: 'Password harus diisi', variant: 'destructive' })
-        setIsSubmitting(false)
-        return
-      }
       const result = await createUser(formData)
       if (result.success) {
-        toast({ title: 'Berhasil', description: 'User berhasil ditambahkan' })
+        toast({ title: 'Berhasil', description: 'User berhasil ditambahkan (email set-password telah terkirim)' })
         setIsDialogOpen(false)
         resetForm()
         loadUsers()
@@ -156,7 +118,6 @@ export function useUserPage() {
     setFormData({
       full_name: user.full_name,
       email: user.email,
-      password: '',
       role: user.role,
     })
     setIsDialogOpen(true)
@@ -202,7 +163,7 @@ export function useUserPage() {
     isDeleting,
     isInviteDialogOpen, setIsInviteDialogOpen, isInviteSubmitting,
     inviteFormData, setInviteFormData,
-    handleInviteSubmit, handleResendInvite, handleCancelInvite, handleDeleteInvite,
-    resetForm, resetInviteForm,
+    handleInviteSubmit, resetInviteForm,
+    resetForm,
   }
 }

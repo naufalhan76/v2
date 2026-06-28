@@ -1,5 +1,6 @@
 'use server'
 
+import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
@@ -15,8 +16,8 @@ export async function createOrder(orderData: {
   try {
     const supabase = await createClient()
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const { userId } = await auth()
+    if (!userId) {
       return {
         success: false,
         error: 'Unauthorized',
@@ -25,7 +26,7 @@ export async function createOrder(orderData: {
 
     const { data, error } = await supabase
       .from('orders')
-      .insert({ ...orderData, status: 'PENDING', created_by: user.id })
+      .insert({ ...orderData, status: 'PENDING', created_by: userId })
       .select()
       .single()
     

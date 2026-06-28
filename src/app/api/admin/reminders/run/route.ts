@@ -76,21 +76,8 @@ async function isAuthorized(request: NextRequest): Promise<AuthResult | null> {
     }
   }
 
-  // 2. Authenticated user check — Bearer JWT first, fall back to cookie session
-  let user = await getUserFromRequest(request)
-  if (!user) {
-    try {
-      const supabase = await createClient()
-      const {
-        data: { user: sessionUser },
-      } = await supabase.auth.getUser()
-      user = sessionUser ?? null
-    } catch (error) {
-      log.error('cookie auth lookup failed', error)
-      user = null
-    }
-  }
-
+  // 2. Authenticated user check — Clerk handles both Bearer and cookie
+  const user = await getUserFromRequest(request)
   if (!user) return null
 
   try {

@@ -14,13 +14,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SearchableSelect } from '@/components/ui/searchable-select'
-import type { UserRole } from '@/lib/rbac'
 import type { User } from '@/lib/actions/users'
 
 export interface UserFormData {
   full_name: string
   email: string
-  password: string
   role: string
 }
 
@@ -60,7 +58,7 @@ export function UserFormModal({
             <DialogDescription>
               {editingUser
                 ? 'Update informasi user yang sudah ada'
-                : 'Tambahkan user baru ke sistem'}
+                : 'User akan menerima email set-password dari Clerk.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -86,19 +84,6 @@ export function UserFormModal({
                 required
               />
             </div>
-
-            {!editingUser && (
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => onFormDataChange({ ...formData, password: e.target.value })}
-                  required
-                />
-              </div>
-            )}
 
             <div className="grid gap-2">
               <Label htmlFor="role">Role</Label>
@@ -143,7 +128,7 @@ export function UserFormModal({
 
 export interface InviteFormData {
   email: string
-  role: UserRole
+  role: string
 }
 
 interface InviteDialogProps {
@@ -176,7 +161,7 @@ export function InviteDialog({
           <DialogHeader>
             <DialogTitle>Undang Pengguna</DialogTitle>
             <DialogDescription>
-              Kirim undangan email untuk membuat akses user baru.
+              User akan menerima email untuk mengatur password mereka.
             </DialogDescription>
           </DialogHeader>
 
@@ -202,7 +187,7 @@ export function InviteDialog({
                   { id: 'TECHNICIAN', label: 'Technician' },
                 ]}
                 value={formData.role}
-                onValueChange={(value) => onFormDataChange({ ...formData, role: value as UserRole })}
+                onValueChange={(value) => onFormDataChange({ ...formData, role: value })}
                 placeholder="Pilih role"
                 searchPlaceholder="Cari role..."
               />

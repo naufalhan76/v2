@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase-browser'
+import { getMyTechnicianProfile } from '@/lib/actions/technician-profile'
 import { Briefcase, Clock, Sparkles, RefreshCw } from 'lucide-react'
 import type { OrderStatus } from '@/lib/order-status'
 import { useOnlineSync } from '@/hooks/use-online-sync'
@@ -35,20 +35,7 @@ export function HomeHeader() {
 
   const { data: profile } = useQuery({
     queryKey: ['technician', 'profile', 'header'],
-    queryFn: async () => {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return null
-      const { data, error } = await supabase
-        .from('technicians')
-        .select('technician_name')
-        .eq('auth_user_id', user.id)
-        .single()
-      if (error) return null
-      return data
-    },
+    queryFn: () => getMyTechnicianProfile(),
     staleTime: 5 * 60_000,
   })
 

@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@clerk/nextjs'
 import { useOnlineSync } from '@/hooks/use-online-sync'
 import { useToast } from '@/hooks/use-toast'
-import { createClient } from '@/lib/supabase-browser'
+import { getMyTechnicianProfile, getTechnicianStats } from '@/lib/actions/technician-profile'
 import {
   getPushSupport,
   getPermissionState,
@@ -21,47 +22,9 @@ import { SyncStatusSection } from './profile/sync-status-section'
 import type { ProfileStats, PushUiState } from './profile/profile-types'
 
 async function fetchProfile() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('Not authenticated')
-
-  const { data: technician, error } = await supabase
-    .from('technicians')
-    .select('technician_id, technician_name, contact_number, email, company')
-    .eq('auth_user_id', user.id)
-    .single()
-  if (error) throw new Error('Gagal memuat profil')
+  const technician = await getMyTechnicianProfile()
   if (!technician) throw new Error('Profil teknisi tidak ditemukan')
-
-  return { user, technician }
-}
-
-async function fetchProfileStats(technicianId: string | undefined): Promise<ProfileStats> {
-  if (!technicianId) {
-    return { totalCompleted: 0, monthCompleted: 0 }
-  }
-  const supabase = createClient()
-
-  const [lifetimeRes, monthRes] = await Promise.all([
-    supabase
-      .from('service_reports')
-      .select('report_id', { count: 'exact', head: true })
-      .eq('technician_id', technicianId)
-      .is('deleted_at', null),
-    supabase
-      .from('service_reports')
-      .select('report_id', { count: 'exact', head: true })
-      .eq('technician_id', technicianId)
-      .is('deleted_at', null)
-      .gte('submitted_at', startOfMonthIso()),
-  ])
-
-  return {
-    totalCompleted: lifetimeRes.count ?? 0,
-    monthCompleted: monthRes.count ?? 0,
-  }
+  return { technician }
 }
 
 function startOfMonthIso(): string {
@@ -74,6 +37,7 @@ function startOfMonthIso(): string {
 export function ProfileContent() {
   const router = useRouter()
   const { toast } = useToast()
+  const { signOut } = useAuth()
   const { pending, lastResult } = useOnlineSync()
   const [loggingOut, setLoggingOut] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -87,7 +51,7 @@ export function ProfileContent() {
 
   useQuery({
     queryKey: ['technician', 'profile', 'stats', data?.technician?.technician_id ?? null],
-    queryFn: () => fetchProfileStats(data?.technician?.technician_id),
+    queryFn: () => getTechnicianStats(data?.technician?.technician_id ?? null),
     enabled: !!data?.technician?.technician_id,
     staleTime: 5 * 60_000,
   })
@@ -174,8 +138,7 @@ export function ProfileContent() {
     setLoggingOut(true)
     setConfirmOpen(false)
     try {
-      const supabase = createClient()
-      await supabase.auth.signOut()
+      await signOut()
       router.push('/login')
     } catch {
       setLoggingOut(false)

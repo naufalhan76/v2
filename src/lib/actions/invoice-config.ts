@@ -1,5 +1,6 @@
 'use server'
 
+import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
@@ -82,11 +83,9 @@ export async function updateInvoiceConfig(
   const supabase = await createClient()
 
   // Get current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { userId } = await auth()
 
-  await requireFinanceRole(user)
+  await requireFinanceRole(userId)
 
   // Check if config exists
   const existingConfig = await getInvoiceConfig()
@@ -120,7 +119,7 @@ export async function updateInvoiceConfig(
       .from('invoice_configuration')
       .update({
         ...configData,
-        updated_by: user!.id,
+        updated_by: userId,
       })
       .eq('config_id', existingConfig.config_id)
       .select()
@@ -134,7 +133,7 @@ export async function updateInvoiceConfig(
       .from('invoice_configuration')
       .insert({
         ...configData,
-        updated_by: user!.id,
+        updated_by: userId,
       })
       .select()
       .single()

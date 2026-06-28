@@ -3,7 +3,6 @@
 import { Pencil, Trash2, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { SortableTableHead } from '@/components/ui/sortable-table-head'
@@ -22,9 +21,6 @@ interface UsersTableProps {
   onToggleStatus: (userId: string, currentStatus: boolean) => void
   onEdit: (user: UserType) => void
   onDelete: (userId: string) => void
-  onResendInvite: (inviteId: string) => void
-  onCancelInvite: (inviteId: string) => void
-  onDeleteInvite: (inviteId: string) => void
 }
 
 export function UsersTable({
@@ -36,9 +32,6 @@ export function UsersTable({
   onToggleStatus,
   onEdit,
   onDelete,
-  onResendInvite,
-  onCancelInvite,
-  onDeleteInvite,
 }: UsersTableProps) {
   const filteredUsers = users.filter(user =>
     user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -105,59 +98,35 @@ export function UsersTable({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {user.row_type === 'invite' ? (
-                        <Badge variant="secondary">
-                          {user.row_type === 'invite' ? 'Menunggu Konfirmasi' : (user.is_active ? 'Aktif' : 'Nonaktif')}
-                        </Badge>
-                      ) : (
-                        <>
-                          <Switch
-                            checked={user.is_active}
-                            onCheckedChange={() => onToggleStatus(user.user_id, user.is_active)}
-                          />
-                          <UserStatusBadge user={user} />
-                        </>
-                      )}
+                      <Switch
+                        checked={user.is_active}
+                        onCheckedChange={() => onToggleStatus(user.user_id, user.is_active)}
+                      />
+                      <UserStatusBadge user={user} />
                     </div>
                   </TableCell>
                   <TableCell className="text-right w-[180px]">
                     <div className="flex justify-end gap-2">
-                      {user.row_type === 'invite' ? (
-                        <>
-                          <Button variant="outline" size="sm" onClick={() => user.invite_id && onResendInvite(user.invite_id)}>
-                            Kirim Ulang
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => user.invite_id && onCancelInvite(user.invite_id)}>
-                            Batalkan
-                          </Button>
-                          <Button variant="destructive" size="sm" onClick={() => user.invite_id && onDeleteInvite(user.invite_id)}>
-                            Hapus
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            variant="outline"
-                            className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
-                            onClick={() => onEdit(user)}
-                          >
-                            <Pencil className="h-4 w-4 flex-shrink-0" />
-                            <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              Ubah
-                            </span>
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
-                            onClick={() => onDelete(user.user_id)}
-                          >
-                            <Trash2 className="h-4 w-4 flex-shrink-0" />
-                            <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              Hapus
-                            </span>
-                          </Button>
-                        </>
-                      )}
+                      <Button
+                        variant="outline"
+                        className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-24 flex items-center justify-start px-2"
+                        onClick={() => onEdit(user)}
+                      >
+                        <Pencil className="h-4 w-4 flex-shrink-0" />
+                        <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          Ubah
+                        </span>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="group relative overflow-hidden transition-all duration-300 ease-in-out w-10 hover:w-28 flex items-center justify-start px-2"
+                        onClick={() => onDelete(user.user_id)}
+                      >
+                        <Trash2 className="h-4 w-4 flex-shrink-0" />
+                        <span className="ml-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          Hapus
+                        </span>
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -174,7 +143,7 @@ export function UsersTable({
             {Array.from({ length: 4 }).map((_, i) => (
               <Card key={i} className="p-4">
                 <div className="space-y-3">
-                  <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+                  <div className="h-4 w-32 rounded bg-muted animate-sulse" />
                   <div className="h-3 w-48 rounded bg-muted animate-pulse" />
                   <div className="h-8 w-full rounded bg-muted animate-pulse" />
                 </div>
@@ -206,55 +175,31 @@ export function UsersTable({
 
                 <div className="flex items-center justify-between pt-2 border-t">
                   <div className="flex items-center gap-2">
-                    {user.row_type === 'invite' ? (
-                      <Badge variant="secondary">
-                        {user.row_type === 'invite' ? 'Menunggu Konfirmasi' : (user.is_active ? 'Aktif' : 'Nonaktif')}
-                      </Badge>
-                    ) : (
-                      <>
-                        <Switch
-                          checked={user.is_active}
-                          onCheckedChange={() => onToggleStatus(user.user_id, user.is_active)}
-                        />
-                        <span className="text-sm font-medium">
-                          {user.is_active ? 'Aktif' : 'Nonaktif'}
-                        </span>
-                      </>
-                    )}
+                    <Switch
+                      checked={user.is_active}
+                      onCheckedChange={() => onToggleStatus(user.user_id, user.is_active)}
+                    />
+                    <span className="text-sm font-medium">
+                      {user.is_active ? 'Aktif' : 'Nonaktif'}
+                    </span>
                   </div>
                   <div className="flex gap-2">
-                    {user.row_type === 'invite' ? (
-                      <>
-                        <Button variant="outline" size="sm" onClick={() => user.invite_id && onResendInvite(user.invite_id)}>
-                          Kirim Ulang
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => user.invite_id && onCancelInvite(user.invite_id)}>
-                          Batalkan
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => user.invite_id && onDeleteInvite(user.invite_id)}>
-                          Hapus
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onEdit(user)}
-                        >
-                          <Pencil className="h-3 w-3 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onDelete(user.user_id)}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Hapus
-                        </Button>
-                      </>
-                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEdit(user)}
+                    >
+                      <Pencil className="h-3 w-3 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onDelete(user.user_id)}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Hapus
+                    </Button>
                   </div>
                 </div>
               </div>

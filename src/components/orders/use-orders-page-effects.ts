@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import type { QueryClient } from '@tanstack/react-query'
+import { useUser } from '@clerk/nextjs'
 import { subscribeOrders } from '@/lib/realtime'
 import { toCanonical } from '@/lib/order-status'
 import type { OrderForDisplay } from '@/lib/order-utils'
+import { getMyUserProfile } from '@/lib/actions/my-profile'
 
 type SearchParams = ReturnType<typeof import('next/navigation').useSearchParams>
 
@@ -29,26 +31,16 @@ export function useResponsiveOrdersView(searchParams: SearchParams, router: AppR
 
 export function useUserRole() {
   const [userRole, setUserRole] = useState<string | null>(null)
+  const { user } = useUser()
 
   useEffect(() => {
-    const fetchUserRole = async () => {
-      try {
-        const { createClient } = await import('@/lib/supabase-browser')
-        const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) {
-          const { data: userData } = await supabase
-            .from('user_management')
-            .select('role')
-            .eq('auth_user_id', session.user.id)
-            .single()
-          setUserRole(userData?.role || null)
-        }
-      } catch {
-      }
-    }
-    fetchUserRole()
-  }, [])
+    if (!user) return
+    getMyUserProfile()
+      .then((data) => {
+        if (data) setUserRole(data.role)
+      })
+      .catch(() => {})
+  }, [user])
 
   return userRole
 }

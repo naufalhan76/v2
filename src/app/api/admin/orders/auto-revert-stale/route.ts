@@ -55,20 +55,7 @@ async function isAuthorized(request: NextRequest): Promise<AuthResult | null> {
     }
   }
 
-  let user = await getUserFromRequest(request)
-  if (!user) {
-    try {
-      const supabase = await createClient()
-      const {
-        data: { user: sessionUser },
-      } = await supabase.auth.getUser()
-      user = sessionUser ?? null
-    } catch (error) {
-      log.error('cookie auth lookup failed', error)
-      user = null
-    }
-  }
-
+  const user = await getUserFromRequest(request)
   if (!user) return null
 
   try {

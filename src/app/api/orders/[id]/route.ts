@@ -50,20 +50,8 @@ export async function PATCH(
   const path = `/api/orders/${orderId}`
 
   try {
-    // 1. Auth — Bearer token first, fall back to cookie session so browser
-    //    clients (and Playwright page.request) work without an explicit header.
-    let user = await requireAuth(request)
-    if (!user) {
-      try {
-        const supabase = await createClient()
-        const {
-          data: { user: sessionUser },
-        } = await supabase.auth.getUser()
-        user = sessionUser ?? null
-      } catch (err) {
-        log.error('cookie session fallback failed', err)
-      }
-    }
+    // 1. Auth — Clerk session (cookie or Bearer handled by middleware)
+    const user = await requireAuth(request)
     if (!user) {
       return jsonError('Unauthorized: Missing or invalid authentication', 401)
     }

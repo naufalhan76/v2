@@ -77,7 +77,7 @@ function RowActions({ row, sendMutation, dismissMutation, onSend, onDismiss }: {
       {row.status === 'PENDING' && (
         <Button size="sm" variant="default" onClick={() => onSend(row.reminder_id)} disabled={isSending} className="min-h-[44px] sm:min-h-9">
           {isSending ? <Loader2 className="h-3 w-3 animate-spin sm:mr-2" /> : <Send className="h-3 w-3 sm:mr-2" />}
-          <span className="hidden sm:inline">Tandai Terkirim</span>
+          <span className="hidden sm:inline">Kirim</span>
         </Button>
       )}
       {(row.status === 'PENDING' || row.status === 'FAILED') && (

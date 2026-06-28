@@ -1,5 +1,6 @@
 'use server'
 
+import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
@@ -19,8 +20,8 @@ export async function recordPayment(
   }
 ): Promise<PaymentRecord> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  await requireFinanceRole(user)
+  const { userId } = await auth()
+  await requireFinanceRole(userId)
 
   if (payment.amount <= 0) throw new Error('Jumlah pembayaran harus lebih dari 0')
 
@@ -33,7 +34,7 @@ export async function recordPayment(
     p_payment_date: payment.payment_date,
     p_reference_number: payment.reference_number || null,
     p_notes: payment.notes || null,
-    p_recorded_by: user!.id,
+    p_recorded_by: userId!,
     p_idempotency_key: idempotencyKey,
   })
 
@@ -45,13 +46,13 @@ export async function recordPayment(
   revalidatePath('/dashboard/keuangan/invoices')
   revalidatePath(`/dashboard/keuangan/invoices/${invoiceId}`)
   void auditLog('PAYMENT', 'invoices', invoiceId)
-  return { payment_id: result.payment_id, ...payment, recorded_by: user!.id } as PaymentRecord
+  return { payment_id: result.payment_id, ...payment, recorded_by: userId! } as PaymentRecord
 }
 
 export async function deleteInvoice(invoiceId: string): Promise<void> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  await requireFinanceRole(user)
+  const { userId } = await auth()
+  await requireFinanceRole(userId)
 
   const { data: invoice, error: fetchError } = await supabase
     .from('invoices').select('status, order_id, invoice_type').eq('invoice_id', invoiceId).single()
@@ -100,8 +101,8 @@ export async function updateInvoiceStatus(
   status: 'DRAFT' | 'SENT' | 'PARTIAL_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED'
 ): Promise<Invoice> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  await requireFinanceRole(user)
+  const { userId } = await auth()
+  await requireFinanceRole(userId)
 
   const allowedTransitions: Record<string, string[]> = {
     DRAFT: ['SENT', 'CANCELLED'],

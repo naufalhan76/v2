@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuth } from '@clerk/nextjs/server'
 import { getSignedSignatureUrl } from '@/lib/service-report'
-import { createClient } from '@/lib/supabase-server'
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ reportId: string }> }
 ) {
   const { reportId } = await params
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { userId } = getAuth(_req)
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
       { status: 401 }

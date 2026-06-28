@@ -18,25 +18,8 @@ export type TechnicianContext = {
 export async function authenticateTechnician(
   request: NextRequest
 ): Promise<TechnicianContext | ReturnType<typeof jsonError>> {
-  // 1. Get authenticated user (supports both Bearer token and cookie session)
-  const authHeader = request.headers.get('authorization')
-  let user = null
-
-  if (authHeader?.startsWith('Bearer ')) {
-    user = await getUserFromRequest(request)
-  } else {
-    // Fall back to cookie session (PWA standalone mode)
-    try {
-      const supabase = await createClient()
-      const {
-        data: { user: sessionUser },
-      } = await supabase.auth.getUser()
-      user = sessionUser ?? null
-    } catch (error) {
-      log.error('Cookie auth failed', error)
-      user = null
-    }
-  }
+  // ponytail: Clerk handles both Bearer and cookie via getAuth; no dual-path needed
+  const user = await getUserFromRequest(request)
 
   if (!user) {
     return jsonError('Unauthorized', 401)

@@ -1,5 +1,6 @@
 'use server'
 
+import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase-server'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
@@ -19,8 +20,8 @@ export async function createProformaInvoice(orderId: string): Promise<{
 }> {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    await requireFinanceRole(user)
+    const { userId } = await auth()
+    await requireFinanceRole(userId)
 
     const { data: order, error: orderError } = await supabase
       .from('orders').select('order_id, customer_id, status').eq('order_id', orderId).maybeSingle()
@@ -79,7 +80,7 @@ export async function createProformaInvoice(orderId: string): Promise<{
       tax_percentage: taxPercentage, tax_amount: taxAmount, total_amount: totalAmount,
       status: 'DRAFT', payment_status: 'UNPAID', paid_amount: 0,
       notes: 'Proforma invoice — generated automatically dari order baru.',
-      terms_conditions: config?.terms_conditions_template || null, created_by: user!.id,
+      terms_conditions: config?.terms_conditions_template || null, created_by: userId,
     }).select().single()
 
     if (invoiceError || !invoice) {
@@ -114,8 +115,8 @@ export async function createProformaInvoice(orderId: string): Promise<{
 
 export async function createInvoiceFromOrder(orderId: string): Promise<CreateInvoiceFromOrderResult> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  await requireFinanceRole(user)
+  const { userId } = await auth()
+  await requireFinanceRole(userId)
 
   const { data: existingInvoice } = await supabase
     .from('invoices').select('invoice_id, invoice_number, total_amount').eq('order_id', orderId).maybeSingle()
@@ -198,8 +199,8 @@ export async function createInvoiceFromOrder(orderId: string): Promise<CreateInv
 export async function finalizeInvoiceFromOrder(orderId: string): Promise<CreateInvoiceFromOrderResult> {
   // Security: only finance role can finalize
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  await requireFinanceRole(user)
+  const { userId } = await auth()
+  await requireFinanceRole(userId)
 
   const { data: existingInvoice } = await supabase
     .from('invoices')

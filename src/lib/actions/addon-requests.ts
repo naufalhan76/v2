@@ -1,5 +1,6 @@
 'use server'
 
+import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
@@ -94,10 +95,11 @@ export async function createAddonRequest(input: CreateAddonRequestInput) {
     const supabase = await createClient()
     const description = buildCompletionRequestDescription(input)
 
+    const { userId } = await auth()
     const { data: techData, error: techError } = await supabase
       .from('technicians')
       .select('technician_id')
-      .eq('auth_user_id', (await supabase.auth.getUser()).data.user?.id ?? '')
+      .eq('auth_user_id', userId ?? '')
       .maybeSingle()
 
     if (techError || !techData) {

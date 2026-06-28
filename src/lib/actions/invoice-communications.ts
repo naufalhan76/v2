@@ -1,5 +1,6 @@
 'use server'
 
+import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase-server'
 import { updateInvoiceStatus } from './invoices'
 import { logger } from '@/lib/logger'
@@ -29,10 +30,8 @@ export async function logInvoiceCommunication(data: {
 }): Promise<void> {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  await requireFinanceRole(user)
+  const { userId } = await auth()
+  await requireFinanceRole(userId)
 
   const { error } = await supabase.from('invoice_communications').insert({
     invoice_id: data.invoiceId,
@@ -40,7 +39,7 @@ export async function logInvoiceCommunication(data: {
     recipient: data.recipient,
     external_id: data.externalId || null,
     status: data.status || 'sent',
-    sent_by: user?.id || null,
+    sent_by: userId || null,
   })
 
   if (error) {

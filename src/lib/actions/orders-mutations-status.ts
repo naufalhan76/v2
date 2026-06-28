@@ -1,5 +1,6 @@
 'use server'
 
+import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
@@ -30,16 +31,15 @@ export async function updateOrderStatus(
 
     let resolvedRole = callerRole
     if (!resolvedRole) {
-      const userClient = await createClient()
-      const { data: { user } } = await userClient.auth.getUser()
-      if (!user) {
+      const { userId } = await auth()
+      if (!userId) {
         return { success: false, error: 'Tidak terautentikasi' }
       }
 
       const { data: userMgmt } = await supabase
         .from('user_management')
         .select('role')
-        .eq('auth_user_id', user.id)
+        .eq('auth_user_id', userId)
         .single()
 
       resolvedRole = userMgmt?.role as TransitionRole | undefined
@@ -291,6 +291,31 @@ export async function deleteOrder(orderId: string) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to delete order',
+    }
+  }
+}
+
+export async function acceptOrder(orderId: string) {
+  const supabase = await createClient()
+
+  try {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'ACCEPTED', updated_at: new Date().toISOString() })
+      .eq('order_id', orderId)
+
+    if (error) throw error
+
+    revalidatePath('/dashboard/operasional/accept-order')
+    revalidatePath('/dashboard/orders')
+    revalidatePath('/dashboard')
+
+    return { success: true }
+  } catch (error: unknown) {
+    logger.error('Error accepting order:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to accept order',
     }
   }
 }

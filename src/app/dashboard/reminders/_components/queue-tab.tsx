@@ -157,7 +157,7 @@ export function QueueTab({ onGenerate, isGenerating }: QueueTabProps) {
             <p className="text-sm text-muted-foreground">{selectedIds.length} reminder dipilih</p>
             <Button size="sm" onClick={() => bulkSendMutation.mutate(selectedIds)} disabled={bulkSendMutation.isPending || selectedIds.length === 0} className="min-h-[44px] sm:min-h-9">
               {bulkSendMutation.isPending ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Send className="mr-2 h-3 w-3" />}
-              Tandai Terkirim Terpilih ({selectedIds.length})
+              Kirim Terpilih ({selectedIds.length})
             </Button>
           </div>
         </div>

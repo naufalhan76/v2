@@ -143,3 +143,57 @@ export async function generateInvoiceNumber(): Promise<string> {
   }
   return data
 }
+
+/**
+ * Get invoices for a specific order (used by order-invoice-tab)
+ */
+export interface OrderInvoiceRow {
+  invoice_id: string
+  invoice_number: string | null
+  status: string
+  total_amount: number
+  paid_amount: number | null
+  payment_status: string | null
+  due_date: string | null
+  created_at: string
+}
+
+export async function getInvoicesByOrderId(orderId: string): Promise<OrderInvoiceRow[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('invoice_id, invoice_number, status, total_amount, paid_amount, payment_status, due_date, created_at')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    logger.error('getInvoicesByOrderId: query failed', error)
+    return []
+  }
+
+  return (data ?? []) as OrderInvoiceRow[]
+}
+
+/**
+ * Returns which of the given orderIds already have invoices
+ */
+export async function getInvoicedOrderIds(orderIds: string[]): Promise<Set<string>> {
+  if (orderIds.length === 0) return new Set()
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('order_id')
+    .in('order_id', orderIds)
+
+  if (error) {
+    logger.error('getInvoicedOrderIds: query failed', error)
+    return new Set()
+  }
+
+  return new Set(
+    (data ?? [])
+      .map((row: { order_id: string | null }) => row.order_id)
+      .filter((id: string | null): id is string => Boolean(id)),
+  )
+}

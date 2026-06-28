@@ -1,5 +1,5 @@
-import type { User } from '@supabase/supabase-js'
-import { createClient, getUserRole } from './supabase-server'
+// ponytail: removed `import type { User } from '@supabase/supabase-js'` — Clerk migration
+import { getUserRole } from './supabase-server'
 
 export type UserRole = 'SUPERADMIN' | 'ADMIN' | 'TECHNICIAN' | 'FINANCE'
 
@@ -158,16 +158,17 @@ export function getVisibleRoles(userRole: UserRole | null): UserRole[] {
   return []
 }
 
-export async function requireFinanceRole(user: User | null): Promise<void> {
-  if (!user) {
+export async function requireFinanceRole(userId: string | null | undefined): Promise<void> {
+  if (!userId) {
     throw new Error('Unauthorized: Finance role required')
   }
 
-  const client = await createClient()
+  const { createClient: createSupaClient } = await import('./supabase-server')
+  const client = await createSupaClient()
   const { data, error } = await client
     .from('user_management')
     .select('role')
-    .eq('auth_user_id', user.id)
+    .eq('auth_user_id', userId)
     .maybeSingle()
 
   if (error || !data?.role || !['SUPERADMIN', 'ADMIN', 'FINANCE'].includes(data.role)) {

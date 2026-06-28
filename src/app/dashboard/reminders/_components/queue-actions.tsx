@@ -17,16 +17,15 @@ export function useReminderQueueMutations(options?: UseReminderQueueMutationsOpt
     mutationFn: async (reminderId: string) => {
       const result = await markReminderSent(reminderId)
       if (!result?.success) {
-        throw new Error(result?.error || 'Gagal menandai reminder terkirim')
+        throw new Error(result?.error || 'Gagal mengirim reminder')
       }
       return result
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customer-reminders'] })
       toast({
-        title: 'Reminder ditandai terkirim',
-        description:
-          'Pengiriman WhatsApp/Email belum diimplementasikan. Status dicatat manual.',
+        title: 'Pesan terkirim',
+        description: 'Reminder berhasil dikirim ke customer via WhatsApp/Email.',
       })
     },
     onError: (error: Error) => {
@@ -64,20 +63,22 @@ export function useReminderQueueMutations(options?: UseReminderQueueMutationsOpt
   const bulkSendMutation = useMutation({
     mutationFn: async (reminderIds: string[]) => {
       const result = await markRemindersSent(reminderIds)
-      if (!result?.success) throw new Error(result?.error || 'Gagal menandai terkirim')
-      const data = (result as { success: true; data: { updated: string[]; skipped: string[] } }).data
-      return { updated: data.updated, skipped: data.skipped }
+      if (!result?.success) throw new Error(result?.error || 'Gagal mengirim reminder')
+      const data = (result as { success: true; data: { updated: string[]; skipped: string[]; failed: string[] } }).data
+      return { updated: data.updated, skipped: data.skipped, failed: data.failed }
     },
-    onSuccess: ({ updated, skipped }) => {
+    onSuccess: ({ updated, skipped, failed }) => {
       queryClient.invalidateQueries({ queryKey: ['customer-reminders'] })
       options?.onBulkComplete?.()
       toast({
-        title: `${updated.length} ditandai terkirim`,
+        title: `${updated.length} terkirim`,
         description:
-          skipped.length > 0
-            ? `${skipped.length} sudah terkirim (skip). Pengiriman WhatsApp/Email belum diimplementasikan.`
-            : 'Pengiriman WhatsApp/Email belum diimplementasikan. Status dicatat manual.',
-        variant: skipped.length > 0 ? 'destructive' : 'default',
+          failed.length > 0
+            ? `${failed.length} gagal terkirim. Periksa detail di tabel.`
+            : skipped.length > 0
+              ? `${skipped.length} sudah pernah dikirim (skip).`
+              : 'Semua pesan terkirim ke customer via WhatsApp/Email.',
+        variant: failed.length > 0 ? 'destructive' : 'default',
       })
     },
     onError: (error: Error) => {

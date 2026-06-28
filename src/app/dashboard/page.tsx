@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import { useUser } from '@clerk/nextjs'
 import { getStatusByDay } from '@/lib/actions/dashboard'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -46,7 +47,17 @@ const RevenueTrendLine = dynamic(
 )
 
 export default function DashboardPage() {
-  const [userName, setUserName] = useState('Admin')
+  const [userName, setUserName] = useState('')
+  const { user, isLoaded } = useUser()
+
+  useEffect(() => {
+    if (!isLoaded) return
+    if (user) {
+      setUserName(user.firstName || user.fullName?.split(' ')[0] || 'Admin')
+    } else {
+      setUserName('Admin')
+    }
+  }, [user, isLoaded])
 
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to?: Date | undefined }>(() => {
     const endDate = new Date()
@@ -78,27 +89,6 @@ export default function DashboardPage() {
       end: dateRange.to.toISOString().split('T')[0],
     }
   })()
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { createClient } = await import('@/lib/supabase-browser')
-        const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) {
-          const { data: userData } = await supabase
-            .from('user_management')
-            .select('full_name')
-            .eq('auth_user_id', session.user.id)
-            .single()
-          if (userData?.full_name) setUserName(userData.full_name.split(' ')[0])
-        }
-      } catch (err) {
-        console.warn('Failed to fetch user name for greeting:', err)
-      }
-    }
-    fetchUser()
-  }, [])
 
   useEffect(() => {
     if (!dateRangeStr.start || !dateRangeStr.end) return

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuth } from '@clerk/nextjs/server'
 import { getServiceReport } from '@/lib/service-report'
 import { createClient } from '@/lib/supabase-server'
 
@@ -11,22 +12,21 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
+  const { userId } = getAuth(req)
+  if (!userId) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
       { status: 401 }
     )
   }
 
+  const supabase = await createClient()
+
   // Ownership check: TECHNICIAN can only access their assigned orders
   const { data: userMgmt } = await supabase
     .from('user_management')
     .select('role, auth_user_id')
-    .eq('auth_user_id', user.id)
+    .eq('auth_user_id', userId)
     .single()
 
   if (userMgmt?.role === 'TECHNICIAN') {
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       .from('order_technicians')
       .select('technician_id')
       .eq('order_id', orderId)
-      .eq('technician_id', user.id)
+      .eq('technician_id', userId)
       .is('removed_at', null)
       .maybeSingle()
 

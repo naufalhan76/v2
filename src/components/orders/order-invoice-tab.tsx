@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { InvoiceStatusBadge } from '@/components/invoices/invoice-status-badge'
-import { createClient } from '@/lib/supabase-browser'
+import { getInvoicesByOrderId, type OrderInvoiceRow } from '@/lib/actions/invoices-queries'
 import { toCanonical } from '@/lib/order-status'
 
 interface OrderInvoiceTabProps {
@@ -17,30 +17,10 @@ interface OrderInvoiceTabProps {
   onCreateInvoice?: () => void
 }
 
-interface InvoiceRow {
-  invoice_id: string
-  invoice_number?: string | null
-  status: string
-  total_amount: number
-  paid_amount?: number | null
-  payment_status?: string | null
-  due_date?: string | null
-  created_at: string
-}
-
 export function OrderInvoiceTab({ orderId, orderStatus, onCreateInvoice }: OrderInvoiceTabProps) {
   const { data, isLoading } = useQuery({
     queryKey: ['order-invoices', orderId],
-    queryFn: async () => {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('invoices')
-        .select('invoice_id, invoice_number, status, total_amount, paid_amount, payment_status, due_date, created_at')
-        .eq('order_id', orderId)
-        .order('created_at', { ascending: false })
-      if (error) throw error
-      return (data ?? []) as InvoiceRow[]
-    },
+    queryFn: () => getInvoicesByOrderId(orderId),
   })
 
   if (isLoading) {

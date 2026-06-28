@@ -1,7 +1,9 @@
 'use server'
 
+import { auth } from '@clerk/nextjs/server'
+import { clerkClient } from '@clerk/nextjs/server'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase-server'
-import { createAdminClient } from '@/lib/supabase-admin'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
 
@@ -16,19 +18,16 @@ interface UpdateProfileData {
 export async function getUserProfile() {
   try {
     const supabase = await createClient()
-    
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
+    const { userId } = await auth()
+
+    if (!userId) {
       return { success: false, error: 'User not authenticated' }
     }
 
-    // Get user details from user_management
     const { data, error } = await supabase
       .from('user_management')
       .select('*')
-      .eq('auth_user_id', user.id)
+      .eq('auth_user_id', userId)
       .maybeSingle()
 
     if (error) {
@@ -36,18 +35,21 @@ export async function getUserProfile() {
       return { success: false, error: error.message }
     }
 
-    // If user not found in user_management, create from auth.users
     if (!data) {
       logger.debug('User not found in user_management, creating...')
-      
-      // Insert user into user_management
+
+      const client = await clerkClient()
+      const clerkUser = await client.users.getUser(userId)
+      const email = clerkUser.emailAddresses[0]?.emailAddress || ''
+      const fullName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || email.split('@')[0] || 'User'
+
       const { data: newUser, error: insertError } = await supabase
         .from('user_management')
         .insert({
-          auth_user_id: user.id,
-          email: user.email,
-          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-          role: user.user_metadata?.role || 'ADMIN',
+          auth_user_id: userId,
+          email,
+          full_name: fullName,
+          role: 'ADMIN',
           photo_url: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -57,15 +59,14 @@ export async function getUserProfile() {
 
       if (insertError) {
         logger.error('Error creating user in user_management:', insertError)
-        // Return data from auth.users as fallback
         return {
           success: true,
           data: {
-            user_id: user.id,
-            email: user.email || '',
-            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+            user_id: userId,
+            email,
+            full_name: fullName,
             photo_url: null,
-            role: user.user_metadata?.role || 'ADMIN',
+            role: 'ADMIN',
           }
         }
       }
@@ -82,8 +83,8 @@ export async function getUserProfile() {
       }
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: {
         user_id: data.user_id || data.auth_user_id,
         email: data.email,
@@ -99,24 +100,22 @@ export async function getUserProfile() {
 }
 
 /**
- * Update user profile (name, email, phone)
- * Syncs with auth.users and user_management table
+ * Update user profile (name, email)
+ * Syncs with Clerk and user_management table
  */
 export async function updateUserProfile(data: UpdateProfileData) {
   try {
     const supabase = await createClient()
-    const adminClient = createAdminClient()
-    
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
+    const { userId } = await auth()
+
+    if (!userId) {
       return { success: false, error: 'User not authenticated' }
     }
 
-    const currentEmail = user.email
+    const client = await clerkClient()
+    const clerkUser = await client.users.getUser(userId)
+    const currentEmail = clerkUser.emailAddresses[0]?.emailAddress
 
-    // Update user_management table
     const { error: updateError } = await supabase
       .from('user_management')
       .update({
@@ -124,93 +123,49 @@ export async function updateUserProfile(data: UpdateProfileData) {
         email: data.email,
         updated_at: new Date().toISOString(),
       })
-      .eq('auth_user_id', user.id)
+      .eq('auth_user_id', userId)
 
     if (updateError) {
       logger.error('Error updating user_management:', updateError)
       return { success: false, error: updateError.message }
     }
 
-    // If email changed, update auth.users
+    const [firstName, ...rest] = data.full_name.split(' ')
+    await client.users.updateUser(userId, {
+      firstName,
+      lastName: rest.join(' ') || undefined,
+    })
+
     if (data.email !== currentEmail) {
-      const { error: emailError } = await adminClient.auth.admin.updateUserById(
-        user.id,
-        { 
-          email: data.email,
-          email_confirm: false // Require email verification
-        }
-      )
-
-      if (emailError) {
-        logger.error('Error updating auth email:', emailError)
-        return { 
-          success: false, 
-          error: 'Failed to update email. Please try again.' 
-        }
-      }
-
-      // Send verification email
-      const { error: verifyError } = await supabase.auth.resetPasswordForEmail(
-        data.email,
-        {
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/profile`,
-        }
-      )
-
-      if (verifyError) {
-        logger.debug('Verification email error:', verifyError)
-      }
-
       revalidatePath('/dashboard/profile')
-      
-      return { 
-        success: true, 
-        message: 'Profile updated! Please check your new email for verification link.',
-        emailChanged: true
-      }
+      redirect('/user-profile')
     }
 
     revalidatePath('/dashboard/profile')
     return { success: true, message: 'Profile updated successfully' }
   } catch (error: unknown) {
+    if (error instanceof Error && (error as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) {
+      throw error
+    }
     logger.error('Error in updateUserProfile:', error)
     return { success: false, error: error instanceof Error ? error.message : 'Failed to update user profile' }
   }
 }
 
 /**
- * Update user password
+ * Update user password — delegates to Clerk.
+ * Old-password verification is handled by Clerk's UserProfile component.
  */
-export async function updateUserPassword(currentPassword: string, newPassword: string) {
+export async function updateUserPassword(_currentPassword: string, newPassword: string) {
   try {
-    const supabase = await createClient()
-    
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
+    const { userId } = await auth()
+
+    if (!userId) {
       return { success: false, error: 'User not authenticated' }
     }
 
-    // Verify current password by attempting to sign in
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: user.email!,
-      password: currentPassword,
-    })
-
-    if (signInError) {
-      return { success: false, error: 'Current password is incorrect' }
-    }
-
-    // Update password
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: newPassword,
-    })
-
-    if (updateError) {
-      logger.error('Error updating password:', updateError)
-      return { success: false, error: updateError.message }
-    }
+    const client = await clerkClient()
+    await client.users.updateUser(userId, { password: newPassword })
 
     return { success: true, message: 'Password updated successfully' }
   } catch (error: unknown) {
@@ -225,26 +180,21 @@ export async function updateUserPassword(currentPassword: string, newPassword: s
 export async function updateProfilePhoto(formData: FormData) {
   try {
     const supabase = await createClient()
-    
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
+    const { userId } = await auth()
+
+    if (!userId) {
       return { success: false, error: 'User not authenticated' }
     }
 
-    // Get file from FormData
     const file = formData.get('file') as File
     if (!file) {
       return { success: false, error: 'No file provided' }
     }
 
-    // Create unique filename
     const fileExt = file.name.split('.').pop()
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`
+    const fileName = `${userId}-${Date.now()}.${fileExt}`
     const filePath = `profiles/${fileName}`
 
-    // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(filePath, file, {
@@ -257,21 +207,19 @@ export async function updateProfilePhoto(formData: FormData) {
       return { success: false, error: uploadError.message }
     }
 
-    // Get public URL
     const { data: urlData } = supabase.storage
       .from('avatars')
       .getPublicUrl(filePath)
 
     const photoUrl = urlData.publicUrl
 
-    // Update user_management with photo URL
     const { error: updateError } = await supabase
       .from('user_management')
       .update({
         photo_url: photoUrl,
         updated_at: new Date().toISOString(),
       })
-      .eq('auth_user_id', user.id)
+      .eq('auth_user_id', userId)
 
     if (updateError) {
       logger.error('Error updating photo_url:', updateError)

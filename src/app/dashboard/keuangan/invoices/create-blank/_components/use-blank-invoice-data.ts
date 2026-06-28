@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { logger } from '@/lib/logger'
 import { getCustomers } from '@/lib/actions/customers'
+import { getInvoiceConfig } from '@/lib/actions/invoice-config'
 import { parseBankAccounts, type BankAccount } from '@/lib/bank-accounts'
 import type { CustomerOption } from './types'
 
@@ -33,12 +34,10 @@ export function useBlankInvoiceData() {
     let cancelled = false
     const load = async () => {
       try {
-        const { createClient } = await import('@/lib/supabase-browser')
-        const supabase = createClient()
-        const { data, error } = await supabase.from('invoice_configuration').select('bank_accounts').eq('is_active', true).single()
+        const config = await getInvoiceConfig()
         if (cancelled) return
-        if (error) throw error
-        setBankAccounts(parseBankAccounts(data?.bank_accounts))
+        if (!config) throw new Error('Invoice config not found')
+        setBankAccounts(parseBankAccounts(config.bank_accounts))
       } catch (error) { logger.error('Error loading bank accounts:', error) }
     }
     load()
