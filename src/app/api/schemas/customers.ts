@@ -25,7 +25,7 @@ export const CreateCustomerSchema = z.object({
 })
 
 export const UpdateCustomerSchema = CreateCustomerSchema.extend({
-  customerId: z.string().uuid(),
+  customerId: z.string().min(1),
 })
 
 export type GetCustomersQuery = z.infer<typeof GetCustomersQuerySchema>

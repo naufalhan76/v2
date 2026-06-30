@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
 import { logger } from '@/lib/logger'
 import { getUserFromRequest } from '@/app/api/middleware/auth'
-import { UpdateCustomerSchema } from '@/app/api/schemas'
+import { CreateCustomerSchema } from '@/app/api/schemas'
 import { handleValidationError } from '@/app/api/utils'
 
 function normalizeUpdateCustomerInput(body: Record<string, unknown>, customerId: string) {
@@ -95,12 +95,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const body = await request.json()
     logger.debug('Updating customer ID:', id, 'with data:', body)
 
-    const validation = UpdateCustomerSchema.safeParse(normalizeUpdateCustomerInput(body, id))
+    const normalized = normalizeUpdateCustomerInput(body, id)
+    const validation = CreateCustomerSchema.safeParse(normalized)
     if (!validation.success) {
       return handleValidationError(validation.error)
     }
-
-    const validated = validation.data
+    const validated = { ...validation.data, customerId: id }
     
     const { data, error } = await supabase
       .from('customers')

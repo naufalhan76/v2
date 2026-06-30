@@ -3,9 +3,8 @@ import { z } from 'zod'
 import { cancelOrder, assignOrdersToTechnician, rescheduleOrder, updateOrderStatus } from '@/lib/actions/orders'
 import type { TransitionRole } from '@/lib/order-status'
 import { jsonSuccess, jsonError, handleValidationError, handleApiError } from '@/app/api/utils'
-import { requireAuth } from '@/app/api/middleware/auth'
+import { requireApiRole } from '@/lib/api-auth'
 import { logRequest, logResponse, measureDuration, createAuditLog } from '@/app/api/middleware/logging'
-import { createClient } from '@/lib/supabase-server'
 import { logger } from '@/lib/logger'
 
 /**
@@ -50,28 +49,15 @@ export async function PATCH(
   const path = `/api/orders/${orderId}`
 
   try {
-    // 1. Auth — Clerk session (cookie or Bearer handled by middleware)
-    const user = await requireAuth(request)
-    if (!user) {
-      return jsonError('Unauthorized: Missing or invalid authentication', 401)
-    }
+    // 1. Auth + Role
+    const auth = await requireApiRole(request, ['ADMIN', 'FINANCE', 'SUPERADMIN'])
+    if (!auth.authorized) return auth.response
+    const user = auth.user
+    const role = auth.role
 
     logRequest(method, path, user.id, { action: 'patch' })
 
-    // 2. Role — read from user_management; block TECHNICIAN
-    const supabase = await createClient()
-    const { data: userMgmt } = await supabase
-      .from('user_management')
-      .select('role')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
-
-    const role = userMgmt?.role ?? null
-    if (!role || role === 'TECHNICIAN') {
-      return jsonError('Forbidden: Insufficient permissions', 403)
-    }
-
-    // 3. Parse + validate body
+    // 2. Parse + validate body
     const body = await request.json().catch(() => ({}))
     const validation = PatchOrderSchema.safeParse(body)
     if (!validation.success) {
@@ -81,12 +67,12 @@ export async function PATCH(
 
     const data = validation.data
 
-    // 4. Finance RBAC — may only advance to INVOICED or PAID
+    // 3. Finance RBAC — may only advance to INVOICED or PAID
     if (role === 'FINANCE' && data.status && !['INVOICED', 'PAID'].includes(data.status)) {
       return jsonError('Forbidden: Finance role can only set status to INVOICED or PAID', 403)
     }
 
-    // 5. Dispatch to the appropriate server action
+    // 4. Dispatch to the appropriate server action
     let result: { success: boolean; data?: unknown; error?: string; message?: string }
 
     if (data.status === 'CANCELLED') {
