@@ -44,12 +44,10 @@ function StatusBadge({ status }: { status: string }) {
   const colors = ORDER_STATUS_COLORS[canonical]
   return (
     <Badge
-      variant="outline"
       className={cn(
-        'font-medium',
+        'font-medium rounded-full',
         colors.bg,
-        colors.text,
-        colors.border
+        colors.text
       )}
     >
       {getStatusLabel(status)}

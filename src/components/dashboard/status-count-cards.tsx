@@ -70,7 +70,7 @@ export function StatusCountCards({
                 <div
                   className={cn('w-2 h-2 rounded-full', colors.bg)}
                 />
-                <span className={cn('text-lg font-[460] leading-none', colors.text)}>
+                <span className="text-lg font-[460] leading-none text-foreground">
                   {count}
                 </span>
                 <span className="text-xs font-medium text-muted-foreground leading-tight">
