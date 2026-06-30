@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     if (!auth.authorized) return auth.response
     const user = auth.user
 
-    const body = await request.json()
+    const body = await request.json().catch(() => ({}))
 
     logRequest(method, path, user.id, { data: body })
 

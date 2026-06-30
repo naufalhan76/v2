@@ -1,8 +1,19 @@
 import { NextRequest } from 'next/server'
+import { z } from 'zod'
 import { getAcUnitById, updateAcUnit, deleteAcUnit } from '@/lib/actions/ac-units'
 import { jsonSuccess, jsonError, handleApiError } from '@/app/api/utils'
 import { logRequest, logResponse, measureDuration } from '@/app/api/middleware/logging'
 import { requireApiRole } from '@/lib/api-auth'
+
+const PutAcUnitBodySchema = z.object({
+  brand: z.string().min(1).optional(),
+  model_number: z.string().optional(),
+  serial_number: z.string().optional(),
+  ac_type: z.string().optional(),
+  capacity_btu: z.union([z.number(), z.string()]).optional(),
+  installation_date: z.string().optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'RETIRED']).optional(),
+})
 
 /**
  * GET /api/ac-units/[id]
@@ -74,11 +85,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const { id } = await params
     const path = `/api/ac-units/${id}`
-    const body = await request.json()
 
     const auth = await requireApiRole(request, ['ADMIN', 'FINANCE', 'SUPERADMIN'])
     if (!auth.authorized) return auth.response
     const user = auth.user
+
+    const rawBody = await request.json()
+    const parsed = PutAcUnitBodySchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return jsonError(`Invalid request body: ${parsed.error.issues.map(i => i.message).join(', ')}`, 400)
+    }
+    const body = parsed.data
 
     logRequest(method, path, user.id, { acUnitId: id, data: body })
 
@@ -88,7 +105,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       model_number: body.model_number,
       serial_number: body.serial_number,
       ac_type: body.ac_type,
-      capacity_btu: body.capacity_btu ? Number(body.capacity_btu) : undefined,
+      capacity_btu: body.capacity_btu !== undefined ? Number(body.capacity_btu) : undefined,
       installation_date: body.installation_date,
       status: body.status,
     })
