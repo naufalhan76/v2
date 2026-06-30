@@ -4,6 +4,15 @@ import { createClient } from '@/lib/supabase-server'
 import { logger } from '@/lib/logger'
 
 const DAY_MS = 24 * 60 * 60 * 1000
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+// ponytail: validates YYYY-MM-DD format and logical range; ceiling = no timezone/TZ-abuse check
+function validateDateRange(startDate?: string, endDate?: string): string | null {
+  if (startDate && !DATE_RE.test(startDate)) return 'Invalid start date format (expected YYYY-MM-DD)'
+  if (endDate && !DATE_RE.test(endDate)) return 'Invalid end date format (expected YYYY-MM-DD)'
+  if (startDate && endDate && startDate > endDate) return 'Start date must not be after end date'
+  return null
+}
 
 function getDateWindow(startDate?: string, endDate?: string) {
   const defaultEndDate = new Date().toISOString().split('T')[0]
@@ -29,6 +38,9 @@ function getDateWindow(startDate?: string, endDate?: string) {
 
 export async function getDashboardKpis(startDate?: string, endDate?: string) {
   try {
+    const dateError = validateDateRange(startDate, endDate)
+    if (dateError) return { success: false, error: dateError }
+
     const supabase = await createClient()
     const { currentStart, currentEnd, previousStart, previousEnd, windowDays } = getDateWindow(startDate, endDate)
 
@@ -260,7 +272,7 @@ export async function getDashboardKpis(startDate?: string, endDate?: string) {
     logger.error('Error fetching dashboard KPIs:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch dashboard data',
+      error: (error as { message?: string })?.message || 'Failed to fetch dashboard data',
     }
   }
 }
@@ -296,7 +308,7 @@ export async function getRecentOrders(limit: number = 5) {
     logger.error('Error fetching recent orders:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch recent orders',
+      error: (error as { message?: string })?.message || 'Failed to fetch recent orders',
     }
   }
 }

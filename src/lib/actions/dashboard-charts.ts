@@ -3,8 +3,20 @@
 import { createClient } from '@/lib/supabase-server'
 import { logger } from '@/lib/logger'
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+function validateDateRange(startDate?: string, endDate?: string): string | null {
+  if (startDate && !DATE_RE.test(startDate)) return 'Invalid start date format (expected YYYY-MM-DD)'
+  if (endDate && !DATE_RE.test(endDate)) return 'Invalid end date format (expected YYYY-MM-DD)'
+  if (startDate && endDate && startDate > endDate) return 'Start date must not be after end date'
+  return null
+}
+
 export async function getChartData(startDate?: string, endDate?: string) {
   try {
+    const dateError = validateDateRange(startDate, endDate)
+    if (dateError) return { success: false, error: dateError, data: [] }
+
     const supabase = await createClient()
     // Set default date range if not provided (30 days ago to today)
     const defaultEndDate = new Date().toISOString().split('T')[0]
@@ -47,8 +59,8 @@ export async function getChartData(startDate?: string, endDate?: string) {
     const dailyData = new Map()
     
     // Initialize all dates in range
-    const currentDate = new Date(dateStart)
-    const endDateObj = new Date(dateEnd)
+    const currentDate = new Date(dateStart + 'T00:00:00.000Z')
+    const endDateObj = new Date(dateEnd + 'T00:00:00.000Z')
     
     while (currentDate <= endDateObj) {
       const dateStr = currentDate.toISOString().split('T')[0]
@@ -57,12 +69,13 @@ export async function getChartData(startDate?: string, endDate?: string) {
         orders: 0,
         revenue: 0,
         estimatedRevenue: 0,
-        formattedDate: new Date(dateStr).toLocaleDateString('id-ID', { 
+        // ponytail: noon UTC avoids locale date-shift in any timezone
+        formattedDate: new Date(dateStr + 'T12:00:00.000Z').toLocaleDateString('id-ID', { 
           day: '2-digit', 
           month: 'short' 
         })
       })
-      currentDate.setDate(currentDate.getDate() + 1)
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1)
     }
     
     // Aggregate orders by date
@@ -109,7 +122,7 @@ export async function getChartData(startDate?: string, endDate?: string) {
     logger.error('❌ Error fetching chart data:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch chart data',
+      error: (error as { message?: string })?.message || 'Failed to fetch chart data',
       data: []
     }
   }
@@ -117,6 +130,9 @@ export async function getChartData(startDate?: string, endDate?: string) {
 
 export async function getStatusBreakdown(startDate?: string, endDate?: string) {
   try {
+    const dateError = validateDateRange(startDate, endDate)
+    if (dateError) return { success: false, error: dateError, data: {} as Record<string, number> }
+
     const supabase = await createClient()
     const defaultEndDate = new Date().toISOString().split('T')[0]
     const defaultStartDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -146,7 +162,7 @@ export async function getStatusBreakdown(startDate?: string, endDate?: string) {
     logger.error('Error fetching status breakdown:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch status breakdown',
+      error: (error as { message?: string })?.message || 'Failed to fetch status breakdown',
       data: {} as Record<string, number>,
     }
   }
@@ -154,6 +170,9 @@ export async function getStatusBreakdown(startDate?: string, endDate?: string) {
 
 export async function getTopTechnicians(startDate?: string, endDate?: string, limit: number = 10) {
   try {
+    const dateError = validateDateRange(startDate, endDate)
+    if (dateError) return { success: false, error: dateError, data: [] }
+
     const supabase = await createClient()
     const defaultEndDate = new Date().toISOString().split('T')[0]
     const defaultStartDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -215,7 +234,7 @@ export async function getTopTechnicians(startDate?: string, endDate?: string, li
     logger.error('Error fetching top technicians:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch top technicians',
+      error: (error as { message?: string })?.message || 'Failed to fetch top technicians',
       data: [],
     }
   }
@@ -232,6 +251,9 @@ export interface StatusByDayPoint {
 
 export async function getStatusByDay(startDate?: string, endDate?: string) {
   try {
+    const dateError = validateDateRange(startDate, endDate)
+    if (dateError) return { success: false, error: dateError, data: [] as StatusByDayPoint[] }
+
     const supabase = await createClient()
     const defaultEndDate = new Date().toISOString().split('T')[0]
     const defaultStartDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -296,7 +318,7 @@ export async function getStatusByDay(startDate?: string, endDate?: string) {
     logger.error('Error fetching status by day:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch status by day',
+      error: (error as { message?: string })?.message || 'Failed to fetch status by day',
       data: [] as StatusByDayPoint[],
     }
   }

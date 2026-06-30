@@ -80,14 +80,14 @@ function AnimatedKpiValue({
   )
 }
 
-export function StatsCards() {
+export function StatsCards({ startDate, endDate }: { startDate?: string; endDate?: string } = {}) {
   const [kpis, setKpis] = useState<DashboardKPI[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    getDashboardKpis().then((res) => {
+    getDashboardKpis(startDate, endDate).then((res) => {
       if (cancelled) return
       setKpis(adaptKpis(res))
       setLoading(false)
@@ -95,7 +95,7 @@ export function StatsCards() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [startDate, endDate])
 
   if (loading) {
     return (

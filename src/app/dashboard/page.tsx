@@ -190,7 +190,7 @@ export default function DashboardPage() {
 
           {/* Row 1: KPI Stats (full width) */}
           <div className="animate-enter" style={{ animationDelay: '60ms' }}>
-            <StatsCards />
+            <StatsCards startDate={dateRangeStr.start} endDate={dateRangeStr.end} />
           </div>
 
           {/* Row 2: Orders & Revenue (2/3) + Status Breakdown Donut (1/3) */}
