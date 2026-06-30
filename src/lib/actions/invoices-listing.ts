@@ -72,7 +72,7 @@ export async function getInvoices(filters?: {
     throw new Error('Gagal memuat data invoice')
   }
 
-  let invoicesWithOverdue: Invoice[] = (data || []).map((row): Invoice => {
+  const invoicesWithOverdue: Invoice[] = (data || []).map((row): Invoice => {
     const withCustomer = withBlankInvoiceCustomer({
       ...row,
       source: getInvoiceSource(row),
