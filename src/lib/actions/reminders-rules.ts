@@ -105,7 +105,11 @@ export async function updateReminderRule(
     const patch: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     }
-    if (input.name !== undefined) patch.name = input.name.trim()
+    if (input.name !== undefined) {
+      const trimmed = input.name.trim()
+      if (!trimmed) return { success: false, error: 'Name is required' }
+      patch.name = trimmed
+    }
     if (input.days_before_due !== undefined) {
       if (!Number.isFinite(input.days_before_due) || input.days_before_due < 0) {
         return { success: false, error: 'days_before_due must be >= 0' }
@@ -119,6 +123,7 @@ export async function updateReminderRule(
       patch.channel = input.channel
     }
     if (input.message_template !== undefined) {
+      if (!input.message_template.trim()) return { success: false, error: 'Message template is required' }
       patch.message_template = input.message_template
     }
     if (input.is_active !== undefined) patch.is_active = input.is_active

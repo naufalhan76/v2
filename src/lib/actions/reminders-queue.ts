@@ -146,7 +146,9 @@ export async function generateRemindersFromAcUnits(options?: { asSystem?: boolea
     if (rulesErr) throw rulesErr; const rules = (rulesData ?? []) as ReminderRule[]
     if (rules.length === 0) return { success: true, data: { created: 0, skipped: 0, rulesScanned: 0 } }
     const maxLead = rules.reduce((acc, r) => Math.max(acc, r.days_before_due), 0)
-    const now = new Date(), cutoff = new Date(now.getTime() + maxLead * 24 * 60 * 60 * 1000), cutoffIso = cutoff.toISOString().slice(0, 10), todayIso = now.toISOString().slice(0, 10)
+    // ponytail: hardcoded WIB (UTC+7) — use timezone-aware approach if deploying outside Indonesia
+    const wibNowMs = Date.now() + 7 * 3600_000
+    const now = new Date(), cutoffIso = new Date(wibNowMs + maxLead * 24 * 60 * 60 * 1000).toISOString().slice(0, 10), todayIso = new Date(wibNowMs).toISOString().slice(0, 10)
     const { data: unitsData, error: unitsErr } = await supabase.from('ac_units').select(`ac_unit_id, brand, model_number, next_service_due_date, locations ( location_id, full_address, city, customers ( customer_id, customer_name, phone_number, email ) )`).not('next_service_due_date', 'is', null).lte('next_service_due_date', cutoffIso).gte('next_service_due_date', todayIso)
     if (unitsErr) throw unitsErr; const units = (unitsData ?? []) as unknown as ReminderAcUnitRow[]
     if (units.length === 0) return { success: true, data: { created: 0, skipped: 0, rulesScanned: rules.length } }
@@ -206,9 +208,10 @@ export async function createManualReminder(acUnitId: string, ruleId?: string): P
     const { data: unitData, error: unitErr } = await supabase.from('ac_units').select(`ac_unit_id, brand, model_number, next_service_due_date, locations ( location_id, full_address, city, customers ( customer_id, customer_name, phone_number, email ) )`).eq('ac_unit_id', acUnitId).single()
     if (unitErr) throw unitErr; const unit = unitData as unknown as ReminderAcUnitRow, customer = unit.locations?.customers ?? null
     if (!customer) return { success: false, error: 'Customer untuk AC unit ini tidak ditemukan.' }
+    if (!unit.next_service_due_date) return { success: false, error: 'AC unit has no scheduled service date' }
     const recipient = pickRecipient(rule.channel, customer)
     if (!recipient) { const l = rule.channel === 'WHATSAPP' ? 'nomor WhatsApp' : 'email'; return { success: false, error: `Customer belum memiliki ${l} untuk channel rule ini.` } }
-    const dueIso = unit.next_service_due_date ?? new Date().toISOString().slice(0, 10)
+    const dueIso = unit.next_service_due_date
     const locationLabel = [unit.locations?.full_address, unit.locations?.city].filter(Boolean).join(', ') || null
     const ctx: ReminderTemplateContext = { customer_name: customer.customer_name ?? null, ac_brand: unit.brand, ac_model: unit.model_number, location: locationLabel, due_date: formatDueDate(dueIso) }
     const { data: insertData, error: insertErr } = await supabase.from('customer_reminders').insert({ customer_id: customer.customer_id, ac_unit_id: unit.ac_unit_id, rule_id: rule.rule_id, due_date: dueIso, channel: rule.channel, recipient, message: formatReminderMessage(rule.message_template, ctx), status: 'PENDING' }).select('reminder_id').single()
