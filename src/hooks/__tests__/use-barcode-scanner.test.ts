@@ -19,6 +19,12 @@ describe("useBarcodeScanner", () => {
       writable: true,
       configurable: true,
     })
+    // ponytail: stub secure context so HTTPS check passes
+    Object.defineProperty(window, "isSecureContext", {
+      value: true,
+      writable: true,
+      configurable: true,
+    })
   })
 
   it("returns isSupported=false when BarcodeDetector is unavailable", () => {

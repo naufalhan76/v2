@@ -203,6 +203,12 @@ describe('sync-manager current queue behavior', () => {
       randomUUID: vi.fn(() => '99999999-9999-4999-8999-999999999999'),
       getRandomValues: (bytes: Uint8Array) => bytes.fill(7),
     })
+    // ponytail: stub Clerk session for drainQueue auth check
+    vi.stubGlobal('Clerk', {
+      session: {
+        getToken: vi.fn(async () => 'mock-clerk-token'),
+      },
+    })
   })
 
   it('enqueueReport normalizes payload, stores pending report, and requests report background sync', async () => {
@@ -385,22 +391,34 @@ describe('sync-manager current queue behavior', () => {
       pendingPhoto('signature-photo-id', 'signature', -1),
     ]
     dbState.reports = [pendingReport({ photoIds: ['before-photo-id', 'after-photo-id', 'signature-photo-id'] })]
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => jsonResponse(200, { success: true }))
+    const bucketCalls: string[] = []
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/api/photos/signed-upload-url')) {
+        const body = JSON.parse(String(init?.body))
+        bucketCalls.push(body.bucket)
+        return jsonResponse(200, { signedUrl: `https://upload.test/${body.bucket}/${body.path}` })
+      }
+      if (url.startsWith('https://upload.test/')) {
+        return new Response(null, { status: 200 })
+      }
+      return jsonResponse(200, { success: true })
+    })
     vi.stubGlobal('fetch', fetchMock)
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://storage.test')
 
     const result = await drainQueue()
 
     expect(result.reportsSynced).toBe(1)
-    expect(storageState.bucketCalls).toEqual([
-      'service-photos', 'service-photos',
-      'signatures', 'signatures',
+    expect(bucketCalls).toEqual([
+      'service-photos', 'service-photos', 'signatures',
     ])
     const reportCall = fetchMock.mock.calls.find((call) => String(call[0]).endsWith('/report'))
     if (!reportCall) throw new Error('expected report fetch call')
     const postedPayload = JSON.parse(String(reportCall[1]?.body))
-    expect(postedPayload.customer_signature_url).toBe('https://storage.test/signatures/WO-SYNC-001/signature-photo-id.png')
-    expect(postedPayload.ac_units[0].photos_before).toEqual(['WO-SYNC-001/before-photo-id.jpeg'])
-    expect(postedPayload.ac_units[0].photos_after).toEqual(['WO-SYNC-001/after-photo-id.jpeg'])
+    expect(postedPayload.customer_signature_url).toBe('https://storage.test/storage/v1/object/public/signatures/WO-SYNC-001/signature-photo-id.png')
+    expect(postedPayload.ac_units[0].photos_before).toEqual(['https://storage.test/storage/v1/object/public/service-photos/WO-SYNC-001/before-photo-id.jpeg'])
+    expect(postedPayload.ac_units[0].photos_after).toEqual(['https://storage.test/storage/v1/object/public/service-photos/WO-SYNC-001/after-photo-id.jpeg'])
     expect(dbState.reports).toEqual([])
     expect(dbState.photos).toEqual([])
   })
@@ -408,8 +426,16 @@ describe('sync-manager current queue behavior', () => {
   it('keeps reports queued when photo upload fails', async () => {
     dbState.photos = [pendingPhoto('before-photo-id', 'before', 0)]
     dbState.reports = [pendingReport({ photoIds: ['before-photo-id'] })]
-    storageState.upload.mockResolvedValueOnce({ data: null, error: { message: 'bucket unavailable' } } as never)
-    const fetchMock = vi.fn(async () => jsonResponse(200, { success: true }))
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/api/photos/signed-upload-url')) {
+        return jsonResponse(200, { signedUrl: 'https://upload.test/fail' })
+      }
+      if (url.startsWith('https://upload.test/')) {
+        return new Response(null, { status: 500, statusText: 'bucket unavailable' })
+      }
+      return jsonResponse(200, { success: true })
+    })
     vi.stubGlobal('fetch', fetchMock)
 
     const result = await drainQueue()
@@ -424,7 +450,6 @@ describe('sync-manager current queue behavior', () => {
         status: 'pending',
       },
     ])
-    expect(fetchMock).not.toHaveBeenCalled()
     expect(dbState.reports).toHaveLength(1)
     expect(dbState.reports[0]).toMatchObject({
       status: 'pending',
