@@ -112,9 +112,14 @@ export async function deleteUser(userId: string): Promise<{ success: boolean; er
     if (!userData) return { success: false, error: 'User not found' }
     if (!userData.auth_user_id) return { success: false, error: 'User has no Clerk account linked' }
     const client = await clerkClient()
-    await client.users.deleteUser(userData.auth_user_id)
+    try {
+      await client.users.deleteUser(userData.auth_user_id)
+    } catch (clerkErr: unknown) {
+      // ponytail: Clerk 404 → user already gone (Supabase migrate, manual delete). Clean DB anyway.
+      logger.warn('Clerk deleteUser failed, proceeding with DB cleanup:', clerkErr)
+    }
     const { error: dbError } = await supabase.from('user_management').delete().eq('user_id', userId)
-    if (dbError) logger.error('Clerk user deleted but DB record remains:', dbError)
+    if (dbError) { logger.error('DB delete failed after Clerk cleanup:', dbError); return { success: false, error: dbError.message } }
     revalidatePath('/dashboard/manajemen/user')
     void auditLog('DELETE', 'user_management', userId)
     return { success: true, error: null }

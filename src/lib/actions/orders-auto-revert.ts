@@ -19,7 +19,8 @@ export interface AutoRevertResult {
 export async function autoRevertStaleOrders(): Promise<AutoRevertResult> {
   try {
     const supabase = createAdminClient()
-    const today = new Date().toISOString().slice(0, 10)
+    // ponytail: hardcoded WIB (UTC+7) — use timezone-aware approach if deploying outside Indonesia
+    const today = new Date(Date.now() + 7 * 3600_000).toISOString().slice(0, 10)
 
     const { data: staleOrders, error: fetchError } = await supabase
       .from('orders')

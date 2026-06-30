@@ -55,7 +55,7 @@ export async function getOrders(filters?: {
             contact_number
           )
         )
-      `, { count: filters?.withCount ? 'exact' : undefined })
+      `, { count: filters?.withCount !== false ? 'exact' : undefined })
       .order('created_at', { ascending: false })
       .is('deleted_at', null)
       .range(from, to)
@@ -99,7 +99,7 @@ export async function getOrders(filters?: {
     logger.error('Supabase getOrders error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : JSON.stringify(error),
+      error: (error as { message?: string })?.message || JSON.stringify(error),
       data: [],
       pagination: { total: 0, page: 1, limit: 20, totalPages: 0 },
     }
@@ -171,7 +171,7 @@ export async function getOrderById(orderId: string) {
     logger.error('Error fetching order:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch order',
+      error: (error as { message?: string })?.message || 'Failed to fetch order',
     }
   }
 }

@@ -68,7 +68,7 @@ export async function createCustomer(data: {
     logger.error('[createCustomer] Error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create customer'
+      error: (error as { message?: string })?.message || 'Failed to create customer'
     }
   }
 }
@@ -201,7 +201,7 @@ export async function createOrderWithItems(input: CreateOrderInput): Promise<{
     logger.error('[createOrderWithItems] Error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create order'
+      error: (error as { message?: string })?.message || 'Failed to create order'
     }
   }
 }
@@ -252,7 +252,7 @@ export async function createLocation(data: {
     logger.error('[createLocation] Error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create location'
+      error: (error as { message?: string })?.message || 'Failed to create location'
     }
   }
 }
