@@ -36,6 +36,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invoice ID required' }, { status: 400 })
     }
 
+    // ponytail: in-memory dedup would break across replicas; DB check is correct and cheap
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    const { data: recentEmails } = await supabase
+      .from('invoice_communications')
+      .select('communication_id')
+      .eq('invoice_id', invoiceId)
+      .eq('communication_type', 'EMAIL')
+      .gte('sent_at', fiveMinAgo)
+      .limit(1)
+
+    if (recentEmails && recentEmails.length > 0) {
+      return NextResponse.json(
+        { error: 'Email already sent for this invoice within the last 5 minutes' },
+        { status: 429 }
+      )
+    }
+
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
       .select(`*, customers (customer_id, customer_name, email, phone_number)`)
@@ -124,7 +141,7 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     logger.error('Send email error:', error)
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Internal server error', details: (error as { message?: string })?.message || String(error) },
       { status: 500 }
     )
   }

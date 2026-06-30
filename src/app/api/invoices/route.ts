@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     if (orderId) {
       const { data, error } = await supabase
         .from('invoices')
-        .select('invoice_id, invoice_number, invoice_type, status, order_id')
+        .select('*')
         .eq('order_id', orderId)
         .order('created_at', { ascending: false })
 
@@ -31,10 +31,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Default: return all invoices
+    const limit = Math.min(Number(searchParams.get('limit')) || 50, 100)
+    const offset = Number(searchParams.get('offset')) || 0
+
     const { data, error } = await supabase
       .from('invoices')
       .select('*')
       .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
