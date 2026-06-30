@@ -6,6 +6,7 @@ import { QueryProvider } from '@/components/query-provider'
 import { AnimationProvider } from '@/components/animation-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { ThemeProvider } from '@/components/theme-provider'
+import { clerkAppearance } from '@/lib/clerk-appearance'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
@@ -25,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body className={inter.variable}>
-        <ClerkProvider>
+        <ClerkProvider appearance={clerkAppearance}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
