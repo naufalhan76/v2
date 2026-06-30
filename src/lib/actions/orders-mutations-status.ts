@@ -89,23 +89,24 @@ export async function updateOrderStatus(
     
     if (error) throw error
     
-    await supabase.from('order_status_transitions').insert({
+    const { error: insertError } = await supabase.from('order_status_transitions').insert({
       order_id: orderId,
       from_status: currentOrder.status,
       to_status: newStatus,
       notes,
       transition_date: new Date().toISOString(),
     })
-    
+    if (insertError) logger.warn('Transition insert failed:', insertError)
+
     revalidatePath('/orders')
     revalidatePath('/dashboard')
-    
+
     return { success: true, data }
   } catch (error: unknown) {
     logger.error('Error updating order status:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to update order status',
+      error: (error as { message?: string })?.message || 'Failed to update order status',
     }
   }
 }
@@ -158,7 +159,7 @@ export async function cancelOrder(orderId: string, reason?: string) {
           updated_at: new Date().toISOString()
         })
         .in('ac_unit_id', acUnitIds)
-        .eq('status', 'ACTIVE')
+        .neq('status', 'INACTIVE')
       
       if (acUpdateError) {
         logger.error('Error updating AC units status:', acUpdateError)
@@ -171,7 +172,7 @@ export async function cancelOrder(orderId: string, reason?: string) {
       .select('invoice_id, status')
       .eq('order_id', orderId)
       .eq('invoice_type', 'FINAL')
-      .neq('status', 'CANCELLED')
+      .not('status', 'in', ['CANCELLED', 'VOID'])
 
     if (finalInvoices?.length) {
       const hasPaidOrPartial = finalInvoices.some(
@@ -197,13 +198,14 @@ export async function cancelOrder(orderId: string, reason?: string) {
     
     if (error) throw error
     
-    await supabase.from('order_status_transitions').insert({
+    const { error: insertError } = await supabase.from('order_status_transitions').insert({
       order_id: orderId,
       from_status: currentOrder.status,
       to_status: 'CANCELLED',
       notes: reason || 'Order cancelled',
       transition_date: new Date().toISOString(),
     })
+    if (insertError) logger.warn('Transition insert failed:', insertError)
     
     try {
       const { data: proformas } = await supabase
@@ -261,7 +263,7 @@ export async function cancelOrder(orderId: string, reason?: string) {
     logger.error('Error cancelling order:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to cancel order',
+      error: (error as { message?: string })?.message || 'Failed to cancel order',
     }
   }
 }
@@ -290,18 +292,34 @@ export async function deleteOrder(orderId: string) {
     logger.error('Error deleting order:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete order',
+      error: (error as { message?: string })?.message || 'Failed to delete order',
     }
   }
 }
 
 export async function acceptOrder(orderId: string) {
+  const { userId } = await auth()
+  if (!userId) {
+    return { success: false, error: 'Tidak terautentikasi' }
+  }
+
   const supabase = await createClient()
+
+  const { data: userMgmt } = await supabase
+    .from('user_management')
+    .select('role')
+    .eq('auth_user_id', userId)
+    .single()
+
+  const role = userMgmt?.role as string | undefined
+  if (!role || !['ADMIN', 'SUPERADMIN'].includes(role)) {
+    return { success: false, error: 'Tidak memiliki izin untuk menerima order' }
+  }
 
   try {
     const { error } = await supabase
       .from('orders')
-      .update({ status: 'ACCEPTED', updated_at: new Date().toISOString() })
+      .update({ status: 'PENDING', updated_at: new Date().toISOString() })
       .eq('order_id', orderId)
 
     if (error) throw error
@@ -315,7 +333,7 @@ export async function acceptOrder(orderId: string) {
     logger.error('Error accepting order:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to accept order',
+      error: (error as { message?: string })?.message || 'Failed to accept order',
     }
   }
 }

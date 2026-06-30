@@ -1,8 +1,10 @@
 'use server'
 
+import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
+import { ADMIN_ROLES, type UserRole } from '@/lib/rbac'
 import {
   sendJobAssignedNotification,
   sendJobReassignedAwayNotification,
@@ -15,6 +17,9 @@ export async function assignOrdersToTechnician(data: {
   scheduledDate: string
 }) {
   try {
+    // ponytail: dedup orderIds to avoid inflated capacity counts and duplicate RPC work
+    data.orderIds = [...new Set(data.orderIds)]
+
     logger.debug('Assigning orders:', data)
     const supabase = await createClient()
 
@@ -53,10 +58,19 @@ export async function assignOrdersToTechnician(data: {
       }
     }
 
+    // ponytail: filter lead tech out of helpers — ceiling: no server-side RPC guard yet
+    const helperIds = (data.helperTechnicianIds || []).filter(id => id !== data.technicianId)
+
+    // ponytail: reject past dates at app layer — ceiling: DB constraint would be stronger
+    const today = new Date().toISOString().slice(0, 10)
+    if (data.scheduledDate < today) {
+      return { success: false, error: 'Tanggal tidak boleh di masa lalu' }
+    }
+
     const { error: rpcError } = await supabase.rpc('assign_order_to_technician', {
       p_order_ids: data.orderIds,
       p_lead_technician_id: data.technicianId,
-      p_helper_ids: data.helperTechnicianIds || [],
+      p_helper_ids: helperIds,
       p_scheduled_date: data.scheduledDate,
     })
 
@@ -88,17 +102,44 @@ export async function assignOrdersToTechnician(data: {
     }
   } catch (error: unknown) {
     logger.error('Error assigning orders:', error)
+    const msg = (error != null && typeof error === 'object' && 'message' in error)
+      ? String((error as { message: unknown }).message)
+      : 'Failed to assign orders'
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to assign orders',
+      error: msg,
     }
   }
+}
+
+async function requireAdminRole(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { userId } = await auth()
+  if (!userId) return { success: false as const, error: 'Unauthorized' }
+
+  const { data: userMgmt, error: roleErr } = await supabase
+    .from('user_management')
+    .select('role')
+    .eq('auth_user_id', userId)
+    .maybeSingle()
+
+  if (roleErr || !userMgmt) {
+    return { success: false as const, error: 'Role pengguna tidak ditemukan' }
+  }
+
+  if (!(ADMIN_ROLES as readonly string[]).includes(userMgmt.role)) {
+    return { success: false as const, error: 'Unauthorized: ADMIN/SUPERADMIN role required' }
+  }
+
+  return { success: true as const }
 }
 
 export async function addHelperTechnician(orderId: string, helperTechnicianId: string) {
   try {
     const supabase = await createClient()
-    
+
+    const adminCheck = await requireAdminRole(supabase)
+    if (!adminCheck.success) return adminCheck
+
     const { error } = await supabase
       .from('order_technicians')
       .insert({
@@ -107,18 +148,18 @@ export async function addHelperTechnician(orderId: string, helperTechnicianId: s
         role: 'helper',
         assigned_at: new Date().toISOString()
       })
-    
+
     if (error) throw error
-    
+
     revalidatePath('/dashboard/operasional/monitoring-ongoing')
     revalidatePath('/dashboard')
-    
+
     return { success: true, message: 'Helper technician added successfully' }
   } catch (error: unknown) {
     logger.error('Error adding helper technician:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to add helper technician',
+      error: (error as { message?: string })?.message || 'Failed to add helper technician',
     }
   }
 }
@@ -126,25 +167,41 @@ export async function addHelperTechnician(orderId: string, helperTechnicianId: s
 export async function removeHelperTechnician(orderId: string, helperTechnicianId: string) {
   try {
     const supabase = await createClient()
-    
+
+    const adminCheck = await requireAdminRole(supabase)
+    if (!adminCheck.success) return adminCheck
+
+    const { data: existing, error: selectErr } = await supabase
+      .from('order_technicians')
+      .select('technician_id')
+      .eq('order_id', orderId)
+      .eq('technician_id', helperTechnicianId)
+      .eq('role', 'helper')
+      .maybeSingle()
+
+    if (selectErr) throw selectErr
+    if (!existing) {
+      return { success: false, error: 'Helper tidak ditemukan' }
+    }
+
     const { error } = await supabase
       .from('order_technicians')
       .delete()
       .eq('order_id', orderId)
       .eq('technician_id', helperTechnicianId)
       .eq('role', 'helper')
-    
+
     if (error) throw error
-    
+
     revalidatePath('/dashboard/operasional/monitoring-ongoing')
     revalidatePath('/dashboard')
-    
+
     return { success: true, message: 'Helper technician removed successfully' }
   } catch (error: unknown) {
     logger.error('Error removing helper technician:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to remove helper technician',
+      error: (error as { message?: string })?.message || 'Failed to remove helper technician',
     }
   }
 }

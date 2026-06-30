@@ -40,7 +40,7 @@ export async function createOrder(orderData: {
     logger.error('Error creating order:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create order',
+      error: (error as { message?: string })?.message || 'Failed to create order',
     }
   }
 }
@@ -51,6 +51,9 @@ export async function rescheduleOrder(params: {
   newScheduledDate: string
 }) {
   try {
+    const { userId } = await auth()
+    if (!userId) return { success: false, error: 'Unauthorized' }
+
     const supabase = await createClient()
 
     const { data: currentOrder, error: fetchError } = await supabase
@@ -59,6 +62,11 @@ export async function rescheduleOrder(params: {
       .eq('order_id', params.orderId)
       .single()
     if (fetchError) throw fetchError
+
+    const terminal = ['COMPLETED', 'PAID', 'CANCELLED']
+    if (terminal.includes(currentOrder.status)) {
+      return { success: false, error: `Cannot reschedule ${currentOrder.status} order` }
+    }
 
     const { data: prevLeadRow } = await supabase
       .from('order_technicians')
@@ -114,7 +122,7 @@ export async function rescheduleOrder(params: {
     logger.error('Error rescheduling order:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to reschedule order',
+      error: (error as { message?: string })?.message || 'Failed to reschedule order',
     }
   }
 }
