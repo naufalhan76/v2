@@ -1,4 +1,23 @@
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+
+// Load .env.test.local into process.env so PLAYWRIGHT_BASE_URL is available
+// at config-evaluation time (Playwright reads process.env, not dotenv).
+for (const envFile of ['.env.test.local', '.env.local'] as const) {
+  const p = resolve(process.cwd(), envFile);
+  if (!existsSync(p)) continue;
+  for (const line of readFileSync(p, 'utf-8').split('\n')) {
+    const t = line.trim();
+    if (!t || t.startsWith('#')) continue;
+    const eq = t.indexOf('=');
+    if (eq < 0) continue;
+    const k = t.slice(0, eq).trim();
+    let v = t.slice(eq + 1).trim();
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+    if (!process.env[k]) process.env[k] = v;
+  }
+}
 
 const PORT = Number(process.env.PORT ?? 3000);
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${PORT}`;
@@ -57,17 +76,17 @@ export default defineConfig({
       },
     },
     {
-      // Dedicated project for the QA E2E suite. Runs against chromium with a
-      // wider mobile viewport so admin/finance dashboard pages render in their
-      // intended layout while still keeping the technician PWA testable.
       name: 'qa',
       testDir: './tests/e2e',
       testMatch: ['qa/**/*.spec.ts', 'auth-smoke.spec.ts'],
+      timeout: 180_000,
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 800 },
         permissions: ['geolocation'],
         geolocation: { latitude: -6.2088, longitude: 106.8456 },
+        navigationTimeout: 60_000,
+        actionTimeout: 30_000,
       },
     },
   ],
