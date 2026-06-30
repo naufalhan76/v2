@@ -1,6 +1,6 @@
 # AC Service Management Dashboard
 
-Web-based management system for AC service operations. Includes admin dashboard (order management, invoicing, customer management) and Progressive Web App for field technicians. Built with Next.js 15, React 19, Supabase, and shadcn/ui.
+Web-based management system for AC service operations. Includes admin dashboard (order management, invoicing, customer management) and Progressive Web App for field technicians. Built with Next.js 15, React 19, Supabase, Clerk, and shadcn/ui.
 
 ## Features
 
@@ -58,8 +58,8 @@ Web-based management system for AC service operations. Includes admin dashboard 
 | **UI** | React 19, TypeScript, Tailwind CSS, shadcn/ui |
 | **State** | TanStack Query v5, TanStack Table v8 |
 | **Forms** | React Hook Form + Zod |
-| **Database** | Supabase PostgreSQL (RLS enabled) |
-| **Auth** | Supabase JWT + HTTP-only cookies |
+| **Database** | Supabase PostgreSQL |
+| **Auth** | Clerk (JWT + HTTP-only cookies) |
 | **Realtime** | Supabase Realtime (CDC subscriptions) |
 | **API** | Next.js Server Actions + REST API routes |
 | **Email** | Resend API |
@@ -73,7 +73,9 @@ Web-based management system for AC service operations. Includes admin dashboard 
 ```
 src/
 ├── app/                   # Next.js App Router
-│   ├── (auth)/            # Login, confirm email
+│   ├── sign-in/           # Clerk sign-in
+│   ├── sign-up/           # Clerk sign-up
+│   ├── page.tsx           # Root redirect
 │   ├── api/               # REST API endpoints
 │   ├── dashboard/         # Admin pages (orders, customers, invoices)
 │   └── technician/        # Technician PWA routes
@@ -82,8 +84,11 @@ src/
 │   └── ...                # Domain components
 ├── hooks/                 # Custom React hooks
 ├── lib/
-│   ├── actions/           # Server actions per domain
+│   ├── actions/           # Server actions per domain (split files)
+│   ├── clerk-appearance.ts#   Clerk UI theme config
 │   └── ...                # Clients, utils, state machine
+├── tests/
+│   └── mocks/             # Shared test mocks (Clerk, Supabase, etc.)
 ├── types/                 # TypeScript types
 └── styles/                # Global CSS
 supabase/migrations/       # Database migrations (run in order)
@@ -104,10 +109,16 @@ scripts/                   # Seed scripts, utilities
 cp .env.example .env.local
 ```
 
-Edit `.env.local` with your Supabase credentials:
+Edit `.env.local` with your credentials:
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server only)
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` — Clerk publishable key
+- `CLERK_SECRET_KEY` — Clerk secret key (server only)
+- `NEXT_PUBLIC_CLERK_SIGN_IN_URL` — Clerk sign-in path (default: `/sign-in`)
+- `NEXT_PUBLIC_CLERK_SIGN_UP_URL` — Clerk sign-up path (default: `/sign-up`)
+- `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL` — Redirect after sign-in (default: `/dashboard`)
+- `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL` — Redirect after sign-up (default: `/dashboard`)
+- `NEXT_PUBLIC_CLERK_AFTER_SIGN_OUT_URL` — Redirect after sign-out (default: `/sign-in`)
 - `NEXT_PUBLIC_NOMINATIM_BASE_URL` — Nominatim URL (default: `https://nominatim.openstreetmap.org`)
 - `NEXT_PUBLIC_OSM_TILE_URL` — OSM Tile URL (default: `https://tile.openstreetmap.org/{z}/{x}/{y}.png`)
 
@@ -155,7 +166,7 @@ Connect repo to Vercel, set environment variables, deploy. Configure Vercel Cron
 ## Testing
 
 ```bash
-bun run test           # Vitest unit tests (44+ test files)
+bun run test           # Vitest unit tests (100 test files)
 bun run test:ui        # Vitest UI mode
 bun run type-check     # tsc --noEmit (type safety gate)
 bun run test:e2e       # Playwright E2E (headed)

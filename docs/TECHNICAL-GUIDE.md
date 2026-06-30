@@ -32,7 +32,7 @@ This technical guide provides comprehensive documentation of the AC Service Mana
 - **Server Actions**: Next.js server-side functions for data mutations
 - **REST API Routes**: HTTP endpoints for external/mobile clients
 - **State Machine**: Strict order lifecycle with deterministic transitions
-- **Row-Level Security (RLS)**: Database-level access control
+- **Clerk Auth**: External authentication with JWT + HTTP-only cookies
 - **Offline-First**: IndexedDB queue for technician PWA
 
 ---
@@ -72,11 +72,11 @@ This technical guide provides comprehensive documentation of the AC Service Mana
 
 **Database & Auth:**
 - **Supabase PostgreSQL** - Primary database
-  - Row-Level Security (RLS) enabled
   - Postgres 15 with extensions (uuid-ossp, pgcrypto)
-- **Supabase Auth** - JWT-based authentication
+- **Clerk** - External authentication
   - Email/password authentication
   - Session management via HTTP-only cookies
+  - Server-side: `auth()` from `@clerk/nextjs/server`
 - **Supabase Realtime** - Postgres Change Data Capture (CDC)
   - WebSocket subscriptions for live updates
 
@@ -149,8 +149,8 @@ This technical guide provides comprehensive documentation of the AC Service Mana
 │  Next.js Server (Node.js 18)                                │
 │  - src/lib/actions/ (Server Actions)                        │
 │  - src/app/api/ (REST API Routes)                           │
-│  - Supabase Client (RLS-aware)                              │
-│  - Supabase Admin Client (RLS-bypass)                       │
+│  - Supabase Client (service role key)                       │
+│  - Clerk Auth (JWT session)                                 │
 └─────────────────┬───────────────────────────────────────────┘
                   │
                   │ SQL Queries
@@ -159,7 +159,6 @@ This technical guide provides comprehensive documentation of the AC Service Mana
 │                     Data Layer                               │
 ├─────────────────────────────────────────────────────────────┤
 │  Supabase PostgreSQL (AWS ap-northeast-2)                   │
-│  - Row-Level Security (RLS)                                 │
 │  - Realtime subscriptions                                   │
 │  - Storage buckets                                          │
 └─────────────────────────────────────────────────────────────┘
@@ -170,14 +169,16 @@ This technical guide provides comprehensive documentation of the AC Service Mana
 **Layered Architecture:**
 - **Presentation Layer**: React components, UI logic
 - **Application Layer**: Server actions, API routes, business logic
-- **Data Layer**: Supabase PostgreSQL, RLS policies
+- **Data Layer**: Supabase PostgreSQL
 
 **Separation of Concerns:**
-- **Server Actions** (`src/lib/actions/`): Domain-specific data operations
-  - `orders.ts`: Order CRUD and state transitions
-  - `invoices.ts`: Invoice generation and payment recording
-  - `technicians.ts`: Technician management
-  - `customers.ts`: Customer and location management
+- **Server Actions** (`src/lib/actions/`): Domain-specific data operations (split files)
+   - `orders-mutations-status.ts`, `orders-mutations-assign.ts`, `orders-mutations-schedule.ts`: Order state transitions
+   - `orders-queries.ts`: Order reads
+   - `invoices-create.ts`, `invoices-listing.ts`, `invoices-payments.ts`, `invoices-order.ts`: Invoice operations
+   - `reminders-queue.ts`, `reminders-rules.ts`: Reminder generation and rules
+   - `technicians.ts`: Technician management
+   - `customers.ts`: Customer and location management
 - **API Routes** (`src/app/api/`): External client endpoints
   - `/api/orders`: Order management for mobile app
   - `/api/technician`: Technician-specific endpoints
@@ -212,9 +213,9 @@ React Component
 TanStack Query Hook
     ↓ (execute on server)
 Server Action (src/lib/actions/)
-    ↓ (query database)
-Supabase Client (RLS-aware)
-    ↓ (SQL query)
+     ↓ (query database)
+Supabase Client (service role key)
+     ↓ (SQL query)
 PostgreSQL Database
     ↓ (return data)
 Server Action
@@ -226,7 +227,7 @@ React Component
 
 **Example:**
 ```typescript
-// Server Action (src/lib/actions/orders.ts)
+// Server Action (src/lib/actions/orders-queries.ts)
 export async function getOrders(filters: OrderFilters) {
   const supabase = await createClient()
   const { data, error } = await supabase
@@ -238,7 +239,7 @@ export async function getOrders(filters: OrderFilters) {
 
 // React Component
 import { useQuery } from '@tanstack/react-query'
-import { getOrders } from '@/lib/actions/orders'
+import { getOrders } from '@/lib/actions/orders-queries'
 
 function OrderList() {
   const { data } = useQuery({
@@ -281,19 +282,23 @@ Mobile App (PWA)
 **Example:**
 ```typescript
 // API Route (src/app/api/orders/route.ts)
-export async function GET(request: Request) {
-  const { user } = await verifyAuth(request)
+import { getAuth } from '@clerk/nextjs/server'
+
+export async function GET(request: NextRequest) {
+  const { userId } = getAuth(request)
+  if (!userId) return unauthorizedResponse()
+  
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('orders')
     .select('*')
-    .eq('technician_id', user.technician_id)
-  return successResponse(data)
+    .eq('technician_id', userId)
+  return jsonSuccess(data)
 }
 
 // Mobile App
 const response = await fetch('/api/orders', {
-  headers: { 'Authorization': `Bearer ${token}` }
+  headers: { 'Authorization': `Bearer ${clerkToken}` }
 })
 const { data } = await response.json()
 ```
@@ -615,31 +620,21 @@ All API routes return consistent JSON responses:
 **Implementation:** `src/app/api/utils.ts`
 
 ```typescript
-export function successResponse<T>(data: T, message?: string) {
-  return Response.json({ success: true, data, message })
-}
+// Data-shape helpers
+export const successResponse = <T,>(data: T, pagination?) => ({
+  success: true, data, ...(pagination && { pagination })
+})
+export const errorResponse = (error: string | Error, message?: string) => ({
+  success: false, error: error instanceof Error ? error.message : error
+})
 
-export function errorResponse(error: string, status = 400) {
-  return Response.json({ success: false, error }, { status })
-}
-
-export function paginatedResponse<T>(
-  data: T[],
-  total: number,
-  page: number,
-  limit: number
-) {
-  return Response.json({
-    success: true,
-    data,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit)
-    }
-  })
-}
+// HTTP response helpers (return NextResponse.json)
+export const jsonSuccess = <T,>(data: T, status = 200, pagination?) => { ... }
+export const jsonError = (error: string | Error, status = 400, message?) => { ... }
+export const handleApiError = (error: unknown) => { ... }
+export const unauthorizedResponse = () => jsonError('Unauthorized...', 401)
+export const forbiddenResponse = () => jsonError('Forbidden...', 403)
+export const notFoundResponse = (resource: string) => jsonError(`${resource} not found`, 404)
 ```
 
 ### Authentication Middleware
@@ -647,30 +642,28 @@ export function paginatedResponse<T>(
 **Implementation:** `src/app/api/middleware/auth.ts`
 
 ```typescript
-export async function verifyAuth(request: Request) {
-  // Check session cookie first
+import { getAuth } from '@clerk/nextjs/server'
+
+export async function verifyAuth(request: NextRequest) {
+  const { userId } = getAuth(request)
+  if (!userId) return unauthorizedResponse()
+  return { id: userId }
+}
+
+// Role check via user_management table
+export async function checkRole(request: NextRequest, requiredRoles: string[]) {
+  const { userId } = getAuth(request)
+  if (!userId) return false
+
   const supabase = await createClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
-  
-  if (user) {
-    return { user, supabase }
-  }
-  
-  // Fallback to Bearer token
-  const authHeader = request.headers.get('Authorization')
-  if (!authHeader?.startsWith('Bearer ')) {
-    throw new Error('Unauthorized')
-  }
-  
-  const token = authHeader.substring(7)
-  const { data: { user: tokenUser }, error: tokenError } = 
-    await supabase.auth.getUser(token)
-  
-  if (tokenError || !tokenUser) {
-    throw new Error('Invalid token')
-  }
-  
-  return { user: tokenUser, supabase }
+  const { data, error } = await supabase
+    .from('user_management')
+    .select('role')
+    .eq('auth_user_id', userId)
+    .maybeSingle()
+
+  if (error || !data?.role) return false
+  return requiredRoles.includes(data.role)
 }
 ```
 
@@ -678,34 +671,38 @@ export async function verifyAuth(request: Request) {
 
 **GET /api/orders:**
 ```typescript
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { user, supabase } = await verifyAuth(request)
+    const { userId } = getAuth(request)
+    if (!userId) return unauthorizedResponse()
+    
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
+    const supabase = await createClient()
     
     let query = supabase.from('orders').select('*')
     if (status) query = query.eq('status', status)
     
     const { data, error } = await query
-    if (error) return errorResponse(error.message)
+    if (error) return jsonError(error.message)
     
-    return successResponse(data)
+    return jsonSuccess(data)
   } catch (error) {
-    return errorResponse('Unauthorized', 401)
+    return jsonError('Unauthorized', 401)
   }
 }
 ```
 
 **POST /api/orders:**
 ```typescript
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { user, supabase } = await verifyAuth(request)
-    const body = await request.json()
+    const { userId } = getAuth(request)
+    if (!userId) return unauthorizedResponse()
     
-    // Validate with Zod
+    const body = await request.json()
     const validated = createOrderSchema.parse(body)
+    const supabase = await createClient()
     
     const { data, error } = await supabase
       .from('orders')
@@ -713,11 +710,11 @@ export async function POST(request: Request) {
       .select()
       .single()
     
-    if (error) return errorResponse(error.message)
+    if (error) return jsonError(error.message)
     
-    return successResponse(data, 'Order created successfully')
+    return jsonSuccess(data, 201)
   } catch (error) {
-    return errorResponse(error.message, 400)
+    return jsonError((error as { message?: string })?.message || 'Bad request', 400)
   }
 }
 ```
@@ -728,30 +725,58 @@ export async function POST(request: Request) {
 
 ### Authentication Flow
 
-**JWT-Based Authentication:**
-1. User logs in with email/password
-2. Supabase Auth generates JWT token
+**Clerk JWT-Based Authentication:**
+1. User logs in with email/password via Clerk sign-in page (`/sign-in`)
+2. Clerk generates JWT token and manages session
 3. Token stored in HTTP-only cookie (secure)
 4. Token included in all requests (cookie or Bearer header)
-5. Server verifies token on each request
+5. Server verifies token via `auth()` from `@clerk/nextjs/server`
 
-**Implementation:** `src/lib/supabase-server.ts`
-
+**Server-side auth pattern:**
 ```typescript
-export async function createClient() {
-  const cookieStore = cookies()
-  
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
-  )
+// src/lib/supabase-server.ts
+import { auth } from '@clerk/nextjs/server'
+
+export async function getUser() {
+  const { userId } = await auth()
+  if (!userId) return null
+
+  const client = await createClient()
+  const { data, error } = await client
+    .from('user_management')
+    .select('auth_user_id,email,full_name,role,is_active')
+    .eq('auth_user_id', userId)
+    .maybeSingle()
+
+  if (error || !data) return null
+  return { id: userId, email: data.email }
+}
+
+export async function getUserRole() {
+  const { userId } = await auth()
+  if (!userId) return null
+
+  const client = await createClient()
+  const { data, error } = await client
+    .from('user_management')
+    .select('role')
+    .eq('auth_user_id', userId)
+    .maybeSingle()
+
+  if (error) return null
+  return data?.role
+}
+```
+
+**API route auth pattern:**
+```typescript
+// src/app/api/middleware/auth.ts
+import { getAuth } from '@clerk/nextjs/server'
+
+export async function verifyAuth(request: NextRequest) {
+  const { userId } = getAuth(request)
+  if (!userId) return unauthorizedResponse()
+  return { id: userId }
 }
 ```
 
@@ -783,61 +808,31 @@ TECHNICIAN / FINANCE (equal level)
 **RBAC Helpers:** `src/lib/rbac.ts`
 
 ```typescript
-export function isSuperAdmin(role: string): boolean {
+export async function isSuperAdmin(): Promise<boolean> {
+  const role = await getUserRole()
   return role === 'SUPERADMIN'
 }
 
-export function isAdmin(role: string): boolean {
-  return role === 'ADMIN' || isSuperAdmin(role)
+export async function isAdmin(): Promise<boolean> {
+  const role = await getUserRole()
+  return role === 'ADMIN' || role === 'SUPERADMIN'
 }
 
-export function hasAccess(userRole: string, requiredRole: string): boolean {
-  const hierarchy = ['SUPERADMIN', 'ADMIN', 'TECHNICIAN', 'FINANCE']
-  const userLevel = hierarchy.indexOf(userRole)
-  const requiredLevel = hierarchy.indexOf(requiredRole)
-  return userLevel <= requiredLevel
+export async function isFinance(): Promise<boolean> {
+  const role = await getUserRole()
+  return role === 'FINANCE' || role === 'SUPERADMIN'
 }
-```
 
-### Row-Level Security (RLS)
-
-**Database-Level Access Control:**
-
-**Orders RLS Policy:**
-```sql
--- Admins see all orders
-CREATE POLICY orders_admin_all ON orders
-  FOR ALL TO authenticated
-  USING (public.current_user_role() IN ('ADMIN', 'SUPERADMIN'));
-
--- Technicians see only assigned orders
-CREATE POLICY orders_tech_assigned ON orders
-  FOR SELECT TO authenticated
-  USING (
-    technician_id = public.current_technician_id()
-    AND public.current_user_role() = 'TECHNICIAN'
-  );
-```
-
-**Helper Functions:**
-```sql
-CREATE FUNCTION public.current_user_role()
-RETURNS text
-LANGUAGE sql SECURITY DEFINER
-AS $$
-  SELECT role FROM public.user_management
-  WHERE auth_user_id = auth.uid()
-  LIMIT 1;
-$$;
-
-CREATE FUNCTION public.current_technician_id()
-RETURNS text
-LANGUAGE sql SECURITY DEFINER
-AS $$
-  SELECT technician_id FROM public.technicians
-  WHERE auth_user_id = auth.uid()
-  LIMIT 1;
-$$;
+export function hasAccess(userRole: UserRole | null, requiredRole: UserRole): boolean {
+  if (!userRole) return false
+  const allowedRoles: Record<UserRole, UserRole[]> = {
+    SUPERADMIN: ['SUPERADMIN'],
+    ADMIN: ['SUPERADMIN', 'ADMIN'],
+    TECHNICIAN: ['SUPERADMIN', 'ADMIN', 'TECHNICIAN'],
+    FINANCE: ['SUPERADMIN', 'ADMIN', 'FINANCE'],
+  }
+  return allowedRoles[requiredRole].includes(userRole)
+}
 ```
 
 ---
@@ -1086,7 +1081,7 @@ The navigation bar provides 4 main tabs:
 
 ## Testing
 
-The project has **44+ test files** across two frameworks:
+The project has **100 test files** across two frameworks:
 
 ### Unit Tests (Vitest)
 
@@ -1217,13 +1212,12 @@ psql $POSTGRES_URL -f supabase/migrations/00_v2_schema.sql
 **Symptoms:**
 - "Failed to connect to database" errors
 - Supabase queries timeout
-- RLS policy errors
 
 **Solutions:**
 1. Verify `POSTGRES_URL` in environment
 2. Check Supabase project is active (not paused)
 3. Test connection: `psql $POSTGRES_URL -c "SELECT 1"`
-4. Verify RLS policies are applied
+4. Verify `SUPABASE_SERVICE_ROLE_KEY` is correct
 
 ---
 
@@ -1265,11 +1259,11 @@ This technical guide provides comprehensive documentation of the AC Service Mana
 
 1. **Dual Data Flow**: Server Actions (primary) + REST API (secondary)
 2. **State Machine**: Strict 8-state order lifecycle with deterministic transitions
-3. **RBAC**: Role-based access control with database-level RLS
+3. **RBAC**: Role-based access control via `user_management` table + Clerk auth
 4. **Real-time**: Supabase Postgres Change subscriptions for live updates
 5. **Offline-First**: IndexedDB queue for technician PWA
 6. **AC Completion Contract**: Source-of-truth `order_items.ac_unit_id` drives per-AC branching — existing complete (read-only), existing incomplete (fill missing), new AC (full input). Enforced via `technician_submit_report_v2()` RPC.
-7. **Test Suite**: 44+ Vitest unit tests + Playwright E2E, `tsc --noEmit` type gate
+7. **Test Suite**: 100 Vitest unit tests + Playwright E2E, `tsc --noEmit` type gate
 
 **For Business Documentation:**
 - See [BUSINESS-GUIDE.md](BUSINESS-GUIDE.md) for order lifecycle and payment scenarios
@@ -1282,6 +1276,6 @@ This technical guide provides comprehensive documentation of the AC Service Mana
 
 ---
 
-**Document Version:** 1.1  
-**Last Updated:** 2026-06-10  
+**Document Version:** 1.2  
+**Last Updated:** 2026-06-30  
 **Maintained By:** Engineering Team

@@ -17,17 +17,17 @@ All paths are relative to the base URL. Example: `GET {base}/api/orders`.
 
 ## Authentication
 
-All endpoints require authentication **except** `/api/auth/login` and
-`/api/technician/push/public-key`. Two methods are accepted:
+All endpoints require authentication **except** `/api/technician/push/public-key`.
+Two methods are accepted:
 
-1. **Bearer token** — `Authorization: Bearer <access_token>` (JWT from Supabase)
-2. **Cookie session** — HTTP-only cookies set by the Supabase SSR client
+1. **Bearer token** — `Authorization: Bearer <access_token>` (Clerk JWT)
+2. **Cookie session** — HTTP-only cookies set by Clerk
    (used by browser and Playwright `page.request`)
 
-Most admin routes verify auth via `requireAuth(request)` which checks the
-`Authorization` header first, then falls back to the cookie session. Technician
-routes use `authenticateTechnician(request)` which additionally resolves
-`technicianId` from the `user_management` → `technicians` chain.
+Most admin routes verify auth via `getAuth(request)` from `@clerk/nextjs/server`
+which extracts `userId` from the Clerk session. Technician routes use
+`authenticateTechnician(request)` which additionally resolves `technicianId`
+from the `user_management` → `technicians` chain.
 
 ## RBAC
 
@@ -77,7 +77,6 @@ Every response is JSON with a top-level envelope:
 
 | Method | Path | Auth | Role | Notes |
 |---|---|---|---|---|
-| POST | `/api/auth/login` | none | any | Get JWT |
 | POST | `/api/auth/api-key` | n/a | n/a | **501** Not implemented |
 | GET | `/api/orders` | required | admin | List + filter + paginate |
 | POST | `/api/orders/create` | required | admin | Create order + items |
@@ -113,27 +112,9 @@ Every response is JSON with a top-level envelope:
 
 ## Authentication
 
-### `POST /api/auth/login`
-
-Exchange email + password for a Supabase JWT.
-
-**Request body**
-```json
-{ "email": "admin@example.com", "password": "••••••••" }
-```
-
-**Response 200**
-```json
-{
-  "success": true,
-  "data": {
-    "token": "eyJhbGciOi...",
-    "user": { "id": "uuid", "email": "admin@example.com", "created_at": "..." }
-  }
-}
-```
-
-**Errors**: `400` validation, `401` invalid credentials.
+Authentication is handled by **Clerk**. Users sign in at `/sign-in` (Clerk's
+hosted UI). The Clerk session cookie or JWT is then included in all subsequent
+API requests automatically.
 
 ### `POST /api/auth/api-key`
 
@@ -168,9 +149,8 @@ List orders with optional filters and pagination. Returns canonical
 
 ### `POST /api/orders/create`
 
-Create an order. Caller is the **admin client** (RLS bypassed for the create).
-Order items are inserted in a follow-up call — a failure there returns `500`
-with the order already created.
+Create an order. Order items are inserted in a follow-up call — a failure
+there returns `500` with the order already created.
 
 **Request body**
 ```json
@@ -313,13 +293,14 @@ Hard delete. `404` if not found.
 **RBAC**: `FINANCE`, `ADMIN`, `SUPERADMIN`.
 
 **Query**: `orderId?` — when provided, returns only invoices for that order;
-otherwise returns all invoices ordered by `created_at DESC`. Each invoice is
-augmented with a computed `source` field (`FINAL` / `PROFORMA` / `OTHER`)
-from `getInvoiceSource()`.
+`page?` (default 1), `limit?` (default 20) — pagination; otherwise returns all
+invoices ordered by `created_at DESC`. Each invoice is augmented with a
+computed `source` field (`FINAL` / `PROFORMA` / `OTHER`) from
+`getInvoiceSource()`.
 
 **Response 200**
 ```json
-{ "data": [ { "invoice_id": "uuid", "invoice_number": "INV/2026/...", "status": "SENT", "source": "FINAL", ... } ] }
+{ "success": true, "data": [ { "invoice_id": "uuid", "invoice_number": "INV/2026/...", "status": "SENT", "source": "FINAL", ... } ], "pagination": { "total": 150, "page": 1, "limit": 20, "totalPages": 8 } }
 ```
 
 ### `POST /api/invoices/send-email`
@@ -341,7 +322,8 @@ and sends via Resend. Validates that the company email domain is verified
 ```
 
 **Errors**: `400` invoice id missing / customer email missing, `404` invoice
-not found, `500` Resend error.
+not found, `429` email already sent for this invoice within the last 5 minutes
+(dedup guard), `500` Resend error.
 
 Side effect: a row is written to `invoice_communications` (type `EMAIL`).
 
@@ -356,7 +338,7 @@ Returns `501 Not Implemented`. Use
 
 ### `GET /api/service-reports?orderId=...`
 
-**Auth**: any authenticated user (RLS scopes which reports are visible).
+**Auth**: any authenticated user.
 
 **Query**: `orderId` (**required**).
 
@@ -368,8 +350,7 @@ Returns `501 Not Implemented`. Use
 ### `GET /api/service-reports/[reportId]/signature`
 
 Returns a short-lived signed URL for the stored signature image
-(supabase storage). RLS on `service_reports` gates which `reportId` the
-caller may read; if the row is not visible the `signedUrl` will be `null`.
+(Supabase Storage).
 
 **Response 200**
 ```json

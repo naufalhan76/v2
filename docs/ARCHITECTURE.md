@@ -1,7 +1,7 @@
 # Arsitektur Teknis — MSN ERP
 
 > **Technical Architecture Document**
-> Versi: 1.2 | Tanggal: 2026-06-13
+> Versi: 1.3 | Tanggal: 2026-06-30
 
 ---
 
@@ -45,11 +45,10 @@
 │       │                     │                     │               │
 │       ▼                     ▼                     ▼               │
 │  ┌──────────┐       ┌──────────────┐      ┌─────────────┐        │
-│  │ Supabase │       │  Supabase    │      │  Resend     │        │
-│  │ Auth     │       │  Postgres    │      │  (Email)    │        │
-│  │ (JWT)    │       │  + RLS       │      └─────────────┘        │
-│  └──────────┘       │  + Realtime  │                             │
-│                     └──────────────┘                             │
+│  │  Clerk   │       │  Supabase    │      │  Resend     │        │
+│  │  Auth    │       │  Postgres    │      │  (Email)    │        │
+│  │  (JWT)   │       │  + Realtime  │      └─────────────┘        │
+│  └──────────┘       └──────────────┘                             │
 │                            │                                     │
 │                     ┌──────┴──────┐                              │
 │                     │  Supabase   │                              │
@@ -101,9 +100,8 @@ MSN ERP menggunakan **Next.js 15 App Router** dengan **dual rendering strategy**
 
 | Decision | Value | Rationale |
 |----------|-------|-----------|
-| Database | Supabase PostgreSQL | Managed Postgres with realtime, auth, storage |
-| Auth | Supabase Auth (JWT) | Server-side SSR cookies, email/password |
-| RLS | All tables | Defense-in-depth: DB-level access control |
+| Database | Supabase PostgreSQL | Managed Postgres with realtime, storage |
+| Auth | Clerk (JWT) | External auth provider, server-side SSR cookies, email/password |
 | ORM | Raw SQL (knex-style) + Service Role client | Direct control over queries, no ORM overhead |
 
 ### UI & Styling
@@ -144,10 +142,11 @@ MSN ERP menggunakan **Next.js 15 App Router** dengan **dual rendering strategy**
 ```
 src/
 ├── app/                          # Next.js App Router
-│   ├── (auth)/                   # Public auth pages
-│   │   ├── login/page.tsx        #   Login form
-│   │   ├── confirm/page.tsx      #   Email confirmation
-│   │   └── layout.tsx            #   Auth layout (minimal)
+│   ├── sign-in/                  # Clerk sign-in page
+│   │   └── [[...sign-in]]/page.tsx
+│   ├── sign-up/                  # Clerk sign-up page
+│   │   └── [[...sign-up]]/page.tsx
+│   ├── page.tsx                  # Root redirect (→ /dashboard or /sign-in)
 │   │
 │   ├── api/                      # REST API Route Handlers
 │   │   ├── auth/                 #   Auth endpoints
@@ -243,31 +242,46 @@ src/
 │   └── use-toast.ts              #   Toast notification system
 │
 ├── lib/                          # Core business logic
-│   ├── actions/                  #   Server Actions
-│   │   ├── orders.ts             #     Order CRUD + state transitions
-│   │   ├── invoices.ts           #     Invoice CRUD + payments + PDF
-│   │   ├── reminders.ts          #     Reminder rules + generation
+│   ├── actions/                  #   Server Actions (split files)
+│   │   ├── orders-queries.ts     #     Order reads
+│   │   ├── orders-mutations-status.ts  # Status transitions
+│   │   ├── orders-mutations-assign.ts  # Assign/reassign
+│   │   ├── orders-mutations-schedule.ts# Reschedule
+│   │   ├── orders-mutations-cancel.ts  # Cancel orders
+│   │   ├── orders-auto-revert.ts #     Auto-revert stale orders
 │   │   ├── create-order.ts       #     Order creation flow
-│   │   ├── dashboard.ts          #     Dashboard KPIs + charts
+│   │   ├── create-order-mutations.ts   # Create order DB writes
+│   │   ├── create-order-config.ts      # Create order config data
+│   │   ├── create-order-search.ts      # Create order search helpers
+│   │   ├── invoices-create.ts    #     Invoice creation
+│   │   ├── invoices-listing.ts   #     Invoice queries
+│   │   ├── invoices-order.ts     #     Invoice↔order linkage
+│   │   ├── invoices-payments.ts  #     Payment recording
+│   │   ├── invoices-revision.ts  #     Invoice revision
+│   │   ├── invoices-queries.ts   #     Invoice reads
+│   │   ├── reminders-queue.ts    #     Reminder generation
+│   │   ├── reminders-rules.ts    #     Reminder rules CRUD
+│   │   ├── dashboard-stats.ts    #     Dashboard KPIs
+│   │   ├── dashboard-charts.ts   #     Dashboard charts
 │   │   ├── customers.ts          #     Customer CRUD
 │   │   ├── technicians.ts        #     Technician CRUD
 │   │   ├── users.ts              #     User management
 │   │   ├── profile.ts            #     User profile
 │   │   ├── locations.ts          #     Location CRUD
 │   │   ├── ac-units.ts           #     AC unit CRUD
-│   │   ├── addons.ts             #     Addon catalog + stock
+│   │   ├── addon-requests.ts     #     Addon requests
 │   │   ├── service-catalog.ts    #     Multi-dim pricing catalog
 │   │   ├── service-config.ts     #     Master reference config
-│   │   ├── service-pricing.ts    #     Flat pricing
 │   │   ├── order-history.ts      #     Status transition history
 │   │   ├── invoice-config.ts     #     Invoice configuration
 │   │   ├── invoice-communications.ts # Invoice communication log
-│   │   ├── service-records.ts    #     Service records
+│   │   ├── notifications.ts      #     Notification helpers
 │   │   └── api-keys.ts           #     API key management
 │   │
-│   ├── supabase-server.ts        #   SSR client (cookie-based)
+│   ├── supabase-server.ts        #   Supabase client + Clerk auth helpers
 │   ├── supabase-browser.ts       #   Browser client (anon key)
-│   ├── supabase-admin.ts         #   Admin client (service role, bypass RLS)
+│   ├── supabase-admin.ts         #   Admin client (service role)
+│   ├── clerk-appearance.ts       #   Clerk UI theme configuration
 │   ├── auth.ts                   #   Auth helpers (getUser, getUserRole)
 │   ├── rbac.ts                   #   Role hierarchy + permission gates
 │   ├── order-status.ts           #   State machine (8 canonical states)
@@ -312,50 +326,51 @@ src/
 
 ## 4. Auth & Authorization Flow
 
-### 4.1 Three Supabase Client Strategies
+### 4.1 Supabase Client Strategies
 
 ```
 ┌─────────────────────────────┬──────────────────┬──────────────────────────┐
 │ Client                      │ Use When          │ How It Works             │
 ├─────────────────────────────┼──────────────────┼──────────────────────────┤
-│ supabase-server.ts          │ Server Components,│ createServerClient()     │
-│                             │ Server Actions    │ Cookies via next/headers │
+│ supabase-server.ts          │ Server Components,│ Service role key         │
+│                             │ Server Actions    │ + Clerk auth() for userId│
 ├─────────────────────────────┼──────────────────┼──────────────────────────┤
 │ supabase-browser.ts         │ Client Components,│ createBrowserClient()    │
-│                             │ Login form        │ Anon key from env        │
+│                             │ (legacy)          │ Anon key from env        │
 ├─────────────────────────────┼──────────────────┼──────────────────────────┤
 │ supabase-admin.ts           │ Admin mutations,  │ Service role key         │
-│                             │ Push sending      │ Bypasses RLS             │
+│                             │ Push sending      │                          │
 └─────────────────────────────┴──────────────────┴──────────────────────────┘
 ```
 
-### 4.2 Login Flow
+### 4.2 Login Flow (Clerk)
 
 ```
-1. User submits email/password
-   └─ supabase.auth.signInWithPassword({ email, password })
-        └─ On success: query user_management(role, is_active)
-             ├─ Valid: role ∈ {SUPERADMIN, ADMIN, FINANCE, TECHNICIAN}
-             │    └─ Redirect:
-             │         TECHNICIAN → /technician
-             │         Others     → /dashboard (or ?redirectTo)
-             └─ Invalid: "Pengguna tidak ditemukan. Hubungi administrator..."
+1. User navigates to /sign-in (Clerk hosted UI)
+   └─ Clerk handles email/password authentication
+        └─ On success: Clerk session cookie set
+             └─ middleware.ts checks user_management(role, is_active)
+                  ├─ Valid: role ∈ {SUPERADMIN, ADMIN, FINANCE, TECHNICIAN}
+                  │    └─ Redirect:
+                  │         TECHNICIAN → /technician
+                  │         Others     → /dashboard
+                  └─ Invalid/inactive → redirect to /sign-in
 ```
 
 ### 4.3 Middleware Route Protection
 
 ```
 Setiap request ke protected route:
-  └─ middleware.ts
-       └─ createServerClient() → getUser()
-            ├─ No user → /login?redirectTo=pathname
-            ├─ User found:
-            │    └─ Query user_management(role, is_active) [30s cache]
-            │         ├─ inactive → signOut() + /login?error=Akun tidak aktif
+  └─ middleware.ts (Clerk middleware)
+       └─ auth() → userId
+            ├─ No userId → /sign-in
+            ├─ userId found:
+            │    └─ Query user_management(role, is_active)
+            │         ├─ inactive → redirect to /sign-in
             │         └─ active → check role routing:
             │              ├─ TECHNICIAN accessing /dashboard/* → /technician
             │              └─ Non-TECHNICIAN accessing /technician → /dashboard
-            └─ Root / → /dashboard (authed) or /login (unauthed)
+            └─ Root / → /dashboard (authed) or /sign-in (unauthed)
 ```
 
 ### 4.4 RBAC Role Hierarchy
@@ -380,14 +395,13 @@ SUPERADMIN (4)     — full system access + user management + API keys
 
 ```
 API Route (route.ts)
-  └─ verifyAuth(request)
-       └─ Authorization: Bearer <JWT> → supabase.auth.getUser(token)
-            └─ Returns Supabase User or 401
+  └─ getAuth(request) from @clerk/nextjs/server
+       └─ Extracts userId from Clerk session (cookie or Bearer JWT)
+            └─ Returns { userId } or 401
 
 Khusus finance routes:
   └─ requireFinanceRoleAPI(request)
-       ├─ 1. Try Bearer token
-       └─ 2. Fallback: cookie session (for browser)
+       └─ getAuth(request) → userId → query user_management.role
             └─ Returns 403 if not SUPERADMIN | ADMIN | FINANCE
 ```
 
@@ -433,7 +447,7 @@ Beberapa nilai DB lawan masih ada. Mapped runtime via `toCanonical()`:
 ### 5.4 Enforcement Points
 
 State machine ditegakkan di **3 lapisan**:
-1. **Server Actions** (`src/lib/actions/orders.ts`) — `canTransition()` dipanggil sebelum setiap update
+1. **Server Actions** (`src/lib/actions/orders-mutations-status.ts`, `orders-mutations-assign.ts`, etc.) — `canTransition()` dipanggil sebelum setiap update
 2. **API Routes** (`/api/orders/[id]/status`) — validasi yang sama untuk REST clients
 3. **UI** — Kanban hanya mengizinkan drop yang valid; tombol kontekstual di detail panel
 
@@ -549,8 +563,8 @@ Semua endpoint mengembalikan:
 
 | Method | Header | Used By |
 |--------|--------|---------|
-| Bearer JWT | `Authorization: Bearer <token>` | API clients, external integration |
-| Cookie session | `sb-access-token` cookie | Browser dashboard, technician PWA |
+| Bearer JWT | `Authorization: Bearer <token>` | API clients, external integration (Clerk JWT) |
+| Cookie session | Clerk session cookies | Browser dashboard, technician PWA |
 | Cron secret | `Authorization: Bearer <CRON_SECRET>` | External cron jobs |
 | API Key | `Authorization: Bearer sk_...` | Partner integration (future) |
 
@@ -789,12 +803,11 @@ push_subscriptions ──── auth.users
 | `payment_method` | `CASH`, `TRANSFER`, `EWALLET`, `CARD` |
 | `payment_status` | `UNPAID`, `PARTIAL`, `PAID`, `FAILED`, `REFUNDED` |
 
-### 10.4 RLS Policy per Table
+### 10.4 Access Control
 
-Pola umum:
-- SUPERADMIN + ADMIN: FULL CRUD (select, insert, update, delete)
-- FINANCE: SELECT read-only untuk data operasional, FULL untuk invoice/payment
-- TECHNICIAN: SELECT own assignments, INSERT own transitions/reports
+RLS policies have been dropped. Access control is enforced at the application
+layer via Clerk auth + `user_management.role` checks in server actions and
+API routes. The Supabase client uses the service role key for all DB access.
 
 ---
 
@@ -832,12 +845,18 @@ subscribeOrders(queryClient, onNewOrder?)
 ### 12.1 Environment Variables
 
 ```bash
-# Required
+# Required — Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
-NEXTAUTH_SECRET=xxx
-NEXTAUTH_URL=https://app.example.com
+
+# Required — Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_OUT_URL=/sign-in
 
 # Push Notification (VAPID)
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=xxx
@@ -881,9 +900,10 @@ curl -X POST https://app.example.com/api/admin/reminders/run \
 | Service | Usage |
 |---------|-------|
 | PostgreSQL | All data |
-| Auth | Email/password authentication |
 | Storage | Photos, signatures, company logo |
 | Realtime | Live dashboard updates |
+
+**Authentication** is handled by **Clerk** (external service), not Supabase Auth.
 
 ---
 
@@ -927,4 +947,4 @@ IndexedDB bisa simpan blob (foto), punya kapasitas lebih besar, dan query by ind
 
 ### Yes, test framework aktif (Vitest + Playwright)
 
-44+ test files: Vitest untuk unit test server actions, komponen, validasi schema. Playwright untuk E2E dan QA smoke test. `tsc --noEmit` sebagai type safety gate.
+100 test files: Vitest untuk unit test server actions, komponen, validasi schema. Playwright untuk E2E dan QA smoke test. `tsc --noEmit` sebagai type safety gate. Shared test mocks in `src/tests/mocks/` (Clerk, Supabase chain, crypto, resend, push-sender).
