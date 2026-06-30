@@ -46,7 +46,7 @@ export function BarcodeScanner({ onDetected }: BarcodeScannerProps) {
           <div ref={containerRef} className="absolute inset-0" />
           {/* Scan frame overlay */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-64 h-64 border-2 border-white/30 rounded-2xl relative">
+            <div className="w-64 h-64 border-2 border-white/30 rounded-lg relative">
               <ScanLine className="absolute top-1/2 left-0 right-0 -translate-y-1/2 text-primary animate-pulse" size={256} strokeWidth={1} />
               {/* Corner brackets */}
               <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-xl" />

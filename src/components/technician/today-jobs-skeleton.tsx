@@ -12,7 +12,7 @@ export function TodayJobsSkeleton() {
       {/* Stat Cards 3-col Grid */}
       <div className="grid grid-cols-3 gap-3 px-6 -mt-24 relative z-10">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={`stat-${i}`} className={`p-3 rounded-2xl ${i === 0 ? 'bg-primary' : 'bg-white dark:bg-surface-muted shadow'}`}>
+          <div key={`stat-${i}`} className={`p-3 rounded-lg ${i === 0 ? 'bg-primary' : 'bg-card shadow-sm'}`}>
             <Skeleton className={`h-8 w-8 rounded-full mb-2 ${i === 0 ? 'bg-brand-700' : 'bg-brand-50 dark:bg-surface animate-pulse'}`} />
             <Skeleton className={`h-3 w-16 mb-1 ${i === 0 ? 'bg-brand-700' : 'bg-brand-50 dark:bg-surface animate-pulse'}`} />
             <Skeleton className={`h-6 w-10 ${i === 0 ? 'bg-brand-700' : 'bg-brand-50 dark:bg-surface animate-pulse'}`} />
@@ -21,7 +21,7 @@ export function TodayJobsSkeleton() {
       </div>
 
       {/* Job Cards Container */}
-      <div className="mt-6 mx-6 bg-white dark:bg-surface-muted rounded-[32px] p-6 shadow-2xl space-y-4">
+      <div className="mt-6 mx-6 bg-card rounded-xl p-6 shadow-md space-y-4">
         <div className="flex justify-between items-center mb-2">
           <Skeleton className="h-6 w-32 bg-brand-50 dark:bg-surface animate-pulse" />
           <Skeleton className="h-6 w-8 rounded-full bg-brand-50 dark:bg-surface animate-pulse" />
@@ -30,7 +30,7 @@ export function TodayJobsSkeleton() {
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-3xl border border-border dark:border-border bg-white dark:bg-surface-muted p-6 shadow-sm"
+            className="rounded-xl border border-border dark:border-border bg-card p-6 shadow-sm"
           >
             <div className="flex items-center gap-3 mb-4">
               <Skeleton className="h-12 w-12 rounded-full bg-brand-50 dark:bg-surface animate-pulse" />

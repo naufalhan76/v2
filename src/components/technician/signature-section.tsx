@@ -40,9 +40,9 @@ export function SignatureSection({
   return (
     <>
       {/* Signature section */}
-      <section className="rounded-2xl border border-border bg-white p-6 shadow-sm dark:border-border dark:bg-surface-muted">
+      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
         <div className="mb-4 flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-primary dark:bg-surface dark:text-brand-200">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-primary dark:bg-surface dark:text-brand-200">
             <ClipboardList className="h-5 w-5" />
           </div>
           <div>
@@ -66,7 +66,7 @@ export function SignatureSection({
               placeholder="Nama pelanggan yang bertanda tangan"
               value={customerNameSigned}
               onChange={(e) => onCustomerNameChange(e.target.value)}
-              className="h-11 w-full rounded-xl border border-border-strong dark:border-border bg-white dark:bg-surface dark:text-foreground px-3 text-sm focus:border-primary focus:outline-none focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
+              className="h-11 w-full rounded-xl border border-border-strong dark:border-border bg-card dark:text-foreground px-3 text-sm focus:border-primary focus:outline-none focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
             />
           </div>
 
@@ -79,9 +79,9 @@ export function SignatureSection({
       </section>
 
       {/* Next service date & notes */}
-      <section className="rounded-2xl border border-border bg-white p-6 shadow-sm dark:border-border dark:bg-surface-muted">
+      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
         <div className="mb-4 flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-primary dark:bg-surface dark:text-brand-200">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-primary dark:bg-surface dark:text-brand-200">
             <CalendarDays className="h-5 w-5" />
           </div>
           <div>
@@ -105,7 +105,7 @@ export function SignatureSection({
               placeholder="Catatan pengerjaan (opsional)"
               value={notes}
               onChange={(e) => onNotesChange(e.target.value)}
-              className="min-h-[120px] w-full rounded-xl border border-border-strong dark:border-border bg-white dark:bg-surface dark:text-foreground p-3 text-sm focus:border-primary focus:outline-none focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
+              className="min-h-[120px] w-full rounded-xl border border-border-strong dark:border-border bg-card dark:text-foreground p-3 text-sm focus:border-primary focus:outline-none focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
             />
           </div>
 
@@ -119,7 +119,7 @@ export function SignatureSection({
               type="date"
               value={nextServiceDate}
               onChange={(e) => onNextServiceDateChange(e.target.value)}
-              className="h-11 w-full rounded-xl border border-border-strong dark:border-border bg-white dark:bg-surface dark:text-foreground px-3 text-sm focus:border-primary focus:outline-none focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
+              className="h-11 w-full rounded-xl border border-border-strong dark:border-border bg-card dark:text-foreground px-3 text-sm focus:border-primary focus:outline-none focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
               aria-label="Tanggal servis berikutnya"
             />
           </div>
@@ -135,7 +135,7 @@ export function SignatureSection({
               placeholder="Catatan servis berikutnya (opsional)"
               value={nextServiceNotes}
               onChange={(e) => onNextServiceNotesChange(e.target.value)}
-              className="h-11 w-full rounded-xl border border-border-strong dark:border-border bg-white dark:bg-surface dark:text-foreground px-3 text-sm focus:border-primary focus:outline-none focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
+              className="h-11 w-full rounded-xl border border-border-strong dark:border-border bg-card dark:text-foreground px-3 text-sm focus:border-primary focus:outline-none focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
               aria-label="Catatan servis berikutnya"
             />
           </div>
@@ -143,7 +143,7 @@ export function SignatureSection({
       </section>
 
       {/* Price summary */}
-      <section className="rounded-2xl border border-border bg-white p-4 shadow-sm dark:border-border dark:bg-surface-muted">
+      <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">
             Total Material

@@ -24,20 +24,18 @@ interface ServiceTypeBadgeProps {
 export function ServiceTypeBadge({ serviceType, size = 'default', className }: ServiceTypeBadgeProps) {
   const normalized = (serviceType?.toUpperCase() ?? '') as ServiceType
   const colors = SERVICE_TYPE_COLORS[normalized] ?? {
-    bg: 'bg-surface-muted dark:bg-surface-muted',
-    text: 'text-foreground dark:text-foreground',
-    border: 'border-border dark:border-border',
+    bg: 'bg-muted',
+    text: 'text-muted-foreground',
+    border: '',
   }
   const label = SERVICE_TYPE_LABELS[normalized] ?? serviceType ?? 'Unknown'
 
   return (
     <Badge
-      variant="outline"
       className={cn(
         colors.bg,
         colors.text,
-        colors.border,
-        'font-medium',
+        'font-medium border-0 rounded-full',
         size === 'sm' && 'text-[10px] px-1.5 py-0',
         className
       )}

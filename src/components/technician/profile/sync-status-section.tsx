@@ -7,7 +7,7 @@ interface SyncStatusSectionProps {
 
 export function SyncStatusSection({ pendingCount, lastSyncTime }: SyncStatusSectionProps) {
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-border dark:bg-surface-muted dark:border-border space-y-4">
+    <div className="bg-card rounded-lg p-6 shadow-sm border border-border space-y-4">
       <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
         Status Sinkronisasi
       </h3>

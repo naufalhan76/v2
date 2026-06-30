@@ -19,7 +19,7 @@ export function ProfileSettingsSection({
   onPushToggle,
 }: ProfileSettingsSectionProps) {
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-border dark:bg-surface-muted dark:border-border space-y-5">
+    <div className="bg-card rounded-lg p-6 shadow-sm border border-border space-y-5">
       <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
         Pengaturan Tampilan
       </h3>

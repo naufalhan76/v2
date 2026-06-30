@@ -13,7 +13,7 @@ export function JobDetailSkeleton() {
 
       <div className="px-5 -mt-4 space-y-4">
         {/* Customer card */}
-        <div className="rounded-[32px] border border-border dark:border-border bg-white dark:bg-surface-muted p-5 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] space-y-4 relative z-10">
+        <div className="rounded-xl border border-border dark:border-border bg-card p-5 shadow-sm space-y-4 relative z-10">
           <Skeleton className="h-6 w-48 bg-brand-50 dark:bg-surface animate-pulse" />
           
           <div className="flex items-start gap-3">
@@ -41,7 +41,7 @@ export function JobDetailSkeleton() {
         </div>
 
         {/* Service card */}
-        <div className="rounded-[32px] border border-border dark:border-border bg-white dark:bg-surface-muted p-5 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] space-y-4">
+        <div className="rounded-xl border border-border dark:border-border bg-card p-5 shadow-sm space-y-4">
           <Skeleton className="h-4 w-32 bg-brand-50 dark:bg-surface animate-pulse mb-6" />
           
           <div className="flex items-center gap-3">

@@ -6,7 +6,7 @@ export function ProfileInfoSection({ technician }: { technician: TechnicianProfi
   const initials = getInitials(technician?.technician_name ?? '')
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-border dark:bg-surface-muted dark:border-border space-y-4">
+    <div className="bg-card rounded-lg p-6 shadow-sm border border-border space-y-4">
       <div className="flex items-center gap-3">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary text-white text-xl font-semibold dark:bg-brand-500">
           {initials}

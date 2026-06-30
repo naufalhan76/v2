@@ -12,7 +12,7 @@ export function EmptyTodayJobs() {
 
   return (
     <div
-      className="bg-white dark:bg-surface-muted rounded-[40px] p-6 flex flex-col items-center text-center shadow-2xl"
+      className="bg-card rounded-xl p-6 flex flex-col items-center text-center shadow-md"
       data-testid="today-jobs-empty"
     >
       <div className="bg-muted dark:bg-surface p-6 rounded-full mb-6">

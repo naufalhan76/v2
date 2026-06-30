@@ -77,7 +77,7 @@ export function WizardPhaseB({ orderId, jobSummary, onComplete }: WizardPhaseBPr
       </header>
 
       <main className="-mt-10 space-y-5 px-5">
-        <section className="rounded-2xl border border-border bg-white p-6 text-center shadow-sm dark:border-border dark:bg-surface-muted">
+        <section className="rounded-lg border border-border bg-card p-6 text-center shadow-sm dark:border-border">
           <div className="flex items-center justify-center gap-2">
             <span className="h-3 w-3 animate-pulse rounded-full bg-status-completed" aria-hidden="true" />
             <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Sedang Bekerja</p>
@@ -90,7 +90,7 @@ export function WizardPhaseB({ orderId, jobSummary, onComplete }: WizardPhaseBPr
           </p>
         </section>
 
-        <section className="rounded-2xl border border-border bg-white p-5 shadow-sm dark:border-border dark:bg-surface-muted">
+        <section className="rounded-lg border border-border bg-card p-5 shadow-sm dark:border-border">
           <h2 className="text-lg font-bold text-primary dark:text-foreground">Ringkasan Pekerjaan</h2>
           <div className="mt-4 space-y-4">
             <SummaryRow icon={User} label="Pelanggan" value={jobSummary.customerName} />
@@ -120,7 +120,7 @@ type SummaryRowProps = {
 function SummaryRow({ icon: Icon, label, value }: SummaryRowProps): React.JSX.Element {
   return (
     <div className="flex items-start gap-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-primary dark:bg-surface dark:text-foreground">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-primary dark:bg-surface dark:text-foreground">
         <Icon className="h-5 w-5" aria-hidden />
       </span>
       <div className="min-w-0 text-left">

@@ -47,7 +47,7 @@ export default function TechnicianError({
 
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center px-4">
-      <div className="bg-white dark:bg-surface-muted rounded-[40px] p-6 flex flex-col items-center text-center shadow-2xl w-full max-w-sm">
+      <div className="bg-card rounded-xl p-6 flex flex-col items-center text-center shadow-md w-full max-w-sm">
         <div className="bg-muted dark:bg-surface p-6 rounded-full mb-6">
           <Icon className="w-10 h-10 text-muted-foreground" aria-hidden="true" />
         </div>
@@ -57,7 +57,7 @@ export default function TechnicianError({
         </p>
         <button
           onClick={onAction}
-          className="flex w-full items-center justify-center border-2 border-border dark:border-border rounded-2xl py-3 text-primary dark:text-foreground font-semibold px-8 hover:bg-muted dark:hover:bg-surface transition-colors"
+          className="flex w-full items-center justify-center border-2 border-border dark:border-border rounded-lg py-3 text-primary dark:text-foreground font-semibold px-8 hover:bg-muted dark:hover:bg-surface transition-colors"
         >
           {buttonIcon}
           {buttonText}

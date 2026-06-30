@@ -30,10 +30,10 @@ export function MaterialsSection({
   const identity = unitDraft.identity
 
   return (
-    <section className="rounded-2xl border border-border bg-white p-6 shadow-sm dark:border-border dark:bg-surface-muted">
+    <section className="rounded-lg border border-border bg-card p-6 shadow-sm dark:border-border">
       {/* Unit header */}
       <div className="mb-5 flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-primary dark:bg-surface dark:text-brand-200">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-primary dark:bg-surface dark:text-brand-200">
           <Snowflake className="h-5 w-5" />
         </div>
         <div>

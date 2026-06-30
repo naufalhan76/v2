@@ -141,12 +141,12 @@ function StatChip({
   const toneClass =
     tone === 'primary'
       ? 'bg-primary text-white'
-      : 'bg-white text-primary shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] dark:bg-surface dark:text-foreground dark:shadow-none'
+      : 'bg-card text-primary shadow-sm dark:bg-surface dark:text-foreground dark:shadow-none'
 
   return (
     <div
       role="listitem"
-      className={`flex flex-col gap-1 rounded-2xl p-3 ${toneClass}`}
+      className={`flex flex-col gap-1 rounded-lg p-3 ${toneClass}`}
     >
       <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider opacity-90">
         {icon}

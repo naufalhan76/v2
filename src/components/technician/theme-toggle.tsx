@@ -22,7 +22,7 @@ export function TechnicianThemeToggle() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-1 shadow-sm dark:border-border dark:bg-surface-muted">
+    <div className="rounded-lg border border-border bg-surface p-1 shadow-sm dark:border-border dark:bg-surface-muted">
       <div className="grid grid-cols-3 gap-1" role="radiogroup" aria-label="Technician theme">
         {options.map((option) => {
           const Icon = option.icon

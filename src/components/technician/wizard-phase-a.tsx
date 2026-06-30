@@ -161,7 +161,7 @@ export function WizardPhaseA({ orderId, acUnits, onComplete }: WizardPhaseAProps
 
       <main className="-mt-10 space-y-5 px-5">
         {errors.length > 0 && (
-          <div className="rounded-2xl border border-status-cancelled/30 bg-status-cancelled-bg dark:border-status-cancelled dark:bg-status-cancelled-bg p-4 text-sm text-status-cancelled dark:text-status-cancelled" role="alert">
+          <div className="rounded-lg border border-status-cancelled/30 bg-status-cancelled-bg dark:border-status-cancelled dark:bg-status-cancelled-bg p-4 text-sm text-status-cancelled dark:text-status-cancelled" role="alert">
             {errors.map((error) => (
               <p key={error}>{error}</p>
             ))}
@@ -181,7 +181,7 @@ export function WizardPhaseA({ orderId, acUnits, onComplete }: WizardPhaseAProps
         ))}
 
         {units.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-border dark:border-border bg-white dark:bg-surface-muted p-6 text-center text-sm text-muted-foreground dark:text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border dark:border-border bg-card p-6 text-center text-sm text-muted-foreground dark:text-muted-foreground">
             Order ini tidak memiliki unit AC.
           </div>
         )}

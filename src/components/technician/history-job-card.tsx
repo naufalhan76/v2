@@ -48,7 +48,7 @@ export function HistoryJobCard({ job }: HistoryJobCardProps) {
   return (
     <Link
       href={`/technician/job/${job.order_id}`}
-      className="block rounded-[32px] border border-border bg-white p-6 shadow dark:bg-surface-muted dark:border-border transition-colors active:bg-muted hover:bg-muted dark:active:bg-surface dark:hover:bg-surface"
+      className="block rounded-xl border border-border bg-card p-6 shadow-sm dark:border-border transition-colors active:bg-muted hover:bg-muted dark:active:bg-surface dark:hover:bg-surface"
     >
       <div className="flex items-center justify-between gap-2 mb-3">
         <span className="text-xs font-mono font-medium text-muted-foreground dark:text-muted-foreground bg-muted dark:bg-surface px-2 py-1 rounded">{job.order_id}</span>

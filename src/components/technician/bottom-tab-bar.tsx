@@ -45,7 +45,7 @@ export function BottomTabBar() {
   return (
     <div className="fixed bottom-6 left-6 right-6 z-50 pb-safe pointer-events-none">
       <nav
-        className="pointer-events-auto bg-white dark:bg-surface-muted rounded-[32px] shadow-2xl p-2 flex justify-between items-center"
+        className="pointer-events-auto bg-card rounded-xl shadow-md p-2 flex justify-between items-center"
         aria-label="Navigasi utama"
       >
         {tabs.map((tab) => {
@@ -58,7 +58,7 @@ export function BottomTabBar() {
               className={cn(
                 'group flex flex-col items-center justify-center transition-transform duration-200 active:scale-[0.96] min-h-[44px]',
                 active 
-                  ? 'bg-primary rounded-[28px] py-2 flex-1 mx-1 px-8 text-white' 
+                  ? 'bg-primary rounded-lg py-2 flex-1 mx-1 px-8 text-white' 
                   : 'py-2 flex-1 mx-1 text-muted-foreground'
               )}
               aria-current={active ? 'page' : undefined}

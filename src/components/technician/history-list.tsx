@@ -68,7 +68,7 @@ export function HistoryList() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-1 rounded-[32px] shadow border border-border -mt-10 relative z-10 dark:bg-surface-muted flex gap-1">
+      <div className="bg-card p-1 rounded-xl shadow-sm border border-border -mt-10 relative z-10 flex gap-1">
         {FILTER_TABS.map((tab) => (
           <button
             key={tab.key}
@@ -77,7 +77,7 @@ export function HistoryList() {
             className={cn(
               'flex-1 py-3 text-center text-sm transition-colors',
               activeTab === tab.key
-                ? 'font-semibold bg-primary text-white rounded-[28px]'
+                ? 'font-semibold bg-primary text-white rounded-lg'
                 : 'font-semibold text-muted-foreground rounded-full dark:text-muted-foreground'
             )}
           >

@@ -19,7 +19,7 @@ export function ConfirmationModal({ open, onConfirm, onCancel, submitting }: Con
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className="w-full max-w-sm rounded-[32px] bg-white dark:bg-surface-muted p-8 text-center shadow-[0_10px_25px_rgba(0,0,0,0.2)]">
+      <div className="w-full max-w-sm rounded-xl bg-card p-8 text-center shadow-lg">
         {/* Success icon */}
         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-status-completed">
           <CheckCircle2 className="h-10 w-10 text-white" />

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MSN ERP — Theme Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Lexend', system-ui, sans-serif; background: #0a0a0a; padding: 32px; }
+
+  .header { text-align: center; color: #fff; margin-bottom: 32px; }
+  .header h1 { font-size: 1.5rem; font-weight: 600; }
+  .header p { color: #888; font-size: 0.875rem; margin-top: 4px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 1200px; margin: 0 auto; }
+
+  .theme-card { border-radius: 16px; overflow: hidden; border: 1px solid #333; }
+  .theme-label { padding: 12px 16px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #aaa; background: #111; display: flex; justify-content: space-between; align-items: center; }
+  .theme-label .hex { color: #666; font-family: monospace; }
+
+  .theme-body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* === THEME DEFINITIONS === */
+
+  /* LIGHT — White + Indigo (current, cleaned) */
+  .light {
+    --bg: 210 40% 98%;
+    --surface: 0 0% 100%;
+    --surface-muted: 220 14% 96%;
+    --surface-elevated: 0 0% 100%;
+    --card: var(--surface);
+    --foreground: 247 33% 15%;
+    --muted-fg: 247 10% 45%;
+    --border: 220 13% 90%;
+    --border-strong: 220 13% 80%;
+    --primary: 247 52% 25%;
+    --primary-hover: 244 52% 31%;
+    --primary-fg: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-fg: var(--foreground);
+    --accent: 220 14% 94%;
+    --accent-fg: var(--foreground);
+    --destructive: 0 72% 51%;
+    --destructive-fg: 0 0% 98%;
+    --radius: 12px;
+    /* status */
+    --st-pending: 38 92% 45%; --st-pending-bg: 38 92% 95%;
+    --st-assigned: 217 91% 50%; --st-assigned-bg: 214 95% 95%;
+    --st-en-route: 258 90% 60%; --st-en-route-bg: 258 90% 95%;
+    --st-progress: 174 72% 38%; --st-progress-bg: 174 72% 94%;
+    --st-completed: 142 71% 38%; --st-completed-bg: 142 71% 94%;
+    --st-invoiced: 189 94% 38%; --st-invoiced-bg: 189 94% 94%;
+    --st-paid: 158 64% 40%; --st-paid-bg: 158 64% 94%;
+    --st-cancelled: 0 72% 51%; --st-cancelled-bg: 0 93% 94%;
+  }
+
+  /* DARK A — Slate (220 15% 15%) */
+  .dark-a {
+    --bg: 220 15% 10%;
+    --surface: 220 15% 15%;
+    --surface-muted: 220 12% 19%;
+    --surface-elevated: 220 15% 17%;
+    --card: var(--surface);
+    --foreground: 220 10% 92%;
+    --muted-fg: 220 8% 58%;
+    --border: 220 10% 24%;
+    --border-strong: 220 10% 34%;
+    --primary: 244 52% 31%;
+    --primary-hover: 244 60% 40%;
+    --primary-fg: 0 0% 100%;
+    --secondary: 220 12% 19%;
+    --secondary-fg: var(--foreground);
+    --accent: 220 12% 19%;
+    --accent-fg: var(--foreground);
+    --destructive: 0 84% 65%;
+    --destructive-fg: 0 0% 98%;
+    --radius: 12px;
+    --st-pending: 38 95% 60%; --st-pending-bg: 38 80% 18%;
+    --st-assigned: 217 91% 68%; --st-assigned-bg: 217 80% 18%;
+    --st-en-route: 258 90% 72%; --st-en-route-bg: 258 70% 20%;
+    --st-progress: 174 72% 55%; --st-progress-bg: 174 60% 18%;
+    --st-completed: 142 71% 55%; --st-completed-bg: 142 60% 16%;
+    --st-invoiced: 189 94% 55%; --st-invoiced-bg: 189 70% 18%;
+    --st-paid: 158 64% 60%; --st-paid-bg: 158 60% 16%;
+    --st-cancelled: 0 84% 68%; --st-cancelled-bg: 0 60% 22%;
+  }
+
+  /* DARK B — Slate-Blue (225 20% 13%) — USER PICK */
+  .dark-b {
+    --bg: 225 20% 9%;
+    --surface: 225 20% 13%;
+    --surface-muted: 225 15% 17%;
+    --surface-elevated: 225 20% 15%;
+    --card: var(--surface);
+    --foreground: 225 12% 92%;
+    --muted-fg: 225 8% 56%;
+    --border: 225 12% 22%;
+    --border-strong: 225 12% 32%;
+    --primary: 244 52% 31%;
+    --primary-hover: 244 60% 40%;
+    --primary-fg: 0 0% 100%;
+    --secondary: 225 15% 17%;
+    --secondary-fg: var(--foreground);
+    --accent: 225 15% 17%;
+    --accent-fg: var(--foreground);
+    --destructive: 0 84% 65%;
+    --destructive-fg: 0 0% 98%;
+    --radius: 12px;
+    --st-pending: 38 95% 60%; --st-pending-bg: 38 80% 18%;
+    --st-assigned: 217 91% 68%; --st-assigned-bg: 217 80% 18%;
+    --st-en-route: 258 90% 72%; --st-en-route-bg: 258 70% 20%;
+    --st-progress: 174 72% 55%; --st-progress-bg: 174 60% 18%;
+    --st-completed: 142 71% 55%; --st-completed-bg: 142 60% 16%;
+    --st-invoiced: 189 94% 55%; --st-invoiced-bg: 189 70% 18%;
+    --st-paid: 158 64% 60%; --st-paid-bg: 158 60% 16%;
+    --st-cancelled: 0 84% 68%; --st-cancelled-bg: 0 60% 22%;
+  }
+
+  /* DARK C — Zinc (240 5% 12%) */
+  .dark-c {
+    --bg: 240 5% 8%;
+    --surface: 240 5% 12%;
+    --surface-muted: 240 4% 16%;
+    --surface-elevated: 240 5% 14%;
+    --card: var(--surface);
+    --foreground: 240 5% 92%;
+    --muted-fg: 240 4% 56%;
+    --border: 240 4% 20%;
+    --border-strong: 240 4% 30%;
+    --primary: 244 52% 31%;
+    --primary-hover: 244 60% 40%;
+    --primary-fg: 0 0% 100%;
+    --secondary: 240 4% 16%;
+    --secondary-fg: var(--foreground);
+    --accent: 240 4% 16%;
+    --accent-fg: var(--foreground);
+    --destructive: 0 84% 65%;
+    --destructive-fg: 0 0% 98%;
+    --radius: 12px;
+    --st-pending: 38 95% 60%; --st-pending-bg: 38 80% 18%;
+    --st-assigned: 217 91% 68%; --st-assigned-bg: 217 80% 18%;
+    --st-en-route: 258 90% 72%; --st-en-route-bg: 258 70% 20%;
+    --st-progress: 174 72% 55%; --st-progress-bg: 174 60% 18%;
+    --st-completed: 142 71% 55%; --st-completed-bg: 142 60% 16%;
+    --st-invoiced: 189 94% 55%; --st-invoiced-bg: 189 70% 18%;
+    --st-paid: 158 64% 60%; --st-paid-bg: 158 60% 16%;
+    --st-cancelled: 0 84% 68%; --st-cancelled-bg: 0 60% 22%;
+  }
+
+  /* === COMPONENT STYLES === */
+  .t-bg { background: hsl(var(--bg)); color: hsl(var(--foreground)); }
+  .t-surface { background: hsl(var(--surface)); color: hsl(var(--foreground)); }
+  .t-card {
+    background: hsl(var(--card));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .t-card-elevated {
+    background: hsl(var(--surface-elevated));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .t-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 8px;
+    font-size: 0.8125rem; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.15s;
+  }
+  .t-btn-primary { background: hsl(var(--primary)); color: hsl(var(--primary-fg)); }
+  .t-btn-primary:hover { background: hsl(var(--primary-hover)); }
+  .t-btn-secondary { background: hsl(var(--secondary)); color: hsl(var(--secondary-fg)); border: 1px solid hsl(var(--border)); }
+  .t-btn-outline { background: transparent; color: hsl(var(--foreground)); border: 1px solid hsl(var(--border-strong)); }
+  .t-btn-destructive { background: hsl(var(--destructive)); color: hsl(var(--destructive-fg)); }
+  .t-btn-ghost { background: transparent; color: hsl(var(--foreground)); }
+
+  .t-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 9999px;
+    font-size: 0.6875rem; font-weight: 600;
+  }
+  .b-pending { background: hsl(var(--st-pending-bg)); color: hsl(var(--st-pending)); }
+  .b-assigned { background: hsl(var(--st-assigned-bg)); color: hsl(var(--st-assigned)); }
+  .b-en-route { background: hsl(var(--st-en-route-bg)); color: hsl(var(--st-en-route)); }
+  .b-progress { background: hsl(var(--st-progress-bg)); color: hsl(var(--st-progress)); }
+  .b-completed { background: hsl(var(--st-completed-bg)); color: hsl(var(--st-completed)); }
+  .b-invoiced { background: hsl(var(--st-invoiced-bg)); color: hsl(var(--st-invoiced)); }
+  .b-paid { background: hsl(var(--st-paid-bg)); color: hsl(var(--st-paid)); }
+  .b-cancelled { background: hsl(var(--st-cancelled-bg)); color: hsl(var(--st-cancelled)); }
+
+  .t-input {
+    width: 100%; padding: 8px 12px;
+    background: hsl(var(--surface));
+    border: 1px solid hsl(var(--border));
+    border-radius: 8px;
+    color: hsl(var(--foreground));
+    font-size: 0.8125rem; font-family: inherit;
+  }
+  .t-input::placeholder { color: hsl(var(--muted-fg)); }
+  .t-input:focus { outline: none; border-color: hsl(var(--primary)); box-shadow: 0 0 0 1px hsl(var(--primary)); }
+
+  .t-divider { height: 1px; background: hsl(var(--border)); margin: 4px 0; }
+
+  .t-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: hsl(var(--primary)); color: hsl(var(--primary-fg));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8125rem; font-weight: 600;
+  }
+
+  .row { display: flex; align-items: center; gap: 8px; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: hsl(var(--muted-fg)); margin-bottom: 6px; }
+  .val { font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .sub { font-size: 0.75rem; color: hsl(var(--muted-fg)); }
+
+  .kanban-col {
+    background: hsl(var(--surface-muted));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .kanban-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 8px;
+    padding: 12px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.625rem; font-weight: 500; background: hsl(var(--accent)); color: hsl(var(--accent-fg)); }
+
+  .rec-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 0.625rem; font-weight: 600; background: hsl(var(--st-completed-bg)); color: hsl(var(--st-completed)); }
+
+  .section-title { font-size: 0.75rem; font-weight: 600; color: hsl(var(--muted-fg)); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>MSN ERP — Theme Comparison</h1>
+  <p>Light (white+indigo) vs Dark A (Slate) vs Dark B (Slate-Blue) vs Dark C (Zinc)</p>
+</div>
+
+<div class="grid">
+
+<!-- ============ LIGHT ============ -->
+<div class="theme-card">
+  <div class="theme-label"><span>☀️ Light — White + Indigo</span> <span class="hex">bg: 210 40% 98%</span></div>
+  <div class="theme-body light t-bg" style="border-radius: 0 0 16px 16px;">
+
+    <!-- KPI cards -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+      <div class="t-card">
+        <div class="label">Total Revenue</div>
+        <div class="val">Rp 42.5jt</div>
+        <div class="sub">↑ 12% vs lalu</div>
+      </div>
+      <div class="t-card" style="background: hsl(var(--primary)); color: hsl(var(--primary-fg)); border-color: hsl(var(--primary));">
+        <div class="label" style="color: hsl(0 0% 100% / 0.7);">Aktif</div>
+        <div class="val">8</div>
+        <div class="sub" style="color: hsl(0 0% 100% / 0.7);">3 EN_ROUTE</div>
+      </div>
+      <div class="t-card">
+        <div class="label">Selesai</div>
+        <div class="val">24</div>
+        <div class="sub">bulan ini</div>
+      </div>
+    </div>
+
+    <!-- Status badges -->
+    <div>
+      <div class="section-title">Status Badges</div>
+      <div class="badge-row">
+        <span class="t-badge b-pending">Menunggu</span>
+        <span class="t-badge b-assigned">Ditugaskan</span>
+        <span class="t-badge b-en-route">Dalam Perjalanan</span>
+        <span class="t-badge b-progress">Dikerjakan</span>
+        <span class="t-badge b-completed">Selesai</span>
+        <span class="t-badge b-invoiced">Ditagih</span>
+        <span class="t-badge b-paid">Lunas</span>
+        <span class="t-badge b-cancelled">Batal</span>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div>
+      <div class="section-title">Buttons</div>
+      <div class="btn-row">
+        <button class="t-btn t-btn-primary">Assign Teknisi</button>
+        <button class="t-btn t-btn-secondary">Detail</button>
+        <button class="t-btn t-btn-outline">Export</button>
+        <button class="t-btn t-btn-ghost">Batal</button>
+        <button class="t-btn t-btn-destructive">Hapus</button>
+      </div>
+    </div>
+
+    <!-- Kanban sample -->
+    <div>
+      <div class="section-title">Kanban Card</div>
+      <div class="kanban-col">
+        <div style="font-size: 0.75rem; font-weight: 600; display: flex; justify-content: space-between;">
+          <span>EN_ROUTE</span><span class="sub">2</span>
+        </div>
+        <div class="kanban-card">
+          <div class="row" style="justify-content: space-between;">
+            <span class="t-badge b-en-route">Dalam Perjalanan</span>
+            <span class="tag">#ORD-042</span>
+          </div>
+          <div style="font-weight: 600; font-size: 0.875rem;">PT Maju Jaya</div>
+          <div class="sub">Jl. Sudirman No. 42, Jakarta</div>
+          <div class="t-divider"></div>
+          <div class="row" style="justify-content: space-between;">
+            <div class="row"><div class="t-avatar" style="width:24px;height:24px;font-size:0.625rem;">B</div><span class="sub">Budi</span></div>
+            <span class="rec-tag">AC Cleaning</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div>
+      <div class="section-title">Input</div>
+      <input class="t-input" placeholder="Cari customer, order ID..." />
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ DARK A — Slate ============ -->
+<div class="theme-card">
+  <div class="theme-label"><span>🌙 Dark A — Slate</span> <span class="hex">bg: 220 15% 10%</span></div>
+  <div class="theme-body dark-a t-bg" style="border-radius: 0 0 16px 16px;">
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+      <div class="t-card">
+        <div class="label">Total Revenue</div>
+        <div class="val">Rp 42.5jt</div>
+        <div class="sub">↑ 12% vs lalu</div>
+      </div>
+      <div class="t-card" style="background: hsl(var(--primary)); color: hsl(var(--primary-fg)); border-color: hsl(var(--primary));">
+        <div class="label" style="color: hsl(0 0% 100% / 0.7);">Aktif</div>
+        <div class="val">8</div>
+        <div class="sub" style="color: hsl(0 0% 100% / 0.7);">3 EN_ROUTE</div>
+      </div>
+      <div class="t-card">
+        <div class="label">Selesai</div>
+        <div class="val">24</div>
+        <div class="sub">bulan ini</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Status Badges</div>
+      <div class="badge-row">
+        <span class="t-badge b-pending">Menunggu</span>
+        <span class="t-badge b-assigned">Ditugaskan</span>
+        <span class="t-badge b-en-route">Dalam Perjalanan</span>
+        <span class="t-badge b-progress">Dikerjakan</span>
+        <span class="t-badge b-completed">Selesai</span>
+        <span class="t-badge b-invoiced">Ditagih</span>
+        <span class="t-badge b-paid">Lunas</span>
+        <span class="t-badge b-cancelled">Batal</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Buttons</div>
+      <div class="btn-row">
+        <button class="t-btn t-btn-primary">Assign Teknisi</button>
+        <button class="t-btn t-btn-secondary">Detail</button>
+        <button class="t-btn t-btn-outline">Export</button>
+        <button class="t-btn t-btn-ghost">Batal</button>
+        <button class="t-btn t-btn-destructive">Hapus</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Kanban Card</div>
+      <div class="kanban-col">
+        <div style="font-size: 0.75rem; font-weight: 600; display: flex; justify-content: space-between;">
+          <span>EN_ROUTE</span><span class="sub">2</span>
+        </div>
+        <div class="kanban-card">
+          <div class="row" style="justify-content: space-between;">
+            <span class="t-badge b-en-route">Dalam Perjalanan</span>
+            <span class="tag">#ORD-042</span>
+          </div>
+          <div style="font-weight: 600; font-size: 0.875rem;">PT Maju Jaya</div>
+          <div class="sub">Jl. Sudirman No. 42, Jakarta</div>
+          <div class="t-divider"></div>
+          <div class="row" style="justify-content: space-between;">
+            <div class="row"><div class="t-avatar" style="width:24px;height:24px;font-size:0.625rem;">B</div><span class="sub">Budi</span></div>
+            <span class="rec-tag">AC Cleaning</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Input</div>
+      <input class="t-input" placeholder="Cari customer, order ID..." />
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ DARK B — Slate-Blue ============ -->
+<div class="theme-card">
+  <div class="theme-label"><span>🌙 Dark B — Slate-Blue ★</span> <span class="hex">bg: 225 20% 9%</span></div>
+  <div class="theme-body dark-b t-bg" style="border-radius: 0 0 16px 16px;">
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+      <div class="t-card">
+        <div class="label">Total Revenue</div>
+        <div class="val">Rp 42.5jt</div>
+        <div class="sub">↑ 12% vs lalu</div>
+      </div>
+      <div class="t-card" style="background: hsl(var(--primary)); color: hsl(var(--primary-fg)); border-color: hsl(var(--primary));">
+        <div class="label" style="color: hsl(0 0% 100% / 0.7);">Aktif</div>
+        <div class="val">8</div>
+        <div class="sub" style="color: hsl(0 0% 100% / 0.7);">3 EN_ROUTE</div>
+      </div>
+      <div class="t-card">
+        <div class="label">Selesai</div>
+        <div class="val">24</div>
+        <div class="sub">bulan ini</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Status Badges</div>
+      <div class="badge-row">
+        <span class="t-badge b-pending">Menunggu</span>
+        <span class="t-badge b-assigned">Ditugaskan</span>
+        <span class="t-badge b-en-route">Dalam Perjalanan</span>
+        <span class="t-badge b-progress">Dikerjakan</span>
+        <span class="t-badge b-completed">Selesai</span>
+        <span class="t-badge b-invoiced">Ditagih</span>
+        <span class="t-badge b-paid">Lunas</span>
+        <span class="t-badge b-cancelled">Batal</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Buttons</div>
+      <div class="btn-row">
+        <button class="t-btn t-btn-primary">Assign Teknisi</button>
+        <button class="t-btn t-btn-secondary">Detail</button>
+        <button class="t-btn t-btn-outline">Export</button>
+        <button class="t-btn t-btn-ghost">Batal</button>
+        <button class="t-btn t-btn-destructive">Hapus</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Kanban Card</div>
+      <div class="kanban-col">
+        <div style="font-size: 0.75rem; font-weight: 600; display: flex; justify-content: space-between;">
+          <span>EN_ROUTE</span><span class="sub">2</span>
+        </div>
+        <div class="kanban-card">
+          <div class="row" style="justify-content: space-between;">
+            <span class="t-badge b-en-route">Dalam Perjalanan</span>
+            <span class="tag">#ORD-042</span>
+          </div>
+          <div style="font-weight: 600; font-size: 0.875rem;">PT Maju Jaya</div>
+          <div class="sub">Jl. Sudirman No. 42, Jakarta</div>
+          <div class="t-divider"></div>
+          <div class="row" style="justify-content: space-between;">
+            <div class="row"><div class="t-avatar" style="width:24px;height:24px;font-size:0.625rem;">B</div><span class="sub">Budi</span></div>
+            <span class="rec-tag">AC Cleaning</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Input</div>
+      <input class="t-input" placeholder="Cari customer, order ID..." />
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ DARK C — Zinc ============ -->
+<div class="theme-card">
+  <div class="theme-label"><span>🌙 Dark C — Zinc</span> <span class="hex">bg: 240 5% 8%</span></div>
+  <div class="theme-body dark-c t-bg" style="border-radius: 0 0 16px 16px;">
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+      <div class="t-card">
+        <div class="label">Total Revenue</div>
+        <div class="val">Rp 42.5jt</div>
+        <div class="sub">↑ 12% vs lalu</div>
+      </div>
+      <div class="t-card" style="background: hsl(var(--primary)); color: hsl(var(--primary-fg)); border-color: hsl(var(--primary));">
+        <div class="label" style="color: hsl(0 0% 100% / 0.7);">Aktif</div>
+        <div class="val">8</div>
+        <div class="sub" style="color: hsl(0 0% 100% / 0.7);">3 EN_ROUTE</div>
+      </div>
+      <div class="t-card">
+        <div class="label">Selesai</div>
+        <div class="val">24</div>
+        <div class="sub">bulan ini</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Status Badges</div>
+      <div class="badge-row">
+        <span class="t-badge b-pending">Menunggu</span>
+        <span class="t-badge b-assigned">Ditugaskan</span>
+        <span class="t-badge b-en-route">Dalam Perjalanan</span>
+        <span class="t-badge b-progress">Dikerjakan</span>
+        <span class="t-badge b-completed">Selesai</span>
+        <span class="t-badge b-invoiced">Ditagih</span>
+        <span class="t-badge b-paid">Lunas</span>
+        <span class="t-badge b-cancelled">Batal</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Buttons</div>
+      <div class="btn-row">
+        <button class="t-btn t-btn-primary">Assign Teknisi</button>
+        <button class="t-btn t-btn-secondary">Detail</button>
+        <button class="t-btn t-btn-outline">Export</button>
+        <button class="t-btn t-btn-ghost">Batal</button>
+        <button class="t-btn t-btn-destructive">Hapus</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Kanban Card</div>
+      <div class="kanban-col">
+        <div style="font-size: 0.75rem; font-weight: 600; display: flex; justify-content: space-between;">
+          <span>EN_ROUTE</span><span class="sub">2</span>
+        </div>
+        <div class="kanban-card">
+          <div class="row" style="justify-content: space-between;">
+            <span class="t-badge b-en-route">Dalam Perjalanan</span>
+            <span class="tag">#ORD-042</span>
+          </div>
+          <div style="font-weight: 600; font-size: 0.875rem;">PT Maju Jaya</div>
+          <div class="sub">Jl. Sudirman No. 42, Jakarta</div>
+          <div class="t-divider"></div>
+          <div class="row" style="justify-content: space-between;">
+            <div class="row"><div class="t-avatar" style="width:24px;height:24px;font-size:0.625rem;">B</div><span class="sub">Budi</span></div>
+            <span class="rec-tag">AC Cleaning</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title">Input</div>
+      <input class="t-input" placeholder="Cari customer, order ID..." />
+    </div>
+
+  </div>
+</div>
+
+</div>
+
+</body>
+</html>

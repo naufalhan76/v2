@@ -38,13 +38,11 @@ export function StatusBadge({ status, size = 'default', className }: StatusBadge
 
   return (
     <Badge
-      variant="outline"
       className={cn(
         colors.bg,
         colors.text,
-        colors.border,
-        'font-bold',
-        size === 'sm' ? 'rounded-full text-[10px] px-2 py-1' : 'rounded-md px-2.5 py-0.5',
+        'font-bold border-0',
+        size === 'sm' ? 'rounded-full text-[10px] px-2 py-1' : 'rounded-full px-2.5 py-0.5',
         className
       )}
     >

@@ -59,10 +59,10 @@ export function UnitCard({ index, orderId, unit, initialUnit, dimensions, onUpda
   return (
     <section
       data-testid={`phase-a-unit-card-${index}`}
-      className="rounded-2xl border border-border bg-surface p-6 shadow-sm dark:bg-surface-muted"
+      className="rounded-lg border border-border bg-surface p-6 shadow-sm dark:bg-surface-muted"
     >
       <div className="mb-5 flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-100 text-primary dark:bg-surface dark:text-brand-200">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-primary dark:bg-surface dark:text-brand-200">
           <Snowflake className="h-5 w-5" />
         </div>
         <div>

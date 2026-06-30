@@ -18,11 +18,11 @@
     --brand-700: 247 52% 18%;
     --brand-900: 247 53% 8%;
 
-    /* ===== SEMANTIC (shadcn-compatible) ===== */
-    --background: 210 40% 98%;
-    --foreground: 247 53% 12%;
+    /* ===== SEMANTIC (shadcn-compatible) — cool gray to match indigo brand ===== */
+    --background: 220 40% 98%;
+    --foreground: 247 33% 15%;
     --surface: 0 0% 100%;
-    --surface-muted: 40 20% 98%;
+    --surface-muted: 220 14% 97%;
     --surface-elevated: 0 0% 100%;
 
     --card: var(--surface);
@@ -34,24 +34,24 @@
     --primary-foreground: 0 0% 100%;
     --primary-hover: var(--brand-600);
 
-    --secondary: 40 20% 96%;
+    --secondary: 220 14% 96%;
     --secondary-foreground: var(--foreground);
 
-    --muted: 40 14% 94%;
-    --muted-foreground: 247 15% 38%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 10% 36%;
 
-    --accent: 40 14% 94%;
+    --accent: 220 14% 94%;
     --accent-foreground: var(--foreground);
 
-    --border: 40 14% 89%;
-    --border-strong: 40 14% 80%;
-    --input: 40 14% 89%;
+    --border: 220 13% 90%;
+    --border-strong: 220 13% 80%;
+    --input: 220 13% 90%;
     --ring: var(--brand-600);
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     /* ===== STATUS TOKENS (foreground + bg pairs) ===== */
     --status-pending: 32 95% 43%;
@@ -95,11 +95,12 @@
   }
 
   .dark {
-    --background: 248 37% 8%;
-    --foreground: 40 10% 92%;
-    --surface: 248 37% 12%;
-    --surface-muted: 248 30% 16%;
-    --surface-elevated: 248 37% 14%;
+    /* ===== Slate-Blue dark theme — neutral cool bg, indigo pops ===== */
+    --background: 225 20% 9%;
+    --foreground: 225 12% 92%;
+    --surface: 225 20% 13%;
+    --surface-muted: 225 15% 17%;
+    --surface-elevated: 225 20% 15%;
 
     --card: var(--surface);
     --card-foreground: var(--foreground);
@@ -110,21 +111,21 @@
     --primary-foreground: 0 0% 100%;
     --primary-hover: 244 60% 40%;
 
-    --secondary: 248 30% 16%;
+    --secondary: 225 15% 17%;
     --secondary-foreground: var(--foreground);
 
-    --muted: 248 30% 16%;
-    --muted-foreground: 247 12% 65%;
+    --muted: 225 15% 17%;
+    --muted-foreground: 225 8% 56%;
 
-    --accent: 248 30% 16%;
+    --accent: 225 15% 17%;
     --accent-foreground: var(--foreground);
 
-    --border: 252 18% 22%;
-    --border-strong: 252 18% 32%;
-    --input: 252 18% 22%;
+    --border: 225 12% 22%;
+    --border-strong: 225 12% 32%;
+    --input: 225 12% 22%;
     --ring: var(--brand-600);
 
-    --destructive: 0 84% 70%;
+    --destructive: 0 84% 65%;
     --destructive-foreground: 0 0% 98%;
 
     /* Status colors get +12% lightness in dark for visibility */
@@ -162,11 +163,11 @@
   .dark {
     --cl-colorPrimary: hsl(244 52% 31%);
     --cl-colorPrimaryForeground: hsl(0 0% 100%);
-    --cl-colorBackground: hsl(248 37% 8%);
-    --cl-colorForeground: hsl(40 10% 92%);
-    --cl-colorInputBackground: hsl(248 37% 12%);
-    --cl-colorInputBorder: hsl(252 18% 22%);
-    --cl-colorDanger: hsl(0 84% 70%);
+    --cl-colorBackground: hsl(225 20% 9%);
+    --cl-colorForeground: hsl(225 12% 92%);
+    --cl-colorInputBackground: hsl(225 20% 13%);
+    --cl-colorInputBorder: hsl(225 12% 22%);
+    --cl-colorDanger: hsl(0 84% 65%);
     --cl-colorSuccess: hsl(174 72% 55%);
     --cl-colorWarning: hsl(32 95% 60%);
   }
@@ -186,6 +187,10 @@
   }
   button, [role="button"] {
     font-variation-settings: 'wght' 600;
+  }
+  /* Lucide Light — 1.5px stroke globally (default is 2px) */
+  svg[class*="lucide"] {
+    stroke-width: 1.5;
   }
 }
 

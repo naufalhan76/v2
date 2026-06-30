@@ -39,12 +39,10 @@ export function InvoiceStatusBadge({ status, size = 'default', className }: Invo
 
   return (
     <Badge
-      variant="outline"
       className={cn(
         colors.bg,
         colors.text,
-        colors.border,
-        'font-medium rounded-md px-2.5 py-0.5 gap-1',
+        'font-medium border-0 rounded-full px-2.5 py-0.5 gap-1',
         size === 'sm' && 'text-[10px] px-1.5 py-0',
         className
       )}
