@@ -14,7 +14,7 @@ import { assertCustomerIsVisibleOrThrow, assertCustomerExistsForBlankInvoiceOrTh
 import type { Invoice, CreateInvoiceInput, CreateBlankInvoiceResult } from './invoices-types'
 
 function getBlankInvoiceErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : 'Gagal membuat invoice'
+  const message = (error as { message?: string })?.message || 'Gagal membuat invoice'
   if (message.includes('Unauthorized')) return 'Anda tidak punya akses untuk membuat invoice'
   if (message.includes('Missing Supabase URL or Service Role Key')) return 'Konfigurasi server belum lengkap: SUPABASE_SERVICE_ROLE_KEY belum tersedia.'
   if (message.includes('Customer')) return message
@@ -33,6 +33,7 @@ function getBlankInvoiceErrorMessage(error: unknown): string {
 export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice> {
   const supabase = await createClient()
   const { userId } = await auth()
+  if (!userId) throw new Error('Unauthorized')
   await requireFinanceRole(userId)
 
   const invoiceNumber = await generateInvoiceNumber()
@@ -45,7 +46,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
   const subtotal = roundToTwo(baseServiceTotal + addonsSubtotal)
   const discountAmount = roundToTwo(input.discount_amount || 0)
   const discountPercentage = input.discount_percentage || 0
-  const taxPercentage = input.tax_percentage || 11
+  const taxPercentage = input.tax_percentage ?? 11
   const taxableBase = Math.max(0, roundToTwo(subtotal - discountAmount))
   const taxAmount = roundToTwo((taxableBase * taxPercentage) / 100)
   const totalAmount = roundToTwo(taxableBase + taxAmount)
@@ -58,7 +59,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     input.due_date || new Date(invoiceDate.setDate(invoiceDate.getDate() + (config?.default_due_days || 30)))
   )
 
-  await assertCustomerIsVisibleOrThrow(supabase, userId!, input.customer_id)
+  await assertCustomerIsVisibleOrThrow(supabase, userId, input.customer_id)
 
   const { data: order, error: orderError } = await supabase
     .from('orders').select('order_id, customer_id, status').eq('order_id', input.order_id).maybeSingle()
@@ -82,7 +83,7 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
     payment_bank_name: input.payment_bank_name || null,
     payment_account_number: input.payment_account_number || null,
     payment_account_name: input.payment_account_name || null,
-    created_by: userId!,
+    created_by: userId,
   }).select().single()
 
   if (invoiceError) {
@@ -105,7 +106,6 @@ export async function createInvoice(input: CreateInvoiceInput): Promise<Invoice>
   }
 
   if (input.invoice_type === 'FINAL' && input.order_id) {
-    const { data: order } = await supabase.from('orders').select('status').eq('order_id', input.order_id).single()
     if (order?.status === 'COMPLETED' || order?.status === 'DONE') {
       await supabase.from('orders').update({ status: 'INVOICED', updated_at: new Date().toISOString() }).eq('order_id', input.order_id)
     }

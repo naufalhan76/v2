@@ -65,14 +65,16 @@ export async function deleteInvoice(invoiceId: string): Promise<void> {
     )
   }
 
-  const { data: payments } = await supabase
+  const { data: payments, error: payErr } = await supabase
     .from('payment_records').select('payment_id').eq('invoice_id', invoiceId).limit(1)
+  if (payErr) throw new Error('Gagal memeriksa pembayaran')
   if (payments && payments.length > 0) {
     throw new Error('Invoice tidak dapat dihapus karena sudah memiliki pembayaran')
   }
 
-  const { data: communications } = await supabase
+  const { data: communications, error: commErr } = await supabase
     .from('invoice_communications').select('communication_id').eq('invoice_id', invoiceId).limit(1)
+  if (commErr) throw new Error('Gagal memeriksa riwayat komunikasi')
   if (communications && communications.length > 0) {
     throw new Error(
       'Invoice tidak dapat dihapus karena sudah pernah dikirim ke customer. ' +
@@ -87,8 +89,11 @@ export async function deleteInvoice(invoiceId: string): Promise<void> {
   }
 
   if (invoice.order_id && invoice.invoice_type === 'FINAL') {
-    await supabase
+    const { error: orderErr } = await supabase
       .from('orders').update({ status: 'COMPLETED', updated_at: new Date().toISOString() }).eq('order_id', invoice.order_id)
+    if (orderErr) {
+      logger.warn('Failed to revert order status after invoice delete:', orderErr)
+    }
   }
 
   void auditLog('DELETE', 'invoices', invoiceId)
@@ -145,8 +150,12 @@ export async function updateInvoiceStatus(
   }
 
   if (status === 'CANCELLED' && data?.order_id && data?.invoice_type === 'FINAL') {
-    await supabase
+    const { error: ordErr } = await supabase
       .from('orders').update({ status: 'COMPLETED', updated_at: new Date().toISOString() }).eq('order_id', data.order_id)
+    if (ordErr) {
+      // ponytail: invoice already cancelled; throwing would create inconsistency. Upgrade: retry queue.
+      logger.warn('Failed to revert order status after invoice cancel:', ordErr)
+    }
   }
 
   void auditLog('STATUS_CHANGE', 'invoices', invoiceId, { status: currentStatus }, { status })

@@ -28,6 +28,24 @@ export async function createProformaInvoice(orderId: string): Promise<{
     if (orderError || !order) return { success: false, error: 'Order tidak ditemukan' }
     if (!order.customer_id) return { success: false, error: 'Order tidak memiliki customer terhubung' }
 
+    // ponytail: status gate — orders past proforma stage cannot get a new proforma
+    if (['COMPLETED', 'DONE', 'INVOICED', 'PAID'].includes(order.status)) {
+      return { success: false, error: 'Order sudah melewati tahap proforma' }
+    }
+
+    // ponytail: duplicate check — return existing PROFORMA if one already exists
+    const { data: existing, error: existingError } = await supabase
+      .from('invoices').select().eq('order_id', orderId).eq('invoice_type', 'PROFORMA').maybeSingle()
+    if (existingError) {
+      logger.error('Error checking existing proforma:', existingError)
+    }
+    if (existing) {
+      return {
+        success: true,
+        data: { invoice_id: existing.invoice_id, invoice_number: existing.invoice_number, total_amount: existing.total_amount },
+      }
+    }
+
     const orderItems = await getOrderItemsForInvoice(orderId)
     const baseServiceItems: CreateInvoiceInput['items'] = orderItems.map((oi) => ({
       item_type: 'BASE_SERVICE',
@@ -109,7 +127,7 @@ export async function createProformaInvoice(orderId: string): Promise<{
     }
   } catch (error) {
     logger.error('createProformaInvoice failed:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Gagal membuat proforma invoice' }
+    return { success: false, error: (error as { message?: string })?.message || 'Gagal membuat proforma invoice' }
   }
 }
 
@@ -228,5 +246,9 @@ export async function finalizeInvoiceFromOrder(orderId: string): Promise<CreateI
     }
   }
 
-  return createInvoiceFromOrder(orderId)
+  const result = await createInvoiceFromOrder(orderId)
+  // ponytail: finalize implies sending — transition DRAFT → SENT; ceiling: no optimistic lock
+  const adminClient = createAdminClient()
+  await adminClient.from('invoices').update({ status: 'SENT', updated_at: new Date().toISOString() }).eq('invoice_id', result.invoice_id)
+  return result
 }

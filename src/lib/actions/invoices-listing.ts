@@ -47,7 +47,14 @@ export async function getInvoices(filters?: {
     .order('created_at', { ascending: false })
     .range(from, to)
 
-  if (filters?.status && filters.status !== 'OVERDUE') query = query.eq('status', filters.status)
+  if (filters?.status === 'OVERDUE') {
+    // ponytail: OVERDUE = SENT + past due_date (narrower than isOverdue which also covers DRAFT/PARTIAL_PAID).
+    // Upgrade path: broaden to .in('status', ['SENT','DRAFT','PARTIAL_PAID']) + .neq('payment_status','PAID') if needed.
+    const todayIso = new Date().toISOString().split('T')[0]
+    query = query.eq('status', 'SENT').lt('due_date', todayIso)
+  } else if (filters?.status) {
+    query = query.eq('status', filters.status)
+  }
   if (filters?.paymentStatus) query = query.eq('payment_status', filters.paymentStatus)
   if (filters?.customerId) query = query.eq('customer_id', filters.customerId)
   if (filters?.dateFrom) query = query.gte('invoice_date', filters.dateFrom)
@@ -75,10 +82,6 @@ export async function getInvoices(filters?: {
     }
     return { ...withCustomer, computed_status: withCustomer.status as InvoiceStatus }
   })
-
-  if (filters?.status === 'OVERDUE') {
-    invoicesWithOverdue = invoicesWithOverdue.filter(inv => inv.computed_status === 'OVERDUE')
-  }
 
   return { data: invoicesWithOverdue, total: count || 0, page, limit }
 }
