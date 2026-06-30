@@ -117,7 +117,7 @@ export async function isTechnician(): Promise<boolean> {
 
 export async function isFinance(): Promise<boolean> {
   const role = await getUserRole()
-  return role === 'FINANCE'
+  return role === 'FINANCE' || role === 'SUPERADMIN'
 }
 
 export function hasAccess(userRole: UserRole | null, requiredRole: UserRole): boolean {

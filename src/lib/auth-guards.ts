@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { auth } from '@clerk/nextjs/server'
-import { redirect } from 'next/navigation'
+
 import { createClient } from '@/lib/supabase-server'
 import type { UserProfile, UserRole } from '@/lib/rbac'
 
@@ -25,9 +25,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
 
   if (error || !data) return null
 
-  if (data.is_active !== true) {
-    redirect('/sign-out')
-  }
+  if (data.is_active !== true) return null
 
   return data as UserProfile
 }
