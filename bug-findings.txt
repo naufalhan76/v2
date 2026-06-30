@@ -1,0 +1,998 @@
+Bug findings — rbac.ts
+======================
+
+[LOW] Inconsistent hierarchy in isFinance()
+------------------------------------------
+isFinance() returns true ONLY for 'FINANCE', not for SUPERADMIN.
+By contrast, isAdmin() includes SUPERADMIN.
+
+Impact: SUPERADMIN cannot pass the isFinance() gate despite having
+full access elsewhere. If isFinance() guards a finance-only UI path,
+SUPERADMIN would be blocked.
+
+Likely design choice (SUPERADMIN uses a different code path), but
+worth confirming. If SUPERADMIN should see finance features, change:
+  return role === 'FINANCE'
+to:
+  return role === 'FINANCE' || role === 'SUPERADMIN'
+
+[INFO] canAccessInvoice / canAccessCustomer ignore resource
+-----------------------------------------------------------
+Both functions accept an invoice/customer argument but `void` it
+immediately with a TODO for "multi-tenant ownership check".
+Currently purely role-based — any FINANCE+ user can access any record.
+Not a bug per se (TODO acknowledges it), but a security gap for
+multi-tenant deployments.
+
+
+Bug findings — auth-guards.ts
+==============================
+
+[MED] Inactive user redirect leaks NEXT_REDIRECT to callers
+-----------------------------------------------------------
+getCurrentUserProfile() calls redirect('/sign-out') when is_active is false.
+In Next.js, redirect() throws NEXT_REDIRECT to short-circuit rendering.
+requireUserProfile() has no try/catch, so NEXT_REDIRECT propagates instead of
+AuthError('Unauthorized: active user profile required').
+
+Impact: Callers see an opaque framework error instead of a clear auth failure.
+Error boundaries handling AuthError will miss inactive-user cases.
+
+Fix: Return null from getCurrentUserProfile() for inactive users and let
+requireUserProfile() throw AuthError as designed. Or catch and rethrow.
+
+
+Bug findings — orders-auto-revert.ts
+======================================
+
+[MED] UTC midnight boundary in scheduled_visit_date comparison
+--------------------------------------------------------------
+Line 22: new Date().toISOString().slice(0, 10) computes "today" in UTC.
+Server in UTC+7 (WIB) between 00:00–06:59 local → UTC date is still
+yesterday. Orders scheduled for local "today" may be reverted prematurely
+because the UTC date appears as "yesterday" to the .lt() filter.
+
+Impact: Cron running at 01:00 WIB (18:00 UTC previous day) would compute
+today as the UTC date, which is one day ahead of local scheduled_visit_date.
+Orders for "today" (local) would NOT be reverted (correct), but orders for
+"tomorrow" (local/today UTC) would be incorrectly included.
+
+Fix: Use a timezone-aware date:
+  const today = new Date(Date.now() + 7*3600_000).toISOString().slice(0, 10)
+Or store scheduled_visit_date as timestamptz and compare with timestamptz now().
+
+[LOW] void Promise.allSettled swallows notification failures silently
+----------------------------------------------------------------------
+Lines 109–114: Fire-and-forget push notifications. In serverless/edge
+runtimes the function may terminate before notifications complete.
+No retry mechanism for transient push failures.
+
+Acceptable tradeoff for cron performance. Consider a background queue
+(BullMQ/Bull) if notification reliability becomes critical.
+
+
+Bug findings — orders-mutations-status.ts (cancelOrder)
+========================================================
+
+[LOW] AC unit deactivation only targets status='ACTIVE'
+--------------------------------------------------------
+Lines 154-165: The .eq('status', 'ACTIVE') filter means AC units in
+other states (e.g. INACTIVE, MAINTENANCE) won't be touched when the
+order is cancelled. If an AC unit transitions to a non-ACTIVE state
+independently of the order, cancelling the order leaves it unchanged,
+which is likely correct. But if a future status like "SERVICING" is
+added, cancelOrder won't reset it.
+
+Fix: Consider widening the filter or using .neq('status', 'INACTIVE')
+to catch all non-terminal AC states.
+
+[LOW] FINAL invoice query doesn't exclude VOID status
+------------------------------------------------------
+Lines 169-174: .neq('status', 'CANCELLED') includes VOID invoices in
+the finalInvoices array. If a VOID invoice exists, it won't block
+cancellation (since it's neither PAID nor PARTIAL_PAID), and the
+cascade will try to cancel it again (harmless no-op). Not a bug,
+but a minor inefficiency and possible confusion in audit logs.
+
+Fix: Add .not('status', 'in', ['CANCELLED', 'VOID']) if VOID becomes
+a real status.
+
+
+Bug findings — orders-mutations-status.ts (updateOrderStatus + acceptOrder)
+============================================================================
+
+[MED] updateOrderStatus: transition insert error silently ignored
+-----------------------------------------------------------------
+Lines 92-98: After successfully updating the order status, the code
+inserts into order_status_transitions and awaits it, but never checks
+the error. If the insert fails (e.g., constraint violation), the
+function returns { success: true } anyway. The audit trail silently
+loses a transition record.
+
+Fix: Destructure { error: insertError } from the insert and throw or
+log a warning if it fails. Consider wrapping both operations in a
+Supabase transaction via RPC.
+
+[HIGH] acceptOrder: no authentication, no role validation
+----------------------------------------------------------
+Lines 298-321: acceptOrder() calls createClient() and directly updates
+the order to 'ACCEPTED' status. No auth() check, no role lookup,
+no transition validation. Any unauthenticated API call or CSRF can
+accept any order. Additionally, it writes legacy 'ACCEPTED' status
+instead of canonical 'PENDING' — bypasses the toCanonical layer.
+
+Fix: Add auth() + role guard, use updateOrderStatus('PENDING') to go
+through canTransition validation, or at minimum check the current
+status before accepting.
+
+
+Bug findings — invoices-order.ts
+=================================
+
+[MED] createProformaInvoice: no duplicate protection
+----------------------------------------------------
+Lines 16-114: No check for existing PROFORMA invoice on the order before
+creating a new one. Calling createProformaInvoice('o1') twice creates two
+PROFORMA invoices with different invoice_numbers. The DB may have a unique
+constraint on (order_id, invoice_type) but the function doesn't handle the
+resulting error gracefully.
+
+Fix: Add a pre-check: `from('invoices').select().eq('order_id', orderId).eq('invoice_type', 'PROFORMA').maybeSingle()`
+and return existing or throw.
+
+[MED] createProformaInvoice: no order status gate
+--------------------------------------------------
+Lines 26-28: The function fetches order status but never checks it.
+Creating a proforma for a COMPLETED/DONE order (post-service) is
+meaningless — the final invoice flow should be used instead.
+
+Fix: Add `if (['COMPLETED', 'DONE', 'INVOICED', 'PAID'].includes(order.status))
+return { success: false, error: 'Order sudah melewati tahap proforma' }`
+
+[LOW] finalizeInvoiceFromOrder: misleading name, no DRAFT→SENT transition
+-------------------------------------------------------------------------
+Lines 199-232: The function name implies "finalizing" an invoice (DRAFT→SENT)
+but it only deletes an existing PROFORMA and delegates to createInvoiceFromOrder,
+which creates a new DRAFT FINAL invoice. There is no update to SENT status.
+Callers expecting finalize to send/lock the invoice get a DRAFT instead.
+
+Fix: After createInvoiceFromOrder returns, update the invoice status to SENT
+via `admin.from('invoices').update({ status: 'SENT' }).eq('invoice_id', id)`.
+
+
+Bug findings — orders-mutations-assign.ts
+==========================================
+
+[HIGH] No auth guard on addHelperTechnician / removeHelperTechnician
+----------------------------------------------------------------------
+Lines 98-149: Both functions call createClient() then directly insert/delete
+without any auth.getUser() or role check. Any authenticated session (including
+technician-role users) can add or remove helpers on any order.
+
+Fix: Add auth() + role guard (ADMIN/SUPERADMIN only), or verify the caller
+is assigned to the order as lead.
+
+[MED] assignOrdersToTechnician: no past-date validation
+------------------------------------------------------
+Lines 11-96: scheduledDate is passed directly to the RPC without checking
+if it's in the past. An admin could accidentally assign orders to a past date.
+
+Fix: Add `if (new Date(data.scheduledDate) < today) throw` before RPC call.
+
+[MED] assignOrdersToTechnician: no deduplication of orderIds
+------------------------------------------------------------
+Lines 44-48: Duplicate IDs in orderIds inflate currentLeadCount+orderIds.length
+capacity check and are passed to RPC as-is. The RPC may double-assign or fail
+on unique constraints.
+
+Fix: Deduplicate at entry: `data.orderIds = [...new Set(data.orderIds)]`
+
+[LOW] assignOrdersToTechnician: helper=lead not validated
+----------------------------------------------------------
+Line 59: p_helper_ids may contain the same ID as p_lead_technician_id.
+No client-side check prevents assigning a technician as their own helper.
+
+Fix: Filter helperTechnicianIds to exclude the lead:
+  `p_helper_ids: (data.helperTechnicianIds || []).filter(id => id !== data.technicianId)`
+
+[LOW] removeHelperTechnician: no row-existence verification
+------------------------------------------------------------
+Lines 130-135: delete().eq('role','helper') succeeds with 0 rows deleted.
+Function returns { success: true } even when nothing was removed.
+
+Fix: Use .select() first to verify the row exists, or check the .delete()
+return count (if Supabase supports it via returning: 'count').
+
+
+Bug findings — invoices-create.ts (createInvoice)
+===================================================
+
+[MED] tax_percentage || 11 silently overrides 0% tax to 11%
+------------------------------------------------------------
+Line 48: `const taxPercentage = input.tax_percentage || 11`
+Using `||` (logical OR) means `0` is falsy and gets replaced by the default 11.
+A tax-exempt invoice (0% VAT) would be charged 11% tax instead.
+
+By contrast, createBlankInvoiceOrThrow (line 153) correctly uses nullish
+coalescing: `parsedInput.tax_percentage ?? config?.default_tax_percentage ?? 11`
+
+Fix: `const taxPercentage = input.tax_percentage ?? 11`
+
+[LOW] Non-null assertion on userId (userId!)
+---------------------------------------------
+Lines 61, 85: `userId!` bypasses TypeScript's null-safety. `auth()` from Clerk
+returns `{ userId: string | null }`. If Clerk auth silently fails (e.g. rotated
+key, missing cookie), userId is null and requireFinanceRole(null) is called.
+requireFinanceRole may or may not guard against null — depends on implementation.
+
+Low severity in practice (Clerk session cookie is present for all authed
+requests), but the assertion should be `if (!userId) throw new AuthError(...)`
+for explicit null handling.
+
+[LOW] Redundant order re-fetch for INVOICED status update
+-----------------------------------------------------------
+Lines 107-112: After creating invoice+items, the code re-queries orders to
+check status again before updating to INVOICED. The order was already validated
+on lines 63-67 (status is DONE or COMPLETED). The re-fetch adds a round-trip
+for no additional safety.
+
+Fix: Remove lines 107-112's inner status check and update directly,
+or wrap in a transaction with the invoice insert.
+
+
+Bug findings — invoices-payments.ts
+=====================================
+
+[MEDIUM] deleteInvoice: payment_records query error silently ignored
+--------------------------------------------------------------------
+Lines 68-72: `const { data: payments } = await supabase.from('payment_records')...`
+The `error` return is never captured. If the query fails (RLS, network, schema),
+payments=null, the check passes, and deletion proceeds on an invoice that may
+actually have payments — violating the safety guard.
+
+Fix: Destructure `error` and throw if present:
+  const { data: payments, error: payErr } = await supabase...
+  if (payErr) throw new Error('Gagal memeriksa pembayaran')
+
+[MEDIUM] deleteInvoice: invoice_communications query error silently ignored
+---------------------------------------------------------------------------
+Lines 74-81: Same pattern — `const { data: communications }` drops the error.
+A failed comms check would allow deleting an invoice that was already sent.
+
+Fix: Same as above for communications query.
+
+[LOW] deleteInvoice: orders update error silently ignored (FINAL revert)
+------------------------------------------------------------------------
+Lines 89-92: `await supabase.from('orders').update(...).eq(...)` — the result
+is awaited but `{ error }` is never checked. If the order revert fails,
+the invoice is deleted but the order stays in its previous status (e.g. INVOICED).
+
+Fix: Check the error and log/warn (or re-throw if atomicity is required).
+
+[LOW] updateInvoiceStatus: orders update error silently ignored (CANCELLED revert)
+-----------------------------------------------------------------------------------
+Lines 147-149: Same pattern as deleteInvoice — CANCELLED + FINAL order revert
+errors are silently dropped. Order status becomes stale.
+
+Fix: Same as deleteInvoice — capture and handle the error.
+
+[HIGH] rescheduleOrder: no status guard — allows rescheduling terminal-state orders
+------------------------------------------------------------------------------------
+orders-mutations-schedule.ts, line 56–112: rescheduleOrder fetches currentOrder.status
+but never checks it. It proceeds to set status=PENDING for any order regardless of
+current state — COMPLETED, PAID, and CANCELLED orders can all be rescheduled, reversing
+their terminal status.
+
+By contrast, the RESCHEDULE case in updateOrderStatus (orders-mutations-status.ts) does
+validate the transition through the state machine.
+
+Fix: Add a guard after fetching currentOrder:
+  const terminal = ['COMPLETED', 'PAID', 'CANCELLED']
+  if (terminal.includes(currentOrder.status)) {
+    return { success: false, error: `Cannot reschedule ${currentOrder.status} order` }
+  }
+
+[MEDIUM] rescheduleOrder: no auth check — any caller can reschedule any order
+------------------------------------------------------------------------------
+orders-mutations-schedule.ts, line 48: Unlike createOrder (line 19), rescheduleOrder
+does not call auth(). There is no userId check, so an unauthenticated caller can
+reschedule orders. Server actions run in a trusted context, but a compromised or
+mis-used action exposes this gap.
+
+Fix: Add `const { userId } = await auth(); if (!userId) return { success: false, error: 'Unauthorized' }`
+at the top of rescheduleOrder.
+
+[LOW] rescheduleOrder: error.message lost when catch receives non-Error object
+-------------------------------------------------------------------------------
+orders-mutations-schedule.ts, line 113–118: The catch block uses
+`error instanceof Error ? error.message : 'Failed to reschedule order'`.
+If a thrown value is not an Error instance, the specific message is discarded.
+Both `throw fetchError` (line 61) and `throw deleteError` (line 90) throw whatever
+the Supabase client returns — if the client ever returns a plain object, real messages
+are silently replaced.
+
+Fix: Use duck typing: `(error as any)?.message ?? 'Failed to reschedule order'`.
+
+### create-order-mutations.ts — `instanceof Error` swallows Supabase error messages
+**Severity**: Low (cosmetic / DX)
+**File**: `src/lib/actions/create-order-mutations.ts` lines 71, 203, 255
+
+All three functions (`createCustomer`, `createOrderWithItems`, `createLocation`) catch errors
+and check `error instanceof Error ? error.message : 'Failed to...'`. Supabase client returns
+plain objects (`{ message: '...' }`) not `Error` instances, so the specific Supabase error
+message is always discarded and a generic fallback is returned to callers.
+
+**Fix**: Duck-type: `const msg = (error as Record<string, unknown>)?.message; typeof msg === 'string' ? msg : 'Failed to...'`
+or wrap: `const errMsg = error instanceof Error ? error.message : String((error as any)?.message ?? error)`.
+
+Bug findings — invoices-revision.ts
+=====================================
+
+[LOW] Redundant auth + RBAC in reviseInvoice
+---------------------------------------------
+`reviseInvoice` calls `auth()` + `requireFinanceRole()`, then delegates to
+`updateInvoice` and `reviseInvoiceItems` which each independently call both again.
+Result: 3 auth lookups and 3 RBAC checks per call. Not a correctness bug — just
+wasted round-trips. Fix: remove the auth/RBAC calls from reviseInvoice or extract
+a shared helper that checks once.
+
+[LOW] Silent rollback failure in reviseInvoiceItems error recovery
+-------------------------------------------------------------------
+Line 269: `await supabase.from('invoices').update({...previousTotals}).eq(...)` —
+the result of the restore update is not checked. If the restore itself fails,
+invoice totals are lost with no log or error. Mitigated by the fact that this is
+already inside an error handler, but a failed restore here means inconsistent totals.
+
+
+Bug findings — invoices-listing.ts (getInvoices OVERDUE filter)
+=================================================================
+
+[MED] OVERDUE status filter is post-query — pagination and total are broken
+---------------------------------------------------------------------------
+Line 79–81: When `filters.status === 'OVERDUE'`, the DB query runs WITHOUT any
+status filter (line 50 skips OVERDUE: `if (filters?.status && filters.status !== 'OVERDUE')`).
+All matching rows are fetched, then filtered in-memory.
+
+Impact:
+1. Pagination is broken: a page of 20 may return 3 overdue invoices after filtering.
+2. The `total` count is the DB count of ALL rows, not the overdue-filtered count.
+3. Performance: fetching all invoices for large datasets just to filter client-side.
+
+Fix: Move OVERDUE filter to the DB layer:
+  if (filters?.status === 'OVERDUE') query = query.eq('status', 'SENT').lt('due_date', today)
+Or compute `count` from the filtered result array:
+  return { data: filtered, total: filtered.length, page, limit }
+
+[LOW] getInvoiceStats: unpaidAmount can be NaN when paid_amount is null
+------------------------------------------------------------------------
+Line 104: `inv.total_amount - inv.paid_amount` — if `paid_amount` is null in the DB,
+JS coerces null to 0, so the calculation is correct (total - 0 = total). However,
+if the schema allows undefined instead of null, the result would be NaN. Not a bug
+today (DB column is NOT NULL DEFAULT 0), but fragile.
+
+
+Bug findings — orders-queries.ts & order-history.ts
+=====================================================
+
+[LOW] getOrders: pagination.total is 0 when withCount is not requested
+-----------------------------------------------------------------------
+Line 92: `total: count ?? 0` — the `count` field is only populated when
+`withCount: true` is passed (line 58: `{ count: filters?.withCount ? 'exact' : undefined }`).
+When callers omit `withCount`, `count` is null/undefined, and `pagination.total` falls
+back to 0. This means `totalPages` is always 0, breaking pagination UI.
+
+Impact: Frontend shows "page 1 of 0" or disables next-page buttons even when more
+data exists. Callers MUST pass `withCount: true` to get accurate pagination.
+
+Fix: Document the requirement, or default to `withCount: true` in the function signature:
+  `withCount?: boolean` → `withCount: boolean = true`
+Or return `total: null` when count is unavailable to signal "unknown" rather than "zero".
+
+[INFO] order-history.ts: clean implementation
+----------------------------------------------
+No bugs found. Simple query with proper error handling and type assertion.
+
+
+Bug findings — reminders-rules.ts & reminders-queue.ts
+========================================================
+
+[MED] updateReminderRule: no empty-name validation after trim
+-------------------------------------------------------------
+Line 108: `if (input.name !== undefined) patch.name = input.name.trim()`
+Unlike createReminderRule (line 51) which rejects empty/whitespace names,
+updateReminderRule allows setting a rule's name to "" via `{ name: "   " }`.
+The trim happens but no subsequent check for empty string.
+
+Impact: A rule can be rendered nameless in the UI after update, breaking
+display consistency and potentially confusing users.
+
+Fix: Add validation after trim:
+  `if (input.name !== undefined) {
+    const trimmed = input.name.trim();
+    if (!trimmed) return { success: false, error: 'Name is required' };
+    patch.name = trimmed;
+  }`
+
+[LOW] updateReminderRule: no empty message_template validation
+---------------------------------------------------------------
+Line 121-123: `if (input.message_template !== undefined)` writes raw value
+without checking for empty string. createReminderRule validates via
+`!input.message_template?.trim()`, but update path skips this check.
+
+Impact: A rule can have its template set to "" making all generated
+reminders empty messages. Combined with the channel validation gap, this
+creates a path to broken reminders.
+
+Fix: Mirror createReminderRule validation:
+  `if (input.message_template !== undefined) {
+    if (!input.message_template.trim())
+      return { success: false, error: 'Message template is required' };
+    patch.message_template = input.message_template;
+  }`
+
+[LOW] createManualReminder: fallback to today's date when no next_service_due_date
+-----------------------------------------------------------------------------------
+Line 211: `unit.next_service_due_date ?? new Date().toISOString().slice(0, 10)`
+When an AC unit has no scheduled service date, the function creates a reminder
+with today as the due date. The message template receives today's date via
+`formatDueDate(dueIso)`, telling the customer "your AC is due TODAY."
+
+Impact: Confusing customer communication. A reminder without a meaningful
+due date may prompt unnecessary service calls or be ignored as spam.
+
+Fix: Either require next_service_due_date and return an error if missing:
+  `if (!unit.next_service_due_date)
+    return { success: false, error: 'AC unit has no scheduled service date' }`
+Or use a placeholder like "Schedule your next service" instead of a date.
+
+[LOW] generateRemindersFromAcUnits: UTC midnight boundary (same as orders-auto-revert)
+---------------------------------------------------------------------------------------
+Line 149: `new Date().toISOString().slice(0, 10)` computes today/cutoff in UTC.
+In WIB (UTC+7) between 00:00–06:59 local, UTC date is yesterday. Units with
+next_service_due_date = local-today may be excluded from the query if the
+server clock is in the early morning WIB window.
+
+Same bug pattern as orders-auto-revert.ts. Impact is lower here since
+reminder generation typically runs via cron at fixed intervals, but edge
+cases exist for manual triggers or cron misconfiguration.
+
+Fix: Use timezone-aware date:
+  `const now = new Date(Date.now() + 7 * 3600_000)`
+Or store next_service_due_date as timestamptz and compare with timestamptz.
+
+
+Bug findings — dashboard-stats.ts & dashboard-charts.ts
+=========================================================
+
+[MED] getChartData: timezone bug in date iteration (vs getStatusByDay which is correct)
+----------------------------------------------------------------------------------------
+getChartData (line 50) uses `new Date(dateStart)` + `setDate()/getDate()`
+(local-time methods) to iterate dates, then calls `toISOString()` (UTC) to
+get the string key. In UTC+7, this can skip or duplicate dates around
+midnight. Compare with getStatusByDay (line 252) which correctly uses
+`new Date(\`\${dateStart}T00:00:00.000Z\`)` + `setUTCDate/getUTCDate`.
+
+Impact: Daily chart data may show the wrong date for orders in WIB timezone,
+or miss/duplicate a day near midnight.
+
+Fix: Mirror getStatusByDay's UTC approach:
+  `const currentDate = new Date(\`\${dateStart}T00:00:00.000Z\`)`
+  `currentDate.setUTCDate(currentDate.getUTCDate() + 1)`
+
+[MED] getChartData: `toLocaleDateString` on UTC-parsed date shifts display in WIB
+----------------------------------------------------------------------------------
+Line 60: `new Date(dateStr).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })`
+`dateStr` like '2026-01-01' is parsed as UTC midnight. `toLocaleDateString`
+formats in local TZ. In WIB (UTC+7), UTC 00:00 = local 07:00 same day — OK.
+But in PST (UTC-8), UTC 00:00 = local 16:00 previous day — shows Dec 31.
+
+Impact: Chart x-axis labels may show wrong date/month for users in negative-UTC-offset
+timezones (Americas). Low risk for an Indonesia-only deployment but breaks if the
+app is ever accessed from the US.
+
+Fix: Use explicit UTC formatting or store formattedDate server-side:
+  `new Date(\`\${dateStr}T12:00:00.000Z\`).toLocaleDateString('id-ID', ...)`
+(Noon UTC is safe for all timezone offsets.)
+
+[HIGH] dashboard-stats: `instanceof Error` silently drops Supabase error messages
+----------------------------------------------------------------------------------
+Line 263: `error: error instanceof Error ? error.message : 'Failed to fetch dashboard data'`
+Supabase PostgrestError objects are plain objects `{ message, code, details, hint }`,
+NOT Error instances. The `instanceof Error` check is ALWAYS false for Supabase errors,
+so the user always sees the generic "Failed to fetch dashboard data" message regardless
+of the actual error.
+
+Impact: Debugging production issues is significantly harder — all Supabase errors
+(RLS denied, network timeout, schema mismatch) show the same generic message in
+the returned error field. The logger.error on line 260 does log the real error,
+but the API consumer only sees the generic message.
+
+Fix: Use `error && typeof error === 'object' && 'message' in error` or simply:
+  `error: (error as { message?: string })?.message || 'Failed to fetch dashboard data'`
+
+[LOW] dashboard-stats/charts: no input validation on startDate/endDate
+-----------------------------------------------------------------------
+Both modules accept `startDate?: string, endDate?: string` without validation.
+If a caller passes an invalid date string (e.g., "not-a-date"), the functions
+produce NaN in date arithmetic and empty chart data without any error signal.
+
+Impact: Silent incorrect data. A URL parameter like `?startDate=invalid` would
+return an empty chart with `success: true` rather than an error.
+
+Fix: Validate date strings early:
+  `if (startDate && isNaN(new Date(startDate).getTime()))
+    return { success: false, error: 'Invalid startDate' }`
+
+
+Bug findings — api/ac-units + api/customers routes
+===================================================
+
+[MEDIUM] POST /api/ac-units — request.json() lacks error guard
+--------------------------------------------------------------
+src/app/api/ac-units/route.ts line 121:
+  `const body = await request.json()`
+
+Compare to POST /api/customers (line 104):
+  `const body = await request.json().catch(() => ({}))`
+
+If a client sends invalid JSON, ac-units POST throws from the parser
+and surfaces as a 500 (unhandled throw → handleApiError). Should be 400.
+
+Fix: `const body = await request.json().catch(() => ({}))` or wrap in try.
+
+[LOW] PUT /api/ac-units/[id] — request.json() called BEFORE auth check
+-----------------------------------------------------------------------
+src/app/api/ac-units/[id]/route.ts line 77:
+  `const body = await request.json()`
+Then line 79:
+  `const auth = await requireApiRole(...)`
+
+In POST /api/customers, auth is checked FIRST. Here, body parsing runs on
+every request regardless of authorization. Unauthenticated users who send
+malformed JSON get a 500 instead of 401, leaking the fact that the server
+is alive and parsing bodies.
+
+Fix: Move `await request.json()` after the `requireApiRole` guard.
+
+[LOW] PUT /api/ac-units/[id] — no Zod validation on update body
+-----------------------------------------------------------------
+src/app/api/ac-units/[id]/route.ts lines 86-94:
+  The route forwards body fields directly to updateAcUnit() with
+  `body.brand`, `body.model_number`, etc., but no schema validates the input.
+  Compare to POST /api/ac-units which uses `CreateAcUnitSchema`.
+
+Impact: arbitrary types can reach the update action (e.g. capacity_btu
+as string instead of number). The action's `Number(body.capacity_btu)`
+cast at line 91 only mitigates one field.
+
+Fix: Add an `UpdateAcUnitSchema` with optional fields + capacity_btu coercion.
+
+[INFO] POST /api/ac-units — logs raw body before validation
+-----------------------------------------------------------
+src/app/api/ac-units/route.ts line 123:
+  `logRequest(method, path, user.id, { data: body })`
+
+Raw (un-sanitized) body is logged before Zod validation runs. If the body
+contains unexpected keys, they appear in logs. Customers route does not log
+pre-validation body.
+
+Fix: Log after validation passes, or log `validation.data` instead.
+
+
+Bug findings — orders API routes
+=================================
+
+[MED] GET /api/orders: `requireApiRole` leaks Clerk auth() vs getAuth inconsistency
+------------------------------------------------------------------------------------
+src/app/api/orders/route.ts uses `requireApiRole` which calls `auth()` (no-request-arg).
+src/app/api/orders/[id]/route.ts uses `requireAuth` which calls `getAuth(request)`.
+src/app/api/orders/create/route.ts uses `requireApiRole` (same as GET).
+
+These are two different Clerk SDK functions: `auth()` reads from async headers() and requires
+the Edge Runtime request context, while `getAuth(request)` reads from the explicit request.
+Both work in Next.js route handlers today, but mixing them means auth behavior differs
+across the orders domain (cookie-only vs Bearer+cookie). Consolidate on one pattern.
+
+[LOW] PATCH /api/orders/[id] duplicates role lookup
+-----------------------------------------------------
+Lines 62-72: After `requireAuth` succeeds, the route manually queries `user_management`
+to get the role. The `requireApiRole` helper does the same thing in one call.
+The PATCH route reinvents `requireApiRole` inline. This means PATCH has a different
+failure mode (role missing from user_management → 403) vs GET/POST (same scenario → 403
+but handled inside requireApiRole). Not a bug today, but the inline check can drift.
+
+
+Bug findings — api/photos/signed-upload-url & api/technician/push routes
+==========================================================================
+
+[HIGH] signed-upload-url: no bucket/path allowlist with service-role client
+------------------------------------------------------------------------------
+src/app/api/photos/signed-upload-url/route.ts lines 19-22:
+  `const supabase = createAdminClient()`  // service role = bypasses RLS
+  `supabase.storage.from(bucket).createSignedUploadUrl(path, { upsert: true })`
+
+`bucket` and `path` come directly from the request body with zero validation.
+Any authenticated Clerk user can:
+1. Upload to ANY Supabase bucket (including system buckets, function code, migrations)
+2. Use `upsert: true` to OVERWRITE existing files in any bucket
+3. Path-traverse with `../../` to escape the intended directory
+
+Impact: Arbitrary file upload/overwrite in any storage bucket. An attacker with
+a valid Clerk session can replace service report photos, invoice PDFs, or even
+Supabase Edge Function source code.
+
+Fix: Whitelist allowed buckets and validate path structure:
+  `const ALLOWED_BUCKETS = ['service-photos']
+   if (!ALLOWED_BUCKETS.includes(bucket))
+     return NextResponse.json({ error: 'Invalid bucket' }, { status: 400 })
+   // Validate path matches {userId}/{uuid}.{ext}
+   if (!new RegExp(`^${userId}/[a-f0-9-]+\\.(jpg|png|webp)$`).test(path))
+     return NextResponse.json({ error: 'Invalid path' }, { status: 400 })`
+
+[MEDIUM] signed-upload-url: no role check — any Clerk user can generate signed URLs
+------------------------------------------------------------------------------------
+src/app/api/photos/signed-upload-url/route.ts line 6:
+  `const { userId } = getAuth(req)`
+
+The route only checks that `userId` is non-null. It does not verify the user's
+role or whether they should have upload access. Compare to technician routes
+which use `authenticateTechnician` (verifies TECHNICIAN role) or admin routes
+which use `requireApiRole` (checks ADMIN/SUPERADMIN).
+
+Impact: Any Clerk-authenticated user (including FINANCE, customer portal users)
+can generate signed upload URLs and upload files to storage.
+
+Fix: Add role gate:
+  `const allowed = await checkRole(req, ['TECHNICIAN', 'ADMIN', 'SUPERADMIN'])
+   if (!allowed) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })`
+
+[LOW] signed-upload-url: no server-side logging
+--------------------------------------------------
+src/app/api/photos/signed-upload-url/route.ts:
+  No `import { logger }` and no logging calls. Storage errors are returned to
+  the client but not logged server-side. All other API routes log errors.
+
+Impact: Storage failures silently lost in production. No audit trail for who
+generated signed upload URLs.
+
+Fix: Add `logger` import and log at entry + on error.
+
+[LOW] signed-upload-url: inconsistent response shape
+------------------------------------------------------
+src/app/api/photos/signed-upload-url/route.ts lines 28-32:
+  Returns `{ signedUrl, token, path }` directly via `NextResponse.json`.
+  All other routes use `jsonSuccess(data)` which wraps as
+  `{ success: true, data: { signedUrl, token, path } }`.
+
+Frontend code must handle a non-standard response shape for this route.
+
+Fix: Import `jsonSuccess`/`jsonError` from `@/app/api/utils`:
+  `return jsonSuccess({ signedUrl: data.signedUrl, token: data.token, path: data.path })`
+
+[INFO] technician/push/subscribe and push/unsubscribe: clean implementation
+----------------------------------------------------------------------------
+No bugs found. Both routes have:
+- Proper auth guard via `authenticateTechnician` + `isTechnicianContext`
+- Zod schema validation on request body
+- Idempotent operations (upsert on conflict for subscribe, delete is safe when row missing)
+- Error handling via `handleApiError` with server-side logging via logger child
+- User-agent fallback to request headers when body doesn't include it
+
+
+Bug findings — api/invoices + api/invoices/send-email routes
+=============================================================
+
+[MED] GET /api/invoices: no pagination — fetches all invoices at once
+----------------------------------------------------------------------
+src/app/api/invoices/route.ts lines 34-37:
+  `.select('*').order('created_at', { ascending: false })`
+
+The route fetches every invoice in the database with no LIMIT. For a
+service company with thousands of historical invoices, this returns an
+unbounded result in a single HTTP response, causing slow load times and
+high memory usage.
+
+Impact: Dashboard list page becomes slow as invoice count grows. No offset
+or cursor pagination is exposed to the frontend.
+
+Fix: Accept limit/offset (or cursor) query params:
+  `const limit = Math.min(Number(searchParams.get('limit')) || 50, 100)
+   const offset = Number(searchParams.get('offset')) || 0
+   .limit(limit).range(offset, offset + limit - 1)`
+
+[LOW] GET /api/invoices?orderId=... returns a narrower schema than the default
+------------------------------------------------------------------------------
+src/app/api/invoices/route.ts lines 20-21 vs line 36:
+  orderId path: `.select('invoice_id, invoice_number, invoice_type, status, order_id')`
+  default path: `.select('*')`
+
+The two branches return different shapes. Frontend expecting the full
+invoice object (amount, customer, dates) via `?orderId=...` gets undefined
+for those fields. Both paths add a `source` field via `getInvoiceSource()`.
+
+Impact: Silent breakage if a consumer of the orderId variant assumes
+full schema.
+
+Fix: Use `select('*')` for both paths, or document the partial schema
+in the response.
+
+[LOW] POST /api/invoices/send-email: no rate limit on Resend calls
+-------------------------------------------------------------------
+src/app/api/invoices/send-email/route.ts line 25:
+  `const resend = new Resend(process.env.RESEND_API_KEY)`
+
+Every POST triggers an email without any rate limiting or idempotency
+guard. A finance user (or CSRF) can send multiple copies of the same
+invoice email to a customer. Resend's free tier is 100 emails/day — abuse
+can exhaust the quota.
+
+Impact: Duplicate emails to customers, Resend quota exhaustion, potential
+email deliverability issues from spam-like sending patterns.
+
+Fix: Track `invoice_communications` for recent EMAIL entries with the same
+invoiceId and reject if one was sent in the last N minutes. Or use an
+idempotency key in the request body.
+
+[INFO] api/invoices: clean implementation
+------------------------------------------
+No auth or security bugs. Both routes correctly use `requireFinanceRoleAPI`
+as the first operation (returning 403 on unauthorized access). Error
+handling catches exceptions and returns 500 with logged context. The
+`getInvoiceSource` utility handles the missing `source` column gracefully.
+
+
+Bug findings — QA E2E specs (G04/G05/G06/G07/G12) — 2026-06-29
+==================================================================
+
+[HIGH] /dashboard/orders crashes with client-side error when `q` param is set
+------------------------------------------------------------------------------
+G04 happy path navigates to `/dashboard/orders?view=list&q=ORD-...`.
+The page renders "Application error: a client-side exception has occurred".
+The root cause is that the orders list page fails to parse or render with
+the `q` search parameter — likely the search state initialization throws
+on an orderId-format string that doesn't match a customer name or number.
+
+Fix: Guard the search/filter initialization in the orders list page.
+If `q` is not a valid search term, show empty/all results instead of crashing.
+
+[HIGH] updateInvoiceStatus (SENT→CANCELLED) throws on staging
+--------------------------------------------------------------
+G12 void-revert: clicking the "Cancel Invoice" button in invoice detail
+returns error toast "Gagal mengupdate status invoice". The state machine
+allows SENT→CANCELLED (line 109 of invoices-payments.ts), and the
+transition logic appears correct. The server action throws in the
+Supabase `.update()` call (line 140-144), suggesting either:
+1. RLS policy on staging blocks the update (even for finance role)
+2. The `requireFinanceRole(userId)` check fails silently for the test user
+3. A trigger on invoices fires and reverts the update
+
+Fix: Check staging RLS policies on the `invoices` table for UPDATE.
+Also verify the finance test user's role in `user_management`.
+
+[MED] record_payment_v2 RPC failure on staging
+-----------------------------------------------
+G05 full-payment: after submitting the payment modal, toast shows
+"Gagal mencatat pembayaran" (error path) instead of "Pembayaran dicatat"
+(success path). The `recordPayment` server action calls
+`supabase.rpc('record_payment_v2', ...)` which may be missing or have
+a different signature on staging.
+
+Fix: Run migration script for `record_payment_v2` RPC on staging,
+or verify the RPC exists with `select proname from pg_proc where
+proname = 'record_payment_v2'`.
+
+[LOW] Supabase PostgREST FK race in rapid seeded inserts
+---------------------------------------------------------
+When `seedFullScenario` inserts AC units and `seedOrder` immediately
+inserts `order_items` referencing them, the FK check sometimes
+fails with "ac_unit_id_fkey violates foreign key constraint". This
+is a transient timing issue between consecutive PostgREST calls.
+
+Fix: Added retry loop (3 attempts, 500ms backoff) in seedOrder and
+inline seed helpers. Root cause is likely PostgREST connection pool
+reusing a transaction that hasn't committed the AC unit insert yet.
+
+
+Bug findings — QA E2E specs (G01/G09/G13) — staging UI rendering — 2026-06-29
+===============================================================================
+
+[HIGH] Order form "Buat Order" submit button never becomes visible (G01)
+-------------------------------------------------------------------------
+After completing all form steps (customer → AC → service → schedule),
+clicking the "Review & Submit" accordion trigger with force:true does not
+result in the "Buat Order" submit button becoming visible, even after
+20 seconds. The accordion trigger click fires, but the accordion content
+(ReviewSection) either does not animate open or the content is clipped
+by overflow-hidden during animate-accordion-down.
+
+Root cause hypothesis: The ReviewSection AccordionItem may retain
+pointer-events-none opacity-60 classes because form.isScheduleFilled
+does not correctly update after fillScheduleAndSkipAssignment. The
+schedule step's date picker click or skip-assignment label click may
+not be propagating state correctly to the form hook, leaving the
+Review section in its disabled state.
+
+Evidence: The "Buat Order" button is not found at all (not present
+or permanently hidden). Force:true on accordion trigger + 800ms wait
++ scrollIntoViewIfNeeded + 20s visible wait all fail.
+
+Fix: Investigate whether the SchedulingStep component correctly
+updates form.scheduledDate and form.skipAssignment when the date
+gridcell and skip label are clicked. Check if the Radix Calendar
+onChange fires correctly for the first selectable date.
+
+[HIGH] Service Catalog search input permanently hidden on re-navigation (G09)
+-----------------------------------------------------------------------------
+After creating a catalog entry (test 1 passes), navigating back to
+/dashboard/settings/service-catalog in test 2 causes the search input
+(placeholder="Cari MSN Code atau Nama Service...") to remain in "hidden"
+state for 30+ seconds despite being mounted in the DOM. Playwright
+resolved the element 60+ times, each time as "hidden".
+
+The CatalogGroupAccordion component renders the search form after
+groupedQuery.isLoading becomes false. The form and input exist in DOM
+but something causes Playwright to consider them invisible:
+1. overflow:hidden on an ancestor clips the content
+2. opacity:0 or visibility:hidden CSS on the form/parent
+3. The component rendered but is behind a transition animation
+
+The first test (create catalog entry + price feed) does NOT navigate
+to the catalog page (it only tests the order form cross-link), so the
+bug only surfaces on second navigation. This suggests a hydration or
+client cache issue where the catalog page renders differently on
+second visit.
+
+Fix: Inspect the catalog page's rendering on staging with browser
+DevTools. Check if a CSS transition or animation class is stuck on
+the component's parent container.
+
+[HIGH] Kanban board column headings never render on staging (G13)
+-----------------------------------------------------------------
+Navigating to /dashboard/orders?view=board on staging causes the
+BoardSkeleton (with animate-pulse skeletons) to persist indefinitely.
+The <h3> elements with column titles ("Menunggu", "Ditugaskan", etc.)
+defined in kanban-column.tsx never become visible, even after 60 seconds.
+
+The orders page queries /api/orders?limit=100 via TanStack Query. If
+isLoading stays true (query hangs indefinitely), the OrdersBoardView
+renders <BoardSkeleton /> instead of <KanbanBoard />.
+
+Root cause hypotheses:
+1. The /api/orders endpoint hangs on staging (Supabase connectivity
+   or slow query). Default TanStack retry (3x) should terminate after
+   ~15 seconds, making isLoading=false and rendering empty columns.
+   If the query truly hangs, the fetch itself may not be timing out.
+2. The Suspense boundary in orders/page.tsx never resolves because
+   a server component or server action called during RSC rendering
+   hangs before the client component mounts.
+
+Fix: Check staging logs for hanging /api/orders requests. Consider
+adding AbortController timeout to the fetch call:
+  const controller = new AbortController()
+  setTimeout(() => controller.abort(), 30_000)
+  fetch('/api/orders?limit=100', { signal: controller.signal, ... })
+
+
+## G14 User Management CRUD (2026-06-29)
+
+**Test file:** `tests/e2e/qa/G14-user-management.spec.ts`
+**Status:** Tests skipped (QA credentials not configured)
+**Bugs found:** None
+
+**Notes:**
+- Test file created with 4 test cases covering SUPERADMIN user CRUD operations
+- Tests auto-skip when QA_* credentials missing (expected behavior per qaTest fixture)
+- No bugs discovered during test execution
+- Test structure follows G08 pattern: superAdminAccountOrSkip login, DB verification via getSupabaseAdmin(), evidence collection
+- Covers: create user → verify DB row, edit role → verify DB update, deactivate → verify is_active=false, deactivated login → verify rejected
+
+
+
+[BUG-G21] Order count missing in header
+---
+Expected "Riwayat Order (N)" but got: Riwayat Order
+
+
+## G17 Reminder Dispatch (2026-06-30)
+
+**Test file:** `tests/e2e/qa/G17-reminder-dispatch.spec.ts`
+**Status:** Test skipped (cron generates 0 PENDING reminders)
+**Bugs found:** Reminder generator not producing reminders for seeded AC units
+
+**Notes:**
+- Test file created with full dispatch flow: create rule → seed AC → trigger cron → dispatch → verify SENT
+- Test auto-skips when RESEND_API_KEY missing (expected behavior)
+- Cron endpoint `/api/admin/reminders/run` returns 200 but generates 0 customer_reminders rows
+- Root cause: Reminder generator filters AC units by `next_service_due_date` between today and today+maxLead days, but seeded AC units with due_date=today are not being picked up
+- Same issue observed in R14-reminder-generation.spec.ts
+- Hypothesis: The generator's date filtering logic or the seeded customer's email/phone may not match the rule's channel requirements
+- Evidence: Test documents finding via testInfo.annotations when no PENDING reminders found
+- Cleanup: Rule and customer_reminders properly purged in afterAll via purgeByPrefix
+
+
+[BUG-G18] Dashboard KPI mismatch with DB
+---
+Dashboard KPI cards do not match DB.
+Total Orders: UI=0, DB=9
+Pending Orders: UI=0, DB=2
+Completed Orders: UI=0, DB=2
+
+
+[BUG-G18] Dashboard KPI mismatch with DB
+---
+Dashboard KPI cards do not match DB.
+Total Orders: UI=0, DB=9
+Pending Orders: UI=0, DB=2
+Completed Orders: UI=0, DB=2
+
+
+[BUG-G18] Dashboard KPI mismatch with DB
+---
+Dashboard KPI cards do not match DB.
+Total Orders: UI=0, DB=17
+Pending Orders: UI=0, DB=5
+Completed Orders: UI=0, DB=6
+
+
+[BUG-G18] Dashboard KPI mismatch with DB
+---
+Dashboard KPI cards do not match DB.
+Total Orders: UI=0, DB=9
+Pending Orders: UI=0, DB=2
+Completed Orders: UI=0, DB=2
+
+
+[BUG-G18] Dashboard KPI mismatch with DB
+---
+Dashboard KPI cards do not match DB.
+Total Orders: UI=19, DB=9
+Pending Orders: UI=60, DB=2
+Completed Orders: UI=5, DB=2
+
+
+[BUG-G18] Dashboard KPI mismatch with DB
+---
+Dashboard KPI cards do not match DB.
+Total Orders: UI=9, DB=10
+Pending Orders: UI=20, DB=3
+
+
+[BUG-G18] Dashboard KPI mismatch with DB
+---
+Dashboard KPI cards do not match DB.
+Total Orders: UI=12, DB=9
+Pending Orders: UI=30, DB=2
+Completed Orders: UI=3, DB=2
+
+
+[BUG-G18] Dashboard KPI mismatch with DB
+---
+Dashboard KPI cards do not match DB.
+Total Orders: UI=18, DB=19
+Pending Orders: UI=90, DB=9
+
+
+[BUG-G18] Dashboard KPI mismatch with DB
+---
+Dashboard KPI cards do not match DB.
+Pending Orders: UI=20, DB=2
+
+
+[BUG-G18] Dashboard KPI mismatch with DB
+---
+Dashboard KPI cards do not match DB.
+Total Orders: UI=18, DB=9
+Pending Orders: UI=90, DB=2
+Completed Orders: UI=3, DB=2
+
+
+[BUG-G18] Dashboard KPI mismatch with DB
+---
+Dashboard KPI cards do not match DB.
+Pending Orders: UI=50, DB=5
+
+
+[BUG-G18] Dashboard KPI mismatch with DB
+---
+Dashboard KPI cards do not match DB.
+Pending Orders: UI=30, DB=3
