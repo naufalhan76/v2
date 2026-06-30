@@ -155,6 +155,21 @@
     --space-xxl: 32px;
     --space-huge: 64px;
   }
+
+  /* ponytail: Clerk dark mode overrides — next-themes uses .dark class but Clerk's
+     theme:'auto' reads prefers-color-scheme. These CSS vars bridge the gap.
+     Upgrade path: use Clerk's useTheme() hook to dynamically swap appearance object. */
+  .dark {
+    --cl-colorPrimary: hsl(244 52% 31%);
+    --cl-colorPrimaryForeground: hsl(0 0% 100%);
+    --cl-colorBackground: hsl(248 37% 8%);
+    --cl-colorForeground: hsl(40 10% 92%);
+    --cl-colorInputBackground: hsl(248 37% 12%);
+    --cl-colorInputBorder: hsl(252 18% 22%);
+    --cl-colorDanger: hsl(0 84% 70%);
+    --cl-colorSuccess: hsl(174 72% 55%);
+    --cl-colorWarning: hsl(32 95% 60%);
+  }
 }
 
 @layer base {
