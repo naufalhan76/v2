@@ -37,6 +37,19 @@ async function clerkCreateUser(email: string, fullName: string, role: string): P
     await client.users.deleteUser(clerkUser.id).catch((err: unknown) => logger.error('CRITICAL: Clerk rollback failed:', err))
     return { success: false, error: insertError.message }
   }
+
+  // Auto-create technician record so /api/technician/* routes work immediately
+  if (role === 'TECHNICIAN') {
+    const { error: techErr } = await supabase.from('technicians').insert({
+      technician_name: fullName,
+      email,
+      auth_user_id: clerkUser.id,
+    })
+    if (techErr && techErr.code !== '23505') {
+      logger.error('technicians insert failed:', techErr)
+    }
+  }
+
   revalidatePath('/dashboard/manajemen/user')
   void auditLog('CREATE', 'user_management', email)
   return { success: true, error: null }

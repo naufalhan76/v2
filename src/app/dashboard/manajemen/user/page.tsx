@@ -7,6 +7,7 @@ import { UsersTable } from './_components/users-table'
 import { UsersFilters } from './_components/users-filters'
 import { UserFormModal, InviteDialog } from './_components/user-form-modal'
 import { DeactivateDialog } from './_components/deactivate-dialog'
+import { AllowlistCard } from './_components/allowlist-card'
 
 export default function ManajemenUserPage() {
   const {
@@ -78,6 +79,8 @@ export default function ManajemenUserPage() {
           />
         </CardContent>
       </Card>
+
+      <AllowlistCard />
 
       <DeactivateDialog
         open={isDeleteDialogOpen}

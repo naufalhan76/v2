@@ -14,11 +14,11 @@ import { Loader2, Package, Pencil, Trash2 } from 'lucide-react'
 import type { Addon } from '@/lib/actions/addons'
 
 const CATEGORIES = [
-  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg0' },
-  { value: 'FREON', label: 'Freon', color: 'bg-status-invoiced' },
-  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg0' },
-  { value: 'TRANSPORTATION', label: 'Transportation', color: 'bg-primary' },
-  { value: 'OTHER', label: 'Lainnya', color: 'bg-muted-foreground' },
+  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned text-white' },
+  { value: 'FREON', label: 'Freon', color: 'bg-status-invoiced text-white' },
+  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending text-white' },
+  { value: 'TRANSPORTATION', label: 'Transportation', color: 'bg-primary text-primary-foreground' },
+  { value: 'OTHER', label: 'Lainnya', color: 'bg-muted text-muted-foreground' },
 ]
 
 interface AddonsTableProps {

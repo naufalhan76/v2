@@ -14,11 +14,11 @@ import { Pencil, Trash2, Package, Plus } from 'lucide-react'
 import type { Addon } from '@/lib/actions/addons'
 
 const CATEGORIES = [
-  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned-bg text-status-assigned' },
-  { value: 'FREON', label: 'Freon', color: 'bg-status-invoiced text-foreground' },
-  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending-bg text-status-pending' },
+  { value: 'PARTS', label: 'Parts', color: 'bg-status-assigned text-white' },
+  { value: 'FREON', label: 'Freon', color: 'bg-status-invoiced text-white' },
+  { value: 'LABOR', label: 'Labor', color: 'bg-status-pending text-white' },
   { value: 'TRANSPORTATION', label: 'Transportation', color: 'bg-primary text-primary-foreground' },
-  { value: 'OTHER', label: 'Lainnya', color: 'bg-muted-foreground text-background' },
+  { value: 'OTHER', label: 'Lainnya', color: 'bg-muted text-muted-foreground' },
 ]
 
 export function getCategoryColor(category: string) {

@@ -26,7 +26,16 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body className={inter.variable}>
-        <ClerkProvider appearance={clerkAppearance}>
+        <ClerkProvider
+          appearance={clerkAppearance}
+          allowedRedirectOrigins={[
+            'http://localhost:3000',
+            'https://localhost:3000',
+            'http://0.0.0.0:3000',
+            'https://0.0.0.0:3000',
+            'https://v2.nufnh.my.id',
+          ]}
+        >
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

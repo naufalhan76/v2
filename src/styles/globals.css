@@ -83,6 +83,16 @@
     --chart-4: var(--status-pending);
     --chart-5: var(--status-cancelled);
 
+    /* ===== CLERK TOKEN BRIDGE (light mode — --clerk-color-* are read by Clerk SDK) ===== */
+    --clerk-color-primary: hsl(247 52% 25%);
+    --clerk-color-background: hsl(220 40% 98%);
+    --clerk-color-foreground: hsl(247 33% 15%);
+    --clerk-color-input-background: hsl(0 0% 100%);
+    --clerk-color-input-border: hsl(220 13% 90%);
+    --clerk-color-danger: hsl(0 72% 51%);
+    --clerk-color-success: hsl(174 72% 38%);
+    --clerk-color-warning: hsl(32 95% 43%);
+
     /* ===== SPACING (preserve existing — DO NOT CHANGE) ===== */
     --space-xxs: 2px;
     --space-xs: 4px;
@@ -157,19 +167,16 @@
     --space-huge: 64px;
   }
 
-  /* ponytail: Clerk dark mode overrides — next-themes uses .dark class but Clerk's
-     theme:'auto' reads prefers-color-scheme. These CSS vars bridge the gap.
-     Upgrade path: use Clerk's useTheme() hook to dynamically swap appearance object. */
+  /* Clerk dark mode overrides — --clerk-color-* read by Clerk SDK */
   .dark {
-    --cl-colorPrimary: hsl(244 52% 31%);
-    --cl-colorPrimaryForeground: hsl(0 0% 100%);
-    --cl-colorBackground: hsl(225 20% 9%);
-    --cl-colorForeground: hsl(225 12% 92%);
-    --cl-colorInputBackground: hsl(225 20% 13%);
-    --cl-colorInputBorder: hsl(225 12% 22%);
-    --cl-colorDanger: hsl(0 84% 65%);
-    --cl-colorSuccess: hsl(174 72% 55%);
-    --cl-colorWarning: hsl(32 95% 60%);
+    --clerk-color-primary: hsl(244 52% 31%);
+    --clerk-color-background: hsl(225 20% 9%);
+    --clerk-color-foreground: hsl(225 12% 92%);
+    --clerk-color-input-background: hsl(225 20% 13%);
+    --clerk-color-input-border: hsl(225 12% 22%);
+    --clerk-color-danger: hsl(0 84% 65%);
+    --clerk-color-success: hsl(174 72% 55%);
+    --clerk-color-warning: hsl(32 95% 60%);
   }
 }
 

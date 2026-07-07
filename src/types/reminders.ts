@@ -151,3 +151,31 @@ export interface ServicedAcUnitRow {
   latest_order_status: string | null
   latest_service_type: string | null
 }
+
+// Unified row for Plan A guided workflow — merges AC unit + its latest pending/failed reminder
+export interface UnifiedReminderRow {
+  ac_unit_id: string
+  customer_id: string | null
+  customer_name: string | null
+  customer_phone: string | null
+  location_address: string | null
+  brand: string | null
+  model_number: string | null
+  ac_type: string | null
+  unit_type_name: string | null
+  last_service_date: string | null
+  next_service_due_date: string | null
+  // Reminder fields (null if no reminder exists for this AC)
+  reminder_id: string | null
+  reminder_status: ReminderStatus | null
+  reminder_channel: ReminderChannel | null
+  reminder_recipient: string | null
+  reminder_message: string | null
+  reminder_due_date: string | null
+  reminder_sent_at: string | null
+  reminder_error_message: string | null
+  reminder_count: number
+  last_reminder_sent_at: string | null
+}
+
+export type UnifiedStatusFilter = 'all' | 'overdue' | 'due_soon' | 'upcoming' | 'no_date' | 'PENDING' | 'SENT' | 'FAILED' | 'DISMISSED' | 'CANCELLED'
