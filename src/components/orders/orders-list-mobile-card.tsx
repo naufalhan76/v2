@@ -19,6 +19,7 @@ import {
   getPrimaryServiceType,
   type OrderForDisplay,
 } from '@/lib/order-utils'
+import { canCancelOrder } from '@/lib/order-status'
 
 interface OrdersListMobileCardProps {
   row: Row<OrderForDisplay>
@@ -28,6 +29,7 @@ interface OrdersListMobileCardProps {
 
 export function OrdersListMobileCard({ row, onRowClick, onCancel }: OrdersListMobileCardProps) {
   const order = row.original
+  const allowCancel = canCancelOrder(order.status)
   const dateStr = order.scheduled_visit_date ?? order.req_visit_date
   const tech = getLeadTechnicianName(order)
   const serviceType = getPrimaryServiceType(order)
@@ -64,7 +66,9 @@ export function OrdersListMobileCard({ row, onRowClick, onCancel }: OrdersListMo
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRowClick(order.order_id) }}>Lihat Detail</DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCancel(order.order_id) }} className="text-destructive">Batalkan</DropdownMenuItem>
+              {allowCancel && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCancel(order.order_id) }} className="text-destructive">Batalkan</DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

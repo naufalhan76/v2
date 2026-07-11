@@ -20,6 +20,7 @@ import {
   getLeadTechnicianName,
   getPrimaryServiceType,
 } from '@/lib/order-utils'
+import { canCancelOrder } from '@/lib/order-status'
 
 export function createOrdersListColumns(
   onRowClick: (orderId: string) => void,
@@ -92,21 +93,26 @@ export function createOrdersListColumns(
     {
       id: 'actions',
       header: '',
-      cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="More actions"><MoreHorizontal className="h-4 w-4" /></Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRowClick(row.original.order_id) }}>
-              Lihat Detail
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setBulkCancelOrderId(row.original.order_id) }} className="text-destructive">
-              Batalkan
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
+      cell: ({ row }) => {
+        const allowCancel = canCancelOrder(row.original.status)
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="More actions"><MoreHorizontal className="h-4 w-4" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRowClick(row.original.order_id) }}>
+                Lihat Detail
+              </DropdownMenuItem>
+              {allowCancel && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setBulkCancelOrderId(row.original.order_id) }} className="text-destructive">
+                  Batalkan
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
       enableSorting: false,
     },
   ]

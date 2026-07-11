@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 import { logger } from '@/lib/logger'
 import { auditLog } from '@/lib/audit'
-import { canTransition, toCanonical, type TransitionRole } from '@/lib/order-status'
+import { canCancelOrder, canTransition, toCanonical, type TransitionRole } from '@/lib/order-status'
 import { sendJobCancelledByAdminNotification } from '@/lib/server/push-sender'
 
 export async function updateOrderStatus(
@@ -123,9 +123,11 @@ export async function cancelOrder(orderId: string, reason?: string) {
     
     if (fetchError) throw fetchError
 
-    const terminalStatuses = ['PAID', 'CANCELLED']
-    if (terminalStatuses.includes(currentOrder.status)) {
-      return { success: false, error: `Order dengan status ${currentOrder.status} tidak dapat dibatalkan` }
+    if (!canCancelOrder(currentOrder.status)) {
+      return {
+        success: false,
+        error: `Order dengan status ${toCanonical(currentOrder.status)} tidak dapat dibatalkan (pekerjaan/pembayaran sudah selesai atau status terminal)`,
+      }
     }
 
     const activeAssignmentStatuses = ['ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS']

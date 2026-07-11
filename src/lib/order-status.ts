@@ -109,14 +109,15 @@ const TRANSITION_RULES: Record<OrderStatus, Partial<Record<TransitionRole, Order
     TECHNICIAN: ['COMPLETED'],
   },
   COMPLETED: {
-    // Admin can still cancel a completed-but-not-invoiced job (e.g. dispute).
-    ADMIN: ['INVOICED', 'CANCELLED'],
-    SUPERADMIN: ['INVOICED', 'CANCELLED'],
+    // Job finished on-site: only finance flow remains. No cancel.
+    ADMIN: ['INVOICED'],
+    SUPERADMIN: ['INVOICED'],
     FINANCE: ['INVOICED'],
   },
   INVOICED: {
-    ADMIN: ['PAID', 'CANCELLED'],
-    SUPERADMIN: ['PAID', 'CANCELLED'],
+    // Payment/void happens on invoice side — order itself cannot cancel.
+    ADMIN: ['PAID'],
+    SUPERADMIN: ['PAID'],
     FINANCE: ['PAID'],
   },
   PAID: {},       // Terminal state
@@ -220,6 +221,20 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, { bg: string; text: string
 export function isTerminalState(status: string): boolean {
   const canonical = toCanonical(status)
   return canonical === 'PAID' || canonical === 'CANCELLED'
+}
+
+/**
+ * Whether an order can still be cancelled from ops UI / cancelOrder.
+ * Once work is done (COMPLETED+) or already terminal, cancel is locked.
+ */
+export function canCancelOrder(status: string | null | undefined): boolean {
+  const canonical = toCanonical(status)
+  return (
+    canonical === 'PENDING' ||
+    canonical === 'ASSIGNED' ||
+    canonical === 'EN_ROUTE' ||
+    canonical === 'IN_PROGRESS'
+  )
 }
 
 /**

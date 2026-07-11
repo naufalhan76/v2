@@ -181,21 +181,12 @@ export function OrderDetailPanel({ orderId, open, onOpenChange }: OrderDetailPan
                   </>
                 )}
                 {canonical === 'COMPLETED' && (
-                  <>
-                    <Button
-                      onClick={() => setInvoiceFinalizeOpen(true)}
-                      className="h-11 w-full sm:h-9 sm:flex-1"
-                    >
-                      Buat Invoice
-                    </Button>
-                    <Button
-                      onClick={() => setCancelOpen(true)}
-                      variant="ghost"
-                      className="h-11 w-full sm:h-9 sm:w-auto"
-                    >
-                      Batalkan
-                    </Button>
-                  </>
+                  <Button
+                    onClick={() => setInvoiceFinalizeOpen(true)}
+                    className="h-11 w-full sm:h-9 sm:flex-1"
+                  >
+                    Buat Invoice
+                  </Button>
                 )}
                 {canonical === 'INVOICED' && (
                   <Button asChild className="h-11 w-full sm:h-9 sm:flex-1">

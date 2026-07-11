@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/orders/status-badge'
 import { formatPhone } from '@/lib/utils'
-import { isTerminalState, toCanonical } from '@/lib/order-status'
+import { canCancelOrder, isTerminalState, toCanonical } from '@/lib/order-status'
 import {
   getUniqueServiceLabels,
   getOrderDetailLocationGroups,
@@ -150,17 +150,21 @@ export function OrderDetailContent({
       {(() => {
         const canonical = toCanonical(orderData.status as string)
         if (isTerminalState(canonical)) return null
+        const showCancel = canCancelOrder(canonical)
         const canReschedule = canonical !== 'COMPLETED' && canonical !== 'INVOICED'
+        if (!showCancel && !canReschedule) return null
         return (
           <div className="flex gap-3 pt-4 border-t">
-            <Button
-              variant="destructive"
-              onClick={onOpenCancel}
-              disabled={isProcessing}
-              className="flex-1"
-            >
-              Cancel Order
-            </Button>
+            {showCancel && (
+              <Button
+                variant="destructive"
+                onClick={onOpenCancel}
+                disabled={isProcessing}
+                className="flex-1"
+              >
+                Cancel Order
+              </Button>
+            )}
             {canReschedule && (
               <Button
                 variant="outline"
