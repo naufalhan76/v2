@@ -68,17 +68,34 @@ export async function markReminderSent(reminderId: string): Promise<ActionResult
     const { data: row, error: fetchErr } = await supabase.from('customer_reminders').select('reminder_id, channel, recipient, message, status').eq('reminder_id', reminderId).single()
     if (fetchErr) throw fetchErr
     const r = row as { reminder_id: string; channel: string; recipient: string; message: string; status: string }
-    if (r.status !== 'PENDING') return { success: false, error: 'Reminder tidak dalam status PENDING' }
+    // PENDING = first send; FAILED = explicit retry from dashboard.
+    if (r.status !== 'PENDING' && r.status !== 'FAILED') {
+      return { success: false, error: `Reminder tidak bisa dikirim ulang dari status ${r.status}` }
+    }
+    const fromStatus = r.status
     const result = await dispatchReminder(r.channel, r.recipient, r.message)
     if (!result.ok) {
       await supabase.from('customer_reminders').update({ status: 'FAILED', error_message: result.error.slice(0, 1000), updated_at: new Date().toISOString() }).eq('reminder_id', reminderId)
-      await auditLog('reminder.send_failed', 'customer_reminders', reminderId, { status: 'PENDING' }, { status: 'FAILED', error_message: result.error.slice(0, 1000) })
+      await auditLog('reminder.send_failed', 'customer_reminders', reminderId, { status: fromStatus }, { status: 'FAILED', error_message: result.error.slice(0, 1000) })
       revalidatePath('/dashboard/reminders')
       return { success: false, error: `Gagal mengirim via ${r.channel === 'WHATSAPP' ? 'WhatsApp' : 'Email'}: ${result.error}` }
     }
-    const { data, error } = await supabase.from('customer_reminders').update({ status: 'SENT', sent_at: new Date().toISOString(), sent_by: auth.userId, external_id: result.externalId, error_message: null, updated_at: new Date().toISOString() }).eq('reminder_id', reminderId).eq('status', 'PENDING').select('*').single()
+    const { data, error } = await supabase
+      .from('customer_reminders')
+      .update({
+        status: 'SENT',
+        sent_at: new Date().toISOString(),
+        sent_by: auth.userId,
+        external_id: result.externalId,
+        error_message: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('reminder_id', reminderId)
+      .in('status', ['PENDING', 'FAILED'])
+      .select('*')
+      .single()
     if (error) throw error
-    await auditLog('reminder.sent', 'customer_reminders', reminderId, { status: 'PENDING' }, { status: 'SENT', sent_by: auth.userId, external_id: result.externalId })
+    await auditLog('reminder.sent', 'customer_reminders', reminderId, { status: fromStatus }, { status: 'SENT', sent_by: auth.userId, external_id: result.externalId })
     revalidatePath('/dashboard/reminders'); return { success: true, data: data as CustomerReminder }
   } catch (err) { logger.error('markReminderSent failed:', err); return { success: false, error: toErrorMessage(err, 'Failed to send reminder') } }
 }
@@ -113,18 +130,18 @@ export async function markRemindersSent(reminderIds: string[]): Promise<ActionRe
   try {
     const auth = await requireRoles(WRITE_ROLES); if (!auth.ok) return { success: false, error: auth.error }
     const supabase = await createClient()
-    const { data: rows, error: fetchErr } = await supabase.from('customer_reminders').select('reminder_id, channel, recipient, message').in('reminder_id', reminderIds).eq('status', 'PENDING')
+    const { data: rows, error: fetchErr } = await supabase.from('customer_reminders').select('reminder_id, channel, recipient, message, status').in('reminder_id', reminderIds).in('status', ['PENDING', 'FAILED'])
     if (fetchErr) throw fetchErr
     const sent: string[] = [], failed: string[] = []
-    for (const r of (rows ?? []) as Array<{ reminder_id: string; channel: string; recipient: string; message: string }>) {
+    for (const r of (rows ?? []) as Array<{ reminder_id: string; channel: string; recipient: string; message: string; status: string }>) {
       const result = await dispatchReminder(r.channel, r.recipient, r.message)
       if (result.ok) {
-        await supabase.from('customer_reminders').update({ status: 'SENT', sent_at: new Date().toISOString(), sent_by: auth.userId, external_id: result.externalId, error_message: null, updated_at: new Date().toISOString() }).eq('reminder_id', r.reminder_id).eq('status', 'PENDING')
-        await auditLog('reminder.bulk_sent', 'customer_reminders', r.reminder_id, undefined, { status: 'SENT', external_id: result.externalId })
+        await supabase.from('customer_reminders').update({ status: 'SENT', sent_at: new Date().toISOString(), sent_by: auth.userId, external_id: result.externalId, error_message: null, updated_at: new Date().toISOString() }).eq('reminder_id', r.reminder_id).in('status', ['PENDING', 'FAILED'])
+        await auditLog('reminder.bulk_sent', 'customer_reminders', r.reminder_id, { status: r.status }, { status: 'SENT', external_id: result.externalId })
         sent.push(r.reminder_id)
       } else {
         await supabase.from('customer_reminders').update({ status: 'FAILED', error_message: result.error.slice(0, 1000), updated_at: new Date().toISOString() }).eq('reminder_id', r.reminder_id)
-        await auditLog('reminder.send_failed', 'customer_reminders', r.reminder_id, undefined, { status: 'FAILED', error_message: result.error.slice(0, 1000) })
+        await auditLog('reminder.send_failed', 'customer_reminders', r.reminder_id, { status: r.status }, { status: 'FAILED', error_message: result.error.slice(0, 1000) })
         failed.push(r.reminder_id)
       }
     }
