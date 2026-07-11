@@ -153,8 +153,13 @@ function snapshotAcUnit(item: LocalJobSnapshot['orderItems'][number]) {
 export function buildJobSummary(jobData: JobContext): JobSummary {
   const customerName = jobData.customers?.customer_name || 'Pelanggan'
   const address = jobData.order_items?.[0]?.locations?.full_address || 'Tidak ada alamat'
-  const serviceTypes = jobData.order_items?.map((item) => item.service_type).filter((t): t is string => Boolean(t))
-  const serviceType = serviceTypes?.[0] || 'Servis AC'
+  const serviceTypes = jobData.order_items
+    ?.map((item) => item.service_type)
+    .filter((t): t is string => Boolean(t))
+  const uniqueServiceTypes = serviceTypes ? [...new Set(serviceTypes)] : []
+  const serviceType = uniqueServiceTypes.length > 0
+    ? uniqueServiceTypes.join(' · ')
+    : 'Servis AC'
 
   return { customerName, address, serviceType }
 }

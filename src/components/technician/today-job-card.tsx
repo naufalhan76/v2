@@ -50,7 +50,12 @@ export function TodayJobCard({ job }: TodayJobCardProps) {
     minute: '2-digit',
   })
   
-  const serviceType = job.order_items?.[0]?.service_type ?? 'Service AC'
+  const serviceTypes = (job.order_items ?? [])
+    .map((item) => item.service_type)
+    .filter((t): t is string => Boolean(t))
+  const serviceType = serviceTypes.length > 0
+    ? [...new Set(serviceTypes)].join(' · ')
+    : 'Service AC'
   const address = job.order_items?.[0]?.locations?.full_address ?? '-'
   const customerName = job.customers?.customer_name ?? 'Customer'
   const phoneRaw = job.customers?.phone_number || ''

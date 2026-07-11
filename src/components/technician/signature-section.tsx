@@ -56,13 +56,19 @@ export function SignatureSection({
         </div>
 
         <div className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Field bertanda <span className="font-semibold text-destructive">*</span> wajib diisi. Sisanya opsional.
+          </p>
           <div>
             <label htmlFor="phase-c-customer-name" className="mb-1.5 block text-sm font-bold text-foreground dark:text-foreground">
               Nama Penandatangan
+              <span className="ml-0.5 text-destructive" aria-hidden="true">*</span>
             </label>
             <input
               id="phase-c-customer-name"
               type="text"
+              required
+              aria-required="true"
               placeholder="Nama pelanggan yang bertanda tangan"
               value={customerNameSigned}
               onChange={(e) => onCustomerNameChange(e.target.value)}
@@ -70,11 +76,17 @@ export function SignatureSection({
             />
           </div>
 
-          <SignaturePad
-            onBlobChange={onSignatureBlobChange}
-            onChange={onSignatureDataUrlChange}
-            value={signatureDataUrl || undefined}
-          />
+          <div className="space-y-1.5">
+            <p className="text-sm font-bold text-foreground dark:text-foreground">
+              Tanda Tangan Pelanggan
+              <span className="ml-0.5 text-destructive" aria-hidden="true">*</span>
+            </p>
+            <SignaturePad
+              onBlobChange={onSignatureBlobChange}
+              onChange={onSignatureDataUrlChange}
+              value={signatureDataUrl || undefined}
+            />
+          </div>
         </div>
       </section>
 
@@ -99,6 +111,7 @@ export function SignatureSection({
           <div>
             <label htmlFor="phase-c-notes" className="mb-1.5 block text-sm font-bold text-foreground dark:text-foreground">
               Catatan Tambahan
+              <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
             </label>
             <textarea
               id="phase-c-notes"
@@ -113,6 +126,7 @@ export function SignatureSection({
           <div>
             <label htmlFor="phase-c-next-date" className="mb-1.5 block text-sm font-bold text-foreground dark:text-foreground">
               Tanggal Servis Berikutnya
+              <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
             </label>
             <input
               id="phase-c-next-date"
@@ -128,6 +142,7 @@ export function SignatureSection({
           <div>
             <label htmlFor="phase-c-next-notes" className="mb-1.5 block text-sm font-bold text-foreground dark:text-foreground">
               Catatan Servis Berikutnya
+              <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
             </label>
             <input
               id="phase-c-next-notes"

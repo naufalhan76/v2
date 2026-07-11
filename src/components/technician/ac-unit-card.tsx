@@ -22,6 +22,14 @@ type DimensionData = {
 
 const sv = (v: string | null | undefined) => v ?? ''
 
+function RequiredMark() {
+  return (
+    <span className="ml-0.5 text-destructive" aria-hidden="true">
+      *
+    </span>
+  )
+}
+
 interface AcUnitCardProps {
   field: { id: string } & Partial<AcUnitReportItem>
   index: number
@@ -85,49 +93,76 @@ export function AcUnitCard({ field, index, orderId, initialUnits, formValues, se
           )}
           {!isSkipped && (
             <>
+              <p className="text-xs text-muted-foreground">
+                Field bertanda <span className="font-semibold text-destructive">*</span> wajib diisi. Sisanya opsional.
+              </p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label>Merk</Label>
+                  <Label>
+                    Merk
+                    <RequiredMark />
+                  </Label>
                   <Select value={sv(formValues[index]?.brand_id)} onValueChange={(val) => { const m = dimensions.ac_brands.find((b) => b.brand_id === val); setValue(`units.${index}.brand_id`, val); setValue(`units.${index}.brand`, m ? m.name : null) }} disabled={hasData('brand_id')}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Pilih Merk AC..." /></SelectTrigger>
+                    <SelectTrigger className="h-11" aria-required="true"><SelectValue placeholder="Pilih Merk AC..." /></SelectTrigger>
                     <SelectContent>{dimensions.ac_brands.map((b) => <SelectItem key={b.brand_id} value={b.brand_id}>{b.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Jenis AC</Label>
+                  <Label>
+                    Jenis AC
+                    <RequiredMark />
+                  </Label>
                   <Select value={selectedUnitTypeId} onValueChange={(val) => { const m = dimensions.unit_types.find((t) => t.unit_type_id === val); setValue(`units.${index}.unit_type_id`, val); setValue(`units.${index}.ac_type`, m ? m.name : null); setValue(`units.${index}.capacity_id`, ''); setValue(`units.${index}.capacity_label`, '') }} disabled={hasData('unit_type_id')}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder="Pilih Jenis AC..." /></SelectTrigger>
+                    <SelectTrigger className="h-11" aria-required="true"><SelectValue placeholder="Pilih Jenis AC..." /></SelectTrigger>
                     <SelectContent>{dimensions.unit_types.map((t) => <SelectItem key={t.unit_type_id} value={t.unit_type_id}>{t.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Kapasitas</Label>
+                  <Label>
+                    Kapasitas
+                    <RequiredMark />
+                  </Label>
                   <Select value={sv(formValues[index]?.capacity_id)} disabled={hasData('capacity_id') || !selectedUnitTypeId} onValueChange={(val) => { const m = dimensions.capacity_ranges.find((c) => c.capacity_id === val); setValue(`units.${index}.capacity_id`, val); setValue(`units.${index}.capacity_label`, m ? m.capacity_label : '') }}>
-                    <SelectTrigger className="h-11"><SelectValue placeholder={selectedUnitTypeId ? "Pilih Kapasitas..." : "Pilih Jenis AC terlebih dahulu"} /></SelectTrigger>
+                    <SelectTrigger className="h-11" aria-required="true"><SelectValue placeholder={selectedUnitTypeId ? "Pilih Kapasitas..." : "Pilih Jenis AC terlebih dahulu"} /></SelectTrigger>
                     <SelectContent>{filteredCapacities.map((c) => <SelectItem key={c.capacity_id} value={c.capacity_id}>{c.capacity_label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Lokasi Ruangan</Label>
-                  <Input placeholder="Kamar Tidur Utama..." className={cn("h-11", hasData('room_location') && "bg-muted dark:bg-surface text-muted-foreground dark:text-muted-foreground cursor-not-allowed")} readOnly={hasData('room_location')} {...register(`units.${index}.room_location`)} />
+                  <Label>
+                    Lokasi Ruangan
+                    <RequiredMark />
+                  </Label>
+                  <Input placeholder="Kamar Tidur Utama..." aria-required="true" className={cn("h-11", hasData('room_location') && "bg-muted dark:bg-surface text-muted-foreground dark:text-muted-foreground cursor-not-allowed")} readOnly={hasData('room_location')} {...register(`units.${index}.room_location`)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Lantai</Label>
+                  <Label>
+                    Lantai
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
+                  </Label>
                   <Input placeholder="Lantai 1..." className={cn("h-11", hasData('floor_level') && "bg-muted dark:bg-surface text-muted-foreground dark:text-muted-foreground cursor-not-allowed")} readOnly={hasData('floor_level')} {...register(`units.${index}.floor_level`)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Posisi Detail</Label>
+                  <Label>
+                    Posisi Detail
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
+                  </Label>
                   <Input placeholder="Dekat jendela..." className={cn("h-11", hasData('position_detail') && "bg-muted dark:bg-surface text-muted-foreground dark:text-muted-foreground cursor-not-allowed")} readOnly={hasData('position_detail')} {...register(`units.${index}.position_detail`)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Nomor Model</Label>
+                  <Label>
+                    Nomor Model
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
+                  </Label>
                   <div className="flex gap-2">
                     <Input placeholder="Model number..." className={cn("h-11 flex-1", hasData('model_number') && "bg-muted dark:bg-surface text-muted-foreground dark:text-muted-foreground cursor-not-allowed")} readOnly={hasData('model_number')} {...register(`units.${index}.model_number`)} />
                     <BarcodeScanner onDetected={(value) => setValue(`units.${index}.model_number`, value)} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Nomor Seri</Label>
+                  <Label>
+                    Nomor Seri
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
+                  </Label>
                   <div className="flex gap-2">
                     <Input placeholder="Serial number..." className={cn("h-11 flex-1", hasData('serial_number') && "bg-muted dark:bg-surface text-muted-foreground dark:text-muted-foreground cursor-not-allowed")} readOnly={hasData('serial_number')} {...register(`units.${index}.serial_number`)} />
                     <BarcodeScanner onDetected={(value) => setValue(`units.${index}.serial_number`, value)} />
@@ -139,7 +174,10 @@ export function AcUnitCard({ field, index, orderId, initialUnits, formValues, se
                 <PhotoUploadOffline orderId={orderId} acUnitIdx={index} kind="after" value={formValues[index]?.photos_after || []} onChange={(urls, photoIds) => { setValue(`units.${index}.photos_after`, urls); onPhotoIdsChange('after', photoIds) }} min={1} max={3} />
                 <MaterialInput value={(formValues[index]?.materials_used as MaterialItem[]) || []} onChange={(mats) => setValue(`units.${index}.materials_used`, mats)} />
                 <div className="space-y-1.5">
-                  <Label>Catatan per AC</Label>
+                  <Label>
+                    Catatan per AC
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
+                  </Label>
                   <Textarea placeholder="Catatan spesifik untuk AC ini..." className="min-h-[80px]" {...register(`units.${index}.notes`)} />
                 </div>
               </div>

@@ -81,8 +81,18 @@ export function PhotoUploadOffline({ orderId, acUnitIdx, kind, value, onChange, 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium">{kindLabel[kind]}<span className="text-muted-foreground ml-1">({entries.length}/{max})</span></label>
-        {min > 0 && entries.length < min && <span className="text-xs text-destructive">Min. {min} foto</span>}
+        <label className="text-sm font-medium">
+          {kindLabel[kind]}
+          {min > 0 && (
+            <span className="ml-0.5 text-destructive" aria-hidden="true">
+              *
+            </span>
+          )}
+          <span className="text-muted-foreground ml-1">({entries.length}/{max})</span>
+        </label>
+        {min > 0 && entries.length < min && (
+          <span className="text-xs text-destructive">Wajib min. {min} foto</span>
+        )}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {entries.map((entry, index) => (

@@ -127,9 +127,8 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
 
   const canonicalStatus: OrderStatus = job.canonical_status
   const customer = job.customers
-  const orderItem = job.order_items?.[0]
-  const location = orderItem?.locations
-  const acUnit = orderItem?.ac_units
+  const orderItems = Array.isArray(job.order_items) ? job.order_items : []
+  const location = orderItems[0]?.locations
   const scheduledTime = new Date(job.scheduled_visit_date).toLocaleString('id-ID', {
     weekday: 'short',
     day: 'numeric',
@@ -158,8 +157,8 @@ export function JobDetailContent({ orderId }: JobDetailContentProps) {
         scheduledTime={scheduledTime}
       />
 
-      {/* Service info card */}
-      <ServiceInfoCard orderItem={orderItem} />
+      {/* Service info card — all order items (multi-service aware) */}
+      <ServiceInfoCard orderItems={orderItems} />
 
       {/* Notes */}
       {job.notes && (

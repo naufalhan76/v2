@@ -36,9 +36,18 @@ function formatCurrency(amount: number): string {
 
 export function HistoryJobCard({ job }: HistoryJobCardProps) {
   const customerName = job.customers?.customer_name ?? 'Customer'
-  const serviceType = job.order_items?.[0]?.service_type ?? 'Service AC'
+  const serviceTypes = (job.order_items ?? [])
+    .map((item) => item.service_type)
+    .filter((t): t is string => Boolean(t))
+  const serviceType = serviceTypes.length > 0
+    ? [...new Set(serviceTypes)].join(' · ')
+    : 'Service AC'
   const report = job.service_reports?.[0]
-  const actualPrice = report?.actual_total_price ?? job.order_items?.[0]?.estimated_price ?? 0
+  const estimatedTotal = (job.order_items ?? []).reduce(
+    (sum, item) => sum + (item.estimated_price ?? 0),
+    0,
+  )
+  const actualPrice = report?.actual_total_price ?? estimatedTotal
   const scheduledDate = new Date(job.scheduled_visit_date).toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'short',

@@ -20,6 +20,15 @@ function valueOf(value: string | null | undefined): string {
   return value ?? ''
 }
 
+/** Visual required marker. Keep aria-label clean so tests/screen readers stay stable. */
+function RequiredMark() {
+  return (
+    <span className="ml-0.5 text-destructive" aria-hidden="true">
+      *
+    </span>
+  )
+}
+
 function identityFromUnit(unit: AcUnitReportItem): AcIdentity {
   return {
     ac_unit_id: valueOf(unit.ac_unit_id),
@@ -45,7 +54,11 @@ interface UnitCardProps {
 
 export function UnitCard({ index, orderId, unit, initialUnit, dimensions, onUpdate }: UnitCardProps) {
   const isExisting = !!unit.ac_unit_id
-  const hasAdminIdentity = !!(initialUnit.unit_type_id && initialUnit.capacity_id)
+  // New AC: admin identity means type+capacity prefilled from order.
+  // Existing AC: any prefilled identity field means partial read-only + fill missing.
+  const hasAdminIdentity = isExisting
+    ? !!(initialUnit.brand_id || initialUnit.unit_type_id || initialUnit.capacity_id || initialUnit.room_location)
+    : !!(initialUnit.unit_type_id && initialUnit.capacity_id)
   const isCompleteExisting = isExisting && !!(initialUnit.brand_id && initialUnit.unit_type_id && initialUnit.capacity_id && initialUnit.room_location)
   const showFullForm = !hasAdminIdentity
   const showReadOnlyAndMissingFields = hasAdminIdentity && !isCompleteExisting
@@ -86,6 +99,10 @@ export function UnitCard({ index, orderId, unit, initialUnit, dimensions, onUpda
 
         {showReadOnlyAndMissingFields && (
           <div className="space-y-4">
+            <div className="rounded-lg border border-status-pending/30 bg-status-pending-bg p-3 text-sm text-status-pending">
+              <p className="font-medium">Data AC eksisting belum lengkap</p>
+              <p className="mt-0.5">Lengkapi field bertanda * yang masih kosong.</p>
+            </div>
             <ReadOnlyIdentity unit={unit} onlyPresent />
             <IdentityFields
               unit={unit}
@@ -152,122 +169,151 @@ function IdentityFields({ unit, initialUnit, dimensions, filteredCapacities, onU
   if (!showBrand && !showType && !showCapacity && !showRoom) return null
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {showBrand && (
-        <div className="space-y-1.5">
-          <Label className="text-sm font-bold text-foreground dark:text-foreground">Merk</Label>
-          <select
-            aria-label="Merk"
-            value={valueOf(unit.brand_id)}
-            onChange={(event) => {
-              const matched = dimensions.ac_brands.find((brand) => brand.brand_id === event.target.value)
-              onUpdate({ brand_id: event.target.value, brand: matched?.name ?? '' })
-            }}
-            className="h-11 w-full rounded-xl border border-border-strong dark:bg-surface dark:text-foreground px-3 text-sm focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
-          >
-            <option value="">Pilih Merk AC...</option>
-            {dimensions.ac_brands.map((brand) => (
-              <option key={brand.brand_id} value={brand.brand_id}>
-                {brand.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">
+        Field bertanda <span className="font-semibold text-destructive">*</span> wajib diisi. Sisanya opsional.
+      </p>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {showBrand && (
+          <div className="space-y-1.5">
+            <Label className="text-sm font-bold text-foreground dark:text-foreground">
+              Merk
+              <RequiredMark />
+            </Label>
+            <select
+              aria-label="Merk"
+              aria-required="true"
+              required
+              value={valueOf(unit.brand_id)}
+              onChange={(event) => {
+                const matched = dimensions.ac_brands.find((brand) => brand.brand_id === event.target.value)
+                onUpdate({ brand_id: event.target.value, brand: matched?.name ?? '' })
+              }}
+              className="h-11 w-full rounded-xl border border-border-strong dark:bg-surface dark:text-foreground px-3 text-sm focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
+            >
+              <option value="">Pilih Merk AC...</option>
+              {dimensions.ac_brands.map((brand) => (
+                <option key={brand.brand_id} value={brand.brand_id}>
+                  {brand.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-      {showType && (
-        <div className="space-y-1.5">
-          <Label className="text-sm font-bold text-foreground dark:text-foreground">Jenis / Model</Label>
-          <select
-            aria-label="Jenis / Model"
-            value={valueOf(unit.unit_type_id)}
-            onChange={(event) => {
-              const matched = dimensions.unit_types.find((type) => type.unit_type_id === event.target.value)
-              onUpdate({
-                unit_type_id: event.target.value,
-                ac_type: matched?.name ?? '',
-                capacity_id: '',
-                capacity_label: '',
-              })
-            }}
-            className="h-11 w-full rounded-xl border border-border-strong dark:bg-surface dark:text-foreground px-3 text-sm focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
-          >
-            <option value="">Pilih Jenis AC...</option>
-            {dimensions.unit_types.map((type) => (
-              <option key={type.unit_type_id} value={type.unit_type_id}>
-                {type.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+        {showType && (
+          <div className="space-y-1.5">
+            <Label className="text-sm font-bold text-foreground dark:text-foreground">
+              Jenis / Model
+              <RequiredMark />
+            </Label>
+            <select
+              aria-label="Jenis / Model"
+              aria-required="true"
+              required
+              value={valueOf(unit.unit_type_id)}
+              onChange={(event) => {
+                const matched = dimensions.unit_types.find((type) => type.unit_type_id === event.target.value)
+                onUpdate({
+                  unit_type_id: event.target.value,
+                  ac_type: matched?.name ?? '',
+                  capacity_id: '',
+                  capacity_label: '',
+                })
+              }}
+              className="h-11 w-full rounded-xl border border-border-strong dark:bg-surface dark:text-foreground px-3 text-sm focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
+            >
+              <option value="">Pilih Jenis AC...</option>
+              {dimensions.unit_types.map((type) => (
+                <option key={type.unit_type_id} value={type.unit_type_id}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-      {showCapacity && (
-        <div className="space-y-1.5">
-          <Label className="text-sm font-bold text-foreground dark:text-foreground">Kapasitas</Label>
-          <select
-            aria-label="Kapasitas"
-            value={valueOf(unit.capacity_id)}
-            disabled={!unit.unit_type_id}
-            onChange={(event) => {
-              const matched = dimensions.capacity_ranges.find((capacity) => capacity.capacity_id === event.target.value)
-              onUpdate({
-                capacity_id: event.target.value,
-                capacity_label: matched?.capacity_label ?? '',
-              })
-            }}
-            className="h-11 w-full rounded-xl border border-border-strong dark:border-border dark:bg-surface dark:text-foreground px-3 text-sm focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary disabled:bg-muted dark:disabled:bg-surface-muted disabled:text-muted-foreground dark:disabled:text-muted-foreground"
-          >
-            <option value="">{unit.unit_type_id ? 'Pilih Kapasitas...' : 'Pilih Jenis AC terlebih dahulu'}</option>
-            {filteredCapacities.map((capacity) => (
-              <option key={capacity.capacity_id} value={capacity.capacity_id}>
-                {capacity.capacity_label}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+        {showCapacity && (
+          <div className="space-y-1.5">
+            <Label className="text-sm font-bold text-foreground dark:text-foreground">
+              Kapasitas
+              <RequiredMark />
+            </Label>
+            <select
+              aria-label="Kapasitas"
+              aria-required="true"
+              required
+              value={valueOf(unit.capacity_id)}
+              disabled={!unit.unit_type_id}
+              onChange={(event) => {
+                const matched = dimensions.capacity_ranges.find((capacity) => capacity.capacity_id === event.target.value)
+                onUpdate({
+                  capacity_id: event.target.value,
+                  capacity_label: matched?.capacity_label ?? '',
+                })
+              }}
+              className="h-11 w-full rounded-xl border border-border-strong dark:border-border dark:bg-surface dark:text-foreground px-3 text-sm focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary disabled:bg-muted dark:disabled:bg-surface-muted disabled:text-muted-foreground dark:disabled:text-muted-foreground"
+            >
+              <option value="">{unit.unit_type_id ? 'Pilih Kapasitas...' : 'Pilih Jenis AC terlebih dahulu'}</option>
+              {filteredCapacities.map((capacity) => (
+                <option key={capacity.capacity_id} value={capacity.capacity_id}>
+                  {capacity.capacity_label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-      {showRoom && (
+        {showRoom && (
+          <div className="space-y-1.5">
+            <Label htmlFor={`phase-a-room-${unit.ac_unit_id || 'new'}`} className="text-sm font-bold text-foreground dark:text-foreground">
+              Lokasi Ruangan
+              <RequiredMark />
+            </Label>
+            <Input
+              id={`phase-a-room-${unit.ac_unit_id || 'new'}`}
+              aria-label="Lokasi Ruangan"
+              aria-required="true"
+              required
+              value={valueOf(unit.room_location)}
+              onChange={(event) => onUpdate({ room_location: event.target.value })}
+              placeholder="Kamar Tidur Utama, Ruang Tamu..."
+              className="h-11 rounded-xl border-border-strong dark:border-border focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
+            />
+          </div>
+        )}
+
+        {/* model_number + serial_number with barcode scanner (ponytail: scanner additive, form works without it) */}
         <div className="space-y-1.5">
-          <Label htmlFor={`phase-a-room-${unit.ac_unit_id || 'new'}`} className="text-sm font-bold text-foreground dark:text-foreground">
-            Lokasi Ruangan
+          <Label className="text-sm font-bold text-foreground dark:text-foreground">
+            Nomor Model
+            <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
           </Label>
-          <Input
-            id={`phase-a-room-${unit.ac_unit_id || 'new'}`}
-            aria-label="Lokasi Ruangan"
-            value={valueOf(unit.room_location)}
-            onChange={(event) => onUpdate({ room_location: event.target.value })}
-            placeholder="Kamar Tidur Utama, Ruang Tamu..."
-            className="h-11 rounded-xl border-border-strong dark:border-border focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
-          />
+          <div className="flex gap-2">
+            <Input
+              value={valueOf(unit.model_number)}
+              onChange={(event) => onUpdate({ model_number: event.target.value })}
+              placeholder="Model number..."
+              className="h-11 flex-1 rounded-xl border-border-strong dark:border-border focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
+            />
+            <BarcodeScanner onDetected={(value) => onUpdate({ model_number: value })} />
+          </div>
         </div>
-      )}
 
-      {/* model_number + serial_number with barcode scanner (ponytail: scanner additive, form works without it) */}
-      <div className="space-y-1.5">
-        <Label className="text-sm font-bold text-foreground dark:text-foreground">Nomor Model</Label>
-        <div className="flex gap-2">
-          <Input
-            value={valueOf(unit.model_number)}
-            onChange={(event) => onUpdate({ model_number: event.target.value })}
-            placeholder="Model number..."
-            className="h-11 flex-1 rounded-xl border-border-strong dark:border-border focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
-          />
-          <BarcodeScanner onDetected={(value) => onUpdate({ model_number: value })} />
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label className="text-sm font-bold text-foreground dark:text-foreground">Nomor Seri</Label>
-        <div className="flex gap-2">
-          <Input
-            value={valueOf(unit.serial_number)}
-            onChange={(event) => onUpdate({ serial_number: event.target.value })}
-            placeholder="Serial number..."
-            className="h-11 flex-1 rounded-xl border-border-strong dark:border-border focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
-          />
-          <BarcodeScanner onDetected={(value) => onUpdate({ serial_number: value })} />
+        <div className="space-y-1.5">
+          <Label className="text-sm font-bold text-foreground dark:text-foreground">
+            Nomor Seri
+            <span className="ml-1 text-xs font-normal text-muted-foreground">(opsional)</span>
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              value={valueOf(unit.serial_number)}
+              onChange={(event) => onUpdate({ serial_number: event.target.value })}
+              placeholder="Serial number..."
+              className="h-11 flex-1 rounded-xl border-border-strong dark:border-border focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary"
+            />
+            <BarcodeScanner onDetected={(value) => onUpdate({ serial_number: value })} />
+          </div>
         </div>
       </div>
     </div>
