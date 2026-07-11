@@ -98,7 +98,7 @@ export function OrderFilters() {
       <div className="relative w-full sm:min-w-[240px] sm:flex-1 sm:max-w-sm">
         <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Cari order ID, customer, alamat..."
+          placeholder="Cari nama pelanggan atau ID order..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="h-11 pl-9 sm:h-9"

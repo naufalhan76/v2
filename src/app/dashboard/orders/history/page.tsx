@@ -61,11 +61,10 @@ export default function OrderHistoryPage() {
     if (!search.trim()) return orders
     const q = search.toLowerCase()
     return orders.filter((o: OrderForDisplay) => {
+      // Match history table columns that are always visible: customer + order id.
       const customer = typeof o.customers === 'object' && o.customers !== null ? (o.customers as { customer_name?: string | null }).customer_name ?? '' : ''
       const orderId = o.order_id ?? ''
-      const address = o.order_items?.[0]?.locations?.full_address ?? ''
-      const serviceType = o.order_items?.[0]?.service_type ?? ''
-      return customer.toLowerCase().includes(q) || orderId.toLowerCase().includes(q) || address.toLowerCase().includes(q) || serviceType.toLowerCase().includes(q)
+      return customer.toLowerCase().includes(q) || orderId.toLowerCase().includes(q)
     })
   }, [orders, search])
 

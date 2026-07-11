@@ -158,11 +158,11 @@ export interface OrderFilters {
 export function filterOrders<T extends OrderForDisplay>(orders: T[], filters: OrderFilters): T[] {
   return orders.filter((o) => {
     if (filters.search) {
+      // Match list UI fields only (customer name + order id). Address is not shown in list.
       const q = filters.search.toLowerCase()
       const customerName = o.customers?.customer_name?.toLowerCase() ?? ''
       const orderId = o.order_id.toLowerCase()
-      const address = o.order_items?.[0]?.locations?.full_address?.toLowerCase() ?? ''
-      if (!customerName.includes(q) && !orderId.includes(q) && !address.includes(q)) {
+      if (!customerName.includes(q) && !orderId.includes(q)) {
         return false
       }
     }

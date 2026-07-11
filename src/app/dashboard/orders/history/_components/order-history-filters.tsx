@@ -29,7 +29,7 @@ export function OrderHistoryFilters({
       <div className="flex gap-2 flex-1 max-w-md">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari nama pelanggan, ID order, alamat..." value={search} onChange={(e) => onSearchChange(e.target.value)}
+          <Input placeholder="Cari nama pelanggan atau ID order..." value={search} onChange={(e) => onSearchChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()} className="pl-9" />
         </div>
         <Button variant="outline" onClick={onSearchSubmit}>Cari</Button>
