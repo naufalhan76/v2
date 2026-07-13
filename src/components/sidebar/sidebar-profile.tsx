@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronRight, Lightbulb, Moon, Sun, User } from 'lucide-react'
-import { useTheme } from 'next-themes'
+import { ChevronRight, Lightbulb, Moon, Sun, User, Palette } from 'lucide-react'
+import { useTheme } from '@/components/theme-provider'
 import { useUser, useAuth } from '@clerk/nextjs'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { getMyUserProfile } from '@/lib/actions/my-profile'
+import { themes, ThemeId } from '@/lib/themes'
 
 export function DarkModeToggle() {
   const { theme, setTheme } = useTheme()
@@ -24,9 +25,14 @@ export function DarkModeToggle() {
 export function ProfileSection() {
   const [dbProfile, setDbProfile] = useState<{ full_name: string; role: string; photo_url?: string | null } | null>(null)
   const [isOpen, setIsOpen] = useState(false)
+  const [showThemes, setShowThemes] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   const { user } = useUser()
   const { signOut } = useAuth()
+  const { themeId, setThemeId } = useTheme()
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     if (!user) return
@@ -64,6 +70,45 @@ export function ProfileSection() {
           <span className="text-sm font-medium">Dark Mode</span>
         </div>
         <DarkModeToggle />
+      </div>
+
+      {/* Theme Picker */}
+      <div className="px-2">
+        <button
+          onClick={() => setShowThemes(!showThemes)}
+          className="flex items-center gap-2 w-full text-left text-sm hover:bg-background rounded p-1 transition-colors"
+        >
+          <Palette className="h-4 w-4" />
+          <span className="font-medium">Tema</span>
+          <ChevronRight className={cn('h-3 w-3 ml-auto transition-transform', showThemes && 'rotate-90')} />
+        </button>
+
+        {showThemes && mounted && (
+          <div className="grid grid-cols-3 gap-2 mt-2 px-1">
+            {themes.map((t) => {
+              const brand = t.light['--brand-500']
+              const [h, s, l] = brand.split(' ').map(v => parseFloat(v.replace('%', '')))
+              const bg = `hsl(${h}, ${s}%, ${l}%)`
+
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setThemeId(t.id)}
+                  className={cn(
+                    "h-8 rounded-md border-2 transition-all flex items-center justify-center text-xs font-medium",
+                    themeId === t.id
+                      ? "border-primary ring-1 ring-primary"
+                      : "border-border hover:border-muted-foreground"
+                  )}
+                  style={{ backgroundColor: bg }}
+                  title={t.name}
+                >
+                  <span className="text-white text-[10px] font-semibold drop-shadow">{t.name}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <div className="relative">

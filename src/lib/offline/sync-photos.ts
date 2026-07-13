@@ -58,8 +58,10 @@ export async function uploadPhotoBlob(record: PendingPhotoRecord): Promise<strin
   if (record.uploadedPath) return record.uploadedPath
 
   const bucket = record.kind === 'signature' ? 'signatures' : 'service-photos'
-  const ext = record.mimeType.split('/')[1] || 'jpg'
-  const path = `${record.orderId}/${record.id}.${ext}`
+  const rawExt = record.mimeType.split('/')[1] || 'jpg'
+  const ext = rawExt === 'jpeg' ? 'jpg' : rawExt
+  // orderId format is REQ/YYYY-MM/NNNNNN — sanitize slashes for safe path segments
+  const path = `${record.orderId.replace(/\//g, '-')}/${record.id}.${ext}`
 
   const signRes = await fetch('/api/photos/signed-upload-url', {
     method: 'POST',
@@ -81,8 +83,9 @@ export async function uploadPhotoBlob(record: PendingPhotoRecord): Promise<strin
     throw new Error(`Photo upload failed: ${uploadRes.statusText}`)
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`
-  await markPhotoUploaded(record.id, publicUrl)
-  return publicUrl
+  // Store the storage path (not a full URL) so server-side can create
+  // signed URLs for both public and private buckets.
+  const storagePath = `${bucket}/${path}`
+  await markPhotoUploaded(record.id, storagePath)
+  return storagePath
 }

@@ -29,10 +29,14 @@ const DialogOverlay = React.forwardRef<
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
+function isFloatingOutsideTarget(target: EventTarget | null) {
+  return target instanceof Element && !!target.closest('[data-floating-outside]')
+}
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, onPointerDownOutside, onInteractOutside, onFocusOutside, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -42,6 +46,21 @@ const DialogContent = React.forwardRef<
         className
       )}
       {...props}
+      // Portaled floating menus (SearchableSelect etc.) live outside Dialog DOM.
+      // Without this guard, option click = outside dismiss → Dialog closes first.
+      // Handlers AFTER {...props} so callers cannot override the guard.
+      onPointerDownOutside={(e) => {
+        if (isFloatingOutsideTarget(e.target)) e.preventDefault()
+        onPointerDownOutside?.(e)
+      }}
+      onInteractOutside={(e) => {
+        if (isFloatingOutsideTarget(e.target)) e.preventDefault()
+        onInteractOutside?.(e)
+      }}
+      onFocusOutside={(e) => {
+        if (isFloatingOutsideTarget(e.target)) e.preventDefault()
+        onFocusOutside?.(e)
+      }}
     >
       {children}
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">

@@ -4,13 +4,13 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { logger } from '@/lib/logger'
 import { jsonSuccess, jsonError } from '@/app/api/utils'
 
-const ALLOWED_BUCKETS = ['service-photos'] as const
+const ALLOWED_BUCKETS = ['service-photos', 'signatures'] as const
 const ALLOWED_ROLES = ['TECHNICIAN', 'ADMIN', 'SUPERADMIN'] as const
 
-// ponytail: path regex is intentionally narrow — only hex-uuid filenames with image extensions.
+// ponytail: path regex is intentionally narrow — only hex-uuid filenames with image extensions, prefix allows slashes for orderId format (REQ/YYYY-MM/NNNNNN).
 // Upgrade path: extend regex or move to zod schema if more patterns are needed.
-const PATH_RE = (userId: string) =>
-  new RegExp(`^${userId}/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\\.(jpg|png|webp)$`)
+const PATH_RE = () =>
+  /^[a-zA-Z0-9_\/-]+\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.(jpe?g|png|webp)$/
 
 export async function POST(req: NextRequest) {
   const log = logger.child('signed-upload-url')
@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
     return jsonError(`Bucket not allowed. Allowed: ${ALLOWED_BUCKETS.join(', ')}`, 400)
   }
 
-  if (!PATH_RE(userId).test(path)) {
-    return jsonError('Invalid path. Must be userId/[hex-uuid].(jpg|png|webp)', 400)
+  if (!PATH_RE().test(path)) {
+    return jsonError('Invalid path. Must be <prefix>/[uuid].(jpg|jpeg|png|webp)', 400)
   }
 
   const supabase = createAdminClient()

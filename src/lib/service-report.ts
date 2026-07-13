@@ -115,9 +115,19 @@ async function reSignPhotos(
       if (value.startsWith('http://') || value.startsWith('https://')) {
         return value
       }
+      // New format: "service-photos/<path>" or "signatures/<path>"
+      // Old format: "<path>" (defaults to service-photos bucket)
+      let bucket = 'service-photos'
+      let objectPath = value
+      if (value.startsWith('signatures/')) {
+        bucket = 'signatures'
+        objectPath = value.slice('signatures/'.length)
+      } else if (value.startsWith('service-photos/')) {
+        objectPath = value.slice('service-photos/'.length)
+      }
       const { data, error } = await supabase.storage
-        .from('service-photos')
-        .createSignedUrl(value, 3600)
+        .from(bucket)
+        .createSignedUrl(objectPath, 3600)
       if (error || !data?.signedUrl) {
         logger.error('Error creating signed photo URL:', error)
         return value
@@ -153,20 +163,21 @@ export async function getSignedSignatureUrl(
     return null
   }
 
-  // The stored value is the object key inside the `signatures` bucket
-  // (e.g. `<orderId>/<reportId>.png`). When older records accidentally
-  // stored a full URL, fall back to that value.
+  // Stored value can be: full URL (legacy), "signatures/<path>" (new), or "<path>" (old format)
   const path = report.customer_signature_url
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path
   }
+
+  // Strip "signatures/" prefix if present (new format)
+  const objectPath = path.startsWith('signatures/') ? path.slice('signatures/'.length) : path
 
   // Use admin client (service role key) to bypass RLS on the signatures bucket.
   // The SELECT on service_reports is already gated by the caller's session.
   const admin = createAdminClient()
   const { data, error } = await admin.storage
     .from('signatures')
-    .createSignedUrl(path, expiresInSeconds)
+    .createSignedUrl(objectPath, expiresInSeconds)
 
   if (error || !data?.signedUrl) {
     logger.error('Error creating signed signature URL:', error)
